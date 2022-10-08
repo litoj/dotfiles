@@ -1,0 +1,6 @@
+#!/bin/sh
+adb start-server
+adb tcpip 5555
+adb devices | grep 5555 || adb connect $([[ -z $1 ]] && echo 192.168.0.102:5555 || echo $1:5555)
+scrcpy --encoder=OMX.qcom.video.encoder.avc --max-fps $(rofi -dmenu -p "FPS" -l 0) \
+--lock-video-orientation=1

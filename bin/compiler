@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# tex files: Compiles to pdf, including bibliography if necessary
+# md files: Compiles to pdf via pandoc
+# rmd files: Compiles via R Markdown
+# c files: Compiles via whatever compiler is set to cc. Usually gcc.
+# py files: runs via python command
+# go files: compiles and runs with "go run"
+# config.h files: (For suckless utils) recompiles and installs program.
+# all others: run `sent` to show a presentation
+
+file=$(readlink -f "$*")
+dir=${file%\/*}
+base="${file%.*}"
+basename=${base##*\/}
+
+cd "$dir" || exit
+
+textype() {
+	if [[ $basename =~ ^.*[[:space:]]P[0-9]*$ ]]; then
+		basename=$(echo "$basename" | sed 's/\(^.*\sP\)[0-9]*$/\10/')
+		base=$(echo "$base" | sed 's/\(^.*\sP\)[0-9]*$/\10/')
+	elif [[ -f $dir/prace.tex ]]; then
+		basename=prace
+		base="$dir/prace"
+		file="$dir/prace.tex"
+	fi
+	bibtex "$basename" >&2
+	command="pdflatex -shell-escape -file-line-error"
+	(sed 5q "$file" | grep -i -q 'xelatex' > /dev/null) && command="xelatex"
+	$command --output-directory="$dir" "$base" >&2 &&
+		grep -i addbibresource "$file" > /dev/null &&
+		$command --output-directory="$dir" "$base" >&2
+	echo "$base.pdf"
+}
+
+case "$file" in
+	*\.ms) refer -PS -e "$file" | groff -me -ms -kept -T pdf > "$base".pdf ;;
+	*\.mom) refer -PS -e "$file" | groff -mom -kept -T pdf > "$base".pdf ;;
+	*\.[0-9]) refer -PS -e "$file" | groff -mandoc -T pdf > "$base".pdf ;;
+	*\.[rR]md) Rscript -e "rmarkdown::render('$file', quiet=TRUE)" ;;
+	*\.tex | *\.bib) textype ;;
+	# *\.md) pandoc -s -f markdown "$file" -t pdf -o "$base".pdf ;;
+	*\.md)
+		pandoc "$file" -t html -o /tmp/"$basename".html
+		sed -i -e '1i<head><link rel="stylesheet" href="/home/kepis/dotfiles/other/html.css"></head><body>' \
+			-e '$s/$/<\/body>/;' /tmp/"$basename".html
+		echo /tmp/"$basename".html
+		;;
+	*config\.h) make clean install ;;
+	*\.c) g++ -Wall -pedantic "$file" -o "$base.out" ;;
+	*\.py) python "$file" ;;
+	*\.m) octave "$file" ;;
+	*\.scad) openscad -o "$base".stl "$file" ;;
+	*\.go) go run "$file" ;;
+	*\.sent) setsid sent "$file" 2> /dev/null & ;;
+	*) sed 1q "$file" | grep "^#!/" | sed "s/^#!//" | xargs -r -I % "$file" ;;
+esac

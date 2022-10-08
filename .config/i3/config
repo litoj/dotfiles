@@ -1,0 +1,9 @@
+set $mode tiling
+set $display eDP
+set $term $HOME/.config/i3/term
+set $feh --no-startup-id feh --no-fehbg --bg-fill -rz ~/Pictures/screen
+set $Mod Mod4
+set $Alt Mod1
+include setts.i3conf
+include exec.i3conf
+include binds.i3conf

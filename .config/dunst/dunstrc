@@ -1,0 +1,50 @@
+[global]
+	scale = 1
+	width = (0, 500)
+	height = 600
+	origin = top-center
+	offset = 0x20
+	separator_height = 2
+	padding = 5
+	horizontal_padding = 5
+	frame_width = 2
+	font = FiraCode 16
+	format = "<b>%s</b>\n%b"
+	hide_duplicate_count = true
+	browser = /usr/bin/firefox -new-tab
+	progress_bar_frame_width = 0
+	progress_bar_min_width = 120
+	progress_bar_max_width = 500
+
+[urgency_low]
+	frame_color = "#ad30a8"
+	foreground = "#f0eeea"
+	background = "#1c1c1c"
+	highlight = "#ad30a8"
+	timeout = 5
+
+[urgency_normal]
+	frame_color = "#54a015"
+	foreground = "#f0eeea"
+	background = "#1c1c1c"
+	highlight = "#54a015"
+	timeout = 10
+
+[urgency_critical]
+	frame_color = "#f03522"
+	foreground = "#f0eeea"
+	background = "#1c1c1c"
+	highlight = "#f03522"
+	timeout = 0
+
+[signal]
+	appname = signal
+	format = "<b>%s</b>"
+	frame_color = "#ad30a8"
+	foreground = "#f0eeea"
+	background = "#101010"
+	# progressbar color
+	highlight = "#54a015"
+	timeout = 1
+
+# vim: ft=config

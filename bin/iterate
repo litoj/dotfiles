@@ -1,0 +1,8 @@
+#!/bin/bash
+for f in *0.json; do
+	fn=${f%0.json}
+	for ((i = 1; i <= $1; i++)); do
+		cp $f $fn$i.json
+		sed -i "s/\([\/_]\)0/\1$i/g" $fn$i.json
+	done
+done

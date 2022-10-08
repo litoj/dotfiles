@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Volume script
+#Nice icons:       
+if [[ $button ]]; then
+	if ((button > 3)); then
+		pactl set-sink-volume 0 $( ((button == 4)) && echo + || echo -)10%
+	elif ((button == 1)); then
+		pactl set-sink-mute 0 toggle
+	else
+		~/.config/i3/term -e pulsemixer &
+		disown
+	fi
+fi
+
+while read -a line; do
+	case "${line[0]}" in
+		'volume:') VOL=${line[4]%\%} ;;
+		'muted:') MUTED=${line[1]} && break ;;
+	esac
+done <<< $(pacmd list-sinks 2> /dev/null)
+
+if [[ -z $VOL ]]; then
+	echo " ?"
+	exit 0
+fi
+
+if [[ $MUTED == yes ]]; then
+	ICON=
+elif ((VOL >= 70)); then
+	ICON=
+elif ((VOL >= 30)); then
+	ICON=
+else
+	ICON=
+fi
+
+notify-send -a signal -h int:value:$VOL -h string:synchronous:volume "$ICON $VOL"
+echo "$ICON $VOL%"
+echo "$ICON $VOL%"
+~/.config/i3blocks/colorcode $VOL

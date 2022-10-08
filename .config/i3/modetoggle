@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Toggles between i3 default tiling, or floating, mode
+
+mode=tiling
+case "$1" in
+	"restart")
+		icon_theme="$(sed -n 's/.*cursor-theme-name="\(.*\)"/\1/p' ~/.gtkrc-2.0)"
+		sed -i "s/Inherits=.*/Inherits=$icon_theme/" ~/.icons/default/index.theme
+		sed -i "s/cursor-theme-name=.*/cursor-theme-name=$icon_theme/" ~/.config/gtk-3.0/settings.ini
+		i3 restart
+		exit
+		;;
+	"tiling") mode="floating" ;;
+	"floating") mode="tiling" ;;
+esac
+
+sed -i "1cset \$mode $mode" ~/.config/i3/config
+sed -i "4c$([[ $mode == tiling ]] && echo \#)\$float" ~/.config/i3/setts.i3conf
+i3 reload

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+time=$(date +%H)
+time=${time#0}
+((time > 6 && time < 20)) && st-light "$@" || st "$@"

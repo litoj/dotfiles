@@ -1,0 +1,323 @@
+#-----------------+
+# Gap bindingings |
+#-----------------+
+
+bindsym $Mod+g gaps inner current plus 5
+bindsym $Mod+Shift+g gaps inner current minus 5
+bindsym $Mod+$Alt+g gaps outer current plus 5
+bindsym $Mod+$Alt+Shift+g gaps outer current minus 5
+bindsym $Mod+t gaps inner current toggle 10
+bindsym $Mod+$Alt+t border toggle 2
+
+bindsym $Mod+p exec pgrep -x "picom" && killall picom || picom --experimental-backends
+bindsym $Mod+u exec $feh
+#normal image displaying
+# feh --draw-exif -d --draw-tinted --edit -. -B black -| %f
+
+#---------------+
+# App selection |
+#---------------+
+
+# app launcher/picker
+bindsym $Mod+r exec rofi -show drun
+bindsym $Alt+Tab exec rofi -show window
+
+# quick app starter
+bindsym $Mod+Return exec $term
+bindsym $Mod+1 exec lof firefox firefox
+bindsym $Mod+2 exec st nvim
+bindsym $Mod+3 exec $term ranger --choosefile=/tmp/f && f="$(cat /tmp/f)" && rm /tmp/f && mpv "$f" --vlang=en, workspace $w7
+bindsym $Mod+5 exec lof netbeans NetBeans
+set $6 " [W]riter [I]mpress [C]alc [D]raw"
+bindsym $Mod+6 mode $6, workspace $w6
+mode $6 {
+	bindsym w exec lowriter, mode default
+	bindsym i exec loimpress, mode default
+	bindsym c exec localc, mode default
+	bindsym d exec lodraw, mode default
+	bindsym Escape mode default, workspace back_and_forth
+	bindsym q mode default
+}
+bindsym $Mod+8 exec lof thunderbird thunderbird
+bindsym $Mod+9 exec lof "tlauncher" "Minecraft.*"
+bindsym $Mod+e exec $term ranger
+bindsym $Mod+$Alt+e exec pcmanfm
+#bindsym $Mod+Shift+e exec sudo pcmanfm
+# managing/control
+bindsym Ctrl+Shift+Escape exec lof "$term htop" "st-256color" htop
+
+#------------------+
+# Win manipulation |
+#------------------+
+
+## Termination
+# kill focused window
+# bindsym --release $Mod+q exec xdotool key ctrl+q
+bindsym $Mod+q kill
+bindsym Shift+KP_Subtract kill
+# force kill window on select
+bindsym --release $Alt+F4 exec xkill
+bindsym --release $Mod+Shift+q exec xkill
+#bindsym --release $Mod+Shift+BackSpace exec xkill
+bindsym --release $Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | sed 's/^[0-9]* //' | sort | dmenu -i -p "force kill")
+
+## Focus
+bindsym $Mod+space focus mode_toggle
+bindsym KP_Begin focus mode_toggle
+# change tiling layer
+bindsym $Mod+grave focus parent
+bindsym $Mod+Shift+asciitilde focus child
+
+## Layout change
+bindsym $Mod+f fullscreen toggle
+bindsym F11 fullscreen toggle
+bindsym Shift+KP_Begin fullscreen toggle
+# container types
+bindsym $Mod+Ctrl+space sticky toggle
+bindsym $Mod+c split toggle
+bindsym $Mod+z layout toggle splith splitv tabbed
+# tiling/floating managing
+bindsym $Mod+Shift+space floating toggle, sticky toggle
+# scratchpad
+bindsym $Mod+Shift+minus move scratchpad
+bindsym $Mod+minus scratchpad show
+
+#--------+
+# Arrows |
+#--------+
+set $floatpos ~/.config/i3/floatpos
+# floating mode, with tilling mode compatibility
+bindsym $Mod+Left exec $floatpos left
+bindsym $Mod+Down exec $floatpos down
+bindsym $Mod+Up exec $floatpos up
+bindsym $Mod+Right exec $floatpos right
+bindsym $Mod+Shift+c exec $floatpos c
+# snap to side or focus in tiling mode
+bindsym $Mod+Shift+Left exec $floatpos left shift
+bindsym $Mod+Shift+Down exec $floatpos down shift
+bindsym $Mod+Shift+Up exec $floatpos up shift
+bindsym $Mod+Shift+Right exec $floatpos right shift
+# resize
+bindsym $Mod+$Alt+Left resize shrink width 80 or 4
+bindsym $Mod+$Alt+Down resize grow height 80 or 4
+bindsym $Mod+$Alt+Up resize shrink height 80 or 4
+bindsym $Mod+$Alt+Right resize grow width 80 or 4
+# focus workspace
+bindsym $Mod+Ctrl+Left workspace prev
+bindsym $Mod+Ctrl+Right workspace next
+# move container to workspace
+bindsym $Mod+Ctrl+Down move workspace prev, workspace prev
+bindsym $Mod+Ctrl+Up move workspace back_and_forth, workspace back_and_forth
+
+#--------+
+# Keypad |
+#--------+
+# snap to side or focus in tiling mode
+bindsym Shift+KP_Left exec $floatpos left shift
+bindsym Shift+KP_Down exec $floatpos down shift
+bindsym Shift+KP_Up exec $floatpos up shift
+bindsym Shift+KP_Right exec $floatpos right shift
+
+#-----------+
+# Left Hand |
+#-----------+
+# focus
+bindsym $Mod+a focus left
+bindsym $Mod+s focus down
+bindsym $Mod+w focus up
+bindsym $Mod+d focus right
+# resize
+bindsym $Mod+$Alt+a resize shrink width 80 or 4
+bindsym $Mod+$Alt+s resize grow height 80 or 4
+bindsym $Mod+$Alt+w resize shrink height 80 or 4
+bindsym $Mod+$Alt+d resize grow width 80 or 4
+# move
+bindsym $Mod+Shift+a move left
+bindsym $Mod+Shift+s move down
+bindsym $Mod+Shift+w move up
+bindsym $Mod+Shift+d move right
+# focus workspace
+bindsym $Mod+Ctrl+s workspace prev
+bindsym $Mod+Ctrl+w workspace next
+# move container to workspace
+bindsym $Mod+Ctrl+a move workspace prev, workspace prev
+bindsym $Mod+Ctrl+d move workspace next, workspace next
+bindsym $Mod+Ctrl+f move workspace back_and_forth, workspace back_and_forth
+
+# quick mark
+bindsym $Mod+Ctrl+1 exec i3-msg [con_mark=1] focus | grep false && i3 mark 1
+bindsym $Mod+Ctrl+2 exec i3-msg [con_mark=2] focus | grep false && i3 mark 2
+bindsym $Mod+Ctrl+3 exec i3-msg [con_mark=3] focus | grep false && i3 mark 3
+bindsym $Mod+Ctrl+4 exec i3-msg [con_mark=4] focus | grep false && i3 mark 4
+bindsym $Mod+Ctrl+5 exec i3-msg [con_mark=5] focus | grep false && i3 mark 5
+bindsym $Mod+Ctrl+6 exec i3-msg [con_mark=6] focus | grep false && i3 mark 6
+bindsym $Mod+Ctrl+7 exec i3-msg [con_mark=7] focus | grep false && i3 mark 7
+bindsym $Mod+Ctrl+8 exec i3-msg [con_mark=8] focus | grep false && i3 mark 8
+bindsym $Mod+Ctrl+9 exec i3-msg [con_mark=9] focus | grep false && i3 mark 9
+# remove marks
+bindsym $Mod+Ctrl+q unmark
+
+#------------+
+# Workspaces |
+#------------+
+
+# switch to
+bindsym $Mod+F1 workspace $w1
+bindsym $Mod+F2 workspace $w2
+bindsym $Mod+F3 workspace $w3
+bindsym $Mod+F4 workspace $w4
+bindsym $Mod+F5 workspace $w5
+bindsym $Mod+F6 workspace $w6
+bindsym $Mod+F7 workspace $w7
+bindsym $Mod+F8 workspace $w8
+bindsym $Mod+F9 workspace $w9
+# move focused container to
+bindsym $Mod+Shift+1 move workspace $w1, workspace $w1
+bindsym $Mod+Shift+2 move workspace $w2, workspace $w2
+bindsym $Mod+Shift+3 move workspace $w3, workspace $w3
+bindsym $Mod+Shift+4 move workspace $w4, workspace $w4
+bindsym $Mod+Shift+5 move workspace $w5, workspace $w5
+bindsym $Mod+Shift+6 move workspace $w6, workspace $w6
+bindsym $Mod+Shift+7 move workspace $w7, workspace $w7
+bindsym $Mod+Shift+8 move workspace $w8, workspace $w8
+bindsym $Mod+Shift+9 move workspace $w9, workspace $w9
+# recent/prev workspace
+bindsym $Mod+$Alt+Tab workspace next
+bindsym $Mod+Shift+Tab workspace prev
+bindsym $Mod+Tab workspace back_and_forth
+
+bindsym KP_Add workspace back_and_forth
+bindsym KP_Home workspace next
+bindsym KP_End workspace prev
+
+#--------------+
+# System setts |
+#--------------+
+
+set $lock i3lock-fancy-rapid 15 5 -fe
+set $softDisplay XAUTHORITY=~/.local/share/sx/xauthority DISPLAY=:1 xset dpms force suspend
+set $Exit "C: L: D: Q: S: H: P: R: Esc:"
+bindsym $Mod+x mode $Exit
+bindsym $Mod+Shift+x exec i3lock-fancy-rapid 50 5 -fe
+bindsym --release $Mod+$Alt+x exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
+bindsym XF86ScreenSaver exec $lock
+bindsym --release XF86Display exec $softDisplay
+bindsym --release KP_Insert exec $softDisplay
+bindsym --release Shift+KP_Insert exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
+# bindsym XF86PowerOff exec $lock && systemctl suspend
+set $Modetgl ~/.config/i3/modetoggle
+bindsym $Mod+$Alt+Ctrl+f exec $Modetgl $mode
+mode $Exit {
+	bindsym c mode default, reload
+	bindsym Shift+c mode default, exec $Modetgl restart
+	bindsym e mode default, exec cpupower-gui pr Powersave && notify-send -t 1000 " Efficiency"
+	bindsym Shift+E mode default, exec $term sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
+	bindsym a mode default, exec cpupower-gui pr Auto && notify-send -u low -t 1000 " Auto"
+	bindsym Shift+A mode default, exec $term sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
+	bindsym w mode default, exec cpupower-gui pr Performance && notify-send -u critical -t 1000 " Performance"
+	bindsym Shift+P mode default, exec $term sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
+	bindsym l mode default, exec $lock
+	bindsym --release d mode default, exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
+	bindsym --release Shift+d mode default, exec $softDisplay
+	bindsym q exec killall sleep, exit
+	bindsym s mode default, exec systemctl suspend
+	bindsym h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
+		systemctl hibernate && sleep 60 && sudo swapoff /swapfile
+	bindsym p exec poweroff
+	bindsym r exec reboot
+	bindsym Shift+w mode default; exec $term sudo efibootmgr -n 0005 && reboot
+	bindsym b mode default, exec $term sudo bash -c \
+	'f=/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode && echo $((($(cat \
+	$f)+1)%2)) > $f && (($(cat $f)==0)) && echo Full Charge || echo Conservation mode && sleep 1'
+	bindsym Escape mode default
+}
+
+bindsym $Mod+o bar mode toggle
+bindsym XF86Launch4 exec cpupower-gui
+bindsym Shift+XF86Launch4 exec f=$(cat /sys/firmware/acpi/platform_profile) && notify-send \
+	-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
+bindsym XF86PowerOff exec notify-send $(rm /tmp/lidsleep && echo '-u critical' || touch /tmp/lidsleep) -t 1000 'LidSleep'
+
+#-----------------+
+# Extra functions |
+#-----------------+
+
+set $barsig ~/.config/i3blocks/signal
+
+# Screenshot
+# my pc has PrintScreen as Fn+s
+bindsym Print exec maim -f jpg -u | xclip -selection c -t image/png
+bindsym $Mod+Print exec maim -u "Pictures/scrshot/$(date +%y-%m-%d_%H-%M-%S).png"
+bindsym Shift+Print exec "maim -lusb 2 -c 0.74,0.25,0.72,0.05 | xclip -selection c -t image/png"
+bindsym Ctrl+Print exec cd Pictures/scrshot && feh -. -B black -\| "$(ls -t|head -n1)"
+
+# Keyboard layout toggle, manual
+bindsym $Mod+n exec $barsig kb
+#exec setxkbmap -layout us,cz -option -option grp:alt_shift_toggle
+
+# Disk connection management
+bindsym $Mod+$Alt+p exec $term -e bashmount
+# poweroff and eject any connected device (udisksctl power-off -b /dev/sdx0)
+
+# Change gamma, "redshift" manually - n for night
+bindsym $Mod+$Alt+n exec xrandr --output $display --gamma 1:0.93:0.8
+bindsym $Mod+Shift+n exec xrandr --output $display --gamma 1
+
+# Rotating screen
+bindsym $Alt+Ctrl+Left exec xrandr -o left
+bindsym $Alt+Ctrl+Right exec xrandr -o right
+bindsym $Alt+Ctrl+Up exec xrandr -o normal
+bindsym $Alt+Ctrl+Down exec xrandr -o inverted
+
+# Brightness
+bindsym $Mod+b exec $barsig light ↑
+bindsym $Mod+Shift+b exec $barsig light ↓
+bindsym XF86MonBrightnessUp exec $barsig light ↑
+bindsym XF86MonBrightnessDown exec $barsig light ↓
+bindsym KP_Prior exec $barsig light ↑
+bindsym KP_Next exec $barsig light ↓
+bindsym Shift+KP_Prior exec $barsig light + 3
+bindsym Shift+KP_Next exec $barsig light - 2
+
+# Audio / Volume
+bindsym $Mod+v exec $barsig vol +5
+bindsym $Mod+Shift+v exec $barsig vol -5
+bindsym $Mod+$Alt+Shift+v exec $barsig vol toggle
+bindsym $Mod+$Alt+v exec $barsig mic toggle
+bindsym XF86AudioRaiseVolume exec $barsig vol +5
+bindsym XF86AudioLowerVolume exec $barsig vol -5
+bindsym XF86AudioMute exec $barsig vol toggle
+bindsym XF86AudioMicMute exec $barsig mic toggle
+bindsym KP_Divide exec $barsig vol -5
+bindsym KP_Multiply exec $barsig vol +5
+bindsym Ctrl+KP_Divide exec $barsig mic -2
+bindsym Ctrl+KP_Multiply exec $barsig mic +2
+bindsym Shift+KP_Divide exec $barsig vol toggle
+bindsym Shift+KP_Multiply exec $barsig mic toggle
+
+# Media management
+bindsym $Mod+i exec notify-send -u low -a info -h int:value:$((100*$(playerctl --player=mpv metadata\
+ --format '{{position}}/{{mpris:length}}'))) "$(playerctl metadata --player=mpv --format '{{title}}')"
+bindsym $Mod+m exec songselect &
+bindsym $Mod+Ctrl+m exec songselect auto &
+bindsym $Mod+$Alt+Ctrl+m exec dir="$HOME/Music/$(sed 's/\(.*\)\/.*/\1/' /tmp/song)"\
+ && rm /tmp/song && playerctl --player=mpv stop && sleep 1 && rndMusic "$dir"
+bindsym $Mod+$Alt+m exec $term -e ranger --selectfile="$HOME/Music/$(cat /tmp/song)"
+bindsym $Mod+Shift+m exec rm /tmp/song && playerctl --player=mpv stop
+bindsym Shift+XF86AudioStop exec rm /tmp/song && playerctl --player=mpv stop
+bindsym Shift+XF86AudioNext exec playerctl --player=mpv stop
+bindsym XF86AudioPlay exec "playerctl --player=mpv,vlc play-pause"
+bindsym KP_Subtract exec playerctl --all-players play-pause
+bindsym F12 exec playerctl --all-players play-pause
+bindsym XF86AudioNext exec "playerctl --player=mpv,vlc next"
+bindsym XF86AudioPrev exec "playerctl --player=mpv,vlc prev"
+bindsym XF86AudioStop exec playerctl --all-players pause
+
+bindsym $Mod+h exec "playerctl --player=mpv,vlc position 5-"
+bindsym Ctrl+KP_Left exec "playerctl --player=mpv,vlc position 5-"
+bindsym $Mod+l exec "playerctl --player=mpv,vlc position 5+"
+bindsym Ctrl+KP_Right exec "playerctl --player=mpv,vlc position 5+"
+bindsym $Mod+j exec "playerctl --player=mpv,vlc position 30-"
+bindsym Ctrl+KP_Up exec "playerctl --player=mpv,vlc position 30-"
+bindsym $Mod+k exec "playerctl --player=mpv,vlc position 30+"
+bindsym Ctrl+KP_Down exec "playerctl --player=mpv,vlc position 30+"

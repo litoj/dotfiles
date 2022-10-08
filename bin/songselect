@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+src=$({
+	find ~/Music/* -type d
+	find ~/Music/Songs -type f
+} | sed "s/^.*\/Music\///" | dmenu -p Play -i)
+
+[[ $src ]] || exit
+
+if [[ $1 ]]; then
+	killall mpv && sleep 1
+	echo "$src" > /tmp/song
+	case $1 in
+		gui) vlc --started-from-file "$HOME/Music/$src" ;;
+		auto) mpv --no-audio-display "$HOME/Music/$src" ;;
+	esac
+	rm /tmp/song
+else
+	rndMusic "$HOME/Music/$src"
+fi

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Download use script
+
+# Use the provided interface, otherwise the device used for the default route.
+if [[ -z $INTERFACE && $BLOCK_INSTANCE ]]; then
+	INTERFACE=$BLOCK_INSTANCE
+elif [[ -z $INTERFACE ]]; then
+	while read -a line; do
+		[[ ${line[0]} == default ]] && INTERFACE=${line[4]} && break
+	done <<< $(ip route)
+fi
+# Exit if there is no default route
+[[ $INTERFACE ]] || exit
+
+# Issue #36 compliant.
+if ! [[ -e /sys/class/net/$INTERFACE/operstate ]] ||
+	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(cat /sys/class/net/$INTERFACE/operstate) != up ]]; then
+	echo " "
+	echo " "
+	~/.config/i3blocks/colorcode 0
+	exit 0
+fi
+
+# path to store the old results in
+path="/dev/shm/${0##*/}-$INTERFACE"
+
+# grabbing data for each adapter.
+read rx < "/sys/class/net/$INTERFACE/statistics/rx_bytes"
+
+# get time
+time=$(date +%s)
+
+# write current data if file does not exist. Do not exit, this will cause
+# problems if this file is sourced instead of executed as another process.
+if ! [[ -f $path ]]; then
+	echo "$time $rx" > "$path"
+	chmod 0666 "$path"
+fi
+
+# read previous state and update data storage
+old=($(cat "$path"))
+echo "$time $rx" > "$path"
+
+# calc time passed
+time_diff=$((time - old[0]))
+
+# sanity check: has a positive amount of time passed
+((time_diff > 0)) || exit
+
+# calc bytes transferred, and their rate in byte/s
+rx_diff=$((rx - old[1]))
+rx_rate=$((rx_diff / time_diff))
+
+# shift by 10 bytes to get KiB/s. If the value is larger than
+# 1024^2 = 1048576, then display MiB/s instead
+
+# incoming
+rx_KiB=$((rx_rate >> 10))
+if ((rx_KiB > 999)); then
+	TEXT=" $(bc <<< "scale=1; $rx_KiB / 1024" | sed 's/^\./0./')M"
+else
+	TEXT=" ${rx_KiB}K"
+fi
+
+echo $TEXT
+echo $TEXT
+~/.config/i3blocks/colorcode $((100 - rx_KiB * 100 / 5120))

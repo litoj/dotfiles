@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+[[ -z $1 ]] && exit 0
+yt-dlp -F "$1" | grep audio | sed 's/.*| *\(.*MiB\).*| audio only *\(.*\),.*/\1 \2/;s/mp4a[^ ]*/m4a      /'
+printf '\e[32mPick audio format:\e[0m '
+read ac
+[[ $ac == opus ]] && ac=webm
+yt-dlp -f "ba$([[ $ac ]] && echo "[ext=$ac]")" -o "%(title)s.$([[ $ac == webm ]] && echo opus || echo '%(ext)s')" "$1"

@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# sam = System APK Manager
+
+if [[ -z "$(adb devices | sed 's/^List.*$//')" ]]; then
+	printf "No devices are connected, please attach a usb cable or use 'adb connect'.\n"
+	exit 0
+fi
+
+packages() {
+	adb shell pm list packages $1 | sed 's/package://' | sort -r | fzf -m --prompt="$2"
+}
+
+# Display a menu for disabling applications as long as there is a selection
+disable() {
+	packages=$(packages -e 'disable: ')
+	for package in $packages; do
+		adb shell pm disable-user --user 0 $package
+	done
+}
+
+# Selectively enables previously disabled applications
+enable() {
+	packages=$(packages -d 'enable: ')
+	for package in $packages; do
+		adb shell pm enable --user 0 $package
+	done
+}
+
+launch() {
+	packages=$(packages -e 'launch: ')
+	activity=$(adb shell dumpsys package | sed -n "s/^ \+[0-9a-f]\+ \(${packages[0]}\/[a-zA-Z.]\+\)$/\1/p" | fzf -m --prompt="activity: ")
+	[[ $activity ]] && adb shell am start -n $activity
+}
+
+# Selectively uninstall every app onboard
+uninstall() {
+	# give param -d for only disabled, -e for direct uninstallation (of active/enabled apps)
+	packages=$(packages $1 'uninstall: ')
+	for package in $packages; do
+		printf "Uninstall '%s'? [Yes/no/(k)eep data and cache]: " $package
+		read -r -n 1 decision
+		[[ $decision ]] && printf '\n'
+		printf '\e[2A\n\e[KPackage %s uninstallation: ' $package
+		case $decision in
+			y | Y | "") adb uninstall --user 0 $package ;;
+			k | K) adb shell cmd package uninstall -k $package ;;
+		esac
+	done
+}
+
+# Installs selected system apps that were uninstalled
+installUninstalled() {
+	sysapps=($(adb shell pm list packages -s -u))
+	for sysinstalled in $(adb shell pm list packages -s); do
+		declare -i c=0
+		while [[ ${sysapps[$c]} != $sysinstalled ]]; do c+=1; done
+		sysapps[$c]=
+	done
+	packages=$(echo "${sysapps[@]}" | sed 's/package://g;s/^ \+//;s/ \+/\n/g' | fzf -m --prompt='install: ')
+	for package in $packages; do
+		adb shell pm install-existing --user 0 $package
+	done
+}
+
+help() {
+	printf 'SAM - System APK Manager
+	This program uses ADB to manage system applications on your Android phone.
+	d:\tdisable;   provide app disabler
+	e:\tenable;    provide disabled-app enabler
+	u:\tuninstall; provide disabled-app uninstaller
+	r:\tremove;    provide enabled-app uninstaller
+	i:\tinstall;   provide uninstalled-default-app installer
+	l:\tlaunch;    launch chosen package
+	h:\thelp;      display this help
+	q:\tquit;      exit the program\n'
+}
+
+help
+
+printf "Choose action: "
+while read -r -n 1 option; do
+	printf '\e[1A\n\e[K'
+	case $option in
+		d | disable) disable ;;
+		e | enable) enable ;;
+		u | uninstall) uninstall -d ;;
+		r | remove) uninstall -e ;;
+		i | install) installUninstalled ;;
+		l | launch) launch ;;
+		h | help) help ;;
+		q | quit) exit 0 ;;
+	esac
+	printf "Choose action: "
+done
+exit 0

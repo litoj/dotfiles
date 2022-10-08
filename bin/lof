@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# launch or focus app
+# $1=app name; $2=displayed class; $3=optional, window name
+
+ID=$(xdotool getactivewindow)
+
+if [[ $3 ]]; then
+	if [[ -z "$(xdotool search --name "$3")" || "$(xprop -id $ID | grep "NAME.*$3")" ]]; then
+		$1 &
+	else
+		i3 [title="$3"] focus
+	fi
+elif [[ -z "$(xdotool search --class "$2")" || "$(xprop -id $ID | grep "CLASS.*$2")" ]]; then
+	$1 &
+else
+	i3 [class="$2"] focus
+fi
+
+disown
+

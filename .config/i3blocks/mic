@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Volume script
+#Nice icons:       
+if [[ $button ]]; then
+	if ((button > 3)); then
+		pactl set-source-volume 1 $( ((button == 4)) && echo + || echo -)1%
+	elif ((button == 1)); then
+		pactl set-source-mute 1 toggle
+	else
+		~/.config/i3/term -e pulsemixer &
+		disown
+	fi
+fi
+
+while read -a line; do
+	case "${line[0]}" in
+		'index:') ((line[1] == 1)) && seek=1 ;;
+		'volume:') ((seek)) && MIC=${line[4]%\%} ;;
+		'muted:') ((seek)) && MUTED=${line[1]} && break ;;
+	esac
+done <<< $(pacmd list-sources 2> /dev/null)
+
+if [[ -z $MIC ]]; then
+	echo " ?"
+	exit 0
+fi
+
+if [[ $MUTED == yes ]]; then
+	ICON=
+elif ((MIC >= 30)); then
+	ICON=
+else
+	ICON=
+fi
+
+notify-send -a signal -h int:value:$MIC -h string:synchronous:mic "$ICON $MIC"
+echo "$ICON $MIC%"
+echo "$ICON $MIC%"
+~/.config/i3blocks/colorcode $((MIC * 2))

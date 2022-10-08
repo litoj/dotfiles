@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+if [[ -e /tmp/song ]]; then
+	rm /tmp/song
+	playerctl --player=mpv stop && sleep 1
+fi
+
+if [[ -f $1 ]]; then
+	echo "${1#$HOME/Music/}" > /tmp/song
+	mpv --no-audio-display "$1"
+	exit
+fi
+
+src=("$1"/*)
+touch /tmp/song
+while [[ -f /tmp/song ]]; do
+	f="${src[$(($(od -vAn -N1 -tu1 /dev/urandom) % ${#src[@]}))]}"
+	echo "$f"
+	while [[ -d $f ]]; do
+		d=("$f"/*)
+		f="${d[$(($(od -vAn -N1 -tu1 /dev/urandom) % ${#d[@]}))]}"
+	done
+	echo "${f#$HOME/Music/}" > /tmp/song
+	mpv --no-audio-display "$f"
+done

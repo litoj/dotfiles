@@ -1,0 +1,126 @@
+/*
+ * ROFI color theme
+ *
+ * Based on Material-Black-Lime color scheme
+ *
+ * User: Kepis
+ */
+
+* {
+	bg:#0f1011;
+	bg-alt:#09090a;
+	bg-e:#161718;
+	bg-e-alt:#1a1c1e;
+	fg:#868380;
+	ac:#3a5020;
+	ac-mid:#85f022;
+	ac-dark:#559915;
+	ac-fg:#f0eeea;
+	side:#9d2098;
+	side-a:#9d2098dd;
+	spacing:0;
+	background-color:transparent;
+	font: "Nova Square 15";
+
+}
+
+element-icon {
+	size: 1.7ch;
+}
+
+window {
+	width: 25%;
+	background-color: @bg;
+}
+
+/*mainbox {
+	children: [inputbar, message, mode-switcher, listview];
+}*/
+
+listview {
+	spacing: 1px;
+	scrollbar: true;
+	margin: 5px 3px 5px 5px;
+	lines: 15;
+}
+
+scrollbar {
+	background-color: @bg-alt;
+	handle-color: @side-a;
+	handle-width: 14px;
+	border: 1px;
+	border-color: #131516;
+	margin: 0 0 0 3px;
+}
+
+inputbar {
+	background-color: @bg-alt;
+	padding: 10px 6px 10px 13px;
+	children: [prompt, textbox-prompt-colon, entry, case-indicator];
+}
+
+prompt {
+	text-color: @ac-dark;
+}
+
+textbox-prompt-colon {
+	expand: false;
+	str: ": ";
+	text-color: @ac-dark;
+}
+
+entry {
+	text-color: @ac-mid;
+}
+
+case-indicator {
+	text-color: @side;
+}
+
+mode-switcher, message {
+	border: 1px 0;
+	border-color: @ac;
+}
+
+button {
+	background-color: @bg-e;
+	padding: 5px;
+}
+
+button selected {
+	background-color: @ac;
+}
+
+element {
+	padding: 5px 2px;
+	spacing: 5px;
+	highlight: bold underline;
+}
+
+element normal {
+	background-color: @bg-e;
+}
+
+element alternate {
+	background-color: @bg-e-alt;
+}
+
+element selected {
+	background-color: @ac;
+}
+selected {
+	text-color: @ac-fg;
+}
+
+normal normal, alternate normal {
+	text-color: @fg;
+}
+
+normal urgent, alternate urgent, selected urgent {
+	text-color: @side;
+}
+
+normal active, alternate active, selected active {
+	text-color: @ac-mid;
+}
+

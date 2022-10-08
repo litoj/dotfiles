@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#Signal managing script for statusbar
+
+case "$1" in
+	"vol")
+		if [[ $2 == toggle ]]; then
+			pactl set-sink-mute 0 $2
+		else
+			pactl set-sink-volume 0 $2%
+		fi
+		pkill -RTMIN+10 i3blocks
+		;;
+	"mic")
+		if [[ $2 == toggle ]]; then
+			pactl set-source-mute 1 $2
+		else
+			pactl set-source-volume 1 $2%
+		fi
+		pkill -RTMIN+13 i3blocks
+		;;
+	"light")
+		light=$(backlight $2 $3)
+		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
+		pkill -RTMIN+11 i3blocks
+		;;
+	"kb")
+		[[ $(setxkbmap -query | awk '/^l/ { print $2 }') == us ]] && kb=cz || kb=us
+		setxkbmap -option compose:102 -layout $kb
+		notify-send -a signal -h string:synchronous:kb " $kb"
+		xmodmap -e "clear lock" -e "keycode 0x42 = Escape"
+		pkill -RTMIN+12 i3blocks
+		;;
+esac

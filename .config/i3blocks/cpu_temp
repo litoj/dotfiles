@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# CPU temperature script
+
+while read -a line; do
+	[[ ${line[0]} == Package ]] && temp=${line[3]:1:3} && break
+done <<< $(sensors -A)
+
+temp=${temp%.}
+
+if ((temp < 45)); then
+	TEXT=" <b>$temp°C</b>"
+elif ((temp < 60)); then
+	TEXT=" <b>$temp°C</b>"
+elif ((temp < 75)); then
+	TEXT=" <b>$temp°C</b>"
+elif ((temp < 90)); then
+	TEXT=" <b>$temp°C</b>"
+else
+	TEXT=" <b>$temp°C</b>"
+fi
+
+printf '%s\n%s\n' "$TEXT" "$TEXT"
+# temp-30 because lowest temp is practically 30° C
+~/.config/i3blocks/colorcode $((100 - (temp - 30) * 10 / 7))

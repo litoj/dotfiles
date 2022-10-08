@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#Battery status script
+#FontAwesome icons for use
+#       ⚡ 
+read -a line <<< "$(acpi)"
+TEXT=${line[2]:0:1}
+STATE=${line[3]%\%*}
+TIME=${line[4]%:??}
+
+if [[ -z $TEXT ]]; then
+	TEXT=
+elif [[ ${line[6]} == zero ]]; then
+	TEXT=" $STATE%"
+else
+	case "$TEXT" in
+		'D')
+			if ((STATE <= 20)); then
+				TEXT=
+			elif ((STATE <= 40)); then
+				TEXT=
+			elif ((STATE <= 60)); then
+				TEXT=
+			elif ((STATE <= 80)); then
+				TEXT=
+			else
+				TEXT=
+			fi
+			case $STATE in
+				20) notify-send -t 5000 -u low -h int:value:20 'Battery   20%' ;;
+				16) notify-send -t 10000 -h int:value:16 'Battery   16%' 'Plug the system in.' ;;
+				12)
+					notify-send -u critical -h int:value:12 'Battery   12%' 'Plug the system in.'
+					case "$(rofi -dmenu -l 3 -p '  12%' <<< 'Suspend
+Hibernate
+Power off')" in
+						'Suspend') systemctl suspend ;;
+						'Hibernate') { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
+							systemctl hibernate && sleep 60 && sudo swapoff /swapfile ;;
+						'Power off') systemctl poweroff ;;
+					esac
+					;;
+				10) { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
+					hibernate && sleep 60 && sudo swapoff /swapfile ;;
+			esac
+			;;
+		'C') TEXT= ;;
+		'F') TEXT= ;;
+		*) TEXT= ;;
+	esac
+	TEXT="$TEXT $STATE% $TIME"
+fi
+
+printf "%s\n%s\n" "$TEXT" "$TEXT"
+~/.config/i3blocks/colorcode $STATE

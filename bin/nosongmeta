@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+if [[ -z $2 ]]; then
+	# Expects the path given contains the slash and can contain a prefix
+	for file in *.mp3 *.m4a *.opus *.ogg *.flac *.wav; do
+		[[ -f $file ]] && ffmpeg -i "$PWD/$file" -map_metadata -1 -map 0:0 -c:a copy "$1${file##*\/}"
+	done
+else
+	ffmpeg -i "$1" -map_metadata -1 -c:a copy -c:v copy -c:s copy "$2"
+fi

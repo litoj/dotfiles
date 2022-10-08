@@ -1,0 +1,24 @@
+configuration {
+	matching: "normal";
+	modi: "window,drun,run"; //ssh
+	show-icons: true;
+	terminal: "st";
+/*	window-command: "wmctrl -i -R {window}";*/
+/*	window-match-fields: "all";*/
+	icon-theme: "MB-Olive";
+	disable-history: true;
+/*	ignored-prefixes: "";*/
+	sort: true;
+/*	separator-style: "dash";*/
+/*	hide-scrollbar: false;*/
+/*	dpi: -1;*/
+/*	threads: 0;*/
+	scroll-method: 1;
+	window-format: "{w} {c} {t}";
+	max-history-size: 0;
+	kb-row-up: "Up";
+	kb-row-down: "Down";
+	kb-cancel: "Escape,Super+q";
+}
+//@theme "MB-Lime-dmenu"
+@theme "MB-Lime"

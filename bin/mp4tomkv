@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for f in *.srt; do
+	name=${f%.srt}
+	ffmpeg -i "$name.mp4" -i "$f" -map 0 -map 1 -c copy "$name.mkv" && rm "$name.mp4" "$f"
+done

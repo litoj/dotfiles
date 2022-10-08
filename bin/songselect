@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+if [[ $2 && $1 == play ]]; then
+	echo "$2" > /tmp/song
+	killall mpv
+	mpv --no-audio-display --shuffle --loop-playlist --playlist=/tmp/song
+	rm /tmp/song
+	exit 0
+fi
+
+src=$({
+	find ~/Music/* -type d
+	find ~/Music/Songs -type f
+} | sed "s/^.*\/Music\///" | dmenu -p Play -i)
+
+[[ $src ]] || exit
+killall mpv
+
+if [[ $1 == mpv ]]; then
+	echo "$HOME/Music/$src" > /tmp/song
+	mpv --no-audio-display --shuffle --loop-playlist --playlist=/tmp/song
+else
+	rndMusic "$HOME/Music/$src"
+fi

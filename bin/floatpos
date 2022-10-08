@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+#sway/floatpos - sway floating mode tiling functionality similar to Windows
+# Made by Josef Litoš, enjoy your linux swayfloatingWM setup
+
+p2="$2"
+W="$(swaymsg -t get_tree | sed -n 's/^      "current_workspace": \(".*"\).*/\1/p')"
+W=${W/\//\/}
+
+# very fast data filter (way faster than jq)
+declare -i state=1
+while read line; do
+	case "$line" in
+		false,)
+			F=
+			;;
+		[0-9]*)
+			case $state in
+				1) G=$line && state+=1 ;;
+				2) Y=$line && state+=1 ;;
+				3) dim[0]=$line && state+=1 ;;
+				4) dim[1]=$line && state=1 ;;
+
+				6) win[0]=$line && state+=1 ;;
+				7) win[1]=$line && state+=1 ;;
+				8) win[2]=$line && state+=1 ;;
+				9) win[3]=$line && break;;
+			esac
+			;;
+		$W,) state=5 ;;
+		\"floating_con\",) F=1 ;;
+		true,) state=6 && ((F)) && FLOAT=1 ;;
+	esac
+done < <(swaymsg -t get_workspaces | sed -n 's/^.*"\(name\|focused\|type\|x\|y\|width\|height\)": \(.*\)/\2/p' | grep -A4 -F -e workspace -e true -e "$W" -e floating)
+
+if [[ -z $FLOAT ]]; then
+	if [[ $p2 == shift ]]; then
+		case "$1" in
+			up | u) swaymsg focus up ;;
+			down | d) swaymsg focus down ;;
+			left | l) swaymsg focus left ;;
+			right | r) swaymsg focus right ;;
+		esac
+	else
+		case "$1" in
+			up | u) swaymsg move up ;;
+			down | d) swaymsg move down ;;
+			left | l) swaymsg move left ;;
+			right | r) swaymsg move right ;;
+			center | c) swaymsg split h,layout tabbed ;;
+		esac
+	fi
+	exit 0
+fi
+
+G=${G%,}
+Y=${Y%,}
+((win[0] = ${win[0]%,} - G))
+((win[1] = ${win[1]%,} - Y))
+win[2]=${win[2]%,}
+dim[0]=${dim[0]%,}
+((dim[2] = (dim[0] - G) / 2))
+((dim[3] = (dim[1] - G) / 2))
+((X2 = (dim[0] + G) / 2))
+((Y2 = (dim[1] + G) / 2))
+
+#Setts window to quarter of the screen and centers it
+defsize() {
+	swaymsg resize set ${dim[2]} ${dim[3]}, move position center
+}
+
+#Manages 'up' action
+up() {
+	if [[ $p2 == shift ]]; then
+		swaymsg move position ${win[0]} 0
+	elif ((win[1] <= 0)); then
+		if ((win[3] > dim[3])); then
+			swaymsg resize shrink down $((win[3] - dim[3]))
+		else
+			swaymsg resize set $((dim[0] + G * 2)) $((dim[1] + G * 2)), move position 0 0, move left $G, move up $G
+		fi
+	elif ((win[1] + win[3] >= dim[1])); then
+		if ((win[2] > dim[0] * 5 / 7)); then
+			defsize
+		elif ((win[3] <= dim[1] * 3 / 5)); then
+			swaymsg resize grow up $((dim[1] - win[3]))
+		else
+			swaymsg resize set height ${dim[3]}, move position ${win[0]} 0
+		fi
+	else
+		swaymsg move position ${win[0]} 0
+	fi
+}
+
+#Manages 'down' action
+down() {
+	if [[ $p2 == shift ]]; then
+		swaymsg move position ${win[0]} $((dim[1] - win[3]))
+	elif ((win[1] <= 0)); then
+		if ((win[2] > dim[0] * 5 / 7)); then
+			defsize
+		elif ((win[3] == dim[1])); then
+			swaymsg resize set height ${dim[3]}, move position ${win[0]} $Y2
+		else
+			swaymsg resize grow down $((dim[1] - win[3]))
+		fi
+	elif ((win[1] + win[3] >= dim[1])); then
+		if ((win[2] >= dim[0])); then
+			swaymsg move position 0 0
+		else
+			swaymsg resize set ${dim[0]} ${dim[3]}, move position 0 $Y2
+		fi
+	else
+		swaymsg move position ${win[0]} $((dim[1] - win[3]))
+	fi
+}
+
+#Manages 'left' action
+left() {
+	if [[ $p2 == shift ]]; then
+		swaymsg move position 0 ${win[1]}
+	elif ((win[0] == 0 && win[2] <= dim[0] * 5 / 7)); then
+		swaymsg move position $((dim[0] - win[2])) ${win[1]}
+	elif ((win[0] > dim[0] * 3 / 7)); then
+		swaymsg resize grow left ${win[0]}
+	else
+		swaymsg resize set ${dim[2]} ${dim[1]}, move position 0 0
+	fi
+}
+
+#Manages 'right' action
+right() {
+	if [[ $p2 == shift ]]; then
+		swaymsg move position $((dim[0] - win[2])) ${win[1]}
+	elif ((win[0] + win[2] == dim[0] && win[2] <= dim[0] * 5 / 7)); then
+		swaymsg move position 0 ${win[1]}
+	elif ((win[0] + win[2] <= dim[0] * 4 / 7)); then
+		swaymsg resize grow right $((dim[0] - win[2] - win[0]))
+	else
+		swaymsg resize set ${dim[2]} ${dim[1]}, move position $X2 0
+	fi
+}
+
+case "$1" in
+	up | u) up ;;
+	down | d) down ;;
+	left | l) left ;;
+	right | r) right ;;
+	center | c) swaymsg move position center ;;
+esac
+#for usage in tiling mode

@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+wtwitch() {
+	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
+	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
+	local CACHE_USER_ID_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.toml"
+	local CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/wtwitch.toml"
+	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")
+	local token
+	local expiry
+
+	[[ -f $CONFIG_FILE ]] && while read line; do
+		case ${line%=*} in
+			token) token=${line#*=} ;;
+			expiry) expiry=${line#*=} ;;
+		esac
+	done < "$CONFIG_FILE"
+
+	if [[ -z $token || $token == null ]] ||
+		(($(LANG=C date +%s) >= expiry)); then
+		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
+		[[ -z $newToken || $newToken == null ]] && exit 1
+		token=$newToken
+		printf "token=$newToken\nexpiry=$(LANG=C date -d tomorrow +'%s')\n" > "$CONFIG_FILE"
+	fi
+
+	# Search for streamer ID in cache
+	local ID
+	[[ -f $CACHE_USER_ID_FILE ]] && while read line; do
+		if [[ ${line%=*} == $1 ]]; then
+			ID=${line#*=}
+			break
+		fi
+	done < "$CACHE_USER_ID_FILE"
+
+	# If user login not cached, fetch from Twitch API
+	if [[ -z $ID ]]; then
+		ID=$(
+			curl --silent -H "Client-ID: ${T[2]}" -H "Authorization: Bearer $token" \
+				"${T[0]}/users?login=$1" | jq -r ".data[0].id"
+		)
+		[[ -z $ID || $ID == null ]] && exit 1
+		echo "$1=$ID" >> "$CACHE_USER_ID_FILE"
+	fi
+
+	# Get list of VODs
+	local JSON=$(
+		curl --silent -H "Client-ID: ${T[2]}" -H "Authorization: Bearer $token" \
+			"${T[0]}/videos?user_id=$ID"
+	)
+	declare -i i=0
+	while true; do
+		mapfile -t vodData < <(jq -r ".data[$i] | .title, .created_at, .duration, .url" <<< "$JSON")
+		[[ ${vodData} != null ]] && ((i < 20)) || break
+		printf "%d %s\t%s  \t%s %s\n" $((i += 1)) "$(date -d "${vodData[1]}" "+%d.%m.")" "${vodData[2]%m*}" "$(echo ${vodData[0]} | sed 's/ *[!|].*$//')" "${vodData[3]}"
+	done
+}
+
+streamerList=(iskall85 tangotek mrgregles goodtimeswithscar skizzleman renthedogtv)
+
+if ((SHLVL < 3)); then
+	streamer=$(printf '%s\n' ${streamerList[@]} | dmenu -p Streamer)
+else
+	streamer=$(printf '%s\n' ${streamerList[@]} | fzf --prompt="Streamer: ")
+fi
+echo "$streamer"
+if [[ -z $streamer ]]; then
+	exit 0
+elif [[ $streamer == [0-9] ]]; then
+	streamer=${streamerList[$streamer]}
+elif [[ $streamer == [a-z] ]]; then
+	for s in ${streamerList[@]}; do
+		if [[ $s == "$streamer"* ]]; then
+			streamer=$s
+			break
+		fi
+	done
+	[[ $streamer == [a-z] ]] && exit 1
+elif [[ $streamer == https://* ]]; then
+	url=$streamer
+	quality="bv+"
+fi
+
+if [[ -z $url ]]; then
+	streams=$(wtwitch $streamer)
+	urls=($(echo "$streams" | sed 's/^.*https:/https:/'))
+	streams=$(echo "$streams" | sed 's/https:.*//')
+
+	if ((SHLVL < 3)); then
+		video=$(echo "$streams" | dmenu -p Video -i)
+	else
+		video=$(echo "$streams" | fzf --prompt="Video: ")
+	fi
+
+	if [[ -z $video ]]; then
+		url="https://twitch.tv/$streamer"
+	elif [[ $video != [1-9] ]]; then
+		url=${urls[$(($(echo "$video" | sed 's/ .*//') - 1))]}
+	fi
+
+	[[ -z $url ]] && exit 1
+fi
+
+if [[ -z $quality ]]; then
+	quals=(best medium low worst audio)
+	if ((SHLVL < 3)); then
+		quality=$(printf '%s\n' ${quals[@]} | dmenu -p Quality)
+	else
+		quality=$(printf '%s\n' ${quals[@]} | fzf --prompt="Quality: ")
+	fi
+
+	if [[ -z $quality ]]; then
+		exit 0
+	elif [[ $quality == [0-4] ]]; then
+		quality=${quals[$quality]}
+	elif [[ $quality == [a-z] ]]; then
+		for q in ${quals[@]}; do
+			if [[ $q == "$quality"* ]]; then
+				quality=$q
+				break
+			fi
+		done
+		[[ $quality == [a-z] ]] && exit 0
+	fi
+
+	case "$quality" in
+		best) quality="b[height=1080]+" ;;
+		medium) quality="b[height=720]+" ;;
+		low) quality="b[height=480]+" ;;
+		worst) quality="b[height=360]+" ;;
+		audio) quality="" ;;
+	esac
+fi
+
+mpv --ytdl-format="${quality}ba" --vo=dmabuf-wayland $url > /dev/null 2>&1 &
+disown

@@ -1,0 +1,12 @@
+set statusbar-h-padding 0
+set statusbar-v-padding 0
+set page-padding 0
+set selection-clipboard clipboard
+
+map I set first-page-column 2:3
+map r reload
+map R rotate
+map i recolor
+map p print
+map <Left> navigate previous
+map <Right> navigate next

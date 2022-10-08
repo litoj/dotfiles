@@ -1,0 +1,58 @@
+command=~/.config/i3blocks/$BLOCK_NAME
+separator_block_width=15
+separator=true
+markup=pango
+interval=once
+
+# [updates]
+# interval=once
+# signal=20
+
+# [wifi]
+# interval=60
+
+# [bandwidth]
+# interval=5
+
+# [upload]
+# interval=3
+
+# [download]
+# interval=3
+
+# [memory]
+# interval=20
+# instance=ram
+
+# [cpu]
+# interval=5
+
+# [cpu_temp]
+# interval=2
+
+# [powerdraw]
+# interval=5
+# command=echo " $(bc <<< "scale=1;$(cat /sys/class/power_supply/BAT0/power_now)/1000000")W"
+
+[mic]
+signal=13
+
+[volume]
+signal=10
+
+[backlight]
+signal=11
+
+[battery]
+interval=60
+
+[kb]
+command=[[ $(swaymsg -t get_inputs -p | grep US -m 1) ]] && echo  US || echo  CZ
+color=#bd40b7
+signal=12
+
+[date]
+command=date +" %a %d.%m."
+
+[clock]
+interval=60

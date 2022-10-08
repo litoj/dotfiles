@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# launch or focus app
+# $1=app name; $2=displayed class; $3=optional, window name
+
+while IFS='"' read -a line; do
+	case ${line[1]} in
+		class)
+			CLASS=${line[3]}
+			;;
+		app_id)
+			ID=${line[3]}
+			;;
+		title)
+			TITLE=${line[3]}
+			break
+			;;
+	esac
+done < <(swaymsg -t get_tree | jq ".. | select(.type?) | select(.focused) | {app_id,window_properties}")
+
+if [[ $3 ]]; then
+	if [[ $TITLE =~ $3 && ( $CLASS =~ $2 || $ID =~ $2 ) ]]; then
+		launch=1
+	elif [[ $2 != null ]]; then
+		swaymsg [app_id="$2" title="$3"] focus || swaymsg [class="$2" title="$3"] focus || launch=1
+	else
+		swaymsg [title="$3"] focus || launch=1
+	fi
+else
+	[[ $ID =~ $2 || $CLASS =~ $2 ]] && launch=1 ||
+		swaymsg [app_id="$2"] focus || swaymsg [class="$2"] focus || launch=1
+fi
+
+if [[ $launch ]]; then
+	[[ $W ]] && swaymsg workspace $W
+	swaymsg exec $1
+fi

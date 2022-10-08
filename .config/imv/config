@@ -1,0 +1,6 @@
+[binds]
+<Shift+X> = exec rm $imv_current_file;close
+<Shift+D> = exec rm $imv_current_file;close
+b = exec swaymsg output '*' bg $imv_current_file fill 
+u = upscaling nearest_neighbour
+<Shift+S> = exec cp $imv_current_file ~/Pictures/screen/

@@ -107,10 +107,10 @@ p7zip
 pacman-contrib
 pcmanfm-gtk3
 picom-ibhagwan-git
+pipewire-alsa
+pipewire-pulse
 playerctl
 polkit-gnome
-pulseaudio
-pulseaudio-alsa
 pulsemixer
 python-pynvim
 qt5ct
@@ -130,6 +130,7 @@ ueberzug
 ufw
 w3m
 wget
+wireplumber
 xclip
 xdotool
 xorg-xdpyinfo

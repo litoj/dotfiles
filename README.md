@@ -1,9 +1,6 @@
-# GNU/LINUX Dotfiles
+In this repository are my personal dotfiles which I use on my arch system.
 
-In this repository are my personal dotfiles which I use on my arch system. Plus some additional gui
-applications’ configurations (vlc, pcmanfm)
-
-# Dotfiles in this repo
+## Dotfiles in this repo
 
 - i3
 - i3blocks
@@ -12,13 +9,12 @@ applications’ configurations (vlc, pcmanfm)
 - fish
 - ranger
 - rofi
-- vlc
+- dunst
 - htop
-- handmade lockscreen lock icons
 
 ![screenshot](https://user-images.githubusercontent.com/54900518/194711893-6b27d7b7-289b-4a39-b79f-9db3beba493b.png)
 
-# Necessary programms
+## Necessary programms
 
 | NAME               | PURPOSE                                           |
 | ------------------ | ------------------------------------------------- |
@@ -27,12 +23,11 @@ applications’ configurations (vlc, pcmanfm)
 | bc                 | used for floating-point arithmetics               |
 | bashmount          | tui mounter                                       |
 | bat                | cat with syntax highlightning                     |
-| exa                | ls replacement in rust, best                      |
+| exa                | ls replacement in rust                            |
 | engrampa           | gtk archiver                                      |
 | fd                 | for finding files                                 |
 | feh                | background setter and image viewer (or use sxiv)  |
-| fish               | my shell of choice                                |
-| fontfinder-gtk     | optional, online font view&install                |
+| fish               | fancy shell but not for scripting                 |
 | fzf                | fuzzy finder used in ranger and shell             |
 | git                | vcs system                                        |
 | gvfs-mtp           | mounting phones                                   |
@@ -40,22 +35,21 @@ applications’ configurations (vlc, pcmanfm)
 | htop               | simple but perfect task manager                   |
 | i3-gaps            | window manager of choice                          |
 | i3blocks           | statusbar                                         |
-| i3lock             | lockscreen                                        |
 | i3lock-fancy-rapid | fast screenshot blur for i3lock                   |
 | inxi               | the best system props tool                        |
-| libxft-bgra        | fixed color emojis for st                         |
 | maim               | tool for taking screenshot                        |
-| mpris-ctl          | music bg controller                               |
+| mpv-mpris          | simple media player with mpris support            |
 | neovim             | my editor of choice                               |
 | npm                | node package manager for lsp servers              |
 | otf-font-awesome   | font with custom icons                            |
 | otf-overpass       | well-readable and looking font for UI             |
 | pacman-contrib     | contains ‘checkupdates’ used in a script          |
 | paru               | aur packages helper                               |
-| pavucontrol        | gui way to control pulse audio                    |
 | pcmanfm-gtk3       | gui file manager                                  |
 | picom-ibhagwan-git | compositor with great blur method                 |
+| playerctl          | mpric controler                                   |
 | pulseaudio         | sound mixer                                       |
+| pulsemixer         | tui way to control pulse audio                    |
 | python-pynvim      | used for rnvimr ranger plugin for neovim          |
 | qt5ct              | use gtk3 theme for qt-apps like vlc               |
 | st                 | [best terminal](https://github.com/JosefLitos/st) |
@@ -68,17 +62,9 @@ applications’ configurations (vlc, pcmanfm)
 | ttf-nova           | font of many interesting shapes                   |
 | udisks2            | diskmanagement utility                            |
 | ueberzug           | image displayer for ranger                        |
-| vlc                | video and audio player                            |
 | xclip              | clipboard                                         |
 | xdotool            | used in scripts, controls X windows               |
-| xorg-xbacklight    | clipboard                                         |
-| xorg-xcursorgen    | optional, custom cursor icons                     |
+| xclip              | clipboard                                         |
 | xorg-xev           | optional, for getting xorg key names              |
 
-PS: Pick your fonts, I use nerd-fonts-inconsolata for more icons, but use different for normal text,
-which is wasteful.
-
-# Two dark themes I adopted
-
-I made rofi and QT theme based on Material-Black-Lime. For icons I altered the color of
-Material-Black-Lime-Suru-Glow and the other variant from Solarized-Dark-Green.
+for a full list, look into the [install](./bin/install.sh) script.

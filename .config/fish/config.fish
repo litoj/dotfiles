@@ -45,6 +45,7 @@ function fish_prompt
 	set_color normal
 	set_color black
 		printf ' '
+	set_color normal
 
 	# del key does not work properly by itself
 	printf '\033[?1h\033=' >/dev/tty
@@ -87,24 +88,22 @@ abbr smci		"sudo make clean install"
 abbr jctl 		"journalctl -p 3 -b"
 
 # pacman
-abbr p 			"paru"
 abbr pc 		"paru -Sc"
 abbr pror 	"paru -Rscn (paru -Qqtd)"
 abbr pss 		"paru -S (paru -Slq | fzf -m --preview 'paru -Si {1}'  --preview-window=wrap)"
 abbr psr 		"paru -Rscn (paru -Qeq | fzf -m --preview 'paru -Si {1}'  --preview-window=wrap)"
 
 # navigation
-abbr gt 		'cd (dirname (fzf))'
-abbr of 		'$EDITOR (fzf -e)'
-abbr ...    'cd ../..'
-abbr cdq 		"cd ~/Documents/PG/QuickNodeRequests"
+abbr ...    "cd ../.."
+abbr cds    "cd ~/Documents/PG/litosjos/"
 abbr cdd 		"cd ~/dotfiles"
 abbr dup 		"cd ~/dotfiles; git pull"
 abbr gp			"git pull"
-abbr gc			"git checkout -b"
+abbr gb			"git checkout -b"
 abbr gg			"git checkout"
-abbr gu			"git add -A && git commit; git push"
-abbr gd			'set b (git branch | fzf | sed "s/.* //"); git branch -d $b; git push origin --delete $b'
+abbr ga			"git add -A && git commit"
+abbr gu			"git push"
+abbr gd			"git branch -d (git branch | fzf | sed 's/.* //')"
 
 # quick program info fetch
 abbr xp 		"xprop | grep -e '^_NET_WM_WINDOW_TYPE' -e '^WM_NAME' -e '^WM_CLASS' | sed 's/^.*_\(.*\)(.*) = /\1 = /'"

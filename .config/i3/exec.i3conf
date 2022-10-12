@@ -1,7 +1,6 @@
 # Desktop looks
-exec $feh
+exec $screen
 exec picom --experimental-backends
-exec i3 workspace $w1
 
 # Background daemons
 exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1

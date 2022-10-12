@@ -10,7 +10,7 @@ bindsym $Mod+t gaps inner current toggle 10
 bindsym $Mod+$Alt+t border toggle 2
 
 bindsym $Mod+p exec pgrep -x "picom" && killall picom || picom --experimental-backends
-bindsym $Mod+u exec $feh
+bindsym $Mod+u exec $screen
 #normal image displaying
 # feh --draw-exif -d --draw-tinted --edit -. -B black -| %f
 
@@ -24,25 +24,15 @@ bindsym $Alt+Tab exec rofi -show window
 
 # quick app starter
 bindsym $Mod+Return exec $term
-bindsym $Mod+1 exec lof firefox firefox
+bindsym $Mod+1 exec lof firefox-nightly firefox-nightly
 bindsym $Mod+2 exec st nvim
-bindsym $Mod+3 exec $term ranger --choosefile=/tmp/f && f="$(cat /tmp/f)" && rm /tmp/f && mpv "$f" --vlang=en, workspace $w7
+bindsym $mod+3 exec $term
 bindsym $Mod+5 exec lof netbeans NetBeans
-set $6 " [W]riter [I]mpress [C]alc [D]raw"
-bindsym $Mod+6 mode $6, workspace $w6
-mode $6 {
-	bindsym w exec lowriter, mode default
-	bindsym i exec loimpress, mode default
-	bindsym c exec localc, mode default
-	bindsym d exec lodraw, mode default
-	bindsym Escape mode default, workspace back_and_forth
-	bindsym q mode default
-}
+bindsym $Mod+7 exec $term ranger --choosefile=/tmp/f && f="$(cat /tmp/f)" && rm /tmp/f && mpv "$f" --vlang=en, workspace $w7
 bindsym $Mod+8 exec lof thunderbird thunderbird
 bindsym $Mod+9 exec lof "tlauncher" "Minecraft.*"
 bindsym $Mod+e exec $term ranger
 bindsym $Mod+$Alt+e exec pcmanfm
-#bindsym $Mod+Shift+e exec sudo pcmanfm
 # managing/control
 bindsym Ctrl+Shift+Escape exec lof "$term htop" "st-256color" htop
 
@@ -52,13 +42,9 @@ bindsym Ctrl+Shift+Escape exec lof "$term htop" "st-256color" htop
 
 ## Termination
 # kill focused window
-# bindsym --release $Mod+q exec xdotool key ctrl+q
 bindsym $Mod+q kill
 bindsym Shift+KP_Subtract kill
 # force kill window on select
-bindsym --release $Alt+F4 exec xkill
-bindsym --release $Mod+Shift+q exec xkill
-#bindsym --release $Mod+Shift+BackSpace exec xkill
 bindsym --release $Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | sed 's/^[0-9]* //' | sort | dmenu -i -p "force kill")
 
 ## Focus
@@ -194,13 +180,9 @@ bindsym KP_End workspace prev
 # System setts |
 #--------------+
 
-set $lock i3lock-fancy-rapid 15 5 -fe
 set $softDisplay XAUTHORITY=~/.local/share/sx/xauthority DISPLAY=:1 xset dpms force suspend
 set $Exit "C: L: D: Q: S: H: P: R: Esc:"
 bindsym $Mod+x mode $Exit
-bindsym $Mod+Shift+x exec i3lock-fancy-rapid 50 5 -fe
-bindsym --release $Mod+$Alt+x exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
-bindsym XF86ScreenSaver exec $lock
 bindsym --release XF86Display exec $softDisplay
 bindsym --release KP_Insert exec $softDisplay
 bindsym --release Shift+KP_Insert exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
@@ -217,8 +199,8 @@ mode $Exit {
 	bindsym w mode default, exec cpupower-gui pr Performance && notify-send -u critical -t 1000 " Performance"
 	bindsym Shift+P mode default, exec $term sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 	bindsym l mode default, exec $lock
-	bindsym --release d mode default, exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
-	bindsym --release Shift+d mode default, exec $softDisplay
+	bindsym --release d mode default, exec $softDisplay
+	bindsym --release Shift+d mode default, exec xrandr --listmonitors | grep $display && xrandr --output $display --off || xrandr --auto
 	bindsym q exec killall sleep, exit
 	bindsym s mode default, exec systemctl suspend
 	bindsym h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\

@@ -12,12 +12,10 @@ if [[ $button ]]; then
 	fi
 fi
 
-while read -a line; do
-	case "${line[0]}" in
-		'volume:') VOL=${line[4]%\%} ;;
-		'muted:') MUTED=${line[1]} && break ;;
-	esac
-done <<< $(pacmd list-sinks 2> /dev/null)
+VOL=($(pactl get-sink-volume 0))
+VOL=${VOL[4]%\%}
+MUTED=($(pactl get-sink-mute 0))
+MUTED=${MUTED[1]}
 
 if [[ -z $VOL ]]; then
 	echo " ?"

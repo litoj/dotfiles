@@ -12,9 +12,9 @@ case "$1" in
 		;;
 	"mic")
 		if [[ $2 == toggle ]]; then
-			pactl set-source-mute 1 $2
+			pactl set-source-mute 0 $2
 		else
-			pactl set-source-volume 1 $2%
+			pactl set-source-volume 0 $2%
 		fi
 		pkill -RTMIN+13 i3blocks
 		;;

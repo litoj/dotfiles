@@ -117,6 +117,6 @@ cmp.setup.filetype('markdown', {
 cmp.setup.cmdline(":", {sources = {{name = "cmdline"}, {name = "path"}, {name = "buffer"}}})
 cmp.setup.cmdline("/", {sources = {{name = "buffer"}}})
 
-_G.capabilities = require'cmp_nvim_lsp'.update_capabilities(vim.lsp.protocol
+_G.capabilities = require'cmp_nvim_lsp'.default_capabilities(vim.lsp.protocol
 		                                                            .make_client_capabilities())
 vim.cmd("hi link CompeDocumentation Pmenu")

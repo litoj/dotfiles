@@ -64,7 +64,7 @@ vim.fn.sign_define("DiagnosticSignInfo",
 		{texthl = "DiagnosticInfo", text = "", numhl = "DiagnosticInfo"})
 
 lsp_setup("bashls", {})
-local clangd_capabilities = require'cmp_nvim_lsp'.update_capabilities(vim.lsp.protocol
+local clangd_capabilities = require'cmp_nvim_lsp'.default_capabilities(vim.lsp.protocol
 		                                                                      .make_client_capabilities())
 clangd_capabilities.offsetEncoding = 'utf-16'
 clangd_capabilities.textDocument = {completion = {editsNearCursor = true}}

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-time=$(date +%H)
-time=${time#0}
-((time > 6 && time < 20)) && st-light "$@" || st "$@"
+date=($(date +'%m %H'))
+date[1]=${date[1]#0}
+((date[0] > 6)) && ((date[0] = (12 - date[0]) / 3)) || ((date[0] = date[0] / 2))
+((date[1] > 8 - date[0] && date[1] < 18 + date[0])) && st-light "$@" || st "$@"

@@ -33,4 +33,4 @@ fi
 notify-send -a signal -h int:value:$VOL -h string:synchronous:mic "$ICON $VOL"
 echo "$ICON $VOL%"
 echo "$ICON $VOL%"
-~/.config/i3blocks/colorcode $((VOL * 2))
+~/.config/i3blocks/colorcode $((VOL * 3))

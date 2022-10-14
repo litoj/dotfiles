@@ -242,7 +242,7 @@ bindsym $Mod+$Alt+p exec $term -e bashmount
 # poweroff and eject any connected device (udisksctl power-off -b /dev/sdx0)
 
 # Change gamma, "redshift" manually - n for night
-bindsym $Mod+$Alt+n exec xrandr --output $display --gamma 1:0.93:0.8
+bindsym $Mod+$Alt+n exec pgrep -x "redshift" && killall redshift || redshift -l 50:14.5
 bindsym $Mod+Shift+n exec xrandr --output $display --gamma 1
 
 # Rotating screen

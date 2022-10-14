@@ -115,6 +115,7 @@ pulsemixer
 python-pynvim
 qt5ct
 ranger
+redshift
 reflector
 ripgrep
 rofi

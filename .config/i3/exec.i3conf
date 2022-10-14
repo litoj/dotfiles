@@ -5,9 +5,10 @@ exec picom --experimental-backends
 # Background daemons
 exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec dunst
-exec while sleep 1800; do notify-send -u low -t 10000 Stretch; done
+exec redshift -l 50:14.5
 # exec --no-startup-id nm-applet
 
 # One time changes
 exec acpi | grep D && which cpupower-gui && cpupower-gui pr Powersave
 exec_always xset r rate 225 40 && xmodmap -e "clear lock" -e "keycode 0x42 = Escape" && xset s 300
+exec_always xrandr -r 50

@@ -7,10 +7,7 @@ require "settings"
 require "keymappings"
 local time = tonumber(os.date("%H"))
 local month = tonumber(os.date("%m"))
-if month > 6 then
-	month = (12 - month) / 3
-else
-	month = month / 3
-end
+if month > 6 then month = 12 - month end
+month = math.floor(month / 2)
 vim.g.WhiteTheme = time > 8 - month and time < 18 + month
 vim.cmd "colorscheme nerdcontrast"

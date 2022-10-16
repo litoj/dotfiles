@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
-# shellcheck disable=2086
 #i3/floatpos -i3 floating mode tiling functionality similar to Windows
-# Made by Kepis, enjoy your linux i3floatingWM setup
+# Made by Josef Litoš, enjoy your linux i3floatingWM setup
 
 p2="$2"
 #for usage in tiling mode
 if [[ $(xprop -id "$(xdotool getactivewindow)" I3_FLOATING_WINDOW) != I3_FLOATING*1 ]]; then
 	if [[ $p2 == "shift" ]]; then
 		case "$1" in
-			"up") i3 focus up ;;
-			"down") i3 focus down ;;
-			"left") i3 focus left ;;
-			"right") i3 focus right ;;
+			up | u) i3-msg focus up ;;
+			down | d) i3-msg focus down ;;
+			left | l) i3-msg focus left ;;
+			right | r) i3-msg focus right ;;
 		esac
 	else
 		case "$1" in
-			"up") i3 move up ;;
-			"down") i3 move down ;;
-			"left") i3 move left ;;
-			"right") i3 move right ;;
-			"c") i3 split h,layout tabbed ;;
+			up | u) i3-msg move up ;;
+			down | d) i3-msg move down ;;
+			left | l) i3-msg move left ;;
+			right | r) i3-msg move right ;;
+			center | c) i3-msg split h,layout tabbed ;;
 		esac
 	fi
 	exit 0
@@ -33,7 +32,7 @@ while read -a line; do
 		"Height:") bar=${line[-1]} ;;
 		"MapIsUnMapped") nobar=1 ;;
 		"Width:") dim[0]=${line[1]} ;;
-		"Corners:"*) ((bottom != 0)) && dim[1]=bottom+nobar*bar || dim[1]=${line[3]#-0-}+nobar*bar ;;
+		"Corners:"*) ((bottom != 0)) && dim[1]=bottom+nobar*bar || dim[1]=${line[3]#-0-} ;;
 	esac
 done <<< $(xwininfo -id $(xdotool search --class "i3bar"))
 
@@ -60,81 +59,81 @@ win[3]+=border*2 # height
 
 #Setts window to quarter of the screen and centers it
 defsize() {
-	i3 resize set ${dim[2]} ${dim[3]}, move position center
+	i3-msg resize set ${dim[2]} ${dim[3]}, move position center
 }
 
 #Manages 'up' action
 up() {
 	if [[ $p2 == shift ]]; then
-		i3 move position ${win[0]} $Y
+		i3-msg move position ${win[0]} $Y
 	elif ((win[1] <= Y)); then
 		if ((win[3] > dim[3])); then
-			i3 resize set height ${dim[3]}
+			i3-msg resize set height ${dim[3]}
 		else
-			i3 move position 0 $Y, resize set ${dim[0]} ${dim[1]}
+			i3-msg move position 0 $Y, resize set ${dim[0]} ${dim[1]}
 		fi
 	elif ((win[1] + win[3] >= Y + dim[1])); then
 		if ((win[2] > dim[0] * 5 / 7)); then
 			defsize
 		elif ((win[3] <= dim[1] * 3 / 5)); then
-			i3 move position ${win[0]} $Y, resize set height ${dim[1]}
+			i3-msg move position ${win[0]} $Y, resize set height ${dim[1]}
 		else
-			i3 move position ${win[0]} $Y, resize set height ${dim[3]}
+			i3-msg move position ${win[0]} $Y, resize set height ${dim[3]}
 		fi
 	else
-		i3 move position ${win[0]} $Y
+		i3-msg move position ${win[0]} $Y
 	fi
 }
 
 #Manages 'down' action
 down() {
 	if [[ $p2 == shift ]]; then
-		i3 move position ${win[0]} $((Y + dim[1] - win[3]))
+		i3-msg move position ${win[0]} $((Y + dim[1] - win[3]))
 	elif ((win[1] <= Y)); then
 		if ((win[2] > dim[0] * 5 / 7)); then
 			defsize
 		elif ((win[3] == dim[1])); then
-			i3 move position ${win[0]} $Y2, resize set height ${dim[3]}
+			i3-msg move position ${win[0]} $Y2, resize set height ${dim[3]}
 		else
-			i3 resize set height ${dim[1]}
+			i3-msg resize set height ${dim[1]}
 		fi
 	elif ((win[1] + win[3] >= Y + dim[1])); then
-		i3 move position 0 $Y2, resize set ${dim[0]} ${dim[3]}
+		i3-msg move position 0 $Y2, resize set ${dim[0]} ${dim[3]}
 	else
-		i3 move position ${win[0]} $((Y + dim[1] - win[3]))
+		i3-msg move position ${win[0]} $((Y + dim[1] - win[3]))
 	fi
 }
 
 #Manages 'left' action
 left() {
 	if [[ $p2 == shift ]]; then
-		i3 move position 0 ${win[1]}
+		i3-msg move position 0 ${win[1]}
 	elif ((win[0] == 0 && win[2] <= dim[0] * 5 / 7)); then
-		i3 move position $((dim[0] - win[2])) ${win[1]}
+		i3-msg move position $((dim[0] - win[2])) ${win[1]}
 	elif ((win[0] > dim[0] * 3 / 7)); then
-		defsize
+		i3-msg resize grow left $((dim[0] - win[2]))
 	else
-		i3 move position 0 $Y, resize set ${dim[2]} ${dim[1]}
+		i3-msg move position 0 $Y, resize set ${dim[2]} ${dim[1]}
 	fi
 }
 
 #Manages 'right' action
 right() {
 	if [[ $p2 == shift ]]; then
-		i3 move position $((dim[0] - win[2])) ${win[1]}
+		i3-msg move position $((dim[0] - win[2])) ${win[1]}
 	elif ((win[0] + win[2] == dim[0] && win[2] <= dim[0] * 5 / 7)); then
-		i3 move position 0 ${win[1]}
+		i3-msg move position 0 ${win[1]}
 	elif ((win[0] + win[2] <= dim[0] * 4 / 7)); then
-		defsize
+		i3-msg resize grow right $((dim[0] - win[2]))
 	else
-		i3 move position ${dim[2]} $Y, resize set ${dim[2]} ${dim[1]}
+		i3-msg move position ${dim[2]} $Y, resize set ${dim[2]} ${dim[1]}
 	fi
 }
 
-case "$1" in
-	"up") up ;;
-	"down") down ;;
-	"left") left ;;
-	"right") right ;;
-	"c") i3 move position center ;;
+case $1 in
+	up | u) up ;;
+	down | d) down ;;
+	left | l) left ;;
+	right | r) right ;;
+	center | c) i3-msg move position center ;;
 esac

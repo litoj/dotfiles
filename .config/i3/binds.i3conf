@@ -73,16 +73,16 @@ bindsym $Mod+minus scratchpad show
 #--------+
 set $floatpos ~/.config/i3/floatpos
 # floating mode, with tilling mode compatibility
-bindsym $Mod+Left exec $floatpos left
-bindsym $Mod+Down exec $floatpos down
-bindsym $Mod+Up exec $floatpos up
-bindsym $Mod+Right exec $floatpos right
+bindsym $Mod+Left exec $floatpos l
+bindsym $Mod+Down exec $floatpos d
+bindsym $Mod+Up exec $floatpos u
+bindsym $Mod+Right exec $floatpos r
 bindsym $Mod+Shift+c exec $floatpos c
 # snap to side or focus in tiling mode
-bindsym $Mod+Shift+Left exec $floatpos left shift
-bindsym $Mod+Shift+Down exec $floatpos down shift
-bindsym $Mod+Shift+Up exec $floatpos up shift
-bindsym $Mod+Shift+Right exec $floatpos right shift
+bindsym $Mod+Shift+Left exec $floatpos l shift
+bindsym $Mod+Shift+Down exec $floatpos d shift
+bindsym $Mod+Shift+Up exec $floatpos u shift
+bindsym $Mod+Shift+Right exec $floatpos r shift
 # resize
 bindsym $Mod+$Alt+Left resize shrink width 80 or 4
 bindsym $Mod+$Alt+Down resize grow height 80 or 4
@@ -99,10 +99,10 @@ bindsym $Mod+Ctrl+Up move workspace back_and_forth, workspace back_and_forth
 # Keypad |
 #--------+
 # snap to side or focus in tiling mode
-bindsym Shift+KP_Left exec $floatpos left shift
-bindsym Shift+KP_Down exec $floatpos down shift
-bindsym Shift+KP_Up exec $floatpos up shift
-bindsym Shift+KP_Right exec $floatpos right shift
+bindsym Shift+KP_Left exec $floatpos l shift
+bindsym Shift+KP_Down exec $floatpos d shift
+bindsym Shift+KP_Up exec $floatpos u shift
+bindsym Shift+KP_Right exec $floatpos r shift
 
 #-----------+
 # Left Hand |

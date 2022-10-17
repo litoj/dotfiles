@@ -28,7 +28,7 @@ bindsym $Mod+1 exec lof firefox-nightly firefox-nightly
 bindsym $Mod+2 exec st nvim
 bindsym $mod+3 exec $term
 bindsym $Mod+5 exec lof netbeans NetBeans
-bindsym $Mod+7 exec $term ranger --choosefile=/tmp/f && f="$(cat /tmp/f)" && rm /tmp/f && mpv "$f" --vlang=en, workspace $w7
+bindsym $Mod+7 exec lof gimp Gimp
 bindsym $Mod+8 exec lof thunderbird thunderbird
 bindsym $Mod+9 exec lof "tlauncher" "Minecraft.*"
 bindsym $Mod+e exec $term ranger

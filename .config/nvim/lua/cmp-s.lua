@@ -56,7 +56,7 @@ cmp.setup {
 			else
 				fallback()
 			end
-		end, {"i", "c"}),
+		end, {"i", "c", "s"}),
 		["<S-Tab>"] = cmp.mapping(function(fallback)
 			if luasnip.jumpable(-1) then
 				luasnip.jump(-1)
@@ -65,7 +65,7 @@ cmp.setup {
 			else
 				fallback()
 			end
-		end, {"i", "c"}),
+		end, {"i", "c", "s"}),
 		["<Up>"] = cmp.mapping(cmp.mapping.select_prev_item(), {"i", "c"}),
 		["<Down>"] = cmp.mapping(cmp.mapping.select_next_item(), {"i", "c"}),
 	},
@@ -118,5 +118,5 @@ cmp.setup.cmdline(":", {sources = {{name = "cmdline"}, {name = "path"}, {name = 
 cmp.setup.cmdline("/", {sources = {{name = "buffer"}}})
 
 _G.capabilities = require'cmp_nvim_lsp'.default_capabilities(vim.lsp.protocol
-		                                                            .make_client_capabilities())
+		                                                             .make_client_capabilities())
 vim.cmd("hi link CompeDocumentation Pmenu")

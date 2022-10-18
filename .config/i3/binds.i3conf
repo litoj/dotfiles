@@ -20,7 +20,7 @@ bindsym $Mod+u exec $screen
 
 # app launcher/picker
 bindsym $Mod+r exec rofi -show drun
-bindsym $Alt+Tab exec rofi -show window
+# bindsym $Alt+Tab exec rofi -show window
 
 # quick app starter
 bindsym $Mod+Return exec $term

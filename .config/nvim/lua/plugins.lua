@@ -115,7 +115,7 @@ require'packer'.startup(function(use)
 	}
 	use "JosefLitos/vim-i3config"
 
-	-- use 'lewis6991/gitsigns.nvim'
+	-- use {'lewis6991/gitsigns.nvim', config = function() require('gitsigns').setup() end}
 
 	-- Nvim ui
 	use "kyazdani42/nvim-web-devicons"

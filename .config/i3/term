@@ -2,4 +2,9 @@
 date=($(date +'%m %H'))
 date[1]=${date[1]#0}
 ((date[0] > 6)) && ((date[0] = (12 - date[0]) / 2)) || ((date[0] = date[0] / 2))
-((date[1] > 8 - date[0] && date[1] < 18 + date[0])) && st-light "$@" || st "$@"
+if ((date[1] > 8 - date[0] && date[1] < 17 + date[0])); then
+	st-light "$@" &
+else
+	st "$@" &
+fi
+disown

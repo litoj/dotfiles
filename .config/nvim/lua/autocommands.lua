@@ -43,6 +43,9 @@ augroup _general_settings
 	au BufRead,BufNewFile *.ms,*.me,*.mom,*.man setlocal ft=groff
 	au BufRead,BufNewFile *.tex setlocal ft=tex tw=90
 	au BufRead,BufNewFile *config,*.conf setlocal ft=config
+	au BufRead *.fish setlocal ft=bash
+	au BufRead *.tex setlocal ft=latex
+	au BufRead *.c setlocal ft=cpp
 	au BufRead,BufNewFile *fontconfig/* setlocal ft=xml
 	au BufRead,BufNewFile */X11/xorg* setlocal ft=xf86conf
 	au FileType text setlocal nonu signcolumn=no nocursorline nocursorcolumn tw=0

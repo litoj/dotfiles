@@ -34,10 +34,29 @@ telescope.setup {
 }
 
 nmap("n", "<Leader>t", "<Cmd>Telescope<CR>")
-nmap("n", "<Leader>f",
-     "<Cmd>lua require'telescope.builtin'.find_files(require'telescope.themes'.get_dropdown{previewer=false})<CR>")
-nmap("n", "<Leader>a",
-     "<Cmd>lua require'telescope.builtin'.find_files(vim.tbl_extend('force',require'telescope.themes'.get_dropdown{previewer=false},{find_command={'fd','--type','f','-L','--search-path',os.getenv'HOME'..'/.config','--search-path',os.getenv'HOME','-E','Android','-E',os.getenv'HOME'..'.config/libreoffice'}}))<CR>")
-nmap("n", "<Leader>o",
-     "<Cmd>lua require'telescope.builtin'.oldfiles(require'telescope.themes'.get_dropdown{previewer=false})<CR>")
+nmap("n", "<Leader>f", function()
+	require'telescope.builtin'.find_files(require'telescope.themes'.get_dropdown {previewer = false})
+end)
+nmap("n", "<Leader>a", function()
+	require'telescope.builtin'.find_files(vim.tbl_extend('force',
+			require'telescope.themes'.get_dropdown {previewer = false}, {
+				find_command = {
+					'fd',
+					'--type',
+					'f',
+					'-L',
+					'--search-path',
+					os.getenv 'HOME' .. '/.config',
+					'--search-path',
+					os.getenv 'HOME',
+					'-E',
+					'Android',
+					'-E',
+					os.getenv 'HOME' .. '.config/libreoffice',
+				},
+			}))
+end)
+nmap("n", "<Leader>o", function()
+	require'telescope.builtin'.oldfiles(require'telescope.themes'.get_dropdown {previewer = false})
+end)
 nmap("n", "<Leader>g", "<Cmd>Telescope live_grep<CR>")

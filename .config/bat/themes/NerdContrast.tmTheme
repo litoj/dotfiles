@@ -111,7 +111,7 @@
 			<key>name</key>
 			<string>Keyword</string>
 			<key>scope</key>
-			<string>keyword, storage, entity.name.function.man, variable.language, support.constant.builtin, support.function.builtin.lua, keyword.operator.module, keyword.operator.js, keyword.operator.new, support.function.exit, support.function.echo, support.function.cd, meta.mapping.key.json string.quoted.double</string>
+			<string>keyword, storage, entity.name.function.man, variable.language, support.constant.builtin, support.function.builtin.lua, keyword.operator.module, keyword.operator.js, keyword.operator.new, support.function.exit, support.function.echo, support.function.cd</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
@@ -142,7 +142,7 @@
 				<string>#0f000000</string>
 			</dict>
 		</dict>
-		<dict>
+<dict>
 			<key>name</key>
 			<string>Field1</string>
 			<key>scope</key>
@@ -198,7 +198,7 @@
 			<key>name</key>
 			<string>Variable</string>
 			<key>scope</key>
-			<string>variable, meta.qualified-name, entity.name.tag.toml, keyword.name.ini</string>
+			<string>variable, meta.qualified-name, entity.name.tag.toml, keyword.name.ini, meta.mapping.key.json string.quoted.double, entity.name.tag.yaml</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>

@@ -1,7 +1,7 @@
 require'Comment'.setup {
 	ignore = '^$',
 	padding = true,
-	mappings = {basic = true, extra = false, extended = false},
+	mappings = {basic = true, extra = false},
 }
 map("n", "<C-S-C>", "gcc")
 map("v", "<C-S-C>", "gc")

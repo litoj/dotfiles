@@ -9,5 +9,5 @@ local time = tonumber(os.date("%H"))
 local month = tonumber(os.date("%m"))
 if month > 6 then month = 12 - month end
 month = math.floor(month / 2)
-vim.g.WhiteTheme = time > 8 - month and time < 18 + month
+vim.g.WhiteTheme = time > 8 - month and time < 17 + month
 vim.cmd "colorscheme nerdcontrast"

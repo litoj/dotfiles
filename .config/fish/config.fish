@@ -98,11 +98,11 @@ abbr ...    "cd ../.."
 abbr cds    "cd ~/Documents/PG/litosjos/"
 abbr cdd 		"cd ~/dotfiles"
 abbr dup 		"cd ~/dotfiles; git pull"
-abbr gp			"git pull"
+abbr gp			"git push"
+abbr gu			"git pull"
 abbr gb			"git checkout -b"
 abbr gg			"git checkout"
 abbr ga			"git add -A && git commit"
-abbr gu			"git push"
 abbr gd			"git branch -d (git branch | fzf | sed 's/.* //')"
 
 # quick program info fetch

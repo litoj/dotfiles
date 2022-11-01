@@ -25,9 +25,8 @@ case "$1" in
 		;;
 	"kb")
 		[[ $(setxkbmap -query | awk '/^l/ { print $2 }') == us ]] && kb=cz || kb=us
-		setxkbmap -option compose:102 -layout $kb
+		setxkbmap -option caps:escape,compose:102 -layout $kb
 		notify-send -a signal -h string:synchronous:kb " $kb"
-		xmodmap -e "clear lock" -e "keycode 0x42 = Escape"
 		pkill -RTMIN+12 i3blocks
 		;;
 esac

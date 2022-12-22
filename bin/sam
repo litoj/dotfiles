@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # sam = System APK Manager
 
 if [[ -z "$(adb devices | sed 's/^List.*$//')" ]]; then

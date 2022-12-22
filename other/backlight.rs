@@ -1,4 +1,4 @@
-//Soure code for my backlight control program, rewritten from previous bash version
+// Soure code for my backlight control program, rewritten from previous bash version
 use std::{
 	fs::{self, File},
 	io::Write,
@@ -20,8 +20,8 @@ fn change() -> Result<(), Box<dyn std::error::Error>> {
 	let max: u32 = fs::read_to_string(path.join("max_brightness"))?.trim_end().parse()?;
 	if args.len() > 1 {
 		match args[1].as_str() {
-			"↓" => now = if now < 2 { 0 } else { now * 2 / 3 - 1 },
-			"↑" => {
+			"v" => now = if now < 2 { 0 } else { now * 2 / 3 - 1 },
+			"^" => {
 				now = now * 3 / 2 + 3;
 				if now > max {
 					now = max

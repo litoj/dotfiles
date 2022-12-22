@@ -1,28 +1,15 @@
-#!/usr/bin/env bash
-# CPU usage, CPU frequency on click script
+#!/usr/bin/bash
+# CPU usage script
 # FontAwesome icons fitting:  
 
-while read -a line; do
+while read -ra line; do
 	[[ ${line[0]} == '%Cpu(s):' ]] && PCT=$(bc <<< \
 		"scale=1;${line[1]/,/.}+${line[3]/,/.}+${line[5]/,/.}") && break
-done <<< $(top -bn 1)
+done <<< "$(top -bn 1)"
 
 PCT=${PCT/#./0.}
 
-if ((button == 1)); then
-	while read -a line; do
-		case ${line[1]} in
-			'MHz:') SPEED=${line[2]%.*} ;;
-			'max.')
-				MAXSPEED=${line[3]%,*}
-				break
-				;;
-		esac
-	done <<< $(lscpu)
-	TEXT=" "$(bc <<< "scale=1;$SPEED/1000")"G/"$(bc <<< "scale=1;$MAXSPEED/1000")"G ($PCT%)"
-else
-	TEXT=" <b>$PCT%</b>"
-fi
+TEXT=" <b>$PCT%</b>"
 echo "$TEXT
 $TEXT"
 ~/.config/i3blocks/colorcode $((100 - ${PCT%.*}))

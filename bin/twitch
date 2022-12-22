@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
@@ -17,7 +17,7 @@ wtwitch() {
 	done < "$CONFIG_FILE"
 
 	if [[ -z $token || $token == null ]] ||
-		(($(LANG=C date +%s) >= expiry)); then
+		(($(LANG=C date +%s) > expiry)); then
 		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
 		[[ -z $newToken || $newToken == null ]] && exit 1
 		token=$newToken
@@ -56,14 +56,8 @@ wtwitch() {
 	done
 }
 
-streamerList=(iskall85 tangotek mrgregles goodtimeswithscar skizzleman renthedogtv)
-
-if ((SHLVL < 3)); then
-	streamer=$(printf '%s\n' ${streamerList[@]} | dmenu -p Streamer)
-else
-	streamer=$(printf '%s\n' ${streamerList[@]} | fzf --prompt="Streamer: ")
-fi
-echo "$streamer"
+streamerList=(tangotek impulsesv iskall85 skizzleman mrgregles goodtimeswithscar xisuma)
+streamer=$(printf '%s\n' ${streamerList[@]} | rofi -dmenu -p Streamer)
 if [[ -z $streamer ]]; then
 	exit 0
 elif [[ $streamer == [0-9] ]]; then
@@ -78,19 +72,13 @@ elif [[ $streamer == [a-z] ]]; then
 	[[ $streamer == [a-z] ]] && exit 1
 elif [[ $streamer == https://* ]]; then
 	url=$streamer
-	quality="bv+"
 fi
 
 if [[ -z $url ]]; then
 	streams=$(wtwitch $streamer)
 	urls=($(echo "$streams" | sed 's/^.*https:/https:/'))
 	streams=$(echo "$streams" | sed 's/https:.*//')
-
-	if ((SHLVL < 3)); then
-		video=$(echo "$streams" | dmenu -p Video -i)
-	else
-		video=$(echo "$streams" | fzf --prompt="Video: ")
-	fi
+	video=$(echo "$streams" | rofi -dmenu -p Video -i)
 
 	if [[ -z $video ]]; then
 		url="https://twitch.tv/$streamer"
@@ -102,17 +90,11 @@ if [[ -z $url ]]; then
 fi
 
 if [[ -z $quality ]]; then
-	quals=(best medium low worst audio)
-	if ((SHLVL < 3)); then
-		quality=$(printf '%s\n' ${quals[@]} | dmenu -p Quality)
-	else
-		quality=$(printf '%s\n' ${quals[@]} | fzf --prompt="Quality: ")
-	fi
+	quals=(best 720 480 360 audio)
+	quality=$(printf '%s\n' ${quals[@]} | rofi -dmenu -p Quality)
 
 	if [[ -z $quality ]]; then
 		exit 0
-	elif [[ $quality == [0-4] ]]; then
-		quality=${quals[$quality]}
 	elif [[ $quality == [a-z] ]]; then
 		for q in ${quals[@]}; do
 			if [[ $q == "$quality"* ]]; then
@@ -124,13 +106,18 @@ if [[ -z $quality ]]; then
 	fi
 
 	case "$quality" in
-		best) quality="b[height=1080]+" ;;
-		medium) quality="b[height=720]+" ;;
-		low) quality="b[height=480]+" ;;
-		worst) quality="b[height=360]+" ;;
-		audio) quality="" ;;
+		best) quality="" ;;
+		720) quality="bv*[height=720]+ba" ;;
+		480) quality="bv*[height=480]+ba" ;;
+		360) quality="bv*[height=360],ba" ;;
+		audio) quality="ba" ;;
 	esac
 fi
-
-mpv --ytdl-format="${quality}ba" --vo=dmabuf-wayland $url > /dev/null 2>&1 &
+mpv --ytdl-format="$quality" "$url" &> /dev/null &
 disown
+
+params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
+
+while ! swaymsg $params; do
+	sleep 1
+done

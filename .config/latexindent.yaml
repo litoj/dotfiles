@@ -58,7 +58,7 @@ indentRules:
 modifyLineBreaks:
   condenseMultipleBlankLinesInto: 2
   textWrapOptions:
-    columns: 91
+    columns: 80
     perCodeBlockBasis: 1
     tabstop: 2
     all: 1

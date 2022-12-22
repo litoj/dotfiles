@@ -104,7 +104,7 @@ handle_extension() {
 			exit 1
 			;;
 		## JSON
-		json | mcmeta)
+		json | mcmeta | ts | js)
 			bat --color=always --tabs 2 --style="plain" -- "${FILE_PATH}" && exit 5
 			JQ_COLORS="0;34:0;34:0;34:0;95:0;33:0;31:0;31" jq -C . "${FILE_PATH}" && exit 5
 			;;
@@ -315,7 +315,7 @@ handle_mime() {
 			;;
 
 		## Text
-		text/* | */xml)
+		text/* | */xml | application/javascript)
 			## Syntax highlight
 			if [[ "$(stat --printf='%s' -- "${FILE_PATH}")" -gt ${HIGHLIGHT_SIZE_MAX} ]]; then
 				exit 2

@@ -1,10 +1,13 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 [[ -z $1 ]] && exit 0
-yt-dlp -F "${1/&*}" | grep audio | tail -n 2 | sed 's/.*| *\(.*MiB\).*| audio only *\(.*\),.*/\1 \2/;s/mp4a[^ ]*/m4a      /'
+yt-dlp -F "${1/&*/}" | grep audio | tail -n 2 | sed 's/.*| *\(.*MiB\).*| audio only *\(.*\),.*/\1 \2/;s/mp4a[^ ]*/m4a      /'
 printf '\e[32mPick format (default=opus):\e[0m '
-read ac
+read -r ac
 [[ -z $ac ]] && ac=opus
-yt-dlp -f "ba[ext=${ac/opus/webm}]" -o "/tmp/ytdl-%(creator)s - %(title)s.$([[ $ac == opus ]] && echo opus || echo '%(ext)s')" "${1/&*}" >/dev/null
+yt-dlp -N 8 -f "ba[ext=${ac/opus/webm}]" -o "/tmp/ytdl-%(creator)s - %(title)s.$(
+	[[ $ac == opus ]] && echo opus || echo '%(ext)s'
+)" "${1/&*/}" > /dev/null
 name=$(echo /tmp/ytdl-*)
-nosongmeta "$name" "$(echo ${name#/tmp/ytdl-} | sed 's/\(.* -\) \1/\1/')"
+nosongmeta "$name" "$(echo "${name#/tmp/ytdl-}" |
+	sed 's/\(.* -\) \1/\1/;s/NA - //;s/ [([].*[])]//g')"
 rm "$name"

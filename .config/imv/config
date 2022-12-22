@@ -1,6 +1,11 @@
+[options]
+overlay_text="[$imv_current_index/$imv_file_count]: ${imv_current_file##*/} [${imv_width}×${imv_height} - $imv_scaling_mode]"
+title_text="imv - $imv_current_file"
+upscaling_method = nearest_neighbour
 [binds]
-<Shift+X> = exec rm $imv_current_file;close
-<Shift+D> = exec rm $imv_current_file;close
-b = exec swaymsg output '*' bg $imv_current_file fill 
+<Shift+Delete> = exec rm "$imv_current_file";close
+b = exec swaymsg output '*' bg "$imv_current_file" fill 
 u = upscaling nearest_neighbour
-<Shift+S> = exec cp $imv_current_file ~/Pictures/screen/
+<Shift+P> = exec cp "$imv_current_file" ~/Pictures/screen/
+<Shift+E> = exec cp "$imv_current_file" ~/Downloads/
+<Meta+f> = exec dragon-drop -x -T "$imv_current_file" &

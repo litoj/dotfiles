@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 #1=idir 2=crfQuality 3=odir
 idir=${1%/}

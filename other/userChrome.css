@@ -1,20 +1,20 @@
 .tab-background[selected] {
-	border: 2px solid #77dd22 !important;
+  border: 2px solid #9d2098 !important;
 }
 .tab-background:not([selected]) {
-	background: #88888866 !important;
+  background: #8883 !important;
 }
 
 .tab-background[selected],
 .tab-content[selected] {
-	margin: 0 0 0 0 !important;
-	max-height: 40px !important;
-	min-height: 40px !important;
+  margin: 0 0 0 0 !important;
+  max-height: 40px !important;
+  min-height: 40px !important;
 }
 .tab-background,
 .tab-content {
-	max-height: 32px !important;
-	min-height: 32px !important;
+  max-height: 32px !important;
+  min-height: 32px !important;
 }
 
 /* .tabbrowser-tab:last-of-type .tab-background[selected], */
@@ -24,47 +24,47 @@
 
 .tabbrowser-tab[first-visible-tab]:last-of-type .tab-background[selected],
 .tabbrowser-tab[first-visible-tab]:last-of-type .tab-content[selected] {
-	margin: 0 0 0 0 !important;
-	min-width: 100% !important;
-	max-width: 100% !important;
+  margin: 0 0 0 0 !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
 }
 
 .tabbrowser-tab {
-	padding: 0px 0px 0px 4px !important;
+  padding: 0px 0px 0px 4px !important;
 }
 
 .tabbrowser-tab[seleced] {
-	padding: 0 !important;
+  padding: 0 !important;
 }
 
 .tab-content[selected] .tab-icon-stack .tab-icon-image {
-	margin: 0 2px 0 -4px !important;
+  margin: 0 2px 0 -4px !important;
 }
 
 .tab-content .tab-icon-stack .tab-icon-image {
-	margin: 7px 2px 0 -4px !important;
-	height: 25px !important;
-	width: 25px !important;
+  margin: 7px 2px 0 -4px !important;
+  height: 25px !important;
+  width: 25px !important;
 }
 
 .tab-close-button {
-	padding: 3px !important;
-	width: 17px !important;
-	height: 20px !important;
+  padding: 3px !important;
+  width: 17px !important;
+  height: 20px !important;
 }
 
 .tab-text:not([selected]),
 .tab-close-button:not([selected]) {
-	margin-bottom: -6px !important;
+  margin-bottom: -6px !important;
 }
 
 #tabbrowser-tabs {
-	--tab-min-height: 42px !important;
+  --tab-min-height: 42px !important;
 }
 
 #TabsToolbar,
 #TabsToolbar > hbox,
 #TabsToolbar-customization-target,
 #tabbrowser-arrowscrollbox {
-	max-height: 37px !important;
+  max-height: 37px !important;
 }

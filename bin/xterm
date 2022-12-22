@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+t=$(($(date +%_H\*60+%_M)))
+read -ra day < /tmp/day
+if ((day[0] < t && t < day[1])); then
+	foot -dnone -c ~/.config/foot/light.ini "$@" &
+else
+	foot -dnone "$@" &
+fi
+disown

@@ -18,5 +18,10 @@
   untracked = blue
 [pull]
 	rebase = false
+[push]
+	autoSetupRemote = true
 [alias]
-	ll = log --oneline --graph --all --decorate
+	l = log --oneline --graph --decorate
+	la = log --oneline --graph --decorate --all
+[core]
+	editor = nvim --cmd 'let g:unception_block_while_host_edits=1'

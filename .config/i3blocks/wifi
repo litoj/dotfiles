@@ -1,27 +1,32 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # Internet status script
 
 #Nice icons:    
-if [[ $button -eq 1 ]]; then
+if ((button == 1)); then
 	term -e nmtui &> /dev/null
 fi
 
 if [[ $BLOCK_INSTANCE ]]; then
-	read -a line <<< $(ip a s $BLOCK_INSTANCE)
+	read -ra line <<< "$(ip a s "$BLOCK_INSTANCE")"
 else
-	while read -a line; do
+	while read -ra line; do
 		[[ ${line[1]} =~ ^wlo || ${line[1]} =~ ^wlp ]] && BLOCK_INSTANCE=${line[1]} && break
-	done <<< $(ip a)
+	done <<< "$(ip a)"
 fi
 [[ ${line[2]} =~ UP ]] && on=1
+declare -i quality
 if [[ $on ]]; then
-	while read -a line; do
+	while read -ra line; do
 		[[ ${line[0]} == "$BLOCK_INSTANCE"* ]] &&
 			quality=$((${line[2]%.*} * 10 / 7)) && break
 	done < /proc/net/wireless
-	[[ $quality ]] && read -a line <<< $(nmcli) && ssid=${line[-1]}
+	[[ $quality ]] && read -ra line <<< "$(nmcli)" && ssid=${line[-1]}
 fi
-TEXT=$([[ $on ]] && ([[ $quality ]] && echo " $quality%: $ssid" || echo "") || echo "")
+if [[ $on ]]; then
+	[[ $quality ]] && TEXT=" $quality%: $ssid" || TEXT=
+else
+	TEXT=
+fi
 
 echo "$TEXT
 $TEXT"

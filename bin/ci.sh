@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 ftest=""
 for f in *.txt; do
 	IFS=— data=($(cat $f))

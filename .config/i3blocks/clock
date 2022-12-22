@@ -1,12 +1,10 @@
-#!/usr/bin/env bash
-# Clock script
-if ((button == 1)); then
-	TEXT=$(date +" %H:%M:%S")
-else
-	TEXT=$(date +" %H:%M")
-fi
+#!/usr/bin/bash
 
-echo "$TEXT
-$TEXT"
+TEXT=$(date +"%S")
+((TEXT > 0)) && sleep $((60 - TEXT))
+date +" %H:%M"
+while sleep 60; do
+	date +" %H:%M"
+done
 
 #~/.config/i3blocks/colorcode $((($(date +%H) * 3600 + $(date +%M)) / 432))

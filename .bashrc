@@ -2,6 +2,7 @@
 
 [[ $- != *i* ]] && return
 
+. /usr/share/bash-completion/bash_completion
 if command -v bat &> /dev/null; then
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi

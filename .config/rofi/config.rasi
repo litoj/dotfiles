@@ -2,7 +2,7 @@ configuration {
 	matching: "normal";
 	modi: "window,drun,run"; //ssh
 	show-icons: true;
-	terminal: "st";
+	terminal: "xterm";
 /*	window-command: "wmctrl -i -R {window}";*/
 /*	window-match-fields: "all";*/
 	icon-theme: "MB-Olive";

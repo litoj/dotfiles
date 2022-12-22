@@ -1,37 +1,36 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # Volume script
 #Nice icons:       
+read -ra WP < /tmp/wp
 if [[ $button ]]; then
 	if ((button > 3)); then
-		pactl set-source-volume 0 $( ((button == 4)) && echo + || echo -)1%
+		wpctl set-volume ${WP[1]} 1%$( ((button == 4)) && echo + || echo -)
 	elif ((button == 1)); then
-		pactl set-source-mute 0 toggle
+		wpctl set-mute ${WP[1]} toggle
 	else
-		term -e pulsemixer &
+		xterm -e pulsemixer &
 		disown
 	fi
 fi
 
-VOL=($(pactl get-source-volume 0))
-VOL=${VOL[4]%\%}
-MUTED=($(pactl get-source-mute 0))
-MUTED=${MUTED[1]}
+read -ra ARR <<< "$(wpctl get-volume ${WP[1]})"
+VOL=${ARR[1]/./}
+VOL=${VOL##0}
+MUTED=${ARR[2]}
 
 if [[ -z $VOL ]]; then
 	printf " ?\n ?\n"
-	~/.config/i3blocks/colorcode ?
+	~/.config/i3blocks/colorcode \?
 	exit 0
 fi
 
-if [[ $MUTED == yes ]]; then
+if [[ $MUTED ]]; then
 	ICON=
-elif ((VOL >= 30)); then
-	ICON=
 else
-	ICON=
+	ICON=
 fi
 
 notify-send -a signal -h int:value:$VOL -h string:synchronous:mic "$ICON $VOL"
 echo "$ICON $VOL%
 $ICON $VOL%"
-~/.config/i3blocks/colorcode $((VOL * 3))
+[[ $MUTED ]] && echo "#f03522" || ~/.config/i3blocks/colorcode $((VOL * 2))

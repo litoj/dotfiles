@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 # tex files: Compiles to pdf, including bibliography if necessary
 # md files: Compiles to pdf via pandoc
@@ -15,6 +15,11 @@ base="${file%.*}"
 basename=${base##*\/}
 
 cd "$dir" || exit
+
+if [[ -f $dir/MakeFile ]]; then
+	make
+	exit
+fi
 
 textype() {
 	if [[ $basename =~ [[:space:]]P[0-9]*$ ]]; then
@@ -48,7 +53,15 @@ case "$file" in
 		echo /tmp/"$basename".html
 		;;
 	*config\.h) make clean install ;;
-	*\.c) g++ -Wall -pedantic -std=c++17 -O2 "$file" -o "$base.out" ;;
+	*\.c | *\.cpp)
+		if [[ -f $dir/Makefile ]]; then
+			make
+		elif [[ $file == *\.cpp ]]; then
+			gcc -Wall -pedantic -O2 -std=c++17 -lstdc++ "$file" -o "$base.out"
+		else
+			gcc -Wall -pedantic -O2 "$file" -o "$base.out"
+		fi
+		;;
 	*\.py) python "$file" ;;
 	*\.m) octave "$file" ;;
 	*\.scad) openscad -o "$base".stl "$file" ;;

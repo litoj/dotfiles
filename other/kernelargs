@@ -1,0 +1,1 @@
+root=UUID=... rw logleve=2 resume=UUID=... resume_offset=... acpi_osi=Linux mitigations=off amd_psate.shared_mem=1 amd_pstate=passive quiet initrd=\booster-linux.img

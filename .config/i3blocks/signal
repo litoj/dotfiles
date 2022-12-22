@@ -1,32 +1,82 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #Signal managing script for statusbar
 
 case "$1" in
 	"vol")
+		read -ra WP < /tmp/wp
 		if [[ $2 == toggle ]]; then
-			pactl set-sink-mute 0 $2
+			wpctl set-mute ${WP[0]} "$2"
 		else
-			pactl set-sink-volume 0 $2%
+			wpctl set-volume ${WP[0]} "$2"
 		fi
 		pkill -RTMIN+10 i3blocks
 		;;
 	"mic")
+		read -ra WP < /tmp/wp
 		if [[ $2 == toggle ]]; then
-			pactl set-source-mute 0 $2
+			wpctl set-mute ${WP[1]} "$2"
 		else
-			pactl set-source-volume 0 $2%
+			wpctl set-volume ${WP[1]} "$2"
 		fi
 		pkill -RTMIN+13 i3blocks
 		;;
 	"light")
-		light=$(backlight $2 $3)
+		light=$(backlight "$2" "$3")
 		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
 		pkill -RTMIN+11 i3blocks
 		;;
 	"kb")
-		[[ $(swaymsg -t get_inputs -p | grep US -m 1) ]] && kb=cz || kb=us
+		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
 		swaymsg input "1:1:AT_Translated_Set_2_keyboard" xkb_switch_layout next
 		notify-send -a signal -h string:synchronous:kb " $kb"
 		pkill -RTMIN+12 i3blocks
+		;;
+	"wp")
+		declare -a echo norm hdmi
+		while [[ -z $norm ]]; do
+			sleep 1
+			while IFS=: read -ra line; do
+				case "${line[1]}" in
+					"Echo-Cancel Sink")
+						echo[0]=$line
+						echo[2]=${line[2]}
+						;;
+					"Sink")
+						norm[0]=$line
+						norm[2]=${line[2]}
+						;;
+					*"HDMI")
+						hdmi[0]=$line
+						hdmi[2]=${line[2]}
+						;;
+					"Echo-Cancel Source") echo[1]=$line ;;
+					"Source") norm[1]=$line ;;
+				esac
+			done <<< "$(wpctl status | sed -En 's/.*([* ])   ([0-9]+)\. ((Echo-Cancel )?(Source|Sink)|.*HDMI).*/\2:\3:\1/p')"
+		done
+
+		if [[ $2 == tgl ]]; then
+			if [[ ${norm[2]} == \* ]]; then
+				norm[2]=' '
+				[[ $hdmi ]] && hdmi[2]='*' || echo[2]='*'
+			else
+				norm[2]='*'
+			fi
+		fi
+
+		if [[ ${norm[2]} == \* ]]; then
+			def=(${norm[0]} ${norm[1]} ${norm[0]} ${norm[1]} '-u low Normal')
+		elif [[ ${echo[2]} == \* ]]; then
+			def=(${norm[0]} ${norm[1]} ${echo[0]} ${echo[1]} 'Echo-Cancel')
+		elif [[ ${hdmi[2]} == \* ]]; then
+			def=(${hdmi[0]} ${norm[1]} ${hdmi[0]} ${norm[1]} 'HDMI')
+		else
+			notify-send -u critical -t 2000 "Audio Err"
+		fi
+		notify-send -t 1000 ${def[4]}
+		echo "${def[0]} ${def[1]}" > /tmp/wp
+		wpctl set-default ${def[2]}
+		wpctl set-default ${def[3]}
+		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
 		;;
 esac

@@ -1,4 +1,3 @@
 modules: amdgpu
-modules_force_load: amd_pstate
 extra_files: fsck,fsck.ext4
 strip: true

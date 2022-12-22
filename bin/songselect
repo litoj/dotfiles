@@ -1,23 +1,25 @@
-#!/usr/bin/env bash
-if [[ $2 && $1 == play ]]; then
-	echo "$2" > /tmp/song
-	killall mpv
-	mpv --no-audio-display --shuffle --loop-playlist --playlist=/tmp/song
-	rm /tmp/song
-	exit 0
+#!/usr/bin/bash
+if [[ -e $2 ]]; then
+	src=${2#$PWD/}
+else
+	cd ~/Music/
+	src=$({
+		find * -type d
+		find Songs -type f
+	} | rofi -dmenu -i -p Play -theme-str 'window {width: 50%;}')
 fi
 
-src=$({
-	find ~/Music/* -type d
-	find ~/Music/Songs -type f
-} | sed "s/^.*\/Music\///" | dmenu -p Play -i)
-
-[[ $src ]] || exit
-killall mpv
+(($?)) && exit
+pkill -f "mpv --no-audio-display"
 
 if [[ $1 == mpv ]]; then
-	echo "$HOME/Music/$src" > /tmp/song
+	if [[ -f $src ]]; then
+		mpv --no-audio-display "$src"
+		echo "$PWD/${src%/*}" > /tmp/song
+	else
+		echo "$PWD/$src" > /tmp/song
+	fi
 	mpv --no-audio-display --shuffle --loop-playlist --playlist=/tmp/song
 else
-	rndMusic "$HOME/Music/$src"
+	rndMusic "$PWD/$src"
 fi

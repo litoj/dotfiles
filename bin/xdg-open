@@ -1,0 +1,38 @@
+#!/usr/bin/bash
+# simpler=faster xdg-open replacement
+
+[[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=~/.config/open.conf.sh
+[[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
+declare EXT=.${arg##*.} URI=${arg/:*/:}
+
+run() {
+	local cmd=$1
+	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
+	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || {
+		${cmd#@} "${arg[@]}" &> /dev/null &
+		disown
+	}
+	exit 0
+}
+
+# prefix gui/bg apps with '@', $1=cmd
+try() {
+	local app="$1"
+	shift
+	while (($#)); do
+		if [[ $1 == .* ]]; then
+			[[ $EXT == $1 ]] && run $app
+		elif [[ $1 == *: ]]; then
+			[[ $URI == $1 ]] && run $app
+		elif [[ $arg == $1 ]]; then
+			run $app
+		fi
+		shift
+	done
+}
+
+[[ -f $CFG ]] && . "$CFG"
+
+[[ -d $arg ]] && run "$EXPLORER"
+[[ -e $arg ]] && run "$EDITOR"
+run "$BROWSER"

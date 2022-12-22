@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # This is a color generator, use RGB for rainbow, RG for red-to-green, GruvRG for gruvbox accent, or
 [[ $(cat /sys/class/power_supply/BAT0/status) == Discharging ]] && exit 0
 

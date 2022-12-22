@@ -301,6 +301,19 @@
 		</dict>
 		<dict>
 			<key>name</key>
+			<string>Link text</string>
+			<key>scope</key>
+			<string>markup.underline.link</string>
+			<key>settings</key>
+			<dict>
+				<key>fontStyle</key>
+				<string>underline</string>
+				<key>foreground</key>
+				<string>#07000000</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
 			<string>Markup: underline</string>
 			<key>scope</key>
 			<string>markup.underline</string>

@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #Memory usage, total mem usage on click
 
 [[ $BLOCK_INSTANCE == swap && -z $(swapon --show=NAME) ]] && exit 0
 declare -i MTotal MUsed STotal SUsed
-while read -a line; do
+while read -ra line; do
 	case ${line[0]} in
 		'Mem:')
 			MTotal=${line[1]}
@@ -15,7 +15,7 @@ while read -a line; do
 			break
 			;;
 	esac
-done <<< $(free -m)
+done <<< "$(free -m)"
 
 if [[ $BLOCK_INSTANCE == swap ]]; then
 	USED=$SUsed
@@ -36,7 +36,7 @@ PCT=${PCT/#./0.}
 	USED=${USED/#./0.} || TYPE="M"
 
 # Nice icons:  
-if [[ $button == 1 ]]; then
+if ((button == 1)); then
 	TEXT=" $USED$TYPE/${TOTAL}G ($PCT%)"
 elif [[ $button == 3 ]]; then
 	ps axo rss,comm |

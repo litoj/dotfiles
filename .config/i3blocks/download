@@ -1,20 +1,20 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # Download use script
 
 # Use the provided interface, otherwise the device used for the default route.
 if [[ -z $INTERFACE && $BLOCK_INSTANCE ]]; then
 	INTERFACE=$BLOCK_INSTANCE
 elif [[ -z $INTERFACE ]]; then
-	while read -a line; do
+	while read -ra line; do
 		[[ ${line[0]} == default ]] && INTERFACE=${line[4]} && break
-	done <<< $(ip route)
+	done <<< "$(ip route)"
 fi
 # Exit if there is no default route
 [[ $INTERFACE ]] || exit
 
 # Issue #36 compliant.
 if ! [[ -e /sys/class/net/$INTERFACE/operstate ]] ||
-	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(cat /sys/class/net/$INTERFACE/operstate) != up ]]; then
+	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(cat /sys/class/net/"$INTERFACE"/operstate) != up ]]; then
 	echo " "
 	echo " "
 	~/.config/i3blocks/colorcode 0
@@ -25,7 +25,7 @@ fi
 path="/dev/shm/${0##*/}-$INTERFACE"
 
 # grabbing data for each adapter.
-read rx < "/sys/class/net/$INTERFACE/statistics/rx_bytes"
+read -r rx < "/sys/class/net/$INTERFACE/statistics/rx_bytes"
 
 # get time
 time=$(date +%s)
@@ -38,7 +38,7 @@ if ! [[ -f $path ]]; then
 fi
 
 # read previous state and update data storage
-old=($(cat "$path"))
+mapfile "$path" old
 echo "$time $rx" > "$path"
 
 # calc time passed

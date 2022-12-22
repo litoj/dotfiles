@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 if [[ -f $1 ]]; then
 	mpv --no-audio-display "$1"

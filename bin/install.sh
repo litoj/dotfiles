@@ -1,51 +1,50 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # This I use for my own use, simply put, it installs all the packages I need and puts all theme
 # files where I want them. Use only as the user on the machine who you want to affect
 
-if [[ $PWD == *dotfiles* ]]; then
-	while [[ $PWD != *dotfiles ]]; do
-		if [[ $PWD == *dotfiles* ]]; then
-			cd ..
-		else
-			cd dotfiles
-		fi
-	done
-else
-	cd ${0%/bin/install.sh}
-fi
+cd "${0%bin/install.sh}" || cd ..
 
 if [[ ! $(which paru) ]]; then
-	sudo pacman --needed -S git base-devel cargo
-	git clone https://aur.archlinux.org/paru-bin.git
-	cd paru-bin
-	makepkg -si
-	cd ..
-	rm -rf paru-bin
+	(
+		sudo pacman --needed -S git base-devel cargo
+		git clone https://aur.archlinux.org/paru-bin.git
+		cd paru-bin && makepkg -si
+		rm -rf paru-bin
+	)
 fi
 
 neovim() {
 	printf '\nInstalling neovim LSPs.\n'
-	paru --needed -S $(printf '
+	echo '
 bash-language-server
 clang
 eslint
-lua-format
+jdtls
 lua-language-server
 pandoc-bin
 prettier
 pyright
-shellcheck
 shfmt
-typescript-language-server
+stylua
 vscode-langservers-extracted
-yaml-language-server
-yapf')
+yapf' | paru --needed -S -
+	if which java; then
+		(
+			export JAVA_HOME=/usr/lib/jvm/default-runtime/
+			if cd ~/.local/share/; then
+				git clone https://github.com/microsoft/java-debug && cd java-debug &&
+					./mvnw clean install && cd ..
+				git clone https://github.com/microsoft/vscode-java-test && cd vscode-java-test &&
+					npm install && npm run build-plugin
+			fi
+		)
+	fi
 }
 
 # installs packages for latex
 
 latex() {
-	paru --needed -S $(printf '
+	echo '
 texlab
 texlive-bibtexextra
 texlive-fontsextra
@@ -54,33 +53,33 @@ texlive-humanities
 texlive-latexindent-meta
 texlive-pictures
 texlive-publishers
-texlive-science')
+texlive-science' | paru --needed -S -
 }
 
 # installs all basics aside of system defaults, such as: base, base-devel, linux, git, sudo
 basics() {
 	printf '\nInstalling basics.\n'
-	paru --needed -S $(printf '
+	echo '
 acpi
-acpid
 alsa-utils
-arandr
+arch-install-scripts
 arp-scan
 bc
 bashmount
 bat
+bat-extras
+booster
 dragon-drop
 dunst
 engrampa
 exa
 fd
 fish
+foot
 fzf
 gnu-netcat
-go
 gparted
 grim
-grub
 htop
 i3blocks
 imv
@@ -93,29 +92,28 @@ mpv-mpris
 neofetch
 neovim
 net-tools
-network-manager-applet
-nerd-fonts-inconsolata
+ttf-inconsolata-nerd
 networkmanager
+nm-connection-editor
 npm
 ntfs-3g
 openssh
+otf-font-awesome
 otf-overpass
 p7zip
 pacman-contrib
 pcmanfm-gtk3
 pipewire-alsa
+pipewire-jack
 pipewire-pulse
 playerctl
 pulsemixer
 python-pynvim
-qt5ct
 ranger
-redshift
-reflector
 ripgrep
-rofi-dmenu
 rofi-lbonn-wayland-only-git
 slurp
+sunwait
 sway
 swaybg
 swayidle
@@ -125,73 +123,64 @@ ttf-fira-code
 ttf-joypixels
 ttf-nova
 udisks2
-ueberzug
 ufw
+urlencode
 wget
 wireplumber
 wl-clipboard
 wlsunset
 xdg-desktop-portal-wlr
+xdg-desktop-portal-gtk
+xdg-utils
+xorg-xhost
 xorg-xwayland
-yt-dlp')
-	wget https://archive.archlinux.org/packages/o/otf-font-awesome/otf-font-awesome-5.15.4-1-any.pkg.tar.zst
-	paru --noconfirm -U otf-font-awesome*
-	rm otf-font-awesome*
-	git clone https://github.com/JosefLitos/st.git && cd st && sudo make clean install && cd .. &&
-		rm -rf st
-	sudo ln -s $PWD/bin/* /usr/local/bin/ && {
+yt-dlp' | paru --needed -S -
+	sudo ln -s "$PWD"/bin/* /usr/local/bin/ && {
 		sudo rm /usr/local/bin/install.sh
 		sudo rm /usr/local/bin/backlight
-		sudo cp bin/backlight /usr/local/bin/
-		sudo chown root:root /usr/local/bin/backlight && sudo chmod +s /usr/local/bin/backlight
+		sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
+		sudo sudo chmod +s /usr/local/bin/backlight
 		sudo systemctl enable NetworkManager
 		sudo systemctl enable ufw.service
-		sudo systemctl enable acpid
-		sudo ln -s $PWD/other/etc-acpi-handler.sh /etc/acpi/handler.sh
 		sudo rm -r /var/log/journal
-		bat cache --build
 	}
 }
 
 # GUI applications installation
 guis() {
 	printf '\nInstalling GUI applications.\n'
-	paru --needed -S $(printf '
+	echo '
 cpupower-gui
 firefox
 gimp
-inkscape
 jdk-openjdk
-jdk8-openjdk
-kdenlive-appimage
 netbeans
 scrcpy
 thunderbird
-transmission-gtk')
+transmission-gtk
+qt6-wayland
+qt6ct
+prismlanucher-bin' | paru --needed -S -
 }
 
 configs() {
 	printf '\nLinking configs.\n'
-	[[ -f /bin/fish ]] && chsh -s /bin/fish
-	ln -s $PWD/.bashrc ~/
-	ln -s $PWD/.icons ~/
-	ln -s $PWD/.gtkrc-2.0 ~/
+	ln -s "$PWD"/.bashrc ~/
+	ln -s "$PWD"/.gitconfig ~/
+	ln -s "$PWD"/.gtkrc-2.0 ~/
+	ln -s "$PWD"/.icons ~/
 	mkdir ~/.config
-	cd .config
-	ln -s $PWD/* ~/.config/
-	rm ~/.config/pulse
-	mkdir ~/.config/pulse
-	ln -s $PWD/pulse/* ~/.config/pulse/
-	rm ~/.config/nvim
-	mkdir ~/.config/nvim
-	mkdir ~/.config/nvim/.git
-	ln -s $PWD/nvim/* ~/.config/nvim/
-	cd ..
+	ln -s "$PWD"/.config/* ~/.config/
+	bat cache --build
+	mkdir -p ~/.local/share/applications/
+	ln -s "$PWD"/other/fb.desktop ~/.local/share/applications/fb.desktop
+	xdg-mime default fb.desktop inode/directory
+	[[ -f /bin/fish ]] && chsh -s /bin/fish
 }
 
 theming() {
 	printf '\nInstalling themes.\n'
-	sudo ln -s $PWD/theming/qtMB-Lime.conf /usr/share/qt5ct/colors/
+	sudo ln -s "$PWD"/theming/qtMB-Lime.conf /usr/share/qt5ct/colors/
 	[[ -z "$(unzip)" ]] && paru --noconfirm -S unzip
 	sudo unzip theming/MB-Lime-3.38_1.9.3.zip -d /usr/share/themes/ > /dev/null
 	sudo unzip theming/MB-Olive.zip -d /usr/share/icons/ > /dev/null
@@ -199,35 +188,34 @@ theming() {
 
 sysFiles() {
 	printf '\nWriting system files.\n'
-	sudo bash -c 'printf "EDITOR=nvim\nQT_QPA_PLATFORMTHEME=qt5ct\nPAGER=bat\n" > /etc/environment'
-	if [[ -z $(cat /etc/hostname 2> /dev/null) ]]; then
-		read -p 'Pick a system/host name: ' hostname
-		while [[ $hostname == *" "* ]]; do
-			read -p 'Pick a 1 word hostname: ' hostname
+	printf 'EDITOR=nvim\nVISUAL=nvim\nPAGER=bat\n' | sudo tee /etc/environment
+	if [[ ! -f /etc/hostname ]]; then
+		read -rp 'Pick a system/host name: ' hostname
+		while [[ $hostname =~ ' ' ]]; do
+			read -rp 'Pick a 1 word hostname: ' hostname
 		done
+		echo "$hostname" | sudo tee /etc/hostname
 	else
 		hostname=$(cat /etc/hostname)
 	fi
-	sudo bash -c 'printf "blacklist pcspkr\nblacklist btusb\n" > /etc/modprobe.d/blacklist.conf'
-	sudo bash -c 'printf "LANG=cs_CZ.UTF-8" > /etc/locale.conf'
+	printf 'blacklist pcspkr\nblacklist btusb\n' | sudo tee /etc/modprobe.d/blacklist.conf
+	[[ -f /etc/locale.conf ]] || printf 'LANG=cs_CZ.UTF-8' | sudo tee /etc/locale.conf
 	sudo sed -i 's/^#\(cs_CZ.U\)/\1/' /etc/locale.gen
 	sudo locale-gen
-	sudo bash -c 'printf "'$hostname'" > /etc/hostname'
-	sudo bash -c 'printf "\n127.0.0.1 localhost\n::1 localhost\n127.0.1.1
-	'$hostname'.localdomain '$hostname'" > /etc/hosts'
-	sudo sed -i 's/#Color/Color\nILoveCandy/;s/.*IgnorePkg *= *\(.*\)/IgnorePkg = \1 otf-font-awesome/;s/.*ParallelDownloads.*/ParallelDownloads=8/' /etc/pacman.conf
-	paru -Sy
-	sudo bash -c 'mkdir /etc/systemd/system/getty@tty1.service.d; sed "s/kepis/'$USER'/" \
-	other/etc-systemd-system-getty@tty1.service.d-override.conf > \
-	/etc/systemd/system/getty@tty1.service.d/override.conf'
+	printf '127.0.0.1 localhost\n::1 localhost\n127.0.1.1 %s.localdomain %s' "$hostname" "$hostname" | sudo tee /etc/hosts
+	sudo sed -i 's/#Color/Color\nILoveCandy/;s/.*ParallelDownloads.*/ParallelDownloads=8/' /etc/pacman.conf
+	paru -Syy
+	sudo mkdir '/etc/systemd/system/getty@tty1.service.d'
+	sudo sed "s/kepis/$USER/" 'other/etc-systemd-system-getty@tty1.service.d-override.conf' |
+		sudo tee '/etc/systemd/system/getty@tty1.service.d/override.conf'
 	sudo sed -i \
 		's/#HandlePowerKey=.*/HandlePowerKey=ignore/;s/#HandleLidSwitch=.*/HandleLidSwitch=ignore/;s/#PowerKeyIgnoreInhibited=.*/PowerKeyIgnoreInhibited=yes/' \
-		/etc/systemd/logind.conf
-	sudo ln -sf /usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime
+		'/etc/systemd/logind.conf'
+	sudo ln -sf '/usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime'
 }
 
 help() {
-	printf "This program was made to simplify my linux reinstallations.
+	echo 'This program was made to simplify my linux reinstallations.
 	-b         install basic and essential programms
 	-n         install neovim language servers
 	-l         install latex packages
@@ -237,39 +225,44 @@ help() {
 	-s         write system files like environment, hostname etc.
 	-A         install everything available
 	-a         install everything excluding latex and guis
-	-h,--help  list this help
-	\n"
+	-h,--help  list this help'
 }
 
-for param in "$@"; do
-	case "$param" in
-		'-b') basics ;;
-		'-g') guis ;;
-		'-c') configs ;;
-		'-t') theming ;;
-		'-s') sysFiles ;;
-		'-n') neovim ;;
-		'-l') latex ;;
-		'-a') # all except latex
+while getopts bgctsnlaA opt; do
+	case "$opt" in
+		b) basics ;;
+		g) guis ;;
+		c) configs ;;
+		t) theming ;;
+		s) sysFiles ;;
+		n) neovim ;;
+		l) latex ;;
+		a) # all except latex
 			if [[ $USER == root ]]; then
-				echo "You have to create a user and be allow in sudoers first."
+				echo 'You have to create a user and be allowed in sudoers first.'
 				exit 0
 			fi
+			basics
 			sysFiles
 			configs
-			basics
 			theming
 			neovim
 			;;
-		'-A') # all as in everything
+		A) # all as in everything
+			if [[ $USER == root ]]; then
+				echo 'You have to create a user and be allowed in sudoers first.'
+				exit 0
+			fi
+			basics
 			sysFiles
 			configs
-			basics
 			theming
-			guis
 			neovim
+			guis
 			latex
 			;;
-		*) help ;;
+		\?) help ;;
 	esac
 done
+
+(($# == 0)) && help

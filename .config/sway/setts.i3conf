@@ -1,94 +1,98 @@
-## Window behaviour
-set $float for_window [class=".*"] floating enable
-# Uncomment to enable floating behaviour
-#$float
+set $tbg #10101088
+set $bg #88888800
+set $hi #66d022
+set $hi2 #54a015
+set $con #ad30a8
+set $text #f0eeea
+set $fc #40a3e0
 
 ## Window style
 default_floating_border pixel $border
 default_border pixel $border
-gaps inner 17
-font pango: Nova Square 15
+gaps inner $gaps
+font Nova Square 15
+
+# # SwayFX specific
+# corner_radius 15
+# smart_corner_radius on
+# default_dim_inactive 0.15
+# dim_inactive_colors.unfocused #888888ff
+# blur enable
+# blur_radius 2
+# shadow_color $fc
+# shadow_blur_radius 40
+# for_window [title="Picture-in-Picture"] dim_inactive 0
+# for_window [app_id="mpv"] dim_inactive 0
 
 for_window [app_id="dragon-drop"] floating enable, sticky enable
-for_window [title="Picture-in-Picture"] floating enable, sticky enable, border pixel 1
+for_window [app_id="firefox" title="Picture-in-Picture|Obraz v obraze"] floating enable, sticky enable, border pixel $border
 for_window [title=".*Android Emulator.*"] floating enable, border none
 for_window [title="win0"] floating enable
 for_window [app_id="cpupower-gui"] floating enable, border pixel $border
 for_window [app_id="thunderbird" instance="Calendar"] floating enable
 for_window [app_id="thunderbird" instance="Msgcompose"] floating enable
-for_window [class="ru-turikhay-tlauncher-bootstrap-Bootstrap"] floating enable
 for_window [class="scrcpy"] focus, floating enable, move position -1 191, resize set 1922 890
 for_window [class="Ripcord" title="Edit Message"] floating enable
 
 xwayland enable
+focus_on_window_activation smart
 focus_follows_mouse no
 mouse_warping none
 # Use Mouse+↓ to drag floating windows
 floating_modifier $Mod
 
 # Window border colours
-set $tbg #10101088
-set $bg #00000000
-set $hi #77dd22
-set $hi2 #54a015
-set $con #ad30a8
-set $text #f0eeea
-set $bor #40a3e0
-
-# class                 border  bg    text    indic.  child_border
-client.focused          $bor    $tbg  $text   $con    $bor
-client.focused_inactive $bg     $tbg  $text   #32302d $bg
-client.unfocused        $bg     $tbg  $text   #22201d $bg
-client.background #00000000
+# class                 border  bg    text    indic. child_border
+client.focused          $con    $con  $text   $fc    $con
+client.focused_inactive $bg     $tbg  $text   $bg    $bg
+client.unfocused        $bg     $tbg  $text   $bg    $bg
 
 ## Workspaces
 # simple formatting options
 #set $w0 <span color=\"#888\"><b>1: </b></span>
-set $w1 ""
-set $w2 ""
-set $w3 "<b>3</b>"
-set $w4 "<b>4</b>"
-set $w5 ""
-set $w6 ""
-set $w7 ""
-set $w8 ""
-set $w9 ""
+set $w1 
+set $w2 2
+set $w3 3
+set $w4 4
+set $w5 
+set $w6 
+set $w7 
+set $w8 
+set $w9 
 
 workspace $w9 gaps inner 0
 hide_edge_borders smart
 smart_gaps on
 
+assign [app_id="firefox"] $w8
+assign [class="NetBeans|jetbrains-.*"] $w5
+assign [app_id="gimp|Inkscape"] $w7
+assign [app_id="thunderbird|tutanota-desktop"] $w6
 assign [title="^Minecraft.? 1\.[1-2][0-9][0-9.]*$"] $w9
+assign [app_id="org.prismlauncher.*"] $w9
+assign [class="org.prismlauncher.*"] $w9
 assign [class=".*.exe"] $w9
 assign [class="[sS]team.*"] $w9
-assign [app_id="firefox.*"] $w8
-assign [app_id="vlc|mpv|Gimp|Inkscape"] $w7
-assign [title=".*LibreOffice.*|Soffice"] $w6
-assign [app_id="thunderbird|tutanota-desktop"] $w6
-assign [class="NetBeans"] $w5
+assign [app_id="mpv"] $w7
 
 # Outputs
 set $USBC DP-1
 set $HDMI HDMI-A-1
 output $display pos 0,0
-output $USBC mode 3840x2160@60Hz scale 2
-output $HDMI adaptive_sync on scale 2
+output "Philips Consumer Electronics Company PHL 559M1RYV Unknown" adaptive_sync on scale 2
 
 workspace $w1 output $display
-workspace $w2 output $display
-workspace $w3 output $HDMI
+workspace $w2 output $HDMI
+workspace $w3 output $USBC
 workspace $w4 output $USBC
-workspace $w5 output $display
-workspace $w6 output $display
 workspace $w7 output $HDMI
-workspace $w8 output $HDMI
 workspace $w9 output $HDMI
 
 ## Statusbar setup
 set $bar #222222ff
 bar {
 	height 24
-	status_command i3blocks
+	status_command i3blocks 2>/dev/null
 	# modes: dock, hide, invisible
 	mode dock
 	modifier $Mod+Ctrl

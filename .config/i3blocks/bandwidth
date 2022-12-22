@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # Bandwidth script
 
 # Use the provided interface, otherwise the device used for the default route.

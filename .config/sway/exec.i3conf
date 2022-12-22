@@ -1,37 +1,44 @@
-# Desktop looks
-$screen
+# set background
+exec $screen
+
 exec {
 	gsettings set org.gnome.desktop.interface gtk-theme 'Material-Black-Lime-3.38'
 	gsettings set org.gnome.desktop.interface icon-theme 'MB-Olive'
 	gsettings set org.gnome.desktop.interface cursor-theme 'Sweet-cursors'
 	gsettings set org.gnome.desktop.interface cursor-size '32'
-	gsettings set org.gnome.desktop.interface font-name 'Nova Square 16'
+	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
+	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on' &>/dev/null
+	wlsunset -l 50 -L 14.5 &>/dev/null
+	which cpupower-gui &>/dev/null && cpupower-gui pr $([[ $(acpi) =~ D ]] && echo Powersave || echo Optimal) &>/dev/null
+	sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print $1*60+$2" "$3*60+$4}' > /tmp/day
 }
+exec_always ~/.config/i3blocks/signal wp
+
 seat seat0 xcursor_theme 'Sweet-cursors' 32
 
-# Background daemons
-exec {
-	swayidle timeout 300 'swaymsg "output $display dpms off"' resume 'swaymsg "output $display dpms on"'
-	wlsunset -l 50 -L 14.5
-}
-
-# One time changes
-exec which cpupower-gui && cpupower-gui pr $([[ $(acpi) =~ D ]] && echo Powersave || echo Optimal) >/dev/null
+# seat seat0 attach 1:1:AT_Translated_Set_2_keyboard
+# seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Touchpad
+# seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Mouse
+# seat seat0 attach 0:1:Power_Button
+# seat seat0 attach 0:5:Lid_Switch
+# seat seat0 attach 0:6:Video_Bus
+# seat seat0 attach 5075:22267:Integrated_Camera:_Integrated_C
+# seat seat0 attach 5075:22267:Integrated_Camera:_Integrated_I
+# seat seat1 fallback true
 
 ## Sway specific
-bindswitch --reload --locked lid:on exec '[[ $(cat /sys/class/power_supply/BAT0/status) == Discharging ]] && a=1;\
-	[[ -f /tmp/lidsleep ]] && a+=-1; ((a)) && systemctl suspend || swaymsg output \$display dpms off'
-bindswitch --reload --locked lid:off output $display dpms on
+bindswitch --locked lid:on exec [[ -f /tmp/nolidsleep ]] && swaymsg 'output $display power off' || systemctl suspend
+bindswitch --locked lid:off exec sleep 1 && swaymsg 'output $display power on'
 
 # Devices
-input "type:keyboard" {
+input type:keyboard {
 	xkb_layout us,cz
 	xkb_options caps:escape,compose:102
 	repeat_delay 225
 	repeat_rate 40
 }
-input "type:touchpad" {
+input type:touchpad {
 	tap enabled
-	middle_emulation enabled
+	natural_scroll enabled
 }
 

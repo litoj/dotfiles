@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=filebrowser
+Terminal=false
+Exec=fb.sh %u
+MimeType=inode/directory;

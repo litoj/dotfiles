@@ -1,13 +1,51 @@
--- for sumneko_lua to work, you need to have a .git dir in parent
--- directory of your current file, otherwise it will keep recursively
--- searching for the .git directory -> keep the empty .git dir here
-require "plugins"
-require "autocommands"
-require "settings"
-require "keymappings"
-local time = tonumber(os.date("%H"))
-local month = tonumber(os.date("%m"))
-if month > 6 then month = 12 - month end
-month = math.floor(month / 2)
-vim.g.WhiteTheme = time > 8 - month and time < 17 + month
-vim.cmd "colorscheme nerdcontrast"
+require 'settings'
+
+_G.map = vim.keymap.set
+local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+if not vim.loop.fs_stat(lazypath) then
+	vim.fn.system {
+		'git',
+		'clone',
+		'--filter=blob:none',
+		'--single-branch',
+		'https://github.com/folke/lazy.nvim.git',
+		'--branch=stable',
+		lazypath,
+	}
+end
+vim.opt.rtp:prepend(lazypath)
+require('lazy').setup {
+	change_detection = { enabled = false },
+	defaults = { lazy = true },
+	dev = {
+		path = '/home/kepis/Documents/personal/nvim',
+		patterns = { 'JosefLitos' },
+		fallback = true,
+	},
+	install = { colorscheme = { 'nerdcontrast' } },
+	lockfile = vim.fn.stdpath 'state' .. '/lazy-lock.json',
+	performance = {
+		rtp = {
+			disabled_plugins = {
+				'gzip',
+				'matchit',
+				-- "matchparen",
+				'netrwPlugin',
+				'tarPlugin',
+				'tohtml',
+				'tutor',
+				'zipPlugin',
+			},
+		},
+	},
+	readme = { enabled = false },
+	spec = 'plugins',
+}
+
+vim.api.nvim_create_autocmd('User', {
+	pattern = 'VeryLazy',
+	callback = function()
+		require 'keymappings'
+		require 'autocommands'
+	end,
+})

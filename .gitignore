@@ -1,6 +1,5 @@
 .config/fish/fish_variables
-.config/nvim/plugin
+.config/ranger/__*
 .config/ranger/plugins/__*
 .config/ranger/plugins/ranger_devicons/__pycache__
-.config/touchegg/.touchegg.lock
-.config/vlc/vlc-qt-interface.conf
+.config/mpv/watch_later

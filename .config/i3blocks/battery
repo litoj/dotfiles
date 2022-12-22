@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #Battery status script
 #FontAwesome icons for use
 #       ⚡ 
@@ -14,13 +14,13 @@ elif [[ ${line[6]} == zero ]]; then
 else
 	case "$TEXT" in
 		'D')
-			if ((STATE <= 20)); then
+			if ((STATE < 20)); then
 				TEXT=
-			elif ((STATE <= 40)); then
+			elif ((STATE < 40)); then
 				TEXT=
-			elif ((STATE <= 60)); then
+			elif ((STATE < 60)); then
 				TEXT=
-			elif ((STATE <= 80)); then
+			elif ((STATE < 80)); then
 				TEXT=
 			else
 				TEXT=

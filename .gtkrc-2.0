@@ -1,11 +1,7 @@
-# DO NOT EDIT! This file will be overwritten by LXAppearance.
-# Any customization should be done in ~/.gtkrc-2.0.mine instead.
-
-include "/home/kepis/.gtkrc-2.0.mine"
-gtk-theme-name="Material-Black-Lime-3.38"
-gtk-icon-theme-name="MB-Olive"
+gtk-theme-name="Dark"
+gtk-icon-theme-name="Icons"
 gtk-font-name="Nova Square 16"
-gtk-cursor-theme-name="Minecraft-cursors"
+gtk-cursor-theme-name="Sweet-cursors"
 gtk-cursor-theme-size=0
 gtk-toolbar-style=GTK_TOOLBAR_BOTH_HORIZ
 gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR

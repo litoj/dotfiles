@@ -10,10 +10,7 @@ function M.config()
 		vim.cmd.bdelete()
 
 		local ft = vim.filetype.match { buf = 0 }
-		if ft then
-			vim.bo.ft = ft
-			vim.api.nvim_exec_autocmds('FileType', { pattern = ft })
-		end
+		if ft then vim.bo.ft = ft end
 	end
 
 	require('barbar').setup {
@@ -40,6 +37,12 @@ function M.config()
 	map('t', '<M-.>', '<C-\\><C-o><Cmd>BufferNext<CR>')
 	map('n', '<S-Tab>', '<Cmd>BufferPrevious<CR>')
 	map('n', '<Tab>', '<Cmd>BufferNext<CR>')
+	-- Closing
+	map('n', '<C-w>', '<Cmd>bdelete<CR>')
+	map('i', '<C-w>', '<C-o><Cmd>bdelete<CR>')
+	map('n', '<C-S-W>', '<Cmd>bdelete!<CR>')
+	map('i', '<C-S-W>', '<C-o><Cmd>bdelete!<CR>')
+	map('t', '<C-S-D>', '<C-d><C-\\><C-o><Cmd>bdelete!<CR>')
 	-- Direct selection
 	map({ 'n', 'i' }, '<M-1>', '<Cmd>BufferGoto 1<CR>')
 	map({ 'n', 'i' }, '<M-2>', '<Cmd>BufferGoto 2<CR>')

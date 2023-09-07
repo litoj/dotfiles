@@ -1,10 +1,33 @@
 #!/usr/bin/bash
 
-TEXT=$(date +"%S")
-((TEXT > 0)) && sleep $((60 - TEXT))
-date +" %H:%M"
-while sleep 60; do
-	date +" %H:%M"
+update() {
+	x=($(date +"%H %M %S"))
+	echo " ${x[0]}:${x[1]}"
+	((x[0] = ${x[0]#0} * 60 + ${x[1]#0}))
+}
+
+STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
+themeCheck() {
+	if ((STAT[0] < x && x <= STAT[1])); then
+		gsettings set org.gnome.desktop.interface gtk-theme Light
+		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
+		touch /tmp/day
+		next=${STAT[1]}
+	else
+		gsettings set org.gnome.desktop.interface gtk-theme Dark
+		ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
+		[[ -e /tmp/day ]] && rm /tmp/day
+		((x > STAT[1])) && next=1440 || next=${STAT[0]}
+	fi
+	prev=$x
+}
+
+update
+themeCheck
+
+while sleep $((60 - x[2])); do
+	update
+	((x > next || x < prev)) && themeCheck
 done
 
 #~/.config/i3blocks/colorcode $((($(date +%H) * 3600 + $(date +%M)) / 432))

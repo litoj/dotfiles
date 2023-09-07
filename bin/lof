@@ -21,13 +21,15 @@ if [[ $3 ]]; then
 	if [[ $TITLE =~ $3 && $APP =~ $2 ]]; then
 		launch=1
 	elif [[ $2 != null ]]; then
-		swaymsg "[app_id=\"$2\" title=\"$3\"]" focus || swaymsg "[class=\"$2\" title=\"$3\"]" focus || launch=1
+		swaymsg "[app_id=\"$2\" title=\"$3\"]" focus >/dev/null ||
+			swaymsg "[class=\"$2\" title=\"$3\"]" focus >/dev/null || launch=1
 	else
-		swaymsg "[title=\"$3\"]" focus || launch=1
+		swaymsg "[title=\"$3\"]" focus >/dev/null || launch=1
 	fi
 else
 	[[ $APP =~ $2 ]] && launch=1 ||
-		swaymsg "[app_id=\"$2\"]" focus || swaymsg "[class=\"$2\"]" focus || launch=1
+		swaymsg "[app_id=\"$2\"]" focus >/dev/null ||
+		swaymsg "[class=\"$2\"]" focus >/dev/null || launch=1
 fi
 
 if [[ $launch ]]; then

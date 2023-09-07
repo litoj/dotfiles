@@ -74,11 +74,6 @@ map('n', '<M-l>', '<C-w>l')
 map('i', '<M-L>', '<C-o><C-w>l')
 map('t', '<M-L>', '<C-\\><C-o><C-w>l')
 
--- Buffer Closing
-map({ 'n', 'i' }, '<C-w>', '<Cmd>bdelete<CR>')
-map({ 'n', 'i' }, '<C-S-W>', '<Cmd>bdelete!<CR>')
-map('t', '<C-S-D>', '<C-d><Cmd>bdelete!<CR>a')
-
 -- Window actions
 -- leaving
 map({ '', 'i' }, '<C-q>', '<Cmd>q<CR>')

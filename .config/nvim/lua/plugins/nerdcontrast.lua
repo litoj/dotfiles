@@ -4,12 +4,9 @@ local M = {
 	priority = 1000,
 }
 function M.config()
-	local m = os.time() % 86400 / 60 + 120
-	local dayF = io.open('/tmp/day', 'r')
-	local rise = dayF:read '*n'
-	local set = dayF:read '*n'
-	dayF:close()
-	vim.o.background = (rise < m and m < set) and 'light' or 'dark'
+	local day = io.open('/tmp/day', 'r')
+	if day then day:close() end
+	vim.o.background = day and 'light' or 'dark'
 	require('nerdcontrast').setup {
 		bg = false,
 		export = 1,

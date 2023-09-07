@@ -1,23 +1,13 @@
-/*
- * ROFI color theme
- *
- * Based on Material-Black-Lime color scheme
- *
- * User: Kepis
- */
-
 * {
-	bg:#0f1011;
-	bg-alt:#09090a;
-	bg-e:#161718;
-	bg-e-alt:#1a1c1e;
-	fg:#868380;
-	ac:#3a5020;
-	ac-mid:#85f022;
-	ac-dark:#559915;
-	ac-fg:#f0eeea;
+	bg:#0c0c0c;
+	bg-alt:#000000;
+	bg-e:#161616;
+	bg-e-alt:#1c1c1c;
+	fg:#ffffff;
+	ac:#9d2098;
+	search:#9d2098;
+	prompt:#dddddd;
 	side:#9d2098;
-	side-a:#9d2098dd;
 	spacing:0;
 	background-color:transparent;
 	font: "Nova Square 15";
@@ -33,10 +23,6 @@ window {
 	background-color: @bg;
 }
 
-/*mainbox {
-	children: [inputbar, message, mode-switcher, listview];
-}*/
-
 listview {
 	spacing: 1px;
 	scrollbar: true;
@@ -46,10 +32,10 @@ listview {
 
 scrollbar {
 	background-color: @bg-alt;
-	handle-color: @side-a;
+	handle-color: @side;
 	handle-width: 14px;
 	border: 1px;
-	border-color: #131516;
+	border-color: @bg-alt;
 	margin: 0 0 0 3px;
 }
 
@@ -60,17 +46,18 @@ inputbar {
 }
 
 prompt {
-	text-color: @ac-dark;
+	text-color: @prompt;
+	font: "Nova Square Bold 15";
 }
 
 textbox-prompt-colon {
 	expand: false;
 	str: ": ";
-	text-color: @ac-dark;
+	text-color: @prompt;
 }
 
 entry {
-	text-color: @ac-mid;
+	text-color: @search;
 }
 
 case-indicator {
@@ -88,7 +75,7 @@ button {
 }
 
 button selected {
-	background-color: @ac;
+	background-color: @search;
 }
 
 element {
@@ -109,7 +96,7 @@ element selected {
 	background-color: @ac;
 }
 selected {
-	text-color: @ac-fg;
+	text-color: @bg-alt;
 }
 
 normal normal, alternate normal {
@@ -121,6 +108,6 @@ normal urgent, alternate urgent, selected urgent {
 }
 
 normal active, alternate active, selected active {
-	text-color: @ac-mid;
+	text-color: @search;
 }
-
+// vim: ft=css

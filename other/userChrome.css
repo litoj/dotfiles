@@ -1,8 +1,9 @@
 .tab-background[selected] {
   border: 2px solid #9d2098 !important;
+	background: #0000 !important;
 }
 .tab-background:not([selected]) {
-  background: #8883 !important;
+  background: #bbb3 !important;
 }
 
 .tab-background[selected],
@@ -16,11 +17,6 @@
   max-height: 32px !important;
   min-height: 32px !important;
 }
-
-/* .tabbrowser-tab:last-of-type .tab-background[selected], */
-/* .tabbrowser-tab:last-of-type .tab-content[selected] { */
-/* 	margin: 0 0 0 -50% !important; */
-/* } */
 
 .tabbrowser-tab[first-visible-tab]:last-of-type .tab-background[selected],
 .tabbrowser-tab[first-visible-tab]:last-of-type .tab-content[selected] {
@@ -58,13 +54,16 @@
   margin-bottom: -6px !important;
 }
 
-#tabbrowser-tabs {
-  --tab-min-height: 42px !important;
-}
-
 #TabsToolbar,
 #TabsToolbar > hbox,
 #TabsToolbar-customization-target,
 #tabbrowser-arrowscrollbox {
+  --tab-min-height: 42px !important;
   max-height: 37px !important;
+}
+#nav-bar {
+	box-shadow: none !important;
+}
+#urlbar-background {
+	border: none !important;
 }

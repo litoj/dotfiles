@@ -10,7 +10,7 @@ vim.api.nvim_create_autocmd('BufEnter', {
 		while #git > 1 and not vim.loop.fs_stat(git .. '.git/') do
 			git = git:gsub('/[^/]+/$', '/')
 		end
-		if path:find(vim.fn.getcwd(), 1, true) and git == lastRoot then return end
+		if path:find('^' .. vim.fn.getcwd()) and git == lastRoot and #git > 1 then return end
 		local clients = vim.lsp.get_clients { bufnr = state.buf }
 		if #clients > 0 then
 			for _, lsp in ipairs(clients) do

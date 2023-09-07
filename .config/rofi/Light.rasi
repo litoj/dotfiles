@@ -1,0 +1,113 @@
+* {
+	bg:#f0f0f0;
+	bg-alt:#ffffff;
+	bg-e:#ffffff;
+	bg-e-alt:#f8f8f8;
+	fg:#000000;
+	ac:#9d2098;
+	search:#9d2098;
+	prompt:#000000;
+	side:#9d2098;
+	spacing:0;
+	background-color:transparent;
+	font: "Nova Square 15";
+
+}
+
+element-icon {
+	size: 1.7ch;
+}
+
+window {
+	width: 25%;
+	background-color: @bg;
+}
+
+listview {
+	spacing: 1px;
+	scrollbar: true;
+	margin: 5px 3px 5px 5px;
+	lines: 15;
+}
+
+scrollbar {
+	background-color: @bg-alt;
+	handle-color: @side;
+	handle-width: 14px;
+	border: 1px;
+	border-color: @bg-alt;
+	margin: 0 0 0 3px;
+}
+
+inputbar {
+	background-color: @bg-alt;
+	padding: 10px 6px 10px 13px;
+	children: [prompt, textbox-prompt-colon, entry, case-indicator];
+}
+
+prompt {
+	text-color: @prompt;
+	font: "Nova Square Bold 15";
+}
+
+textbox-prompt-colon {
+	expand: false;
+	str: ": ";
+	text-color: @prompt;
+}
+
+entry {
+	text-color: @search;
+}
+
+case-indicator {
+	text-color: @side;
+}
+
+mode-switcher, message {
+	border: 1px 0;
+	border-color: @ac;
+}
+
+button {
+	background-color: @bg-e;
+	padding: 5px;
+}
+
+button selected {
+	background-color: @search;
+}
+
+element {
+	padding: 5px 2px;
+	spacing: 5px;
+	highlight: bold underline;
+}
+
+element normal {
+	background-color: @bg-e;
+}
+
+element alternate {
+	background-color: @bg-e-alt;
+}
+
+element selected {
+	background-color: @ac;
+}
+selected {
+	text-color: @bg-alt;
+}
+
+normal normal, alternate normal {
+	text-color: @fg;
+}
+
+normal urgent, alternate urgent, selected urgent {
+	text-color: @side;
+}
+
+normal active, alternate active, selected active {
+	text-color: @search;
+}
+// vim: ft=css

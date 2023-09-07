@@ -137,7 +137,6 @@ xorg-xwayland
 yt-dlp' | paru --needed -S -
 	sudo ln -s "$PWD"/bin/* /usr/local/bin/ && {
 		sudo rm /usr/local/bin/install.sh
-		sudo rm /usr/local/bin/backlight
 		sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
 		sudo sudo chmod +s /usr/local/bin/backlight
 		sudo systemctl enable NetworkManager
@@ -167,8 +166,6 @@ configs() {
 	printf '\nLinking configs.\n'
 	ln -s "$PWD"/.bashrc ~/
 	ln -s "$PWD"/.gitconfig ~/
-	ln -s "$PWD"/.gtkrc-2.0 ~/
-	ln -s "$PWD"/.icons ~/
 	mkdir ~/.config
 	ln -s "$PWD"/.config/* ~/.config/
 	bat cache --build
@@ -179,11 +176,22 @@ configs() {
 }
 
 theming() {
+	ln -s "$PWD"/.gtkrc-2.0 ~/
+	cd theming
 	printf '\nInstalling themes.\n'
-	sudo ln -s "$PWD"/theming/qtMB-Lime.conf /usr/share/qt5ct/colors/
 	[[ -z "$(unzip)" ]] && paru --noconfirm -S unzip
-	sudo unzip theming/MB-Lime-3.38_1.9.3.zip -d /usr/share/themes/ > /dev/null
-	sudo unzip theming/MB-Olive.zip -d /usr/share/icons/ > /dev/null
+	tar -xf *tar.xz
+	tar -xf *tar.gz
+	mkdir -p ~/.themes
+	mv *Dark*/ ~/.themes/Dark
+	mv *Light*/ ~/.themes/Light
+	mkdir -p ~/.icons/default
+	echo '[Icon Theme]
+Name=Default
+Comment=Default Cursor Theme
+Inherits=Sweet-cursors' > ~/.icons/default/index.theme
+	mv */ ~/.icons/Icons
+	cd ..
 }
 
 sysFiles() {
@@ -206,7 +214,7 @@ sysFiles() {
 	sudo sed -i 's/#Color/Color\nILoveCandy/;s/.*ParallelDownloads.*/ParallelDownloads=8/' /etc/pacman.conf
 	paru -Syy
 	sudo mkdir '/etc/systemd/system/getty@tty1.service.d'
-	sudo sed "s/kepis/$USER/" 'other/etc-systemd-system-getty@tty1.service.d-override.conf' |
+	sudo sed "s/kepis/$USER/g" 'other/etc-systemd-system-getty@tty1.service.d-override.conf' |
 		sudo tee '/etc/systemd/system/getty@tty1.service.d/override.conf'
 	sudo sed -i \
 		's/#HandlePowerKey=.*/HandlePowerKey=ignore/;s/#HandleLidSwitch=.*/HandleLidSwitch=ignore/;s/#PowerKeyIgnoreInhibited=.*/PowerKeyIgnoreInhibited=yes/' \

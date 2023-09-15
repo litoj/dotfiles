@@ -3,3 +3,4 @@
 .config/ranger/plugins/__*
 .config/ranger/plugins/ranger_devicons/__pycache__
 .config/mpv/watch_later
+.config/gtk-3.0/bookmarks

@@ -16,6 +16,24 @@ else
 		'D')
 			if ((STATE < 20)); then
 				TEXT=
+				if ((STATE == 20)); then
+					notify-send -t 5000 -u low -h int:value:20 'Battery   20%'
+				elif ((14 < STATE && STATE < 17)); then
+					notify-send -t 10000 -h int:value:16 "Battery   $STATE%" 'Plug the system in.'
+				elif ((9<STATE && STATE < 12)); then
+					notify-send -u critical -h int:value:12 "Battery   $STATE%" 'Plug the system in.'
+					case "$(rofi -dmenu -l 3 -p "  $STATE%" <<< 'Suspend
+Hibernate
+Power off')" in
+						'Suspend') systemctl suspend ;;
+						'Hibernate') { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
+							systemctl hibernate && sleep 60 && sudo swapoff /swapfile ;;
+						'Power off') systemctl poweroff ;;
+					esac
+				elif ((STATE < 7)); then
+					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
+						hibernate && sleep 60 && sudo swapoff /swapfile
+				fi
 			elif ((STATE < 40)); then
 				TEXT=
 			elif ((STATE < 60)); then
@@ -25,23 +43,6 @@ else
 			else
 				TEXT=
 			fi
-			case $STATE in
-				20) notify-send -t 5000 -u low -h int:value:20 'Battery   20%' ;;
-				16) notify-send -t 10000 -h int:value:16 'Battery   16%' 'Plug the system in.' ;;
-				12)
-					notify-send -u critical -h int:value:12 'Battery   12%' 'Plug the system in.'
-					case "$(rofi -dmenu -l 3 -p '  12%' <<< 'Suspend
-Hibernate
-Power off')" in
-						'Suspend') systemctl suspend ;;
-						'Hibernate') { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
-							systemctl hibernate && sleep 60 && sudo swapoff /swapfile ;;
-						'Power off') systemctl poweroff ;;
-					esac
-					;;
-				10) { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
-					hibernate && sleep 60 && sudo swapoff /swapfile ;;
-			esac
 			;;
 		'C') TEXT= ;;
 		'F') TEXT= ;;

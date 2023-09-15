@@ -3,7 +3,7 @@
 	background: #0000 !important;
 }
 .tab-background:not([selected]) {
-  background: #bbb3 !important;
+  background: #9992 !important;
 }
 
 .tab-background[selected],
@@ -59,7 +59,7 @@
 #TabsToolbar-customization-target,
 #tabbrowser-arrowscrollbox {
   --tab-min-height: 42px !important;
-  max-height: 37px !important;
+  max-height: 40px !important;
 }
 #nav-bar {
 	box-shadow: none !important;

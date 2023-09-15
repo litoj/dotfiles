@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 if [[ -f $1 ]]; then
-	mpv --no-audio-display "$1"
+	mpv --no-audio-display "$1" > /dev/null
 	exit
 fi
 
@@ -13,5 +13,5 @@ while (($? == 0)); do
 		d=("$f"/*)
 		f="${d[$((RANDOM % ${#d[@]}))]}"
 	done
-	mpv --no-audio-display "$f"
+	mpv --no-audio-display "$f" > /dev/null
 done

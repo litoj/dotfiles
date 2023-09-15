@@ -51,7 +51,7 @@ function M.config()
 			map({ 'cd', 'O', '<S-CR>' }, api.tree.change_root_to_node)
 			map('/', api.tree.search_node)
 			map('<M-i>', api.node.show_info_popup)
-			map('S', api.node.run.cmd)
+			map('s', api.node.run.cmd)
 			vim.keymap.set('n', '<M-Tab>', '<C-w>l', { buffer = bufnr })
 		end,
 	}

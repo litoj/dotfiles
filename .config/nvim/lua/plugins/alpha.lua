@@ -1,4 +1,4 @@
-local M = { 'goolord/alpha-nvim', lazy = false }
+local M = { 'goolord/alpha-nvim', lazy = false, commit = '712dc1d' }
 function M.config()
 	local function buttons(name, btns)
 		local home = os.getenv 'HOME'

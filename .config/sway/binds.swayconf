@@ -6,7 +6,7 @@ bindsym {
 	$Mod+Shift+g gaps inner current minus 5
 	$Mod+$Alt+g gaps outer current plus 5
 	$Mod+$Alt+Shift+g gaps outer current minus 5
-	$Mod+t gaps inner current toggle $gaps
+	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
 
 	$Mod+u exec killall swaybg, exec $screen
@@ -15,7 +15,6 @@ bindsym {
 #---------------+
 # App selection |
 #---------------+
-
 # app launcher/picker
 	$Mod+r exec rofi -show drun
 # 	$Alt+Tab exec rofi -show window
@@ -60,8 +59,10 @@ bindsym {
 	$Mod+q kill
 	Shift+KP_Subtract kill
 # force kill window on select
-	$Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | sed 's/^[0-9]* //' | sort | rofi -dmenu -i -p "force kill")
-	$Alt+F4 exec kill -9 $(swaymsg -t get_tree | jq '.. | (.nodes? // empty)[] | select(.focused==true).pid')
+	$Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | \
+		sed 's/^[0-9]* //' | sort | rofi -dmenu -i -p "force kill")
+	$Alt+F4 exec kill -9 $(swaymsg -t get_tree | jq '.. | \
+		(.nodes? // empty)[] | select(.focused==true).pid')
 
 ## Focus
 	$Mod+space focus mode_toggle
@@ -176,15 +177,15 @@ bindsym {
 }
 # quick mark
 bindsym --to-code {
-	$Mod+Ctrl+1 exec swaymsg [con_mark=1] focus | grep false && swaymsg mark 1
-	$Mod+Ctrl+2 exec swaymsg [con_mark=2] focus | grep false && swaymsg mark 2
-	$Mod+Ctrl+3 exec swaymsg [con_mark=3] focus | grep false && swaymsg mark 3
-	$Mod+Ctrl+4 exec swaymsg [con_mark=4] focus | grep false && swaymsg mark 4
-	$Mod+Ctrl+5 exec swaymsg [con_mark=5] focus | grep false && swaymsg mark 5
-	$Mod+Ctrl+6 exec swaymsg [con_mark=6] focus | grep false && swaymsg mark 6
-	$Mod+Ctrl+7 exec swaymsg [con_mark=7] focus | grep false && swaymsg mark 7
-	$Mod+Ctrl+8 exec swaymsg [con_mark=8] focus | grep false && swaymsg mark 8
-	$Mod+Ctrl+9 exec swaymsg [con_mark=9] focus | grep false && swaymsg mark 9
+	$Mod+Ctrl+1 mark 1
+	$Mod+Ctrl+2 mark 2
+	$Mod+Ctrl+3 mark 3
+	$Mod+Ctrl+4 mark 4
+	$Mod+Ctrl+5 mark 5
+	$Mod+Ctrl+6 mark 6
+	$Mod+Ctrl+7 mark 7
+	$Mod+Ctrl+8 mark 8
+	$Mod+Ctrl+9 mark 9
 	$Mod+Ctrl+0 [con_id=__focused__] unmark
 }
 # remove marks
@@ -233,6 +234,7 @@ bindsym {
 	XF86PowerOff exec notify-send $(rm /tmp/nolidsleep && echo LidSleep ||\
 		(touch /tmp/nolidsleep && echo -u critical NoLidSleep)) -t 1000
 	$Mod+x mode $Exit
+	KP_Insert nop
 }
 bindsym --release {
 	XF86Display exec $softDisplay
@@ -243,11 +245,11 @@ bindsym --release {
 mode $Exit {
 	bindsym {
 		c mode default, reload
-		e mode default, exec cpupower-gui pr Powersave && notify-send -t 1000 " Efficiency"
+		e mode default, exec cpupower-gui pr Powersave &>/dev/null && notify-send -t 1000 " Efficiency"
 		Shift+E mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
-		a mode default, exec cpupower-gui pr Optimal && notify-send -u low -t 1000 " Auto"
+		a mode default, exec cpupower-gui pr Optimal &>/dev/null && notify-send -u low -t 1000 " Auto"
 		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
-		w mode default, exec cpupower-gui pr Auto && notify-send -u critical -t 1000 " Performance"
+		w mode default, exec cpupower-gui pr Auto &>/dev/null && notify-send -u critical -t 1000 " Performance"
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $softDisplay
 		--release Shift+d mode default, output $display toggle
@@ -331,7 +333,7 @@ bindsym {
 	$Alt+KP_Divide exec $signal wp tgl
 
 # Media management
-	$Mod+Ctrl+t exec twitch
+	$Mod+t exec twitch
 	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')" "$($info '\t{{duration(position)}}/{{duration(mpris:length)}}'\

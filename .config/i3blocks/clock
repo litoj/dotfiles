@@ -11,9 +11,11 @@ themeCheck() {
 	if ((STAT[0] < x && x <= STAT[1])); then
 		gsettings set org.gnome.desktop.interface gtk-theme Light
 		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
+		ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
 		touch /tmp/day
 		next=${STAT[1]}
 	else
+		ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
 		gsettings set org.gnome.desktop.interface gtk-theme Dark
 		ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
 		[[ -e /tmp/day ]] && rm /tmp/day

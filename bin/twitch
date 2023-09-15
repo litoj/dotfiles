@@ -118,6 +118,6 @@ disown
 
 params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
 
-while ! swaymsg $params; do
+while ! swaymsg $params &> /dev/null; do
 	sleep 1
 done

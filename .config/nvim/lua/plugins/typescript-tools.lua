@@ -17,7 +17,7 @@ return {
 			settings = {
 				separate_diagnostic_server = false,
 				expose_as_code_action = { 'add_missing_imports' },
-				tsserver_path = '/bin/tsserver',
+				tsserver_path = '/usr/bin/tsserver',
 				tsserver_file_preferences = {
 					includeInlayParameterNameHints = 'all',
 					includeInlayVariableTypeHints = true,

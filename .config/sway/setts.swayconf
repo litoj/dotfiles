@@ -37,7 +37,9 @@ for_window [class="Ripcord" title="Edit Message"] floating enable
 xwayland enable
 focus_on_window_activation smart
 focus_follows_mouse no
+focus_wrapping workspace
 mouse_warping none
+force_display_urgency_hint 0 ms
 # Use Mouse+↓ to drag floating windows
 floating_modifier $Mod
 

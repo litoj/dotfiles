@@ -59,6 +59,7 @@ texlive-science' | paru --needed -S -
 # installs all basics aside of system defaults, such as: base, base-devel, linux, git, sudo
 basics() {
 	printf '\nInstalling basics.\n'
+	# picked hwdec drivers for AMD based on https://wiki.archlinux.org/title/Hardware_video_acceleration#Installation
 	echo '
 acpi
 alsa-utils
@@ -72,7 +73,7 @@ booster
 dragon-drop
 dunst
 engrampa
-exa
+eza
 fd
 fish
 foot
@@ -85,6 +86,7 @@ i3blocks
 imv
 inxi
 jq
+libva-mesa-driver
 linux-firmware
 man-db
 man-pages
@@ -106,7 +108,6 @@ pcmanfm-gtk3
 pipewire-alsa
 pipewire-jack
 pipewire-pulse
-playerctl
 pulsemixer
 python-pynvim
 ranger
@@ -142,6 +143,8 @@ yt-dlp' | paru --needed -S -
 		sudo systemctl enable NetworkManager
 		sudo systemctl enable ufw.service
 		sudo rm -r /var/log/journal
+		git clone https://github.com/mariusor/mpris-ctl.git && cd mpris-ctl && 
+			sudo CC='gcc -O2' make release install && cd .. && rm -rf mpris-ctl
 	}
 }
 
@@ -180,12 +183,12 @@ theming() {
 	cd theming
 	printf '\nInstalling themes.\n'
 	[[ -z "$(unzip)" ]] && paru --noconfirm -S unzip
-	tar -xf *tar.xz
-	tar -xf *tar.gz
+	tar -xf *Dark*.tar.xz
+	tar -xf *Light*.tar.gz
 	mkdir -p ~/.themes
 	mv *Dark*/ ~/.themes/Dark
 	mv *Light*/ ~/.themes/Light
-	mkdir -p ~/.icons/default
+	mkdir -p ~/.icons/default/ssss
 	echo '[Icon Theme]
 Name=Default
 Comment=Default Cursor Theme
@@ -219,7 +222,7 @@ sysFiles() {
 	sudo sed -i \
 		's/#HandlePowerKey=.*/HandlePowerKey=ignore/;s/#HandleLidSwitch=.*/HandleLidSwitch=ignore/;s/#PowerKeyIgnoreInhibited=.*/PowerKeyIgnoreInhibited=yes/' \
 		'/etc/systemd/logind.conf'
-	sudo ln -sf '/usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime'
+	sudo ln -sf /usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime
 }
 
 help() {

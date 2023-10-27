@@ -1,27 +1,25 @@
 #!/usr/bin/bash
 
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.toml"
+[[ -f $CONFIG_FILE ]] && while read line; do
+	case ${line%=*} in
+		token) token=${line#*=} ;;
+		expiry) expiry=${line#*=} ;;
+		streamers) streamerList=(${line#*=}) ;;
+	esac
+done < "$CONFIG_FILE"
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
 	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
 	local CACHE_USER_ID_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.toml"
-	local CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/wtwitch.toml"
 	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")
-	local token
-	local expiry
-
-	[[ -f $CONFIG_FILE ]] && while read line; do
-		case ${line%=*} in
-			token) token=${line#*=} ;;
-			expiry) expiry=${line#*=} ;;
-		esac
-	done < "$CONFIG_FILE"
 
 	if [[ -z $token || $token == null ]] ||
 		(($(LANG=C date +%s) > expiry)); then
 		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
 		[[ -z $newToken || $newToken == null ]] && exit 1
 		token=$newToken
-		printf "token=$newToken\nexpiry=$(LANG=C date -d tomorrow +'%s')\n" > "$CONFIG_FILE"
+		sed -i "s/^\(token=\).*/\1$newToken/;s/^\(expiry=\).*/\1$(LANG=C date -d tomorrow +'%s')/" "$CONFIG_FILE"
 	fi
 
 	# Search for streamer ID in cache
@@ -56,7 +54,6 @@ wtwitch() {
 	done
 }
 
-streamerList=(tangotek impulsesv iskall85 skizzleman mrgregles goodtimeswithscar xisuma)
 streamer=$(printf '%s\n' ${streamerList[@]} | rofi -dmenu -p Streamer)
 if [[ -z $streamer ]]; then
 	exit 0

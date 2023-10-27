@@ -56,7 +56,7 @@ function M.config()
 		map('n', '[' .. key, goTo(dst, false))
 		map('n', ']' .. key, goTo(dst, true))
 	end
-	mapAll('f', { 'function', 'arrow_function', 'function_definition' })
+	mapAll('m', { 'function', 'arrow_function', 'function_definition', 'method_declaration' })
 	mapAll('s', {
 		'if_statement',
 		'elseif_statement',

@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-
+# subtitle format from windows transcoding using `enca` package
 for f in *.srt; do
 	name=${f%.srt}
 	ffmpeg -i "$name.mp4" -i "$f" -map 0:v -map 0:a -map 1 -c copy -disposition:s:0 default "/tmp/$name.mkv" && rm "$name.mp4" "$f" && mv "/tmp/$name.mkv" "$name.mkv"

@@ -1,5 +1,6 @@
 vim.opt.iskeyword:append '-'
 vim.o.shortmess = 'aoOIcCF'
+vim.o.formatoptions = 'tcqjl1'
 vim.o.tw = 100
 vim.o.et = false
 vim.o.ts = 2

@@ -75,6 +75,7 @@ map('n', '<M-k>', '<C-w>k')
 map('n', '<M-l>', '<C-w>l')
 map('i', '<M-L>', '<C-o><C-w>l')
 map('t', '<M-L>', '<C-\\><C-o><C-w>l')
+map('v', '<Tab>', 'o')
 
 -- Window actions
 -- leaving

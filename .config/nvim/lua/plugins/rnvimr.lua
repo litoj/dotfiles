@@ -1,4 +1,4 @@
-local M = { 'kevinhwang91/rnvimr', keys = { { 'R', '<Cmd>RnvimrToggle<CR>' } } }
+local M = { 'kevinhwang91/rnvimr', keys = 'R' }
 function M.config()
 	vim.g.rnvimr_enable_ex = 0
 	vim.g.rnvimr_enable_picker = 1

@@ -1,5 +1,5 @@
 local M =
-	{ 'kevinhwang91/nvim-ufo', dependencies = 'kevinhwang91/promise-async', event = 'VeryLazy' }
+	{ 'kevinhwang91/nvim-ufo', dependencies = 'kevinhwang91/promise-async', keys = '_' }
 function M.config()
 	local ufo = require 'ufo'
 	ufo.setup { open_fold_hl_timeout = 0 }

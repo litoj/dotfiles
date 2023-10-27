@@ -4,8 +4,13 @@ title_text="imv - $imv_current_file"
 upscaling_method = nearest_neighbour
 [binds]
 <Shift+Delete> = exec rm "$imv_current_file";close
-b = exec swaymsg output '*' bg "$imv_current_file" fill 
-u = upscaling nearest_neighbour
-<Shift+P> = exec cp "$imv_current_file" ~/Pictures/screen/
+b = exec killall swaybg | swaymsg output '*' bg "$imv_current_file" fill 
+s = scaling crop
+r = rotate by 1
+<Shift+R> = rotate by -1
+<Shift+S> = scaling shrink
+<Shift+B> = exec cp "$imv_current_file" ~/Pictures/screen/
 <Shift+E> = exec cp "$imv_current_file" ~/Downloads/
 <Meta+f> = exec dragon-drop -x -T "$imv_current_file" &
+<Meta+s> = exec swaymsg exec "xterm ranger --selectfile=\"$imv_current_file\""
+<Ctrl+e> = exec swaymsg exec "gimp \"$imv_current_file\""

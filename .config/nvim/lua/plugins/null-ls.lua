@@ -46,7 +46,7 @@ function M.config()
 					if vim.loop.fs_stat(client.cwd .. '/.clang_format') then return { '--style', 'file' } end
 					return {
 						'--style',
-						string.format(
+						string.format( --RemoveBracesLLVM: true,
 							[[{
 AllowAllParametersOfDeclarationOnNextLine: true,
 AllowShortIfStatementsOnASingleLine: "AllIfsAndElse",

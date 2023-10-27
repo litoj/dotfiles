@@ -29,7 +29,6 @@ return {
 				},
 			},
 		}))
-		require('lspconfig')['typescript-tools'].launch()
 		require 'mylsp'('eslint', {
 			format = true,
 			settings = {
@@ -39,6 +38,5 @@ return {
 				},
 			},
 		})
-		require('lspconfig').eslint.launch()
 	end,
 }

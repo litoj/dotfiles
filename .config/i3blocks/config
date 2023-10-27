@@ -34,13 +34,13 @@ interval=once
 # interval=5
 # command=echo " $(bc <<< "scale=1;$(cat /sys/class/power_supply/BAT0/power_now)/1000000")W"
 
-[mic]
-interval=0
-signal=13
-
 [volume]
 interval=0
 signal=10
+
+[mic]
+interval=0
+signal=13
 
 [backlight]
 signal=11

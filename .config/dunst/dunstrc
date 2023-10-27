@@ -16,8 +16,8 @@
 	background="#1c1c1c"
 
 [urgency_low]
-	frame_color="#ad30a8"
-	highlight="#ad30a8"
+	frame_color="#a830a8"
+	highlight="#a830a8"
 	timeout=3
 
 [urgency_normal]
@@ -33,7 +33,7 @@
 [signal]
 	appname=signal
 	format="<b>%s</b>"
-	frame_color="#ad30a8"
+	frame_color="#a830a8"
 	# progressbar color
 	highlight="#54a015"
 	timeout=1

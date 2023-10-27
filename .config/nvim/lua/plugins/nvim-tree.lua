@@ -14,6 +14,7 @@ function M.config()
 				path = path:gsub(os.getenv 'HOME', '~', 1)
 				return path:gsub('([a-zA-Z])[a-z]+', '%1') .. path:gsub('.*[^a-zA-Z].?', '', 1)
 			end,
+			group_empty = true,
 		},
 		actions = {
 			open_file = { quit_on_open = true, window_picker = { enable = true } },

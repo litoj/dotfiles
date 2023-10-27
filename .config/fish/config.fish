@@ -23,7 +23,7 @@ function fish_prompt
 		printf '@'
 	set_color brblue
 		printf $hostname
-	set_color bryellow -o	
+	set_color bryellow -o
 		printf ':'
 	set_color normal
 	set_color -b black
@@ -66,52 +66,54 @@ set fish_color_search_match --bold --background=222222
 set fish_color_valid_path
 set fish_color_error brred
 
-alias ls='exa --icons --colour=always'
-alias lt='exa --icons --colour=always -T -L'
-alias ll='exa --icons --colour=always -l'
-alias la='exa --icons --colour=always -l -a'
+alias ls='eza --icons --colour=always'
+alias lt='eza --icons --colour=always -T -L'
+alias ll='eza --icons --colour=always -l'
+alias la='eza --icons --colour=always -l -a'
 
-abbr man batman
-abbr se			"sudo nvim"
-abbr sr 		"sudo ranger"
-abbr s 			"sensors"
-abbr cp 		"cp -i"
-abbr mv 		"mv -i"
-abbr smci		"sudo make clean install"
+abbr man    batman
+abbr se     "sudo nvim"
+abbr sr     "sudo ranger"
+abbr s      "sensors"
+abbr cp     "cp -i"
+abbr mv     "mv -i"
+abbr smci   "sudo make clean install"
 abbr gparted "xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root"
 
 # get error messages from journalctl
-abbr jctl 		"journalctl -p 3 -b"
+abbr jctl   "journalctl -p 3 -b"
 
 # pacman
-abbr pror 	"paru -Qtqd | paru -Rscn -"
-abbr pss 		"paru -Slq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -S -"
-abbr psr 		"paru -Qttq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Rscn -"
+abbr pq     "set pkg (paru -Qq | fzf -m --preview 'paru --color=always -Si {1}'); echo \$pkg"
+abbr pror   "paru -Qtqd | paru -Rscn -"
+abbr pss    "paru -Slq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -S -"
+abbr psr    "paru -Qttq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Rscn -"
+abbr pfl    "paru -Qq | fzf --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Ql -"
 
 # navigation
-abbr ...		"cd ../.."
-abbr cdd		"cd ~/dotfiles"
-abbr cds		"cd ~/Documents/school/"
-abbr cdp		"cd ~/Documents/school/PG/"
-abbr cdw		"cd ~/Documents/work/projects-fit/"
-abbr cdn		"cd ~/Documents/personal/nvim/"
-abbr dup		"cd ~/dotfiles; git pull"
-abbr gP 		"git push"
-abbr gPt		"git push origin --tags"
-abbr gp 		"git pull"
-abbr gb 		"git checkout -b"
-abbr gg 		"git checkout"
-abbr gs 		"git status"
-abbr gu 		"git add -u && git commit"
-abbr ga 		"git add -A && git commit"
-abbr gd 		"git branch -d (git branch | fzf | sed 's/.* //')"
-abbr gc 		"git checkout"
+abbr ...    "cd ../.."
+abbr cdd    "cd ~/dotfiles"
+abbr cds    "cd ~/Documents/school/"
+abbr cdp    "cd ~/Documents/school/PG/"
+abbr cdw    "cd ~/Documents/work/projects-fit/"
+abbr cdn    "cd ~/Documents/personal/nvim/"
+abbr dup    "cd ~/dotfiles; git pull"
+abbr gP     "git push"
+abbr gPt    "git push origin --tags"
+abbr gp     "git pull"
+abbr gb     "git checkout -b"
+abbr gg     "git checkout"
+abbr gs     "git status"
+abbr gu     "git add -u && git commit"
+abbr ga     "git add -A && git commit"
+abbr gd     "git branch -d (git branch | fzf | sed 's/.* //')"
+abbr gc     "git checkout"
 
 # internet related shortcuts
 abbr scan   "nmap -T4 -p22 (ip a | sed -n 's/.*\(192\.[0-9]\+\.[0-9]\+\.\)[0-9]\+\/\([0-9]\+\).*/\10\/\2/p')"
-abbr ipa		"ip a | sed -n 's/.* \([.0-9]\+\/[0-9]\+\).*/\1/p' | tail -n 1"
+abbr ipa    "ip a | sed -n 's/.* \([.0-9]\+\/[0-9]\+\).*/\1/p' | tail -n 1"
 abbr npa    "netstat -tn"
-abbr npo	  "netstat -lutnp &| tail -n +4"
+abbr npo    "netstat -lutnp &| tail -n +4"
 abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7 | sort -k4n -k2n | column -t -R 2"
 abbr adl    "adb connect (sudo arp-scan --localnet | grep ^192.168 | awk '{print \$1;EXIT}'):5555"
 abbr adh    "adb connect 192.168.0.102:5555"
@@ -120,7 +122,7 @@ abbr con    "arp -a"
 # enable disabled wifi
 abbr iwre   "rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up"
 
-abbr fit		"ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz"
+abbr fit    "ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz"
 
 # system checks
 abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | bat -l yaml'
@@ -144,7 +146,9 @@ if status is-login
 		export MOZ_ENABLE_WAYLAND=1
 		export QT_QPA_PLATFORMTHEME=qt6ct
 		export GDK_BACKEND="wayland,x11"
-		export XDG_CURRENT_DESKTOP=sway # xdg-desktop-portal
+		export XDG_CURRENT_DESKTOP=sway # for xdg-desktop-portal
+		set XDG_CONFIG_HOME ~/.config
+		export XDG_CONFIG_HOME
 
 		# WLR_RENDERER=vulkan 
 		sway

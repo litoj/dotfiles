@@ -1,4 +1,4 @@
-local M = { 'ibhagwan/fzf-lua', event = 'VeryLazy' }
+local M = { 'ibhagwan/fzf-lua', keys = { ' s', ' a', ' o', ' f', ' g', ' d', ' c' } }
 function M.config()
 	local fzf = require 'fzf-lua'
 	fzf.setup {
@@ -28,15 +28,12 @@ function M.config()
 	vim.lsp.handlers['textDocument/references'] = fzf.lsp_references
 	vim.lsp.handlers['textDocument/implementation'] = fzf.lsp_implementation
 
-	map(
-		'n',
-		'<Leader>s',
-		function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end
-	)
-	map('n', '<Leader>f', fzf.files)
-	map('n', '<Leader>o', fzf.oldfiles)
-	map('n', '<Leader>g', fzf.live_grep)
-	map('n', '<Leader>d', fzf.lsp_workspace_diagnostics)
-	map('n', '<Leader>c', fzf.highlights)
+	map('n', ' s', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
+	map('n', ' a', fzf.files)
+	map('n', ' o', fzf.oldfiles)
+	map('n', ' f', function() fzf.oldfiles { cwd_only = true } end)
+	map('n', ' g', fzf.live_grep)
+	map('n', ' d', fzf.lsp_workspace_diagnostics)
+	map('n', ' c', fzf.highlights)
 end
 return M

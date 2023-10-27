@@ -8,4 +8,4 @@ try @transmission-gtk magnet:
 try @thunderbird mailto:
 try @engrampa .7z .gz .rar .tar .tgz .zip .zst
 try "$BROWSER" .html
-EXPLORER=ranger
+[[ $EXPLORER ]] || EXPLORER=ranger

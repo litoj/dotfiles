@@ -13,13 +13,10 @@ fi
 pkill -f "mpv --no-audio-display"
 
 if [[ $1 == mpv ]]; then
-	if [[ -f $src ]]; then
-		mpv --no-audio-display "$src" > /dev/null
-		echo "$PWD/${src%/*}" > /tmp/song
-	else
-		echo "$PWD/$src" > /tmp/song
-	fi
-	mpv --no-audio-display --shuffle --loop-playlist --playlist=/tmp/song > /dev/null
+	echo "$PWD/$src" > /tmp/song
+	opts='--no-audio-display --shuffle --loop-playlist --playlist=/tmp/song'
+	[[ -f $src ]] && echo "$PWD/${src%/*}" >> /tmp/song && opts+=' --playlist-start=0'
+	mpv $opts > /dev/null
 else
 	rndMusic "$PWD/$src"
 fi

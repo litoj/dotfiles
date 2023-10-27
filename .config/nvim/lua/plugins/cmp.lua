@@ -1,3 +1,4 @@
+---@diagnostic disable: missing-fields
 local M = {
 	'hrsh7th/nvim-cmp',
 	event = { 'InsertEnter', 'CmdlineEnter' },
@@ -9,10 +10,7 @@ local M = {
 		'hrsh7th/cmp-cmdline',
 		'hrsh7th/cmp-path',
 		'JosefLitos/cmp-calc',
-		'hrsh7th/cmp-buffer',
-		-- "kdheepak/cmp-latex-symbols",
 		'hrsh7th/cmp-nvim-lsp-signature-help',
-		'chrisgrieser/cmp-nerdfont',
 	},
 }
 function M.config()
@@ -127,8 +125,8 @@ function M.config()
 			{ name = 'path' },
 			{ name = 'calc' },
 			{ name = 'luasnip', max_item_count = 5 },
-			{ name = 'nerdfont', max_item_count = 50 },
-			-- {name = "latex_symbols", max_item_count = 50},
+			{ name = 'nerdfont' },
+			{ name = 'latex_symbols' },
 			{ name = 'buffer', max_item_count = 10 },
 		},
 	})
@@ -149,4 +147,14 @@ function M.config()
 	)
 	cmp.setup.cmdline('/', { sources = { { name = 'buffer' } } })
 end
-return M
+return {
+	M,
+	{
+		'hrsh7th/cmp-buffer',
+		ft = { 'markdown', 'text' },
+		event = 'CmdlineEnter',
+		dependencies = 'nvim-cmp',
+	},
+	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
+	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
+}

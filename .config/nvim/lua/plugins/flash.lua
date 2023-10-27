@@ -1,4 +1,4 @@
-local M = { 'folke/flash.nvim', event = 'VeryLazy' }
+local M = { 'folke/flash.nvim', keys = { '<M-q>', '<M-f>', '?' } }
 function M.config()
 	local flash = require 'flash'
 	flash.setup {

@@ -5,14 +5,6 @@ local M = {
 	event = 'VeryLazy',
 }
 function M.config()
-	--XXX: fix for neovim shada '%' openning an empty buffer
-	if #vim.v.argv < 3 and vim.fn.bufnr '$' > 1 then
-		vim.cmd.bdelete()
-
-		local ft = vim.filetype.match { buf = 0 }
-		if ft then vim.bo.ft = ft end
-	end
-
 	require('barbar').setup {
 		animation = false,
 		maximum_padding = 0,

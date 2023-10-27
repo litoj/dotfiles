@@ -90,16 +90,9 @@ function M.config()
 					},
 					{
 						provider = function()
-							local now = vim.fn.line '.'
-							local sum = vim.fn.line '$'
-							if now == 1 then
-								return 'Top'
-							elseif now == sum then
-								return 'Bot'
-							else
-								return math.modf((now / sum) * 100) .. '%%'
-							end
+							return math.modf(vim.fn.line '.' * 100 / vim.fn.line '$') .. '%%'
 						end,
+						update = {'CursorMoved', 'CursorMovedI'},
 						hl = { fg = colors['Cyan'][1] },
 						right_sep = ' ',
 					},

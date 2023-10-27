@@ -1,7 +1,7 @@
 local M = {
 	'SmiteshP/nvim-navbuddy',
 	dependencies = { 'SmiteshP/nvim-navic', 'MunifTanjim/nui.nvim' },
-	event = 'VeryLazy',
+	keys = '<M-t>',
 }
 function M.config()
 	local nb = require 'nvim-navbuddy'
@@ -41,7 +41,9 @@ function M.config()
 			['<Left>'] = act.parent(),
 			['<Right>'] = act.children(),
 		},
-		source_buffer = { reorient = 'none', --[[ follow_node = false ]] },
+		source_buffer = {
+			reorient = 'none', --[[ follow_node = false ]]
+		},
 	}
 	map('n', '<M-t>', nb.open)
 	map('i', '<M-t>', '<Esc><M-t>', { remap = true })

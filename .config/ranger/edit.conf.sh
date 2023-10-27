@@ -16,4 +16,21 @@ try @engrampa .jar
 try @gimp .png .jpg .jpeg .xcf
 try @inkscape .svg
 # try @"kdenlive & dragon-drop -x -a" .mkv
+BLOCKING=1
+renameIfCamera() {
+	# doesn't work if directories are inside the given one
+	CWD=$PWD
+	cd "$1"
+	f=(*)
+	if [[ $f == *.jpg || $f == *.heif ]]; then
+		fd -e jpg -e heif -x bash -c 'x="{}"
+		file "$x" | grep datetime && mv "$x" "${x%/*}/$(file "$x" |
+			sed -En "s/.*datetime=(....):(..):(..) (..):(..):(..).*/\1_\2_\3_\4\5\6/p").${x//*.}"'
+		cd "$CWD"
+	else
+		cd "$CWD"
+		xterm ranger "$@"
+	fi
+}
+EXPLORER=@renameIfCamera
 . ~/.config/open.conf.sh

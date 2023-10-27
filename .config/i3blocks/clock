@@ -27,7 +27,8 @@ themeCheck() {
 update
 themeCheck
 
-while sleep $((60 - x[2])); do
+while :; do
+	sleep $((60 - x[2]))
 	update
 	((x > next || x < prev)) && themeCheck
 done

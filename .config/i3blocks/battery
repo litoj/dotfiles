@@ -14,14 +14,14 @@ elif [[ ${line[6]} == zero ]]; then
 else
 	case "$TEXT" in
 		'D')
-			if ((STATE < 20)); then
+			if ((STATE <= 20)); then
 				TEXT=
-				if ((STATE == 20)); then
-					notify-send -t 5000 -u low -h int:value:20 'Battery   20%'
-				elif ((14 < STATE && STATE < 17)); then
-					notify-send -t 10000 -h int:value:16 "Battery   $STATE%" 'Plug the system in.'
-				elif ((9<STATE && STATE < 12)); then
-					notify-send -u critical -h int:value:12 "Battery   $STATE%" 'Plug the system in.'
+				if ((STATE > 17)); then
+					notify-send -t 0 -u low -h int:value:$STATE \
+						-h string:synchronous:battery "Battery   $STATE%" 'Plug the system in.'
+				elif ((STATE > 14)); then
+					notify-send -u critical -h int:value:$STATE \
+						-h string:synchronous:battery "Battery   $STATE%" 'Plug the system in.'
 					case "$(rofi -dmenu -l 3 -p "  $STATE%" <<< 'Suspend
 Hibernate
 Power off')" in
@@ -30,7 +30,7 @@ Power off')" in
 							systemctl hibernate && sleep 60 && sudo swapoff /swapfile ;;
 						'Power off') systemctl poweroff ;;
 					esac
-				elif ((STATE < 7)); then
+				else
 					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
 						hibernate && sleep 60 && sudo swapoff /swapfile
 				fi

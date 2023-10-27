@@ -1,3 +1,5 @@
+# bindcode --whole-window 274 seat - cursor press BTN_LEFT, seat - cursor release BTN_LEFT
+
 #-----------------+
 # Gap bindingings |
 #-----------------+
@@ -25,19 +27,19 @@ bindsym {
 set $IDE "[I]dea [N]etbeans [A]ndroid"
 bindsym --to-code {
 	$Mod+1 exec W=$w8 lof firefox "firefox"
-	$Mod+$Alt+1 exec W=$w8 lof 'firefox --profile ~/.mozilla/f*/*Work' "firefox"
+	$Mod+$Alt+1 exec W=$w8 lof work "firefox"
 	$Mod+2 exec xterm nvim
 	$Mod+3 exec xterm
-	$Mod+4 exec lof ripcord Ripcord
+	$Mod+4 exec W=$w4 lof thunderbird thunderbird
 	$Mod+5 mode $IDE
-	$Mod+6 exec W=$w6 lof thunderbird thunderbird
+	$Mod+6 exec W=$w4 lof ripcord Ripcord
 	$Mod+7 exec W=$w7 lof gimp Gimp
 	$Mod+$Alt+9 exec W=$w9 lof prismlauncher null "^(Minecraft|Prism Launcher).*"
 	$Mod+9 exec W=$w9 lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
 }
 mode $IDE {
 	bindsym {
-		i mode default, exec W=$w5 lof idea-ce jetbrains-idea-ce
+		i mode default, exec W=$w5 lof idea jetbrains-idea-ce
 		n mode default, exec W=$w5 lof netbeans NetBeans
 		a mode default, exec W=$w5 lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
 		q mode default
@@ -141,6 +143,8 @@ bindsym {
 	KP_Add workspace back_and_forth
 	KP_Home workspace next
 	KP_End workspace prev
+	$Alt+KP_Begin focus output next
+	$Alt+Shift+KP_Begin move workspace output right
 
 #-----------+
 # Left Hand |
@@ -166,6 +170,8 @@ bindsym {
 	$Mod+$Alt+Tab workspace next
 	$Mod+Shift+Tab workspace prev
 	$Mod+Tab workspace back_and_forth
+	$Mod+Ctrl+Tab focus output next
+	$Mod+Ctrl+Shift+Tab move workspace output right
 # move container to workspace
 	$Mod+Ctrl+a move workspace prev, workspace prev
 	$Mod+Ctrl+d move workspace next, workspace next
@@ -174,6 +180,28 @@ bindsym {
 # both hands
 	$Mod+period workspace next
 	$Mod+comma workspace prev
+}
+# with mouse gestures, just fiddling around
+# hold:up/down for workspace move is impractical - pinch can fail and result as swipe
+bindgesture {
+	swipe:3:up move workspace next; workspace next
+	swipe:3:down move workspace prev; workspace prev
+	swipe:3:left workspace next
+	swipe:3:right workspace prev
+	swipe:4:up focus up
+	swipe:4:down focus down
+	swipe:4:left focus left
+	swipe:4:right focus right
+	hold:3 workspace back_and_forth 
+	hold:4 layout toggle splith splitv tabbed
+	pinch:3:inward+up move up
+	pinch:3:inward+down move down
+	pinch:3:inward+left move left
+	pinch:3:inward+right move right
+	pinch:3:outward+up mark M, focus up, split toggle; [con_mark=M] move up, unmark
+	pinch:3:outward+down mark M, focus down, split toggle; [con_mark=M] move down, unmark
+	pinch:3:outward+left mark M, focus left, split toggle; [con_mark=M] move left, unmark
+	pinch:3:outward+right mark M, focus right, split toggle; [con_mark=M] move right, unmark
 }
 # quick mark
 bindsym --to-code {
@@ -328,20 +356,20 @@ bindsym {
 	KP_Multiply exec $signal vol 5%+
 	Ctrl+KP_Divide exec $signal mic 2%-
 	Ctrl+KP_Multiply exec $signal mic 2%+
-	Shift+KP_Multiply exec $signal vol toggle
-	Shift+KP_Divide exec $signal mic toggle
+	Shift+KP_Divide exec $signal vol toggle
+	Shift+KP_Multiply exec $signal mic toggle
 	$Alt+KP_Divide exec $signal wp tgl
 
 # Media management
 	$Mod+t exec twitch
 	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
-		"$($info '{{title}}')" "$($info '\t{{duration(position)}}/{{duration(mpris:length)}}'\
-		| sed 's/^ - //')"
+		"$($info '{{title}}')"\
+		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec songselect mpv
-	$Mod+Ctrl+m exec songselect
-	$Mod+$Alt+Ctrl+m exec songselect mpv "$($info\
-		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*\)/[^/]*,\1,')"
+	$Mod+$Alt+Shift+m exec songselect
+	$Mod+Ctrl+m exec songselect mpv "$($info\
+		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+Shift+m exec pkill -f "mpv --ytdl-format=ba"

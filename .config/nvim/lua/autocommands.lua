@@ -90,3 +90,11 @@ for _, v in ipairs(vim.v.oldfiles) do
 	end
 end
 vim.v.oldfiles = of ]]
+
+--XXX: fix for neovim shada '%' openning an empty buffer
+if vim.fn.bufname() == '' and vim.fn.bufnr '$' > 1 then
+	vim.schedule(function()
+		vim.cmd.bdelete()
+		vim.cmd.edit()
+	end)
+end

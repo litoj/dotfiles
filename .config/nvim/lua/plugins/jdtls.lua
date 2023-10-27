@@ -1,4 +1,4 @@
-local M = { 'mfussenegger/nvim-jdtls', ft = 'java' }
+local M = { 'mfussenegger/nvim-jdtls', --[[ ft = 'java' ]] }
 function M.config()
 	vim.wo.signcolumn = 'number'
 	local cfgPath = os.getenv 'HOME' .. '/.config/jdtls/'
@@ -24,7 +24,7 @@ function M.config()
 			'-Declipse.product=org.eclipse.jdt.ls.core.product',
 			'-Dlog.protocol=true',
 			'-Dlog.level=ERROR',
-			'-Xmx1G',
+			'-Xmx2G',
 			'--add-modules=ALL-SYSTEM',
 			'--add-opens',
 			'java.base/java.util=ALL-UNNAMED',
@@ -51,13 +51,17 @@ function M.config()
 				configuration = {
 					updateBuildConfiguration = 'interactive',
 					runtimes = {
-						{ name = 'JavaSE-11', path = '/usr/lib/jvm/java-11-openjdk/' },
-						{ name = 'JavaSE-20', path = '/usr/lib/jvm/default-runtime/' },
+						{
+							default = true,
+							path = '/usr/lib/jvm/default-runtime/',
+							-- sources = '/usr/lib/jvm/default-runtime/lib/src.zip',
+							-- javadoc = '/usr/share/doc/java17-openjdk/',
+						},
 					},
 				},
 				eclipse = { downloadSources = true },
 				maven = { downloadSources = true },
-				references = { includeDecompiledSources = true },
+				references = { includeDecompiledSources = false },
 				format = { enabled = false },
 			},
 		},
@@ -97,7 +101,7 @@ function M.config()
 		map('n', 'gtf', jdtls.test_nearest_method, opts)
 		map('n', 'gjd', require('jdtls.dap').setup_dap_main_class_configs, opts)
 
-		vim.api.nvim_exec2 [[
+		vim.cmd [[
         command! -buffer -nargs=? -complete=custom,v:lua.require'jdtls'._complete_compile JdtCompile lua require'jdtls'.compile(<f-args>)
         command! -buffer -nargs=? -complete=custom,v:lua.require'jdtls'._complete_set_runtime JdtSetRuntime lua require'jdtls'.set_runtime(<f-args>)
         command! -buffer JdtUpdateConfig lua require'jdtls'.update_project_config()
@@ -105,6 +109,7 @@ function M.config()
         command! -buffer JdtBytecode lua require'jdtls'.javap()
         ]]
 		map({ 'n', 'i' }, '<M-r>', function() jdtls.compile 'full' end, opts)
+		map({ 'n', 'i' }, '<M-I>', jdtls.organize_imports, opts)
 	end
 
 	if vim.g.initialized then

@@ -40,7 +40,11 @@ return {
 			require 'mylsp' 'lua_ls'
 		end,
 	},
-	{ 'NvChad/nvim-colorizer.lua', cmd = 'ColorizerToggle', opts = {} },
+	{
+		'NvChad/nvim-colorizer.lua',
+		cmd = 'ColorizerToggle',
+		opts = { user_default_options = { RRGGBBAA = true } },
+	},
 	--[[ {
 		'j-hui/fidget.nvim',
 		event = 'LspAttach',

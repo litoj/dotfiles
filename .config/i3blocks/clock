@@ -10,13 +10,15 @@ STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*6
 themeCheck() {
 	if ((STAT[0] < x && x <= STAT[1])); then
 		gsettings set org.gnome.desktop.interface gtk-theme Light
-		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
 		ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
+		ln -sf ~/.config/qt6ct/colors/Light.conf /tmp/qt
+		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
 		touch /tmp/day
 		next=${STAT[1]}
 	else
-		ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
 		gsettings set org.gnome.desktop.interface gtk-theme Dark
+		ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
+		ln -sf ~/.config/qt6ct/colors/Dark.conf /tmp/qt
 		ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
 		[[ -e /tmp/day ]] && rm /tmp/day
 		((x > STAT[1])) && next=1440 || next=${STAT[0]}

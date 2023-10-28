@@ -1,8 +1,4 @@
-local M = {
-	'JosefLitos/nerdcontrast.nvim',
-	lazy = false,
-	priority = 1000,
-}
+local M = { 'JosefLitos/nerdcontrast.nvim', lazy = false, priority = 1000 }
 function M.config()
 	local day = io.open('/tmp/day', 'r')
 	if day then day:close() end

@@ -1,6 +1,7 @@
 return { -- code breadcrumbs
 	'Bekaboo/dropbar.nvim',
 	event = 'VeryLazy',
+	enabled = false,
 	opts = {
 		general = { update_events = { buf = {}, global = { 'VimResized' } } },
 		icons = {

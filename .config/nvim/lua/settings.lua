@@ -1,5 +1,5 @@
 vim.opt.iskeyword:append '-'
-vim.o.shortmess = 'aoOIcCF'
+vim.o.shortmess = 'asWIcCFt'
 vim.o.formatoptions = 'tcqjl1'
 vim.o.tw = 100
 vim.o.et = false
@@ -42,6 +42,7 @@ vim.o.updatetime = 300
 vim.o.timeoutlen = 500
 vim.o.synmaxcol = 127
 vim.o.history = 100
+vim.o.ssop = 'buffers,terminal'
 -- ↓ '%' loads last opened on start
 vim.o.shada = "%,'500,<0,s1,f0,h,rterm:,rjdt:,r/usr/share/nvim/runtime/"
 vim.g.rust_recommended_style = 0

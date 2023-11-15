@@ -1,5 +1,3 @@
-# bindcode --whole-window 274 seat - cursor press BTN_LEFT, seat - cursor release BTN_LEFT
-
 #-----------------+
 # Gap bindingings |
 #-----------------+
@@ -10,8 +8,9 @@ bindsym {
 	$Mod+$Alt+Shift+g gaps outer current minus 5
 	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
+	$Mod+$Alt+Shift+t exec $signal theme tgl
 
-	$Mod+u exec killall swaybg, exec $screen
+	$Mod+u exec killall swaybg, exec $setbg
 	$Mod+Shift+u exec imv -f Pictures/screen
 
 #---------------+
@@ -19,29 +18,31 @@ bindsym {
 #---------------+
 # app launcher/picker
 	$Mod+r exec rofi -show drun
-# 	$Alt+Tab exec rofi -show window
+# copy menu
+	# $Mod+p exec copyq menu
 
 # quick app starter
 	$Mod+Return exec xterm
 }
 set $IDE "[I]dea [N]etbeans [A]ndroid"
 bindsym --to-code {
-	$Mod+1 exec W=$w8 lof firefox "firefox"
-	$Mod+$Alt+1 exec W=$w8 lof work "firefox"
+	$Mod+1 exec W=$wBrowser lof firefox "firefox"
+	$Mod+$Alt+1 exec W=$wBrowser lof work "firefox"
 	$Mod+2 exec xterm nvim
+	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
 	$Mod+3 exec xterm
-	$Mod+4 exec W=$w4 lof thunderbird thunderbird
+	$Mod+4 exec W=$wMsg lof thunderbird thunderbird
 	$Mod+5 mode $IDE
-	$Mod+6 exec W=$w4 lof ripcord Ripcord
-	$Mod+7 exec W=$w7 lof gimp Gimp
-	$Mod+$Alt+9 exec W=$w9 lof prismlauncher null "^(Minecraft|Prism Launcher).*"
-	$Mod+9 exec W=$w9 lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
+	$Mod+6 exec W=$wMsg lof ripcord Ripcord
+	$Mod+7 exec W=$wMedia lof gimp Gimp
+	$Mod+$Alt+9 exec W=$wGame lof prismlauncher null "^(Minecraft|Prism Launcher).*"
+	$Mod+9 exec W=$wGame lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
 }
 mode $IDE {
 	bindsym {
-		i mode default, exec W=$w5 lof idea jetbrains-idea-ce
-		n mode default, exec W=$w5 lof netbeans NetBeans
-		a mode default, exec W=$w5 lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
+		i mode default, exec W=$wCode lof idea jetbrains-idea-ce
+		n mode default, exec W=$wCode lof netbeans NetBeans
+		a mode default, exec W=$wCode lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
 		q mode default
 		Escape mode default
 	}
@@ -186,8 +187,8 @@ bindsym {
 bindgesture {
 	swipe:3:up move workspace next; workspace next
 	swipe:3:down move workspace prev; workspace prev
-	swipe:3:left workspace next
-	swipe:3:right workspace prev
+	swipe:3:left workspace prev
+	swipe:3:right workspace next
 	swipe:4:up focus up
 	swipe:4:down focus down
 	swipe:4:left focus left
@@ -252,7 +253,7 @@ bindsym --to-code {
 # System setts |
 #--------------+
 
-set $softDisplay pkill -USR1 swayidle
+set $dpmsOff pkill -USR1 swayidle
 set $Exit "C: L: D: Q: S: H: P: R: Esc:"
 bindsym {
 	$Mod+o bar mode toggle
@@ -265,9 +266,9 @@ bindsym {
 	KP_Insert nop
 }
 bindsym --release {
-	XF86Display exec $softDisplay
-	KP_Insert exec $softDisplay
-	Shift+KP_Insert output $display toggle
+	XF86Display exec $dpmsOff
+	KP_Insert exec $dpmsOff
+	Shift+KP_Insert output $d1 toggle
 }
 # bindsym XF86PowerOff exec $lock && systemctl suspend
 mode $Exit {
@@ -279,8 +280,8 @@ mode $Exit {
 		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
 		w mode default, exec cpupower-gui pr Auto &>/dev/null && notify-send -u critical -t 1000 " Performance"
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
-		--release d mode default, exec $softDisplay
-		--release Shift+d mode default, output $display toggle
+		--release d mode default, exec $dpmsOff
+		--release Shift+d mode default, output $d1 toggle
 		q exit
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
@@ -299,9 +300,8 @@ mode $Exit {
 # Extra functions |
 #-----------------+
 
-set $signal ~/.config/i3blocks/signal
 set $mpv playerctl --player=mpv
-set $info playerctl --player=mpv metadata --format
+set $info $mpv metadata --format
 bindsym {
 # Screenshot
 # my pc has PrintScreen as Fn+s
@@ -325,10 +325,10 @@ bindsym {
 	$Mod+Shift+n exec killall wlsunset
 
 # Rotating screen
-	$Alt+Ctrl+Left output $display transform 270
-	$Alt+Ctrl+Right output $display transform 90
-	$Alt+Ctrl+Up output $display transform normal
-	$Alt+Ctrl+Down output $display transform 180
+	$Alt+Ctrl+Left output $d1 transform 270
+	$Alt+Ctrl+Right output $d1 transform 90
+	$Alt+Ctrl+Up output $d1 transform normal
+	$Alt+Ctrl+Down output $d1 transform 180
 
 # Brightness
 	$Mod+b exec $signal light ^

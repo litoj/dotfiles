@@ -85,6 +85,7 @@ abbr jctl   "journalctl -p 3 -b"
 
 # pacman
 abbr pq     "set pkg (paru -Qq | fzf -m --preview 'paru --color=always -Si {1}'); echo \$pkg"
+abbr pqr    "paru -Qq | fzf -m --preview 'paru --color=always -Si {1}' | paru -Rscn -"
 abbr pror   "paru -Qtqd | paru -Rscn -"
 abbr pss    "paru -Slq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -S -"
 abbr psr    "paru -Qttq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Rscn -"
@@ -108,19 +109,21 @@ abbr gu     "git add -u && git commit"
 abbr ga     "git add -A && git commit"
 abbr gd     "git branch -d (git branch | fzf | sed 's/.* //')"
 abbr gc     "git checkout"
+abbr gs     "git switch"
 
 # internet related shortcuts
-abbr scan   "nmap -T4 -p22 (ip a | sed -n 's/.*\(192\.[0-9]\+\.[0-9]\+\.\)[0-9]\+\/\([0-9]\+\).*/\10\/\2/p')"
+abbr scan   "nmap -T4 -p22 (ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p')"
 abbr ipa    "ip a | sed -n 's/.* \([.0-9]\+\/[0-9]\+\).*/\1/p' | tail -n 1"
 abbr npa    "netstat -tn"
 abbr npo    "netstat -lutnp &| tail -n +4"
 abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7 | sort -k4n -k2n | column -t -R 2"
-abbr adl    "adb connect (sudo arp-scan --localnet | grep ^192.168 | awk '{print \$1;EXIT}'):5555"
-abbr adh    "adb connect 192.168.0.102:5555"
 # shows connected devices
 abbr con    "arp -a"
 # enable disabled wifi
 abbr iwre   "rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up"
+# connect to android device
+abbr adc    "read p; adb connect (nmap -T4 -p\$p (ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p') | grep -B4 '/tcp open' | sed -n 's,.*report for ,,p'):\$p"
+abbr ads    "scrcpy --max-fps "
 
 abbr fit    "ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz"
 
@@ -144,7 +147,7 @@ if status is-login
 		export _JAVA_AWT_WM_NONREPARENTING=1
 		export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 		export MOZ_ENABLE_WAYLAND=1
-		export QT_QPA_PLATFORMTHEME=qt6ct
+		export QT_QPA_PLATFORMTHEME=qt5ct
 		export GDK_BACKEND="wayland,x11"
 		export XDG_CURRENT_DESKTOP=sway # for xdg-desktop-portal
 		set XDG_CONFIG_HOME ~/.config

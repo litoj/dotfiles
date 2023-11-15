@@ -33,6 +33,6 @@ else
 fi
 
 if ((launch)); then
-	[[ $W ]] && swaymsg workspace "$W"
 	swaymsg exec "$1"
+	[[ $W ]] && swaymsg workspace "$W"
 fi

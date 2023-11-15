@@ -1,5 +1,5 @@
 return {
-	{ 'samjwill/nvim-unception', lazy = false },
+	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
 		'neovim/nvim-lspconfig',
@@ -10,10 +10,11 @@ return {
 	{
 		'JosefLitos/reform.nvim',
 		event = 'LspAttach',
+		ft = 'man',
 		build = 'make',
 		opts = {
 			open_link = { { { '', 'i' }, '<C-LeftMouse>' }, { 'n', 'gL' } },
-			docmd = { debug = '/tmp/docmd.lua' },
+			docmd = { debug = '/tmp/docmd.md' },
 		},
 	},
 	{
@@ -24,12 +25,6 @@ return {
 			ng.setup { snippet_engine = 'luasnip' }
 			map({ 'n', 'i' }, '<M-y>', ng.generate)
 		end,
-	},
-	{ 'JosefLitos/i3config.vim', ft = 'swayconfig' },
-	{
-		'habamax/vim-asciidoctor',
-		ft = 'asciidoctor',
-		config = function() vim.g.asciidoctor_fenced_languages = { 'sh', 'javascript', 'python' } end,
 	},
 	{
 		'folke/neodev.nvim',
@@ -45,6 +40,7 @@ return {
 		cmd = 'ColorizerToggle',
 		opts = { user_default_options = { RRGGBBAA = true } },
 	},
+	-- { 'utilyre/sentiment.nvim', event = 'VeryLazy', opts = {} },
 	--[[ {
 		'j-hui/fidget.nvim',
 		event = 'LspAttach',
@@ -55,17 +51,24 @@ return {
 			window = { blend = 0 },
 		},
 	}, ]]
-	-- { 'chentoast/marks.nvim', event = 'BufEnter', opts = {} },
 	-- { 'Darazaki/indent-o-matic', dependencies = 'nvim-treesitter', event = 'BufEnter', opts = {} },
-	--[[ {
-		"rubixninja314/vim-mcfunction",
-		ft = "mcfunction",
+	{ 'JosefLitos/i3config.vim', ft = 'swayconfig' },
+	{
+		'habamax/vim-asciidoctor',
+		ft = 'asciidoctor',
+		config = function() vim.g.asciidoctor_fenced_languages = { 'sh', 'javascript', 'python' } end,
+	},
+	{
+		'JosefLitos/vim-mcfunction',
+		ft = 'mcfunction',
 		config = function()
-			vim.g.mcversion = "latest"
-			vim.o.synmaxcol = 255
+			vim.g.mcversion = 'latest'
 			vim.g.mcEnableBuiltinIDs = false
 			vim.g.mcEnableBuiltinJSON = true
-			vim.api.nvim_create_autocmd("FileType", {pattern = "mcfunction", command = "setlocal tw=0"})
+			vim.api.nvim_create_autocmd(
+				'FileType',
+				{ pattern = 'mcfunction', command = 'setlocal tw=0 cms=#%s smc=255' }
+			)
 		end,
-	}, ]]
+	},
 }

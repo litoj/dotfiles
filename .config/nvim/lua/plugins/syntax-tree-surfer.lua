@@ -24,8 +24,8 @@ function M.config()
 	}
 	local opt = { silent = true }
 	map({ 'n', 'i' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
-	map({ 'n', 'i' }, '<M-J>', '<Cmd>STSSwapDownNormal<CR>', opt)
-	map({ 'n', 'i' }, '<M-K>', '<Cmd>STSSwapUpNormal<CR>', opt)
+	map({ 'n', 'i' }, '<M-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
+	map({ 'n', 'i' }, '<M-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
 	map({ 'n', 'i' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
 	map('n', 'gh', '<Cmd>STSSwapOrHold<CR>', opt)
 	map('n', '<M-s>', '<Cmd>STSSelectCurrentNode<CR>', opt)

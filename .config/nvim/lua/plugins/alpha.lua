@@ -89,6 +89,7 @@ function M.config()
 					map('n', 'q', alpha.start, { buffer = true })
 					map('n', '<Esc>', 'q', { remap = true, buffer = true })
 					map('n', '<Right>', '<CR>', { remap = true, buffer = true })
+					map('n', 'l', '<CR>', { remap = true, buffer = true })
 					return { oldfiles(10) }
 				end,
 			},
@@ -98,6 +99,7 @@ function M.config()
 				{ 'dw', '~/Documents/work/' },
 				{ 'nn', '~/Documents/personal/nvim/nerdcontrast.nvim/lua/nerdcontrast/' },
 				{ 'nr', '~/Documents/personal/nvim/reform.nvim/' },
+				{ 'nc', '~/dotfiles/.config/' },
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },

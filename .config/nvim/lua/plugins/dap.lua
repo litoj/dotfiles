@@ -99,10 +99,10 @@ function M.config()
 			{ elements = { { id = 'console', size = 1 } }, size = 0.3, position = 'bottom' },
 		},
 		mappings = {
-			expand = { '<RightMouse>' },
+			expand = { '<RightMouse>', 'o', '<CR>', '<Left>', 'l' },
 			remove = { 'D', '<Del>' },
-			edit = { 'R', 'E', '<S-CR>' },
-			open = { '<LeftMouse>', 'O', '<CR>', '<Left>', 'l' },
+			edit = { 'R', 'E', '<S-CR>', 'e' },
+			open = { 'O', '<M-CR>', '<Left>', 'l' },
 			toggle = 'T',
 		},
 	}

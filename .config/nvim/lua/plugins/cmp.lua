@@ -127,7 +127,6 @@ function M.config()
 			{ name = 'luasnip', max_item_count = 5 },
 			{ name = 'nerdfont' },
 			{ name = 'latex_symbols' },
-			{ name = 'buffer', max_item_count = 10 },
 		},
 	})
 	cmp.setup.filetype({ 'lua' }, {

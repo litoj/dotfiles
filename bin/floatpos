@@ -1,6 +1,5 @@
 #!/usr/bin/bash
 #sway/floatpos - sway floating mode tiling functionality improved over Windows
-# Made by Josef Litoš, enjoy your linux swayfloatingWM setup
 
 p2="$2"
 ## very fast data filter (way faster than jq)

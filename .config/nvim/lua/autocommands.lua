@@ -1,39 +1,35 @@
 local group = vim.api.nvim_create_augroup('CfgAU', { clear = true })
 
 local lastGit
-local HOME = os.getenv 'HOME' .. '/'
-vim.api.nvim_create_autocmd('BufEnter', {
-	group = group,
-	pattern = '*.*',
-	callback = function(state)
-		local path = state.file:gsub('[^/]+$', '')
-		local git = path
-		while #git > 1 and not vim.loop.fs_stat(git .. '.git/') do
-			git = git:gsub('[^/]+/$', '')
-		end
-		git = git ~= HOME and git ~= '/' and git or nil
-		if path:find('^' .. vim.fn.getcwd()) and git == lastGit then return end
-		lastGit = git
-		local clients = vim.lsp.get_clients { bufnr = state.buf }
-		if #clients > 0 then
-			for _, lsp in ipairs(clients) do
-				local dir = lsp.config.root_dir
-				if lsp.name ~= 'null-ls' and dir and path:sub(1, #dir) == dir then
-					vim.api.nvim_set_current_dir(dir)
-					return
-				end
+local function setCWD(state)
+	local path = state.file:gsub('[^/]+$', '')
+	local git = path
+	while #git > 1 and not vim.loop.fs_stat(git .. '.git/') do
+		git = git:gsub('[^/]+/$', '')
+	end
+	git = git ~= '/' and git or path
+	local clients = vim.lsp.get_clients { bufnr = state.buf }
+	if #clients > 0 then
+		for _, lsp in ipairs(clients) do
+			local dir = lsp.config.root_dir
+			if lsp.name ~= 'null-ls' and dir and path:sub(1, #dir) == dir then
+				lastGit = git
+				vim.api.nvim_set_current_dir(dir)
+				return
 			end
 		end
-		vim.api.nvim_set_current_dir(
-			path:match '.*/lua/'
-				or path:match '.*/src/'
-				or path:match '.*%.nvim/'
-				or path:match '.*/.config/[^/]+/'
-				or lastGit
-				or path
-		)
-	end,
-})
+	end
+	if path:find(vim.fn.getcwd(), 0, true) and git == lastGit then return end
+	lastGit = git
+	vim.api.nvim_set_current_dir(
+		path:match '.*/lua/'
+			or path:match '.*/src/'
+			or path:match '.*%.nvim/'
+			or path:match '.*/.config/[^/]+/'
+			or git
+	)
+end
+vim.api.nvim_create_autocmd('BufEnter', { group = group, pattern = '*.*', callback = setCWD })
 
 local function indentMarks()
 	vim.wo.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1)
@@ -91,10 +87,17 @@ for _, v in ipairs(vim.v.oldfiles) do
 end
 vim.v.oldfiles = of ]]
 
---XXX: fix for neovim shada '%' openning an empty buffer
-if vim.fn.bufname() == '' and vim.fn.bufnr '$' > 1 then
-	vim.schedule(function()
-		vim.cmd.bdelete()
-		vim.cmd.edit()
-	end)
+-- a fix for neovim shada '%' openning an empty buffer
+local stat = vim.loop.fs_stat(vim.api.nvim_buf_get_name(0))
+if vim.fn.bufname() == '' then
+	if vim.fn.bufnr '$' > 1 then
+		vim.schedule(function()
+			vim.cmd.bdelete() -- { bang = true }
+			vim.cmd.edit()
+		end)
+	end
+else
+	vim.o.sdf = 'NONE'
+	if stat and stat.type == 'file' then setCWD { file = vim.api.nvim_buf_get_name(0), buf = 0 } end
 end
+stat = nil

@@ -12,5 +12,5 @@ r = rotate by 1
 <Shift+B> = exec cp "$imv_current_file" ~/Pictures/screen/
 <Shift+E> = exec cp "$imv_current_file" ~/Downloads/
 <Meta+f> = exec dragon-drop -x -T "$imv_current_file" &
-<Meta+s> = exec swaymsg exec "xterm ranger --selectfile=\"$imv_current_file\""
-<Ctrl+e> = exec swaymsg exec "gimp \"$imv_current_file\""
+<Meta+s> = exec swaymsg exec 'xterm ranger --selectfile="$imv_current_file"'
+<Ctrl+e> = exec swaymsg exec 'gimp "$imv_current_file"'

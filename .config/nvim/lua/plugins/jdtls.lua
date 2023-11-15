@@ -1,16 +1,22 @@
-local M = { 'mfussenegger/nvim-jdtls', --[[ ft = 'java' ]] }
+local M = { 'mfussenegger/nvim-jdtls', ft = 'java' }
 function M.config()
 	vim.wo.signcolumn = 'number'
 	local cfgPath = os.getenv 'HOME' .. '/.config/jdtls/'
 	local function root_dir()
-		return vim.fs.dirname(vim.fs.find({
-			'src',
-			'build.xml',
-			'build.gradle',
-			'pom.xml',
-			'.gradlew',
-			'.git',
-		}, { upward = true, path = vim.api.nvim_buf_get_name(0) })[1])
+		local last
+		local next = vim.api.nvim_buf_get_name(0)
+		while next do
+			last = next:gsub('[^/]+/?$', '')
+			next = vim.fs.find({
+				'src',
+				'build.xml',
+				'build.gradle',
+				'pom.xml',
+				'.gradlew',
+				'.git',
+			}, { upward = true, path = last:gsub('[^/]+/$', '') })[1]
+		end
+		return last
 	end
 	local jdtls = require 'jdtls'
 	local eCC = jdtls.extendedClientCapabilities
@@ -87,14 +93,11 @@ function M.config()
 				lineFoldingOnly = true,
 			}
 		end
-		if
-			vim.loop.fs_stat(vim.api.nvim_buf_get_name(0))
-			and vim.api.nvim_buf_get_option(0, 'modifiable')
-		then
+		if vim.loop.fs_stat(vim.api.nvim_buf_get_name(0)) and vim.bo.modifiable then
 			config.root_dir = root_dir()
 			config.cmd[#config.cmd + 1] = '/tmp/' .. config.root_dir:gsub('.*/', '')
 		end
-		vim.api.nvim_buf_set_option(0, 'formatoptions', 'tcqjl1')
+		vim.bo.formatoptions = 'tcqjl1'
 		jdtls.start_or_attach(config)
 		local opts = { buffer = true }
 		map('n', 'gtc', jdtls.test_class, opts)
@@ -120,7 +123,7 @@ function M.config()
 	vim.api.nvim_create_autocmd('FileType', {
 		pattern = 'java',
 		callback = function(state)
-			if vim.api.nvim_buf_get_option(state.buf, 'bufhidden') == '' then init() end
+			if vim.bo[state.buf].bufhidden == '' then init() end
 		end,
 	})
 end

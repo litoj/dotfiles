@@ -32,7 +32,7 @@ local function setup(server, opts)
 		if client.server_capabilities.inlayHintProvider and opts.inlay then
 			vim.lsp.inlay_hint(bufnr, true)
 		end
-		vim.api.nvim_set_current_dir(client.config.root_dir)
+		if client.config.root_dir then vim.api.nvim_set_current_dir(client.config.root_dir) end
 		if on_attach then on_attach(client, bufnr) end
 	end
 	if not server then

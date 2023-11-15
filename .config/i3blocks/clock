@@ -26,13 +26,13 @@ themeCheck() {
 	prev=$x
 }
 
-update
-themeCheck
+x=1
+next=0
 
 while :; do
-	sleep $((60 - x[2]))
 	update
 	((x > next || x < prev)) && themeCheck
+	sleep $((60 - x[2]))
 done
 
 #~/.config/i3blocks/colorcode $((($(date +%H) * 3600 + $(date +%M)) / 432))

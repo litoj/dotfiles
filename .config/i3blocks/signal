@@ -27,7 +27,7 @@ case "$1" in
 		;;
 	"kb")
 		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
-		swaymsg input "1:1:AT_Translated_Set_2_keyboard" xkb_switch_layout next
+		swaymsg input '1:1:AT_Translated_Set_2_keyboard' xkb_switch_layout next
 		notify-send -a signal -h string:synchronous:kb " $kb"
 		pkill -RTMIN+12 i3blocks
 		;;
@@ -71,7 +71,7 @@ case "$1" in
 		elif [[ ${hdmi[2]} == \* ]]; then
 			def=(${hdmi[0]} ${norm[1]} ${hdmi[0]} ${norm[1]} 'HDMI')
 		else
-			notify-send -u critical -t 2000 "Audio Err"
+			notify-send -u critical -t 2000 'Audio Err'
 		fi
 		notify-send -t 1000 ${def[4]}
 		echo "${def[0]} ${def[1]}" > /tmp/wp
@@ -79,5 +79,20 @@ case "$1" in
 		wpctl set-default ${def[3]}
 		sleep 1
 		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
+		;;
+	"theme")
+		if [[ ! -f /tmp/day && $2 == tgl || $2 == 'dark' ]]; then
+			gsettings set org.gnome.desktop.interface gtk-theme Light
+			ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
+			ln -sf ~/.config/qt6ct/colors/Light.conf /tmp/qt
+			ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
+			touch /tmp/day
+		else
+			gsettings set org.gnome.desktop.interface gtk-theme Dark
+			ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
+			ln -sf ~/.config/qt6ct/colors/Dark.conf /tmp/qt
+			ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
+			[[ -e /tmp/day ]] && rm /tmp/day
+		fi
 		;;
 esac

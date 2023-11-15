@@ -40,3 +40,5 @@ map(
 map('i', '<M-b>', '<Esc>llbi**<Esc>ea**', { buffer = true })
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map('i', '<M-d>', '<C-v>u2014', { buffer = true })
+map('i', '<M-q>', '\\', { buffer = true })
+vim.wo.conceallevel = 2

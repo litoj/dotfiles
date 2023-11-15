@@ -1,20 +1,21 @@
 local M = { 'kyazdani42/nvim-tree.lua', event = 'VeryLazy' }
 function M.config()
 	local api = require 'nvim-tree.api'
+	function label(path)
+		path = path:gsub(os.getenv 'HOME', '~', 1)
+		return path:gsub('([a-zA-Z])[a-z]+', '%1') .. path:gsub('.*[^a-zA-Z].?', '', 1)
+	end
 	require('nvim-tree').setup {
 		disable_netrw = true,
 		respect_buf_cwd = true,
 		update_focused_file = { enable = true, update_root = true, ignore_list = { 'term://' } },
 		sync_root_with_cwd = true,
-		filters = { dotfiles = true, custom = { '.git', 'node_modules', '.cache' } },
+		filters = { dotfiles = true, custom = { '.git$', 'node_modules', '.cache' } },
 		renderer = {
 			indent_markers = { enable = true },
 			icons = { show = { git = false } },
-			root_folder_label = function(path)
-				path = path:gsub(os.getenv 'HOME', '~', 1)
-				return path:gsub('([a-zA-Z])[a-z]+', '%1') .. path:gsub('.*[^a-zA-Z].?', '', 1)
-			end,
-			group_empty = true,
+			root_folder_label = label,
+			group_empty = label,
 		},
 		actions = {
 			open_file = { quit_on_open = true, window_picker = { enable = true } },
@@ -33,9 +34,13 @@ function M.config()
 			end
 			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
 			map({ 'l', '<Right>', '<CR>' }, api.node.open.edit)
-			map({ 'K', 'P', '<S-Left>' }, api.node.navigate.parent)
+			map({ 'K', 'P', '<S-Up>' }, api.node.navigate.parent)
 			map('<', api.node.navigate.sibling.prev)
 			map('>', api.node.navigate.sibling.next)
+			map({ 'J', '<S-Down>' }, function()
+				api.node.navigate.parent()
+				api.node.navigate.sibling.next()
+			end)
 			map('-', api.node.navigate.parent_close)
 			map('e', api.tree.expand_all)
 			map('<M-e>', api.tree.collapse_all)
@@ -61,7 +66,7 @@ function M.config()
 	local file = vim.api.nvim_buf_get_name(0)
 	if vim.fn.isdirectory(file) == 1 then
 		vim.loop.chdir(file)
-		require('nvim-tree.api').tree.open()
+		api.tree.open()
 	end
 end
 return M

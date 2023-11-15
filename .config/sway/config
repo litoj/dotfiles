@@ -1,13 +1,2 @@
-set $mode tiling
-set $display eDP-1
-set $border 4
-set $gaps 16
-set $screen swaybg -i "$(fd . ~/Pictures/screen/|shuf -n1)" -m fill &>/dev/null &
-set $Mod Mod4
-set $Alt Mod1
-
-include setts.swayconf
-include exec.swayconf
-include binds.swayconf
-
+include *.swayconf
 include /etc/sway/config.d/50-systemd-user.conf

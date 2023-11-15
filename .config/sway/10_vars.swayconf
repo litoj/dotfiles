@@ -1,0 +1,38 @@
+## Theme
+set $tbg #10101088
+set $bg #88888800
+set $hi #66d022
+set $hi2 #54a015
+set $con #a830a8
+set $text #f0eeea
+set $fc #40a3e0
+set $bar #222222ff
+set $border 4
+set $gaps 16
+set $setbg swaybg -i "$(fd . ~/Pictures/screen/|shuf -n1)" -m fill &>/dev/null &
+
+set $Mod Mod4
+set $Alt Mod1
+
+## Workspaces
+# simple formatting options
+#set $w0 <span color=\"#888\"><b>1: </b></span>
+set $w1 1:
+set $w2 2:
+set $w3 3:
+set $w4 4:
+set $w5 5:
+set $w6 6:
+set $w7 7:
+set $w8 8:
+set $w9 9:
+set $wBrowser $w3
+set $wMsg $w6
+set $wMedia $w7
+set $wGame $w9
+set $wCode $w5
+
+# Outputs
+set $d1 eDP-1
+set $d2 DP-1
+set $dMedia "Philips Consumer Electronics Company PHL 559M1RYV Unknown"

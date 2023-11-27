@@ -10,12 +10,8 @@ return {
 	{
 		'JosefLitos/reform.nvim',
 		event = 'LspAttach',
-		ft = 'man',
 		build = 'make',
-		opts = {
-			open_link = { { { '', 'i' }, '<C-LeftMouse>' }, { 'n', 'gL' } },
-			docmd = { debug = '/tmp/docmd.md' },
-		},
+		opts = { docmd = { debug = '/tmp/docmd.md' } },
 	},
 	{
 		'danymat/neogen',
@@ -36,9 +32,16 @@ return {
 		end,
 	},
 	{
-		'NvChad/nvim-colorizer.lua',
+		'JosefLitos/colorizer.nvim',
 		cmd = 'ColorizerToggle',
-		opts = { user_default_options = { RRGGBBAA = true } },
+		config = function()
+			require('colorizer').setup {
+				user_default_options = {
+					names = function() return require('nerdcontrast').palette end,
+					mode = 'foreground',
+				},
+			}
+		end,
 	},
 	-- { 'utilyre/sentiment.nvim', event = 'VeryLazy', opts = {} },
 	--[[ {

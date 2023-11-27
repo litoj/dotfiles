@@ -107,6 +107,8 @@ abbr gg     "git checkout"
 abbr gs     "git status"
 abbr gu     "git add -u && git commit"
 abbr ga     "git add -A && git commit"
+abbr gC     "git commit"
+abbr gap    "git add -p"
 abbr gd     "git branch -d (git branch | fzf | sed 's/.* //')"
 abbr gc     "git checkout"
 abbr gs     "git switch"
@@ -121,9 +123,6 @@ abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7
 abbr con    "arp -a"
 # enable disabled wifi
 abbr iwre   "rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up"
-# connect to android device
-abbr adc    "read p; adb connect (nmap -T4 -p\$p (ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p') | grep -B4 '/tcp open' | sed -n 's,.*report for ,,p'):\$p"
-abbr ads    "scrcpy --max-fps "
 
 abbr fit    "ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz"
 
@@ -132,9 +131,6 @@ abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | 
 abbr efig   'efivar -p -n (efivar -l | grep "")'
 abbr gefi   'cd /sys/firmware/efi/efivars/'
 abbr mefi   'chattr -i'
-function img
-	fd -e jpg -x bash -c 'x="{}"; file "$x" | grep datetime >/dev/null && mv "$x" "${x%/*}/$(file "$x" | sed -En "s/.*datetime=(....):(..):(..) (..):(..):(..).*/\1_\2_\3_\4\5\6/p").jpg"'
-end
 
 function fish_user_key_bindings
 	fzf_key_bindings

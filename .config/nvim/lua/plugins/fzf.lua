@@ -1,4 +1,17 @@
-local M = { 'ibhagwan/fzf-lua', keys = { ' s', ' a', ' o', ' f', ' g', ' d', ' c' } }
+local M = {
+	'ibhagwan/fzf-lua',
+	keys = {
+		' s',
+		' a',
+		' o',
+		' f',
+		' g',
+		' d',
+		' c',
+		{ 'gd', vim.lsp.buf.definition },
+		{ 'gr', vim.lsp.buf.references },
+	},
+}
 function M.config()
 	local fzf = require 'fzf-lua'
 	fzf.setup {
@@ -17,8 +30,8 @@ function M.config()
 		files = {
 			prompt = 'Files> ',
 			git_icons = false,
-			fd_opts = [[--color=never --type f --follow -E 'Android' \
-		-E node_modules -E 'incremental' -E 'deps' -E 'build' -S '-500k']],
+			fd_opts = [[--color=never --type f --follow -d 10 -E Android \
+		-E node_modules -E deps -E build -S '-100k']],
 		},
 		lsp = { jump_to_single_result = true, ignore_current_line = true },
 	}

@@ -4,10 +4,12 @@ local M = {
 	dependencies = {
 		-- 'nvim-treesitter/nvim-treesitter-textobjects',
 		'JoosepAlviste/nvim-ts-context-commentstring',
+		-- 'nvim-treesitter/nvim-treesitter-context',
 	},
 	event = 'VeryLazy',
 }
 function M.config()
+---@diagnostic disable-next-line: missing-fields
 	require('nvim-treesitter.configs').setup {
 		ensure_installed = {
 			'bash',

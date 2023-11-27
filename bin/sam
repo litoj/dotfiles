@@ -1,10 +1,20 @@
 #!/usr/bin/bash
 # sam = System APK Manager
 
-if [[ -z "$(adb devices | sed 's/^List.*$//')" ]]; then
-	printf "No devices are connected, please attach a usb cable or use 'adb connect'.\n"
-	exit 0
-fi
+connect() {
+	read -rp 'adb port: ' dst
+	[[ $dst != *:* ]] && dst=$(
+		nmap -T4 -p$dst $(
+			ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
+		) | grep -B4 '/tcp open' | sed -n 's,.*report for ,,p'
+	):$dst
+	adb connect $dst
+}
+
+screen() {
+	read -rp 'scrcpy --max-fps ' fps
+	[[ $fps ]] && scrcpy --max-fps $fps || scrcpy
+}
 
 packages() {
 	adb shell pm list packages $1 | sed 's/package://' | sort -r | fzf -m --prompt="$2"
@@ -28,7 +38,9 @@ enable() {
 
 launch() {
 	packages=$(packages -e 'launch: ')
-	activity=$(adb shell dumpsys package | sed -n "s/^ \+[0-9a-f]\+ \(${packages[0]}\/[a-zA-Z.]\+\)$/\1/p" | fzf -m --prompt="activity: ")
+	activity=$(adb shell dumpsys package |
+		sed -n "s/^ \+[0-9a-f]\+ \(${packages[0]}\/[a-zA-Z.]\+\)$/\1/p" |
+		fzf -m --prompt="activity: ")
 	[[ $activity ]] && adb shell am start -n $activity
 }
 
@@ -56,31 +68,47 @@ installUninstalled() {
 		while [[ ${sysapps[$c]} != $sysinstalled ]]; do c+=1; done
 		sysapps[$c]=
 	done
-	packages=$(echo "${sysapps[@]}" | sed 's/package://g;s/^ \+//;s/ \+/\n/g' | fzf -m --prompt='install: ')
+	packages=$(
+		echo "${sysapps[@]}" | sed 's/package://g;s/^ \+//;s/ \+/\n/g' | fzf -m --prompt='install: '
+	)
 	for package in $packages; do
 		adb shell pm install-existing --user 0 $package
 	done
 }
 
 help() {
-	printf 'SAM - System APK Manager
-	This program uses ADB to manage system applications on your Android phone.
-	d:\tdisable;   provide app disabler
-	e:\tenable;    provide disabled-app enabler
-	u:\tuninstall; provide disabled-app uninstaller
-	r:\tremove;    provide enabled-app uninstaller
-	i:\tinstall;   provide uninstalled-default-app installer
-	l:\tlaunch;    launch chosen package
-	h:\thelp;      display this help
-	q:\tquit;      exit the program\n'
+	echo 'SAM - System APK Manager
+This program uses ADB to manage system applications on your Android phone.
+  c[onnect]   connect to a LAN device with given port
+  s[creen]    capture/share screen, sound and controls
+  d[isable]   provide app disabler
+  e[nable]    provide disabled-app enabler
+  u[ninstall] provide disabled-app uninstaller
+  r[emove]    provide enabled-app uninstaller
+  i[nstall]   provide uninstalled-default-app installer
+  l[aunch]    launch chosen package
+  h[elp]      display this help
+  q[uit]      exit if run as tui'
 }
 
-help
+(($#)) && args=1 || args=0
+if [[ $1 != c* && -z "$(adb devices | sed 's/^List.*$//' 2> /dev/null)" ]]; then
+	echo 'No devices are connected.
+Please attach a usb cable or use "sam [-][-]c[onnect]".'
+fi
 
-printf "Choose action: "
-while read -r -n 1 option; do
-	printf '\e[1A\n\e[K'
-	case $option in
+while :; do
+	if ((args)); then
+		(($#)) || exit 0
+		[[ $1 == -* ]] && opt=${1##-} || opt=$1
+		shift
+	else
+		read -rp 'Choose action: ' -n 1 opt
+	fi
+
+	case $opt in
+		c | connect) connect ;;
+		s | screen) screen ;;
 		d | disable) disable ;;
 		e | enable) enable ;;
 		u | uninstall) uninstall -d ;;
@@ -90,6 +118,4 @@ while read -r -n 1 option; do
 		h | help) help ;;
 		q | quit) exit 0 ;;
 	esac
-	printf "Choose action: "
 done
-exit 0

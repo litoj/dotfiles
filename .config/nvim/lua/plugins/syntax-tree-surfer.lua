@@ -23,13 +23,29 @@ function M.config()
 		},
 	}
 	local opt = { silent = true }
+	map({ 'n', 'i' }, '<M-S>', '<Cmd>STSSwapOrHold<CR>', opt)
+
 	map({ 'n', 'i' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
 	map({ 'n', 'i' }, '<M-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
 	map({ 'n', 'i' }, '<M-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
 	map({ 'n', 'i' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
-	map('n', 'gh', '<Cmd>STSSwapOrHold<CR>', opt)
+
+	map('x', '<M-J>', '<Cmd>STSSwapNextVisual<CR>', opt)
+	map('x', '<M-K>', '<Cmd>STSSwapPrevVisual<CR>', opt)
+
 	map('n', '<M-s>', '<Cmd>STSSelectCurrentNode<CR>', opt)
 	map('i', '<M-s>', '<C-o><Cmd>STSSelectCurrentNode<CR>', opt)
+
+	map('x', 'H', '<Cmd>STSSelectPrevSiblingNode<CR>', opt)
+	map('x', 'J', '<Cmd>STSSelectChildNode<CR>', opt)
+	map('x', 'K', '<Cmd>STSSelectParentNode<CR>', opt)
+	map('x', 'L', '<Cmd>STSSelectNextSiblingNode<CR>', opt)
+
+	map('x', 'N', '<Cmd>STSSelectPrevSiblingNode<CR>', opt)
+	map('x', 'C', '<Cmd>STSSelectChildNode<CR>', opt)
+	map('x', 'P', '<Cmd>STSSelectParentNode<CR>', opt)
+	map('x', 'n', '<Cmd>STSSelectNextSiblingNode<CR>', opt)
+
 	local last = 'default'
 	local function list(dst)
 		return function()

@@ -1,4 +1,8 @@
 ---@diagnostic disable: missing-fields
+local f = io.open('/sys/class/power_supply/BAT0/status', 'r')
+local plugged = f:read '*l' ~= 'Discharging'
+f:close()
+
 local M = {
 	'hrsh7th/nvim-cmp',
 	event = { 'InsertEnter', 'CmdlineEnter' },
@@ -10,11 +14,24 @@ local M = {
 		'hrsh7th/cmp-cmdline',
 		'hrsh7th/cmp-path',
 		'JosefLitos/cmp-calc',
-		'hrsh7th/cmp-nvim-lsp-signature-help',
+		plugged and {
+			'zbirenbaum/copilot-cmp',
+			dependencies = {
+				{
+					'zbirenbaum/copilot.lua',
+					opts = {
+						panel = { enabled = false },
+						suggestion = { enabled = false },
+						filetypes = { yaml = true },
+					},
+				},
+			},
+			opts = {},
+		} or nil,
 	},
 }
 function M.config()
-	require('luasnip/loaders/from_vscode').lazy_load()
+	require('luasnip.loaders.from_vscode').lazy_load()
 	local kind_icons = {
 		Method = '  ',
 		Function = ' 󰊕 ',
@@ -45,35 +62,82 @@ function M.config()
 		Color = '  ',
 		File = ' 󰈔 ',
 		Folder = '  ',
+
+		Copilot = ' 󰋎 ',
+	}
+
+	local src = {
+		cmd = { name = 'cmdline', group_index = 0 },
+		calc = { name = 'calc', group_index = 1, keyword_pattern = '[0-9-]' },
+		font = { name = 'nerdfont', group_index = 1, trigger_characters = {} },
+		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {} },
+
+		path = { name = 'path', group_index = 2, keyword_length = 1 },
+
+		copilot = plugged
+				and { name = 'copilot', group_index = 2, keyword_length = 0, trigger_characters = {} }
+			or nil,
+		lsp = { name = 'nvim_lsp', group_index = 2 },
+		snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
+
+		buf = { name = 'buffer', group_index = 3 },
 	}
 
 	vim.o.completeopt = 'menu,menuone,noselect'
 	local cmp = require 'cmp'
 	local luasnip = require 'luasnip'
+
+	local function select(num)
+		local function exec()
+			-- cmp.select_next_item { count = num }
+			for _ = 1, num do
+				cmp.select_next_item()
+			end
+			cmp.confirm()
+		end
+		return { i = exec, c = exec }
+	end
+
 	cmp.setup {
 		snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
 		mapping = {
 			['<C-b>'] = cmp.mapping(cmp.mapping.scroll_docs(-4), { 'i', 'c' }),
 			['<C-f>'] = cmp.mapping(cmp.mapping.scroll_docs(4), { 'i', 'c' }),
-			['<Esc>'] = cmp.mapping { i = cmp.mapping.abort() },
-			['<S-Esc>'] = cmp.mapping { c = cmp.mapping.abort() },
+			['<Esc>'] = cmp.mapping {
+				i = cmp.mapping.abort(),
+				c = function()
+					if not cmp.abort() then vim.api.nvim_feedkeys('\03', 'n', false) end
+				end,
+			},
 			['<CR>'] = cmp.mapping {
 				i = cmp.mapping.confirm { behavior = cmp.ConfirmBehavior.Replace, select = false },
 			},
 			['<C-Space>'] = cmp.mapping(function(_)
-				local entries = cmp.get_entries()
-				if #entries > 0 and (#entries == 1 or entries[1].exact) then
-					cmp.confirm { select = true }
-				elseif cmp.visible() then
-					if cmp.get_active_entry() == nil then cmp.select_next_item() end
-					cmp.select_next_item()
+				if cmp.visible() then
+					local entries = cmp.get_entries()
+					if #entries > 0 and #entries == 1 then
+						cmp.confirm { select = true }
+					elseif #entries == 2 and cmp.get_active_entry then
+						cmp.select_prev_item()
+						cmp.confirm()
+					else
+						if cmp.get_active_entry() == nil then cmp.select_next_item() end
+						cmp.select_next_item()
+					end
 				else
 					cmp.complete()
 				end
-			end),
+			end, { 'i', 'c' }),
 			['<Tab>'] = cmp.mapping(function(fallback)
 				if cmp.visible() then
-					cmp.confirm { select = true }
+					if
+						vim.api.nvim_get_mode().mode == 'c'
+						or vim.api.nvim_get_current_line():sub(1, vim.api.nvim_win_get_cursor(0)[2]):match '%S'
+					then
+						cmp.confirm { select = true }
+					else
+						return
+					end
 				elseif luasnip.expand_or_locally_jumpable(1) then
 					luasnip.expand_or_jump(1)
 				else
@@ -91,6 +155,14 @@ function M.config()
 			end, { 'i', 'c', 's' }),
 			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 'c' }),
 			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
+			['<C-2>'] = select(2),
+			['<C-ě>'] = select(2),
+			['<C-3>'] = select(3),
+			['<C-š>'] = select(3),
+			['<C-4>'] = select(4),
+			['<C-č>'] = select(4),
+			['<C-5>'] = select(5),
+			['<C-ř>'] = select(5),
 		},
 		formatting = {
 			fields = { 'kind', 'abbr' },
@@ -106,45 +178,35 @@ function M.config()
 			end,
 		},
 		completion = { keyword_length = 2 },
+		-- performance = { max_view_entries = 10 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
 		},
 		experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
-		sources = cmp.config.sources {
-			{ name = 'nvim_lsp_signature_help' },
-			{ name = 'nvim_lsp', max_item_count = 50 },
-			{ name = 'luasnip', max_item_count = 5 },
-			{ name = 'path', max_item_count = 15 },
-			{ name = 'calc' },
+		sorting = {
+			comparators = {
+				cmp.config.compare.score,
+				cmp.config.compare.recently_used,
+				cmp.config.compare.length,
+				cmp.config.compare.scopes,
+			},
 		},
+		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot },
 	}
 
-	cmp.setup.filetype({ 'markdown', 'text' }, {
-		sources = cmp.config.sources {
-			{ name = 'path' },
-			{ name = 'calc' },
-			{ name = 'luasnip', max_item_count = 5 },
-			{ name = 'nerdfont' },
-			{ name = 'latex_symbols' },
-		},
-	})
-	cmp.setup.filetype({ 'lua' }, {
-		sources = cmp.config.sources {
-			{ name = 'nvim_lsp_signature_help' },
-			{ name = 'nvim_lsp', max_item_count = 50 },
-			{ name = 'luasnip', max_item_count = 5 },
-			{ name = 'path', max_item_count = 15 },
-			{ name = 'calc' },
-			{ name = 'nerdfont', max_item_count = 20 },
-		},
-	})
-
-	cmp.setup.cmdline(
-		':',
-		{ sources = { { name = 'cmdline' }, { name = 'path' }, { name = 'buffer' } } }
+	cmp.setup.filetype(
+		{ 'markdown', 'text' },
+		{ sources = { src.calc, src.path, src.snip, src.font, src.latex } }
 	)
-	cmp.setup.cmdline('/', { sources = { { name = 'buffer' } } })
+	cmp.setup.filetype({ 'scheme', 'racket' }, { sources = { src.latex, src.copilot } })
+	cmp.setup.filetype(
+		{ 'lua' },
+		{ sources = { src.calc, src.path, src.lsp, src.snip, src.font, src.copilot } }
+	)
+
+	cmp.setup.cmdline(':', { sources = { src.cmd, src.path, src.latex, src.buf } })
+	cmp.setup.cmdline('/', { sources = { src.latex, src.buf } })
 end
 return {
 	M,
@@ -154,6 +216,6 @@ return {
 		event = 'CmdlineEnter',
 		dependencies = 'nvim-cmp',
 	},
-	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
+	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text' }, dependencies = 'nvim-cmp' },
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
 }

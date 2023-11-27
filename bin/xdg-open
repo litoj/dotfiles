@@ -24,7 +24,7 @@ try() {
 			[[ $EXT == $1 ]] && run $app
 		elif [[ $1 == *: ]]; then
 			[[ $URI == $1 ]] && run $app
-		elif [[ $arg == $1 ]]; then
+		elif [[ $arg =~ $1 ]]; then
 			run $app
 		fi
 		shift

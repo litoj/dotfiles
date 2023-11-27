@@ -1,8 +1,14 @@
 #!/usr/bin/bash
 
-start=$(date +%H:%M)
-firefox --profile ~/.mozilla/f*/*Work
-dur="$start—$(date +%H:%M) = $(bc <<< "scale=2;$SECONDS/3600")"
+if [[ $1 =~ ^[0-9]*\.[0-9]*\.?$ && $2 =~ ^[0-9]*\.[0-9]*\.?$ ]]; then
+	# calculate time between two timestamps
+	echo
+else
+	start=$(date +%H:%M)
+	firefox --profile ~/.mozilla/f*/*Work "$@"
+	((SECONDS < 900 )) && exit
+	dur="$start—$(date +%H:%M) = $(bc <<< "scale=2;$SECONDS/3600")"
+fi
 
 rep=$HOME/Documents/work/workreport.md
 
@@ -21,7 +27,7 @@ else
 			awk '/^[0-9]\+\.$/ || /^  -/ {x=0}; {x+=+$1}; END {print "  - "x}' >> $rep
 	fi
 	if ((last > today)) && [[ ${last[1]} != '--' ]]; then # month
-		awk '/^[0-9]/ {x=0}; /  - / {x+=$2}; END {print "  -- "x}' $rep >> $rep
+		awk '/^[0-9]/||/--/ {x=0}; /  - / {x+=$2}; END {print "  -- "x}' $rep >> $rep
 		date +%m. | sed 's/^0//' >> $rep
 	fi
 

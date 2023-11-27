@@ -9,8 +9,8 @@ function M.config()
 		disable_filetype = { 'rnvimr', 'NvimTree' },
 		fast_wrap = {
 			map = '<M-w>',
-			chars = { '{', '[', '(', '"', "'", '`', '**', '_' },
-			pattern = '[\'")>%]},:*.+= ]',
+			chars = { '{', '[', '(', '"', "'", '`' },
+			pattern = '[\'")>%]},:*+=]',
 			end_key = '$',
 			before_key = 'q',
 			after_key = 'e',
@@ -19,8 +19,9 @@ function M.config()
 			highlight = 'IncSearch',
 			highlight_grey = '',
 			use_virt_lines = false,
+			check_ts = true,
 		},
-		ignored_next_char = '[^.,;>)%]}]',
+		ignored_next_char = '[^ .,;>)%]}]',
 	}
 
 	local on_confirm_done = require('nvim-autopairs.completion.cmp').on_confirm_done

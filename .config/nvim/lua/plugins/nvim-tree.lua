@@ -1,11 +1,12 @@
 local M = { 'kyazdani42/nvim-tree.lua', event = 'VeryLazy' }
 function M.config()
 	local api = require 'nvim-tree.api'
-	function label(path)
+	local function label(path)
 		path = path:gsub(os.getenv 'HOME', '~', 1)
 		return path:gsub('([a-zA-Z])[a-z]+', '%1') .. path:gsub('.*[^a-zA-Z].?', '', 1)
 	end
-	require('nvim-tree').setup {
+	local nt = require 'nvim-tree'
+	nt.setup {
 		disable_netrw = true,
 		respect_buf_cwd = true,
 		update_focused_file = { enable = true, update_root = true, ignore_list = { 'term://' } },
@@ -33,11 +34,12 @@ function M.config()
 				end
 			end
 			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
+			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
 			map({ 'l', '<Right>', '<CR>' }, api.node.open.edit)
-			map({ 'K', 'P', '<S-Up>' }, api.node.navigate.parent)
+			map({ 'K', '<M-k>', 'P', '<S-Up>' }, api.node.navigate.parent)
 			map('<', api.node.navigate.sibling.prev)
 			map('>', api.node.navigate.sibling.next)
-			map({ 'J', '<S-Down>' }, function()
+			map({ 'J', '<M-j>', '<S-Down>' }, function()
 				api.node.navigate.parent()
 				api.node.navigate.sibling.next()
 			end)
@@ -47,22 +49,22 @@ function M.config()
 			map({ '<C-h>', '<BS>' }, api.tree.toggle_hidden_filter)
 			map('<C-g>', api.tree.toggle_gitignore_filter)
 			map('<F5>', api.tree.reload)
-			map('n', api.fs.create)
+			map({ 'n', '<C-n>' }, api.fs.create)
 			map({ 'D', '<Del>' }, api.fs.remove)
-			map('X', api.fs.cut)
-			map('C', api.fs.copy.node)
-			map('V', api.fs.paste)
+			map({ 'X', '<C-x>' }, api.fs.cut)
+			map({ 'C', '<C-c>' }, api.fs.copy.node)
+			map({ 'V', '<C-v>' }, api.fs.paste)
 			map({ 'R', '<F2>' }, api.fs.rename)
-			map('q', api.tree.close)
+			map('q', vim.cmd.bwipeout)
 			map({ 'cd', 'O', '<S-CR>' }, api.tree.change_root_to_node)
 			map('/', api.tree.search_node)
 			map('<M-i>', api.node.show_info_popup)
 			map('s', api.node.run.cmd)
-			vim.keymap.set('n', '<M-Tab>', '<C-w>l', { buffer = bufnr })
+			map('<M-Tab>', '<C-w>l')
 		end,
 	}
 
-	map('n', '<M-Tab>', '<Cmd>NvimTreeToggle<CR>')
+	map('n', '<M-Tab>', nt.focus)
 	local file = vim.api.nvim_buf_get_name(0)
 	if vim.fn.isdirectory(file) == 1 then
 		vim.loop.chdir(file)

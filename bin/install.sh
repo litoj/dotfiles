@@ -143,7 +143,7 @@ yt-dlp' | paru --needed -S -
 		sudo systemctl enable NetworkManager
 		sudo systemctl enable ufw.service
 		sudo rm -r /var/log/journal
-		git clone https://github.com/mariusor/mpris-ctl.git && cd mpris-ctl && 
+		git clone https://github.com/mariusor/mpris-ctl.git && cd mpris-ctl &&
 			sudo CC='gcc -O2' make release install && cd .. && rm -rf mpris-ctl
 	}
 }
@@ -173,8 +173,11 @@ configs() {
 	ln -s "$PWD"/.config/* ~/.config/
 	bat cache --build
 	mkdir -p ~/.local/share/applications/
-	ln -s "$PWD"/other/fb.desktop ~/.local/share/applications/fb.desktop
-	xdg-mime default fb.desktop inode/directory
+	ln -s "$PWD"/other/*.desktop ~/.local/share/applications/
+	local mimes=($(sed -n 's/^MimeType=//;s/;/ /gp' other/opener.desktop))
+	for mime in ${mimes[@]}; do
+		xdg-mime default opener.desktop $mime
+	done
 	[[ -f /bin/fish ]] && chsh -s /bin/fish
 }
 

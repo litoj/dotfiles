@@ -10,7 +10,12 @@ function M.config()
 		single_file_support = true,
 		sources = {
 			nls.builtins.formatting.stylua.with {
-				extra_args = function()
+				extra_args = function(client)
+					local cwd = vim.fn.getcwd():gsub('/lua$', '')
+					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
+						f = cwd .. f
+						if vim.loop.fs_stat(f) then return { '--config-path', f } end
+					end
 					return {
 						'--column-width=' .. vim.bo.textwidth,
 						'--indent-type=' .. (vim.bo.expandtab and 'Spaces' or 'Tabs'),

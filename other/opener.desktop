@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=open.sh
+Terminal=false
+Exec=xdg-open %u
+MimeType=inode/directory;application/xhtml+xml;text/html;text/xml;x-scheme-handler/http;x-scheme-handler/https;

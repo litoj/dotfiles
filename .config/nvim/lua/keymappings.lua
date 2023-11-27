@@ -1,14 +1,16 @@
 -- Text management
 map({ '', 'i' }, '<C-s>', '<Cmd>w<CR>')
 map({ 'n', 'i' }, '<M-S-Up>', '<Cmd>m-2<CR>')
+map({ 'n', 'i' }, '<M-K>', '<Cmd>m-2<CR>')
 map({ 'n', 'i' }, '<M-S-Down>', '<Cmd>m+<CR>')
+map({ 'n', 'i' }, '<M-J>', '<Cmd>m+<CR>')
 map('n', '<C-S-Up>', 'md"dY"dp`d')
-map('i', '<C-S-Up>', '<C-c>md"dY"dp`da')
-map('n', '<C-S-Down>', 'md"dY"dP`d')
-map('i', '<C-S-Down>', '<C-c>md"dY"dP`da')
 map('n', '<C-S-k>', 'md"dY"dp`d')
+map('i', '<C-S-Up>', '<C-c>md"dY"dp`da')
 map('i', '<C-S-k>', '<C-c>md"dY"dp`da')
+map('n', '<C-S-Down>', 'md"dY"dP`d')
 map('n', '<C-S-j>', 'md"dY"dP`d')
+map('i', '<C-S-Down>', '<C-c>md"dY"dP`da')
 map('i', '<C-S-j>', '<C-c>md"dY"dP`da')
 map('n', '<C-a>', 'ggVG')
 map('i', '<C-a>', '<C-o>gg<C-o>VG')
@@ -34,9 +36,20 @@ map('v', '<C-v>', '"ddP')
 map('', 'c', '"dc')
 -- Deleting text
 map('n', '<C-d>', '"ddd')
-map('i', '<C-BS>', '<C-w>')
 map('i', '<C-d>', '<C-o>"ddd')
-map('i', '<C-Del>', '<C-o>"dde')
+map('i', '<C-BS>', '<C-w>')
+local function delExtended(keybind)
+	return function()
+		vim.bo.isk = vim.bo.isk .. ',.,*'
+		vim.api.nvim_feedkeys(vim.keycode(keybind), 'n', false)
+		vim.schedule(function() vim.bo.isk = vim.bo.isk:gsub(',%.,%*$', '') end)
+	end
+end
+map('i', '<M-BS>', delExtended '<C-w>')
+map('i', '<C-S-BS>', '<C-o>"ddB')
+map('i', '<C-Del>', '<C-o>"ddw')
+map('i', '<M-Del>', delExtended '<C-o>"ddw')
+map('i', '<C-S-Del>', '<C-o>"ddW')
 map('', '<Del>', '"_x')
 -- inc/dec
 map('n', '<M-a>', '<C-a>')
@@ -64,8 +77,8 @@ map({ '', 'i', 't' }, '<C-k>', '<PageUp>')
 map({ '', 'i', 't' }, '<C-j>', '<PageDown>')
 map({ '', 'i', 't' }, '<C-l>', '<C-Right>')
 map({ 'i', 't' }, '<M-h>', '<Left>')
-map({ 'i', 't' }, '<M-j>', '<Down>')
-map({ 'i', 't' }, '<M-k>', '<Up>')
+map({ 'i', 't' }, '<M-j>', '<Down>', { remap = true })
+map({ 'i', 't' }, '<M-k>', '<Up>', { remap = true })
 map({ 'i', 't' }, '<M-l>', '<Right>')
 map('n', '<M-h>', '<C-w>h')
 map('i', '<M-H>', '<C-o><C-w>h')
@@ -89,34 +102,48 @@ map('n', '<Leader>h', '<Cmd>vsplit<CR>')
 -- reload
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
-map('n', '<Leader>l', function()
-	local path = vim.api.nvim_buf_get_name(0):gsub('.-/lua/', '', 1)
-	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
-	package.loaded[path
-		:gsub('.+lua/', '', 1)
-		:gsub('/init%.lua$', '', 1)
-		:gsub('%.lua$', '', 1)
-		:gsub('/', '.')] =
-		res
-	if path:find '^nerdcontrast' then
-		local nc = require 'nerdcontrast'
-		if path:find '/palette/' then
-			vim.o.background = path:find 'dark' and 'dark' or 'light'
-			nc.setPalette(res)
-		else
-			for k, _ in pairs(res) do
-				nc.themeDep[k] = nil
-			end
-			nc.hi(res)
-		end
-	elseif path:find '^reform' then
-		res.setup(true)
-	elseif path:find '^plugins' then
-		if type(res.config) == 'function' then res.config() end
-	end
-end)
 
 -- Extra
+map('n', '<Leader>l', function() -- load and execute lua code in current buffer
+	local path = vim.api
+		.nvim_buf_get_name(0)
+		:gsub('.-/lua/(.+)%.lua', '%1', 1)
+		:gsub('/init$', '', 1)
+		:gsub('/', '.')
+	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
+	local old = package.loaded[path]
+	package.loaded[path] = res
+	if vim.startswith(path, 'nerdcontrast') then
+		local nc = require 'nerdcontrast'
+		for k, _ in pairs(res) do
+			nc.groups[k] = nil
+		end
+		if path:find '%.palette%.' then
+			-- if path:match '^dark$' or path:match '^light$' then
+			vim.o.background = path:find 'light' and 'light' or 'dark'
+			--[[ nc.addPalette { def = res }
+			else
+				nc.addPalette { link = res }
+			end ]]
+			nc.addPalette(res)
+			vim.api.nvim_exec_autocmds('ColorScheme', {})
+		else
+			nc.hi(res)
+		end
+	elseif vim.startswith(path, 'reform') then
+		res.setup(path == 'reform' and old.config or require('reform').config[path:sub(8)])
+	elseif vim.startswith(path, 'plugins') then
+		if type(res.config) == 'function' then res.config() end
+	elseif vim.startswith(path, 'vim.') then
+		local dst = vim
+		path = path:sub(5)
+		while path:find '%.' do
+			dst = dst[path:match '^[^.]+']
+			path = path:gsub('^[^.]+%.', '', 1)
+		end
+		dst[path] = res
+	end
+end)
 map('n', '<Leader>/', '<Cmd>noh<CR>') -- clears all highlights/searches
 map('n', '<M-C>', '<Cmd>Inspect<CR>')
 map('n', 'S', '<Cmd>term<CR>a')

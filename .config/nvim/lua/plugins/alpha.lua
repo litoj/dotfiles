@@ -1,4 +1,4 @@
-local M = { 'goolord/alpha-nvim', keys = '<C-n>', commit = '712dc1d' }
+local M = { 'goolord/alpha-nvim', keys = '<C-n>' }
 function M.config()
 	local function buttons(name, btns)
 		local home = os.getenv 'HOME'
@@ -16,8 +16,8 @@ function M.config()
 			local path = val[2]:match '.*/'
 			local cmd = 'cd ' .. path .. '|e ' .. val[2]
 			local hi = {
-				{ '.*/nvim/lua/', ' ', 'Green' },
-				{ '.*/.config/', ' ', 'Brown' },
+				{ '.*/nvim/lua/', ' ', 'Cyan' },
+				{ '.*/.config/', ' ', 'Orange' },
 				{ '~/Documents/work/', '󱫋 ', 'LightBlue' },
 				{ '~/Documents/school/', '󰑴 ', 'Blue' },
 				{ '.*/nvim/[^/]+/lua/', ' ', 'Green' },
@@ -80,13 +80,12 @@ function M.config()
 		return buttons('Recent', recent)
 	end
 
-	local alpha = require 'alpha'
 	local config = {
 		layout = {
 			{
 				type = 'group',
 				val = function()
-					map('n', 'q', alpha.start, { buffer = true })
+					map('n', 'q', function() vim.api.nvim_buf_delete(0, {}) end, { buffer = true })
 					map('n', '<Esc>', 'q', { remap = true, buffer = true })
 					map('n', '<Right>', '<CR>', { remap = true, buffer = true })
 					map('n', 'l', '<CR>', { remap = true, buffer = true })
@@ -119,8 +118,9 @@ function M.config()
 			}),
 		},
 	}
+	local alpha = require 'alpha'
 	alpha.setup(config)
 
-	map({ '', 'i' }, '<C-n>', function() alpha.start(false, config) end)
+	map({ '', 'i' }, '<C-n>', alpha.start)
 end
 return M

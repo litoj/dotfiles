@@ -1,10 +1,9 @@
 local M = {
-	'feline-nvim/feline.nvim',
-	dependencies = 'kyazdani42/nvim-web-devicons',
+	'freddiehaddad/feline.nvim',
+	dependencies = { 'kyazdani42/nvim-web-devicons', 'nerdcontrast.nvim' },
 	event = 'VeryLazy',
 }
 function M.config()
-	local colors = require('nerdcontrast').palette
 	local mode_color = {
 		n = 'Magenta',
 		i = 'Green',
@@ -13,7 +12,7 @@ function M.config()
 		V = 'Yellow',
 		c = 'LightBlue',
 		t = 'Red',
-		no = 'LightMagenta',
+		no = 'Violet',
 		s = 'LightCyan',
 		S = 'LightCyan',
 		[''] = 'LightCyan',
@@ -21,8 +20,7 @@ function M.config()
 		R = 'Orange',
 		Rv = 'Orange',
 	}
-	local fl = require 'feline'
-	fl.setup {
+	require('feline').setup {
 		force_inactive = {
 			filetypes = { '^NvimTree', '^dap.*', '^packer', '^alpha', '^help', '^rnvimr' },
 		},
@@ -32,7 +30,7 @@ function M.config()
 					{
 						provider = '▊',
 						update = { 'ModeChanged' },
-						hl = function() return { fg = colors[mode_color[vim.fn.mode()]][1] } end,
+						hl = function() return { fg = mode_color[vim.fn.mode()] } end,
 					},
 					{
 						provider = { name = 'file_type', opts = { filetype_icon = true } },
@@ -48,52 +46,50 @@ function M.config()
 						truncate_hide = true,
 						icon = ' ',
 						update = { 'FileType' },
-						hl = { fg = colors.Fg4[1] },
+						hl = { fg = 'Fg4' },
 					},
 				},
 				{
 					{
 						provider = 'diagnostic_errors',
 						icon = ' ',
-						hl = { fg = colors['Red'][1] },
+						hl = { fg = 'Red' },
 						right_sep = ' ',
 					},
 					{
 						provider = 'diagnostic_warnings',
 						icon = ' ',
-						hl = { fg = colors['Orange'][1] },
+						hl = { fg = 'Orange' },
 						right_sep = ' ',
 					},
 					{
 						provider = 'diagnostic_hints',
 						icon = ' ',
-						hl = { fg = colors['Fg5'][1] },
+						hl = { fg = 'Fg5' },
 						right_sep = ' ',
 					},
 					{
 						provider = 'diagnostic_info',
 						icon = ' ',
-						hl = { fg = colors['LightOlive'][1] },
+						hl = { fg = 'Olive' },
 						right_sep = ' ',
 					},
 					{
-						provider = function() return (vim.bo.et and '_' or 't') .. vim.bo.sw end,
-						hl = { fg = colors['Yellow'][1] },
+						provider = function() return (vim.bo.et and '_' or 't') .. vim.bo.ts end,
+						hl = { fg = 'Yellow' },
 						right_sep = ' ',
 					},
 					{
 						provider = function()
 							return vim.fn.line '.' .. ':' .. vim.fn.virtcol '.' .. '/' .. vim.fn.line '$'
 						end,
-						hl = { fg = colors['Green'][1] },
+						hl = { fg = 'Green' },
 						right_sep = ' ',
 					},
 					{
-						provider = function()
-							return math.modf(vim.fn.line '.' * 100 / vim.fn.line '$') .. '%%'
-						end,
-						update = {'CursorMoved', 'CursorMovedI'},
-						hl = { fg = colors['Cyan'][1] },
+						provider = function() return math.modf(vim.fn.line '.' * 100 / vim.fn.line '$') .. '%%' end,
+						update = { 'CursorMoved', 'CursorMovedI' },
+						hl = { fg = 'Cyan' },
 						right_sep = ' ',
 					},
 				},
@@ -112,6 +108,6 @@ function M.config()
 			},
 		},
 	}
-	fl.use_theme { fg = colors.Fg1[1], bg = colors.Bg2[1] }
+	local _ = require('nerdcontrast.plugs.feline').feline.fg
 end
 return M

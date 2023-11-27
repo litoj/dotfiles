@@ -49,3 +49,5 @@ vim.g.rust_recommended_style = 0
 vim.g.omni_sql_no_default_maps = 1
 vim.o.list = true
 vim.g.mapleader = ' '
+-- hotfix to prevent overwriting shada on cli opening/commits
+if #vim.v.argv > 2 and not vim.v.argv[3]:match '^-[iu]' then vim.o.sdf = 'NONE' end

@@ -1,6 +1,7 @@
 require 'settings'
 
 _G.map = vim.keymap.set
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
 	vim.fn.system {
@@ -21,14 +22,14 @@ require('lazy').setup {
 		patterns = { 'JosefLitos' },
 		fallback = true,
 	},
-	install = { colorscheme = { 'nerdcontrast' } },
 	lockfile = vim.fn.stdpath 'state' .. '/lazy-lock.json',
 	performance = {
+		cache = { enabled = false },
 		rtp = {
 			disabled_plugins = {
 				'gzip',
 				'matchit',
-				'matchparen',
+				-- 'matchparen',
 				'netrwPlugin',
 				'tarPlugin',
 				'tohtml',
@@ -45,7 +46,7 @@ vim.api.nvim_create_autocmd('User', {
 	pattern = 'VeryLazy',
 	once = true,
 	callback = function()
-		require 'keymappings'
 		require 'autocommands'
+		require 'keymappings'
 	end,
 })

@@ -5,7 +5,6 @@ f:close()
 
 local M = {
 	'hrsh7th/nvim-cmp',
-	event = { 'InsertEnter', 'CmdlineEnter' },
 	dependencies = {
 		'L3MON4D3/LuaSnip',
 		'saadparwaiz1/cmp_luasnip',
@@ -19,11 +18,17 @@ local M = {
 			dependencies = {
 				{
 					'zbirenbaum/copilot.lua',
-					opts = {
-						panel = { enabled = false },
-						suggestion = { enabled = false },
-						filetypes = { yaml = true },
-					},
+					config = function()
+						require('copilot').setup {
+							panel = { enabled = false },
+							suggestion = { enabled = false },
+							filetypes = { ['*'] = false },
+						}
+						require('mylsp').on_attach(function(client, bufnr)
+							require('copilot.config').config.filetypes[vim.bo[bufnr].ft] = true
+							require('copilot.client').buf_attach()
+						end)
+					end,
 				},
 			},
 			opts = {},
@@ -68,9 +73,9 @@ function M.config()
 
 	local src = {
 		cmd = { name = 'cmdline', group_index = 0 },
-		calc = { name = 'calc', group_index = 1, keyword_pattern = '[0-9-]' },
-		font = { name = 'nerdfont', group_index = 1, trigger_characters = {} },
-		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {} },
+		calc = { name = 'calc', group_index = 1 },
+		font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
 
 		path = { name = 'path', group_index = 2, keyword_length = 1 },
 
@@ -136,7 +141,7 @@ function M.config()
 					then
 						cmp.confirm { select = true }
 					else
-						return
+						fallback()
 					end
 				elseif luasnip.expand_or_locally_jumpable(1) then
 					luasnip.expand_or_jump(1)
@@ -178,7 +183,7 @@ function M.config()
 			end,
 		},
 		completion = { keyword_length = 2 },
-		-- performance = { max_view_entries = 10 },
+		performance = { max_view_entries = 50 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
@@ -186,10 +191,10 @@ function M.config()
 		experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
 		sorting = {
 			comparators = {
+				cmp.config.compare.offset,
 				cmp.config.compare.score,
-				cmp.config.compare.recently_used,
+				-- cmp.config.compare.recently_used,
 				cmp.config.compare.length,
-				cmp.config.compare.scopes,
 			},
 		},
 		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot },

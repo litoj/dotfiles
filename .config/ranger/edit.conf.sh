@@ -1,13 +1,13 @@
 # config for ../../bin/xdg-open
 toOpus() {
 	for f in "$@"; do
-		[[ $f =~ \.(flac|m4a|mp3|wav)$ ]] || continue
+		[[ $f =~ \.(flac|m4a|mp3|wav|wma)$ ]] || continue
 		# -t $(ffprobe "$f" -show_entries format=duration -v quiet -of csv="p=0" | awk '{print $1-2}') \
 		ffmpeg -v quiet -i "$f" -map 0:a -map_metadata -1 \
 			"${f%.*}.opus" && rm "$f"
 	done
 }
-try @toOpus .flac .m4a .mp3 .wav
+try @toOpus .flac .m4a .mp3 .wav .wma
 stripMeta() {
 	for f in "$@"; do nosongmeta "$f" "/tmp/$f" && rm "$f" && mv "/tmp/$f" "$f"; done
 }

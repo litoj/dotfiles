@@ -11,7 +11,7 @@ return {
 		'JosefLitos/reform.nvim',
 		event = 'LspAttach',
 		build = 'make',
-		opts = { docmd = { debug = '/tmp/docmd.md' } },
+		opts = { docmd = { debug = '/tmp/docmd.md' }, man = true },
 	},
 	{
 		'danymat/neogen',
@@ -28,7 +28,7 @@ return {
 		ft = 'lua',
 		config = function()
 			require('neodev').setup { setup_jsonls = false }
-			require 'mylsp' 'lua_ls'
+			require('mylsp').setup 'lua_ls'
 		end,
 	},
 	{

@@ -49,7 +49,7 @@ map('i', '<M-BS>', delExtended '<C-w>')
 map('i', '<C-S-BS>', '<C-o>"ddB')
 map('i', '<C-Del>', '<C-o>"ddw')
 map('i', '<M-Del>', delExtended '<C-o>"ddw')
-map('i', '<C-S-Del>', '<C-o>"ddW')
+map('i', '<C-S-Del>', '<C-o>"ddE')
 map('', '<Del>', '"_x')
 -- inc/dec
 map('n', '<M-a>', '<C-a>')

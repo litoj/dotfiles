@@ -59,8 +59,8 @@ bindsym {
 
 ## Termination
 # kill focused window
-	$Mod+q kill
-	Shift+KP_Subtract kill
+	# $Mod+q kill
+	# Shift+KP_Subtract kill
 # force kill window on select
 	$Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | \
 		sed 's/^[0-9]* //' | sort | rofi -dmenu -i -p "force kill")
@@ -184,26 +184,26 @@ bindsym {
 }
 # with mouse gestures, just fiddling around
 # hold:up/down for workspace move is impractical - pinch can fail and result as swipe
-bindgesture {
-	swipe:3:up move workspace next; workspace next
-	swipe:3:down move workspace prev; workspace prev
-	swipe:3:left workspace prev
-	swipe:3:right workspace next
-	swipe:4:up focus up
-	swipe:4:down focus down
-	swipe:4:left focus left
-	swipe:4:right focus right
-	hold:3 workspace back_and_forth 
-	hold:4 layout toggle splith splitv tabbed
-	pinch:3:inward+up move up
-	pinch:3:inward+down move down
-	pinch:3:inward+left move left
-	pinch:3:inward+right move right
-	pinch:3:outward+up mark M, focus up, split toggle; [con_mark=M] move up, unmark
-	pinch:3:outward+down mark M, focus down, split toggle; [con_mark=M] move down, unmark
-	pinch:3:outward+left mark M, focus left, split toggle; [con_mark=M] move left, unmark
-	pinch:3:outward+right mark M, focus right, split toggle; [con_mark=M] move right, unmark
-}
+# bindgesture {
+# 	swipe:3:up move workspace next; workspace next
+# 	swipe:3:down move workspace prev; workspace prev
+# 	swipe:3:left workspace prev
+# 	swipe:3:right workspace next
+# 	swipe:4:up focus up
+# 	swipe:4:down focus down
+# 	swipe:4:left focus left
+# 	swipe:4:right focus right
+# 	hold:3 workspace back_and_forth 
+# 	hold:4 layout toggle splith splitv tabbed
+# 	pinch:3:inward+up move up
+# 	pinch:3:inward+down move down
+# 	pinch:3:inward+left move left
+# 	pinch:3:inward+right move right
+# 	pinch:3:outward+up mark M, focus up, split toggle; [con_mark=M] move up, unmark
+# 	pinch:3:outward+down mark M, focus down, split toggle; [con_mark=M] move down, unmark
+# 	pinch:3:outward+left mark M, focus left, split toggle; [con_mark=M] move left, unmark
+# 	pinch:3:outward+right mark M, focus right, split toggle; [con_mark=M] move right, unmark
+# }
 # quick mark
 bindsym --to-code {
 	$Mod+Ctrl+1 mark 1

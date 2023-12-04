@@ -60,8 +60,10 @@ capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFold
 lsc.util.default_config.capabilities =
 	vim.tbl_deep_extend('force', lsc.util.default_config.capabilities, capabilities)
 
+local M = { on_attach = setmetatable({}, { __call = function(t, f) t[#t + 1] = f end }) }
+
 local function setup(server, opts)
-	if not opts then opts = require('mylsp.' .. server) end
+	opts = opts or require('mylsp.' .. server)
 	local on_attach = opts.on_attach
 	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
@@ -78,14 +80,15 @@ local function setup(server, opts)
 				buffer = bufnr,
 			})
 		end
+
+		for _, f in ipairs(M.on_attach) do
+			f(client, bufnr)
+		end
 		if on_attach then on_attach(client, bufnr) end
 	end
-	if not server then
-		return opts
-	else
-		lsc[server].setup(opts)
-	end
+	return server and lsc[server].setup(opts) or opts
 end
+M.setup = setup
 
 setup('bashls', { root_dir = function(fname) return fname:match '.+/' end })
 setup 'clangd'
@@ -138,4 +141,4 @@ map(
 	end
 )
 
-return setup
+return M

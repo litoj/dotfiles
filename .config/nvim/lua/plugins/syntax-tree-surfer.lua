@@ -65,14 +65,14 @@ function M.config()
 	map({ 'n', 'i' }, '<M-N>', function() sts.filtered_jump(last, false) end)
 	local function mapAll(key, dst)
 		map('n', 'g' .. key, list(dst))
+		map('n', '[' .. key, goTo(dst, false))
+		map('n', ']' .. key, goTo(dst, true))
 		map('n', '<' .. key, goTo(dst, false, { destination = 'parent' }))
 		map('n', '>' .. key, goTo(dst, true, { destination = 'children' }))
 		map('n', '{' .. key, goTo(dst, false, { destination = 'siblings' }))
 		map('n', '}' .. key, goTo(dst, true, { destination = 'siblings' }))
-		map('n', '[' .. key, goTo(dst, false))
-		map('n', ']' .. key, goTo(dst, true))
 	end
-	mapAll('m', { 'function', 'arrow_function', 'function_definition', 'method_declaration' })
+	mapAll('f', { 'function', 'arrow_function', 'function_definition', 'method_declaration' })
 	mapAll('s', {
 		'if_statement',
 		'elseif_statement',

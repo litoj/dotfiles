@@ -13,6 +13,7 @@ end
 local lastGit
 local invalidLsp = { ['null-ls'] = 1, copilot = 1 }
 local function setCWD(state)
+	if not vim.loop.fs_stat(state.file) then return end
 	local path = state.file:gsub('[^/]+$', '')
 	local git = path
 	while #git > 1 and not vim.loop.fs_stat(git .. '.git/') do
@@ -86,7 +87,7 @@ au('BufRead', function(state)
 	end
 end)
 
-au('VimLeavePre', function()
+--[[ au('VimLeavePre', function()
 	local filter = { vim.o.shada }
 	for _, v in ipairs(vim.v.oldfiles) do
 		if v:find('.git/', 7, true) or v:match 'NvimTree_%d+$' or not vim.loop.fs_stat(v) then
@@ -94,7 +95,7 @@ au('VimLeavePre', function()
 		end
 	end
 	vim.o.shada = table.concat(filter, ',r')
-end)
+end) ]]
 
 -- a fix for neovim shada '%' openning an empty buffer
 local stat = vim.loop.fs_stat(vim.api.nvim_buf_get_name(0))

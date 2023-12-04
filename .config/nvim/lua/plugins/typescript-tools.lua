@@ -4,7 +4,7 @@ local M = {
 	dependencies = { 'nvim-lua/plenary.nvim', 'nvim-lspconfig' },
 }
 M.config = function()
-	require('typescript-tools').setup(require 'mylsp'(nil, {
+	require('typescript-tools').setup(require('mylsp').setup(nil, {
 		inlay = true,
 		folding = true,
 		root_dir = require('lspconfig.util').root_pattern(
@@ -30,7 +30,7 @@ M.config = function()
 			},
 		},
 	}))
-	require 'mylsp'('eslint', {
+	require('mylsp').setup('eslint', {
 		format = true,
 		settings = {
 			rulesCustomizations = {

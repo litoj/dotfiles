@@ -64,7 +64,7 @@ function M.config()
 		end,
 	}
 
-	map('n', '<M-Tab>', nt.focus)
+	map('n', '<M-Tab>', api.tree.open)
 	local file = vim.api.nvim_buf_get_name(0)
 	if vim.fn.isdirectory(file) == 1 then
 		vim.loop.chdir(file)

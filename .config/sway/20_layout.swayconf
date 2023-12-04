@@ -2,7 +2,7 @@
 default_floating_border pixel $border
 default_border pixel $border
 gaps inner $gaps
-font Nova Square 15
+font cursive 15
 
 # # SwayFX specific
 # corner_radius 15

@@ -34,7 +34,8 @@ else
 	ICON=
 fi
 
-notify-send -a signal -h int:value:$VOL -h string:synchronous:volume "$ICON $VOL"
-echo "$ICON $VOL%
-$ICON $VOL%"
+TEXT="$ICON $VOL%"
+notify-send -a signal -h int:value:$VOL -h string:synchronous:volume "$TEXT"
+echo "$TEXT
+$TEXT"
 [[ $MUTED ]] && echo "#f03522" || ~/.config/i3blocks/colorcode $VOL

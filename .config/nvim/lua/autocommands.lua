@@ -59,7 +59,6 @@ au('FileType', function()
 		vim.keymap.set('n', key, 'ciw' .. key .. '<Esc>', { silent = true, buffer = true })
 	end
 end, 'gitrebase')
-au('FileType', 'setlocal wrap', 'NvimTree')
 au('TermOpen', function(state)
 	vim.opt_local.number = false
 	au('BufLeave', function()

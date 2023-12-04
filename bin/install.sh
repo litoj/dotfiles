@@ -94,7 +94,6 @@ mpv-mpris
 neofetch
 neovim
 net-tools
-ttf-inconsolata-nerd
 networkmanager
 nm-connection-editor
 npm
@@ -102,6 +101,7 @@ ntfs-3g
 openssh
 otf-font-awesome
 otf-overpass
+otf-stix
 p7zip
 pacman-contrib
 pcmanfm-gtk3
@@ -122,6 +122,7 @@ sweet-cursor-theme-git
 ttf-exo-2
 ttf-fira-code
 ttf-joypixels
+ttf-nerd-fonts-symbols-mono
 ttf-nova
 udisks2
 ufw

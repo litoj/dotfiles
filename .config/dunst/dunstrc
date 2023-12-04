@@ -6,7 +6,7 @@
 	offset=0x5
 	padding=5
 	horizontal_padding=5
-	font=FiraCode 16
+	font=Fira Code 16
 	hide_duplicate_count=true
 	browser=/usr/bin/firefox -new-tab
 	progress_bar_frame_width=0
@@ -14,6 +14,7 @@
 	progress_bar_max_width=500
 	foreground="#fffdfa"
 	background="#1c1c1c"
+	icon_theme=Icons
 
 [urgency_low]
 	frame_color="#a830a8"

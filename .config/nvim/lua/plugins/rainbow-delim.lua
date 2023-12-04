@@ -4,16 +4,17 @@ function M.config()
 	vim.g.rainbow_delimiters = {
 		strategy = {
 			[''] = rd.strategy.noop,
-			markdown = rd.strategy['local'],
-			scheme = rd.strategy['local'],
-			racket = rd.strategy['local'],
+			markdown = rd.strategy.global,
+			scheme = rd.strategy.global,
+			racket = rd.strategy.global,
 		},
 		highlight = {
 			'LightRed',
-			'LightMagenta',
+			'LightViolet',
 			'LightOrange',
-			'LightOlive',
-			'Cyan',
+			'LightMagenta',
+			'LightCyan',
+			'Yellow',
 		},
 	}
 end

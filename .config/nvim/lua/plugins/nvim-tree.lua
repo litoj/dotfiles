@@ -24,6 +24,7 @@ function M.config()
 			file_popup = { open_win_config = { border = 'single', col = -1 } },
 		},
 		on_attach = function(bufnr)
+			-- vim.wo.wrap = true
 			local function map(keys, fn)
 				if type(keys) == 'table' then
 					for _, key in pairs(keys) do

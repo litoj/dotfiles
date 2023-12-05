@@ -9,7 +9,7 @@ return {
 				checkThirdParty = false,
 				library = { os.getenv 'HOME' .. '/.config/nvim/init.lua' },
 			},
-			completion = { autoRequire = false, showParams = false, --[[ callSnippet = 'Replace' ]] },
+			completion = { autoRequire = false, showParams = false, callSnippet = 'Replace' },
 			type = { castNumberToInteger = true },
 		},
 	},

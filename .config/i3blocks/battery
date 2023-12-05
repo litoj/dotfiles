@@ -1,16 +1,13 @@
 #!/usr/bin/bash
-#Battery status script
-#FontAwesome icons for use
-#       ⚡ 
 read -a line <<< "$(acpi)"
 TEXT=${line[2]:0:1}
 STATE=${line[3]%\%*}
 TIME=${line[4]%:??}
 
 if [[ -z $TEXT ]]; then
-	TEXT=
+	echo 
 elif [[ ${line[6]} == zero ]]; then
-	TEXT=" $STATE%"
+	echo " $STATE%"
 else
 	case "$TEXT" in
 		'D')
@@ -34,6 +31,8 @@ Power off')" in
 					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
 						hibernate && sleep 60 && sudo swapoff /swapfile
 				fi
+				echo "$TEXT $STATE% $TIME"
+				exit 33
 			elif ((STATE < 40)); then
 				TEXT=
 			elif ((STATE < 60)); then
@@ -48,9 +47,5 @@ Power off')" in
 		'F') TEXT= ;;
 		*) TEXT= ;;
 	esac
-	TEXT="$TEXT $STATE% $TIME"
+	echo "$TEXT $STATE% $TIME"
 fi
-
-echo "$TEXT
-$TEXT"
-~/.config/i3blocks/colorcode $STATE

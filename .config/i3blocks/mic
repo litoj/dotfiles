@@ -1,6 +1,4 @@
 #!/usr/bin/bash
-# Volume script
-#Nice icons:       
 read -ra WP < /tmp/wp
 if [[ $button ]]; then
 	if ((button > 3)); then
@@ -8,8 +6,7 @@ if [[ $button ]]; then
 	elif ((button == 1)); then
 		wpctl set-mute ${WP[1]} toggle
 	else
-		xterm -e pulsemixer &
-		disown
+		xterm -e pulsemixer
 	fi
 fi
 
@@ -18,20 +15,9 @@ VOL=${ARR[1]/./}
 VOL=${VOL##0}
 MUTED=${ARR[2]}
 
-if [[ -z $VOL ]]; then
-	printf " ?\n ?\n"
-	~/.config/i3blocks/colorcode \?
-	exit 0
-fi
-
-if [[ $MUTED ]]; then
-	ICON=
-else
-	ICON=
-fi
+[[ $MUTED ]] && ICON= || ICON=
 
 TEXT="$ICON $VOL%"
 notify-send -a signal -h int:value:$VOL -h string:synchronous:mic "$TEXT"
-echo "$TEXT
-$TEXT"
-[[ $MUTED ]] && echo "#f03522" || ~/.config/i3blocks/colorcode $((VOL * 2))
+echo "$TEXT"
+[[ $MUTED ]] && exit 33

@@ -80,19 +80,5 @@ case "$1" in
 		sleep 1
 		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
 		;;
-	"theme")
-		if [[ ! -f /tmp/day && $2 == tgl || $2 == 'dark' ]]; then
-			gsettings set org.gnome.desktop.interface gtk-theme Light
-			ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
-			ln -sf ~/.config/qt6ct/colors/Light.conf /tmp/qt
-			ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
-			touch /tmp/day
-		else
-			gsettings set org.gnome.desktop.interface gtk-theme Dark
-			ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
-			ln -sf ~/.config/qt6ct/colors/Dark.conf /tmp/qt
-			ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
-			[[ -e /tmp/day ]] && rm /tmp/day
-		fi
-		;;
+	"theme") ~/.config/i3blocks/clock toggle ;;
 esac

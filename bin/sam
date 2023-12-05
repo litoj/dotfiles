@@ -2,7 +2,7 @@
 # sam = System APK Manager
 
 connect() {
-	read -rp 'adb port: ' dst
+	[[ $1 ]] && dst=$1 || read -rp 'adb port: ' dst
 	[[ $dst != *:* ]] && dst=$(
 		nmap -T4 -p$dst $(
 			ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
@@ -107,14 +107,14 @@ while :; do
 	fi
 
 	case $opt in
-		c | connect) connect ;;
-		s | screen) screen ;;
-		d | disable) disable ;;
-		e | enable) enable ;;
-		u | uninstall) uninstall -d ;;
-		r | remove) uninstall -e ;;
-		i | install) installUninstalled ;;
-		l | launch) launch ;;
+		c | connect) connect "$@" ;;
+		s | screen) screen "$@" ;;
+		d | disable) disable "$@" ;;
+		e | enable) enable "$@" ;;
+		u | uninstall) uninstall -d "$@" ;;
+		r | remove) uninstall -e "$@" ;;
+		i | install) installUninstalled "$@" ;;
+		l | launch) launch "$@" ;;
 		h | help) help ;;
 		q | quit) exit 0 ;;
 	esac

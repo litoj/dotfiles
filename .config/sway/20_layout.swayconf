@@ -39,12 +39,6 @@ focus_wrapping workspace
 mouse_warping none
 force_display_urgency_hint 0 ms
 
-# Window border colours
-# class                 border  bg    text    indic. child_border
-client.focused          $con    $con  $text   $fc    $con
-client.focused_inactive $bg     $tbg  $text   $bg    $bg
-client.unfocused        $bg     $tbg  $text   $bg    $bg
-
 ## Workspaces
 workspace $wGame gaps inner 0
 hide_edge_borders smart
@@ -72,6 +66,12 @@ workspace $wBrowser output $d2
 workspace $wMedia output $dMedia
 workspace $wGame output $dMedia
 
+# Window border colours
+# class                 border  bg    fg   indic. child_bor.
+client.focused          $foc    $foc  $fg  $con   $foc
+client.focused_inactive $bor    $bgt  $fg  $bor   $bor
+client.unfocused        $bor    $bgt  $fg  $bor   $bor
+
 ## Statusbar setup
 bar {
 	height 24
@@ -83,12 +83,11 @@ bar {
 	position top
 
 	colors {
-		statusline $text
-		#separator #aaaaaa
-		background $bar
-		# name             border   bg       fg
-		focused_workspace  $bar     $bar     $hi2
-		inactive_workspace $bar     $bar     $con
-		urgent_workspace   $bar     $bar     #f03522
+		statusline $fg
+		background $bg
+		# name             border  bg   fg
+		focused_workspace  $bg     $bg  $ac
+		inactive_workspace $bg     $bg  $fg
+		urgent_workspace   $bg     $bg  $err
 	}
 }

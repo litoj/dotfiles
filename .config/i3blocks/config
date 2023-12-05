@@ -4,36 +4,6 @@ separator=true
 markup=pango
 interval=once
 
-# [updates]
-# interval=once
-# signal=20
-
-# [wifi]
-# interval=60
-
-# [bandwidth]
-# interval=5
-
-# [upload]
-# interval=3
-
-# [download]
-# interval=3
-
-# [memory]
-# interval=20
-# instance=ram
-
-# [cpu]
-# interval=5
-
-# [cpu_temp]
-# interval=2
-
-# [powerdraw]
-# interval=5
-# command=echo " $(bc <<< "scale=1;$(cat /sys/class/power_supply/BAT0/power_now)/1000000")W"
-
 [volume]
 interval=0
 signal=10
@@ -49,8 +19,7 @@ signal=11
 interval=60
 
 [kb]
-command=[[ $(swaymsg -t get_inputs -p | grep \(US\) -m 1) ]] && echo  US || echo  CZ
-color=#bd40b7
+command=[[ $(swaymsg -t get_inputs -p | grep '(US)' -m 1) ]] && echo  US || echo  CZ
 signal=12
 
 [date]

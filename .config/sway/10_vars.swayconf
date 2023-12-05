@@ -1,15 +1,15 @@
 ## Theme
-set $tbg #10101088
-set $bg #88888800
-set $hi #66d022
-set $hi2 #54a015
-set $con #a830a8
-set $text #f0eeea
-set $fc #40a3e0
-set $bar #222222ff
+set $bgt #10101088
+set $bor #00000000
+set $ac #11aa00
+set $foc #bb33aa
+set $con #40a3e0
+set $err #f03522
+set $bg #000000
+set $fg #ffffff
 set $border 4
 set $gaps 16
-set $setbg swaybg -i "$(fd . ~/Pictures/screen/|shuf -n1)" -m fill &>/dev/null &
+set $setbg ~/.config/sway/bh.sh
 
 set $Mod Mod4
 set $Alt Mod1

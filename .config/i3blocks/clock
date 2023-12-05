@@ -7,12 +7,13 @@ update() {
 }
 
 STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
-themeCheck() {
-	if ((STAT[0] < x && x <= STAT[1])); then
+updateTheme() {
+	if ((STAT[0] <= x && x < STAT[1])); then
 		gsettings set org.gnome.desktop.interface gtk-theme Light
 		ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
 		ln -sf ~/.config/qt6ct/colors/Light.conf /tmp/qt
 		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
+		swaymsg -q 'set $bg #ffffff; set $fg #000000'
 		touch /tmp/day
 		next=${STAT[1]}
 	else
@@ -20,19 +21,26 @@ themeCheck() {
 		ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
 		ln -sf ~/.config/qt6ct/colors/Dark.conf /tmp/qt
 		ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
+		swaymsg -q 'set $bg #000000; set $fg #ffffff'
 		[[ -e /tmp/day ]] && rm /tmp/day
 		((x > STAT[1])) && next=1440 || next=${STAT[0]}
 	fi
+	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
+		grep '\$' -B 10 | sed '1d;/#/d;s/^/bar bar-0 colors/')"
 	prev=$x
 }
+
+if [[ $1 ]]; then
+	[[ $1 == light || ($1 == toggle && ! -e /tmp/day) ]] && x=${STAT[0]} || x=0
+	updateTheme
+	exit 0
+fi
 
 x=1
 next=0
 
 while :; do
 	update
-	((x > next || x < prev)) && themeCheck
+	((next < x || x < prev)) && updateTheme
 	sleep $((60 - x[2]))
 done
-
-#~/.config/i3blocks/colorcode $((($(date +%H) * 3600 + $(date +%M)) / 432))

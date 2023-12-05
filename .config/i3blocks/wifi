@@ -1,10 +1,5 @@
 #!/usr/bin/bash
-# Internet status script
-
-#Nice icons:    
-if ((button == 1)); then
-	term -e nmtui &> /dev/null
-fi
+((button == 1)) && xterm -e nmtui &> /dev/null
 
 if [[ $BLOCK_INSTANCE ]]; then
 	read -ra line <<< "$(ip a s "$BLOCK_INSTANCE")"
@@ -23,11 +18,12 @@ if [[ $on ]]; then
 	[[ $quality ]] && read -ra line <<< "$(nmcli)" && ssid=${line[-1]}
 fi
 if [[ $on ]]; then
-	[[ $quality ]] && TEXT=" $quality%: $ssid" || TEXT=
+	if [[ $quality ]]; then
+		echo " $quality%: $ssid"
+	else
+		echo 
+		exit 33
+	fi
 else
-	TEXT=
+	echo 
 fi
-
-echo "$TEXT
-$TEXT"
-~/.config/i3blocks/colorcode $quality

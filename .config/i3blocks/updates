@@ -22,4 +22,4 @@ TEXT=" <b>$count</b>"
 echo "$TEXT
 $TEXT"
 ~/.config/i3blocks/colorcode $((100 + count * 2))
-((count >= 50)) && exit 33 || exit 0
+((count < 50)) || exit 33

@@ -151,7 +151,6 @@ if status is-login
 
 		# WLR_RENDERER=vulkan 
 		sway
-		cp /tmp/nextbg ~/.cache/nextbg
 		killall -15 ssh-agent
 	end
 end

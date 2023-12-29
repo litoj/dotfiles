@@ -182,28 +182,6 @@ bindsym {
 	$Mod+period workspace next
 	$Mod+comma workspace prev
 }
-# with mouse gestures, just fiddling around
-# hold:up/down for workspace move is impractical - pinch can fail and result as swipe
-# bindgesture {
-# 	swipe:3:up move workspace next; workspace next
-# 	swipe:3:down move workspace prev; workspace prev
-# 	swipe:3:left workspace prev
-# 	swipe:3:right workspace next
-# 	swipe:4:up focus up
-# 	swipe:4:down focus down
-# 	swipe:4:left focus left
-# 	swipe:4:right focus right
-# 	hold:3 workspace back_and_forth 
-# 	hold:4 layout toggle splith splitv tabbed
-# 	pinch:3:inward+up move up
-# 	pinch:3:inward+down move down
-# 	pinch:3:inward+left move left
-# 	pinch:3:inward+right move right
-# 	pinch:3:outward+up mark M, focus up, split toggle; [con_mark=M] move up, unmark
-# 	pinch:3:outward+down mark M, focus down, split toggle; [con_mark=M] move down, unmark
-# 	pinch:3:outward+left mark M, focus left, split toggle; [con_mark=M] move left, unmark
-# 	pinch:3:outward+right mark M, focus right, split toggle; [con_mark=M] move right, unmark
-# }
 # quick mark
 bindsym --to-code {
 	$Mod+Ctrl+1 mark 1
@@ -260,7 +238,7 @@ bindsym {
 	XF86Launch4 exec cpupower-gui
 	Shift+XF86Launch4 exec f=$(cat /sys/firmware/acpi/platform_profile) && notify-send \
 		-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
-	XF86PowerOff exec notify-send $(rm /tmp/nolidsleep && echo LidSleep ||\
+	XF86PowerOff exec notify-send $(rm /tmp/nolidsleep &>/dev/null && echo LidSleep ||\
 		(touch /tmp/nolidsleep && echo -u critical NoLidSleep)) -t 1000
 	$Mod+x mode $Exit
 	KP_Insert nop
@@ -286,7 +264,7 @@ mode $Exit {
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		p exit, exec poweroff
+		p exit, exec cp /tmp/nextbg ~/.cache/nextbg, exec poweroff
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \
@@ -385,4 +363,10 @@ bindsym {
 	$Alt+KP_Right exec $mpv position 5+
 	$Alt+KP_Up exec $mpv position 30-
 	$Alt+KP_Down exec $mpv position 30+
+}
+bindgesture {
+	swipe:3:up exec $signal vol 1%+
+	swipe:3:right exec $signal vol 2%+
+	swipe:3:down exec $signal vol 1%-
+	swipe:3:left exec $signal vol 2%-
 }

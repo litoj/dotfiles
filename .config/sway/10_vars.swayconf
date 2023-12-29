@@ -1,11 +1,10 @@
 ## Theme
 set $bgt #10101088
 set $bor #00000000
-set $ac #11aa00
 set $foc #bb33aa
 set $con #40a3e0
 set $err #f03522
-set $bg #000000
+set $bg #222222
 set $fg #ffffff
 set $border 4
 set $gaps 16

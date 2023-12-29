@@ -1,5 +1,5 @@
 .tab-background[selected] {
-  border: 2px solid #9d2098 !important;
+  border: 2px solid #bb33aa !important;
 	background: #0000 !important;
 }
 .tab-background:not([selected]) {

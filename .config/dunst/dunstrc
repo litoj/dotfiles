@@ -17,8 +17,8 @@
 	icon_theme=Icons
 
 [urgency_low]
-	frame_color="#a830a8"
-	highlight="#a830a8"
+	frame_color="#bb33aa"
+	highlight="#bb33aa"
 	timeout=3
 
 [urgency_normal]
@@ -34,7 +34,7 @@
 [signal]
 	appname=signal
 	format="<b>%s</b>"
-	frame_color="#a830a8"
+	frame_color="#bb33aa"
 	# progressbar color
 	highlight="#54a015"
 	timeout=1

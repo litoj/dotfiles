@@ -20,4 +20,4 @@ MUTED=${ARR[2]}
 TEXT="$ICON $VOL%"
 notify-send -a signal -h int:value:$VOL -h string:synchronous:mic "$TEXT"
 echo "$TEXT"
-[[ $MUTED ]] && exit 33
+[[ -z $MUTED ]] || exit 33

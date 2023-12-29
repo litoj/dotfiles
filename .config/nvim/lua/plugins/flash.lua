@@ -1,4 +1,4 @@
-local M = { 'folke/flash.nvim', keys = { '<M-q>', '<M-f>', '?' } }
+local M = { 'folke/flash.nvim', keys = { '<A-q>', '<A-f>', '?' } }
 function M.config()
 	local flash = require 'flash'
 	flash.setup {
@@ -10,11 +10,11 @@ function M.config()
 			treesitter_search = { search = { incremental = true } },
 		},
 	}
-	map('n', '<M-q>', flash.treesitter_search)
-	map('i', '<M-q>', '<C-o><M-q>', { remap = true }) -- to avoid selection in insert mode
-	map('n', '<M-f>', flash.jump)
-	map('i', '<M-f>', '<C-o><M-f>', { remap = true })
-	map('v', '<M-s>', 'o<Esc>i')
-	map('v', '<M-e>', 'A')
+	map('n', '<A-q>', flash.treesitter_search)
+	map('i', '<A-q>', '<C-o><A-q>', { remap = true }) -- to avoid selection in insert mode
+	map('n', '<A-f>', flash.jump)
+	map('i', '<A-f>', '<C-o><A-f>', { remap = true })
+	map('v', '<A-s>', 'o<Esc>i')
+	map('v', '<A-e>', 'A')
 end
 return M

@@ -1,8 +1,9 @@
+local M = {}
 vim.diagnostic.config {
 	virtual_text = false,
 	signs = true,
 	underline = true,
-	update_in_insert = false,
+	update_in_insert = true,
 	severity_sort = true,
 	float = { focusable = false, border = 'rounded', source = 'if_many' },
 }
@@ -60,8 +61,6 @@ capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFold
 lsc.util.default_config.capabilities =
 	vim.tbl_deep_extend('force', lsc.util.default_config.capabilities, capabilities)
 
-local M = { on_attach = setmetatable({}, { __call = function(t, f) t[#t + 1] = f end }) }
-
 local function setup(server, opts)
 	opts = opts or require('mylsp.' .. server)
 	local on_attach = opts.on_attach
@@ -69,7 +68,7 @@ local function setup(server, opts)
 		vim.bo.formatoptions = 'tcqjl1'
 		client.server_capabilities.documentFormattingProvider = opts.format == true
 		if client.server_capabilities.inlayHintProvider and opts.inlay then
-			vim.lsp.inlay_hint.enable(bufnr, true)
+			-- vim.lsp.inlay_hint.enable(bufnr, true)
 		end
 		if client.config.root_dir then vim.api.nvim_set_current_dir(client.config.root_dir) end
 		if client.server_capabilities.signatureHelpProvider then
@@ -79,10 +78,6 @@ local function setup(server, opts)
 				end,
 				buffer = bufnr,
 			})
-		end
-
-		for _, f in ipairs(M.on_attach) do
-			f(client, bufnr)
 		end
 		if on_attach then on_attach(client, bufnr) end
 	end
@@ -100,13 +95,13 @@ setup 'texlab'
 -- setup "jsonls"
 -- setup("yamlls", {})
 
-map('i', '<M-g>', '<C-o>g', { remap = true })
-map('i', '<M-[>', '<C-o>[', { remap = true })
-map('i', '<M-]>', '<C-o>]', { remap = true })
-map('i', '<M->>', '<C-o>>', { remap = true })
-map('i', '<M-<>', '<C-o><', { remap = true })
+map('i', '<A-g>', '<C-o>g', { remap = true })
+map('i', '<A-[>', '<C-o>[', { remap = true })
+map('i', '<A-]>', '<C-o>]', { remap = true })
+map('i', '<A->>', '<C-o>>', { remap = true })
+map('i', '<A-<>', '<C-o><', { remap = true })
 -- Lsp diagnostic
-map({ 'n', 'i' }, '<M-d>', vim.diagnostic.open_float)
+map({ 'n', 'i' }, '<A-d>', vim.diagnostic.open_float)
 map('n', '[d', vim.diagnostic.goto_prev)
 map('n', ']d', vim.diagnostic.goto_next)
 -- Lsp code helpers
@@ -114,7 +109,7 @@ map('n', 'gD', vim.lsp.buf.declaration)
 map('n', 'gt', vim.lsp.buf.type_definition)
 -- gd,gr in plugins.fzf
 map('n', 'gI', vim.lsp.buf.implementation)
-map({ 'n', 'i' }, '<M-i>', vim.lsp.buf.hover)
+map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
 map({ 'n', 'i' }, '<C-I>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)
 map('i', '<C-S-Space>', function()
@@ -125,11 +120,11 @@ map('i', '<C-S-Space>', function()
 		vim.lsp.buf.signature_help()
 	end
 end)
-map({ 'n', 'i' }, '<M-c>', vim.lsp.buf.code_action)
+map({ 'n', 'i' }, '<A-c>', vim.lsp.buf.code_action)
 map({ 'n', 'i' }, '<F2>', vim.lsp.buf.rename)
 map(
 	{ 'n', 'i' },
-	'<M-F>',
+	'<A-F>',
 	function()
 		vim.lsp.buf.format {
 			tabSize = vim.bo.tabstop,

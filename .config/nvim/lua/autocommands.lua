@@ -20,7 +20,7 @@ local function setCWD(state)
 		git = git:gsub('[^/]+/$', '')
 	end
 	git = git ~= '/' and git or path
-	local clients = vim.lsp.get_clients { bufnr = state.buf }
+	local clients = vim.lsp.get_active_clients { bufnr = state.buf }
 	if #clients > 0 then
 		for _, lsp in ipairs(clients) do
 			local dir = lsp.config.root_dir
@@ -47,7 +47,7 @@ local function indentMarks()
 	vim.wo.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1)
 end
 indentMarks()
-au('BufEnter', indentMarks)
+au('BufRead', indentMarks)
 
 au(
 	'TextYankPost',
@@ -61,6 +61,7 @@ au('FileType', function()
 end, 'gitrebase')
 au('TermOpen', function(state)
 	vim.opt_local.number = false
+	vim.opt_local.relativenumber = false
 	au('BufLeave', function()
 		if vim.api.nvim_get_mode().mode == 't' then vim.schedule(vim.cmd.startinsert) end
 	end, nil, state.buf)
@@ -76,7 +77,7 @@ local function hiNotes()
 	vim.fn.matchadd('ErrorMsg', '\\<ERROR')
 end
 hiNotes()
-au('WinEnter', hiNotes)
+au('WinNew', hiNotes)
 
 -- Temp-file cleanliness
 au('BufRead', function(state)

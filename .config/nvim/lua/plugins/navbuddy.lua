@@ -1,7 +1,7 @@
 local M = {
 	'SmiteshP/nvim-navbuddy',
 	dependencies = { 'SmiteshP/nvim-navic', 'MunifTanjim/nui.nvim' },
-	keys = '<M-t>',
+	keys = '<A-t>',
 }
 function M.config()
 	local nb = require 'nvim-navbuddy'
@@ -45,7 +45,7 @@ function M.config()
 			reorient = 'none', --[[ follow_node = false ]]
 		},
 	}
-	map('n', '<M-t>', nb.open)
-	map('i', '<M-t>', '<Esc><M-t>', { remap = true })
+	map('n', '<A-t>', nb.open)
+	map('i', '<A-t>', '<Esc><A-t>', { remap = true })
 end
 return M

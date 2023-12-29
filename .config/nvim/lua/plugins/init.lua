@@ -15,11 +15,11 @@ return {
 	},
 	{
 		'danymat/neogen',
-		keys = '<M-y>',
+		keys = '<A-y>',
 		config = function()
 			local ng = require 'neogen'
 			ng.setup { snippet_engine = 'luasnip' }
-			map({ 'n', 'i' }, '<M-y>', ng.generate)
+			map({ 'n', 'i' }, '<A-y>', ng.generate)
 		end,
 	},
 	{

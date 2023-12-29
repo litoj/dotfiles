@@ -2,7 +2,6 @@ local M = {
 	'kevinhwang91/nvim-ufo',
 	dependencies = 'kevinhwang91/promise-async',
 	event = 'BufEnter',
-	--[[ keys = { '_', '-', '=' }, ]]
 }
 function M.config()
 	local ufo = require 'ufo'

@@ -102,7 +102,7 @@ function M.config()
 			expand = { '<RightMouse>', 'o', '<CR>', '<Left>', 'l' },
 			remove = { 'D', '<Del>' },
 			edit = { 'R', 'E', '<S-CR>', 'e' },
-			open = { 'O', '<M-CR>', '<Left>', 'l' },
+			open = { 'O', '<A-CR>', '<Left>', 'l' },
 			toggle = 'T',
 		},
 	}
@@ -113,7 +113,7 @@ function M.config()
 	map('n', 'gt', dap.goto_)
 	map('n', 'gB', function() dap.list_breakpoints(true) end)
 	map('n', 'dr', dap.run_to_cursor)
-	map('n', '<M-e>', dapui.eval)
+	map('n', '<A-e>', dapui.eval)
 	map('n', '<Leader>e', function()
 		vim.ui.input(
 			{ prompt = 'Eval: ', default = vim.fn.expand '/nat' },

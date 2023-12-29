@@ -8,7 +8,7 @@ function M.config()
 		},
 		disable_filetype = { 'rnvimr', 'NvimTree' },
 		fast_wrap = {
-			map = '<M-w>',
+			map = '<A-w>',
 			chars = { '{', '[', '(', '"', "'", '`' },
 			pattern = '[\'")>%]},:*+=]',
 			end_key = '$',

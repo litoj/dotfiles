@@ -23,18 +23,18 @@ function M.config()
 		},
 	}
 	local opt = { silent = true }
-	map({ 'n', 'i' }, '<M-S>', '<Cmd>STSSwapOrHold<CR>', opt)
+	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>', opt)
 
 	map({ 'n', 'i' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
-	map({ 'n', 'i' }, '<M-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
-	map({ 'n', 'i' }, '<M-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
+	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
+	map({ 'n', 'i' }, '<A-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
 	map({ 'n', 'i' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
 
-	map('x', '<M-J>', '<Cmd>STSSwapNextVisual<CR>', opt)
-	map('x', '<M-K>', '<Cmd>STSSwapPrevVisual<CR>', opt)
+	map('x', '<A-J>', '<Cmd>STSSwapNextVisual<CR>', opt)
+	map('x', '<A-K>', '<Cmd>STSSwapPrevVisual<CR>', opt)
 
-	map('n', '<M-s>', '<Cmd>STSSelectCurrentNode<CR>', opt)
-	map('i', '<M-s>', '<C-o><Cmd>STSSelectCurrentNode<CR>', opt)
+	map('n', '<A-s>', '<Cmd>STSSelectCurrentNode<CR>', opt)
+	map('i', '<A-s>', '<C-o><Cmd>STSSelectCurrentNode<CR>', opt)
 
 	map('x', 'H', '<Cmd>STSSelectPrevSiblingNode<CR>', opt)
 	map('x', 'J', '<Cmd>STSSelectChildNode<CR>', opt)
@@ -61,8 +61,8 @@ function M.config()
 			sts.filtered_jump(dst, fwd, opts)
 		end
 	end
-	map({ 'n', 'i' }, '<M-n>', function() sts.filtered_jump(last, true) end)
-	map({ 'n', 'i' }, '<M-N>', function() sts.filtered_jump(last, false) end)
+	map({ 'n', 'i' }, '<A-n>', function() sts.filtered_jump(last, true) end)
+	map({ 'n', 'i' }, '<A-N>', function() sts.filtered_jump(last, false) end)
 	local function mapAll(key, dst)
 		map('n', 'g' .. key, list(dst))
 		map('n', '[' .. key, goTo(dst, false))

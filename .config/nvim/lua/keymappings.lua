@@ -1,9 +1,9 @@
 -- Text management
 map({ '', 'i' }, '<C-s>', '<Cmd>w<CR>')
-map({ 'n', 'i' }, '<M-S-Up>', '<Cmd>m-2<CR>')
-map({ 'n', 'i' }, '<M-K>', '<Cmd>m-2<CR>')
-map({ 'n', 'i' }, '<M-S-Down>', '<Cmd>m+<CR>')
-map({ 'n', 'i' }, '<M-J>', '<Cmd>m+<CR>')
+map({ 'n', 'i' }, '<A-S-Up>', '<Cmd>m-2<CR>')
+map({ 'n', 'i' }, '<A-K>', '<Cmd>m-2<CR>')
+map({ 'n', 'i' }, '<A-S-Down>', '<Cmd>m+<CR>')
+map({ 'n', 'i' }, '<A-J>', '<Cmd>m+<CR>')
 map('n', '<C-S-Up>', 'md"dY"dp`d')
 map('n', '<C-S-k>', 'md"dY"dp`d')
 map('i', '<C-S-Up>', '<C-c>md"dY"dp`da')
@@ -19,8 +19,8 @@ map('i', '<C-u>', '<C-v>u')
 map('i', '<C-S-U>', '<C-v>U')
 map('i', '<S-Enter>', '<C-o>o')
 map('i', '<C-Enter>', '<C-o>O')
-map('i', '<M-Enter>', '<C-o>md<C-o>O<C-o>`d')
-map('i', '<M-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
+map('i', '<A-Enter>', '<C-o>md<C-o>O<C-o>`d')
+map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
 -- Clipboard management
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')
@@ -29,7 +29,7 @@ map('n', '<C-c>', 'Y', { silent = true })
 map('x', '<C-c>', 'y', { silent = true })
 map('i', '<C-c>', '<C-o>Y', { silent = true })
 map('i', '<C-v>', '<C-c>pa')
-map('i', '<M-V>', '<C-r>"')
+map('i', '<A-V>', '<C-r>"')
 map('i', '<C-S-V>', '<C-o>gP')
 map('n', '<C-v>', 'p')
 map('v', '<C-v>', '"ddP')
@@ -37,7 +37,7 @@ map('', 'c', '"dc')
 -- Deleting text
 map('n', '<C-d>', '"ddd')
 map('i', '<C-d>', '<C-o>"ddd')
-map('i', '<C-BS>', '<C-w>')
+map({ 'i', 'c' }, '<C-BS>', '<C-w>')
 local function delExtended(keybind)
 	return function()
 		vim.bo.isk = vim.bo.isk .. ',.,*'
@@ -45,17 +45,17 @@ local function delExtended(keybind)
 		vim.schedule(function() vim.bo.isk = vim.bo.isk:gsub(',%.,%*$', '') end)
 	end
 end
-map('i', '<M-BS>', delExtended '<C-w>')
+map('i', '<A-BS>', delExtended '<C-w>')
 map('i', '<C-S-BS>', '<C-o>"ddB')
 map('i', '<C-Del>', '<C-o>"ddw')
-map('i', '<M-Del>', delExtended '<C-o>"ddw')
+map('i', '<A-Del>', delExtended '<C-o>"ddw')
 map('i', '<C-S-Del>', '<C-o>"ddE')
 map('', '<Del>', '"_x')
 -- inc/dec
-map('n', '<M-a>', '<C-a>')
-map('i', '<M-a>', '<C-o><C-a>')
-map('n', '<M-A>', '<C-x>')
-map('i', '<M-A>', '<C-o><C-x>')
+map('n', '<A-a>', '<C-a>')
+map('i', '<A-a>', '<C-o><C-a>')
+map('n', '<A-A>', '<C-x>')
+map('i', '<A-A>', '<C-o><C-x>')
 -- indent
 map('i', '<C-S-T>', '<C-d>')
 map('i', '<C-S-.>', '<C-t>')
@@ -69,25 +69,25 @@ map('i', '<S-Left>', '<C-o>ms<Left><C-o>v')
 map('i', '<S-Down>', '<C-o>ms<C-o>v<Down>')
 map('i', '<S-Up>', '<C-o>ms<C-o>v<Up>')
 map('i', '<S-Right>', '<C-o>ms<C-o>v')
-map('i', '<M-`>', '<C-o>`') -- quick mark jump
+map('i', '<A-`>', '<C-o>`') -- quick mark jump
 map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
 map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')
 map({ '', 'i', 't' }, '<C-h>', '<C-Left>')
 map({ '', 'i', 't' }, '<C-k>', '<PageUp>')
 map({ '', 'i', 't' }, '<C-j>', '<PageDown>')
 map({ '', 'i', 't' }, '<C-l>', '<C-Right>')
-map({ 'i', 't' }, '<M-h>', '<Left>')
-map({ 'i', 't' }, '<M-j>', '<Down>', { remap = true })
-map({ 'i', 't' }, '<M-k>', '<Up>', { remap = true })
-map({ 'i', 't' }, '<M-l>', '<Right>')
-map('n', '<M-h>', '<C-w>h')
-map('i', '<M-H>', '<C-o><C-w>h')
-map('t', '<M-H>', '<C-\\><C-o><C-w>h')
-map('n', '<M-j>', '<C-w>j')
-map('n', '<M-k>', '<C-w>k')
-map('n', '<M-l>', '<C-w>l')
-map('i', '<M-L>', '<C-o><C-w>l')
-map('t', '<M-L>', '<C-\\><C-o><C-w>l')
+map({ 'i', 't' }, '<A-h>', '<Left>')
+map({ 'i', 't' }, '<A-j>', '<Down>', { remap = true })
+map({ 'i', 't' }, '<A-k>', '<Up>', { remap = true })
+map({ 'i', 't' }, '<A-l>', '<Right>')
+map('n', '<A-h>', '<C-w>h')
+map('i', '<A-H>', '<C-o><C-w>h')
+map('t', '<A-H>', '<C-\\><C-o><C-w>h')
+map('n', '<A-j>', '<C-w>j')
+map('n', '<A-k>', '<C-w>k')
+map('n', '<A-l>', '<C-w>l')
+map('i', '<A-L>', '<C-o><C-w>l')
+map('t', '<A-L>', '<C-\\><C-o><C-w>l')
 map('v', '<Tab>', 'o')
 
 -- Window actions
@@ -104,6 +104,12 @@ map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
 
 -- Extra
+map('n', '<Leader>/', '<Cmd>noh<CR>') -- clears all highlights/searches
+map('n', '<A-C>', '<Cmd>Inspect<CR>')
+map('n', 'S', '<Cmd>term<CR>a')
+map('n', 'cd', '<Cmd>cd %:h<CR>')
+map('', '<C-t>', '<Cmd>tabnew %<CR>')
+map('n', '<Leader>m', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
 map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	local path = vim.api
 		.nvim_buf_get_name(0)
@@ -133,7 +139,10 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	elseif vim.startswith(path, 'reform') then
 		res.setup(path == 'reform' and old.config or require('reform').config[path:sub(8)])
 	elseif vim.startswith(path, 'plugins') then
-		if type(res.config) == 'function' then res.config() end
+		if type(res[1]) == 'string' then res = { res } end
+		for _, cfg in ipairs(res) do
+			if type(cfg.config) == 'function' then cfg.config() end
+		end
 	elseif vim.startswith(path, 'vim.') then
 		local dst = vim
 		path = path:sub(5)
@@ -144,9 +153,20 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 		dst[path] = res
 	end
 end)
-map('n', '<Leader>/', '<Cmd>noh<CR>') -- clears all highlights/searches
-map('n', '<M-C>', '<Cmd>Inspect<CR>')
-map('n', 'S', '<Cmd>term<CR>a')
-map('n', 'cd', '<Cmd>cd %:h<CR>')
-map('', '<C-t>', '<Cmd>tabnew %<CR>')
-map('n', '<Leader>m', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
+map('n', 'gC', function()
+	local f = io.popen('git config --get remote.origin.url', 'r')
+	local s = f:read('*l'):gsub('git@(.-):', 'https://%1/'):gsub('%.git$', '')
+	s = s .. (s:match 'github.com' and '/blob/' or '/-/blob/')
+	f:close()
+	f = io.popen('git symbolic-ref refs/remotes/origin/HEAD', 'r')
+	s = s .. f:read('*l'):match '[^/]+$'
+	f:close()
+	f = io.popen('git rev-parse --show-toplevel', 'r')
+	vim.fn.setreg(
+		'+',
+		s
+			.. vim.api.nvim_buf_get_name(0):sub(#f:read '*l' + 1)
+			.. '#L'
+			.. vim.api.nvim_win_get_cursor(0)[1]
+	)
+end)

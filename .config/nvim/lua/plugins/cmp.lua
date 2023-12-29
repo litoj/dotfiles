@@ -1,7 +1,35 @@
----@diagnostic disable: missing-fields
-local f = io.open('/sys/class/power_supply/BAT0/status', 'r')
-local plugged = f:read '*l' ~= 'Discharging'
-f:close()
+local src = {
+	calc = { name = 'calc', group_index = 1 },
+	font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+	latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+
+	path = { name = 'path', group_index = 2, max_item_count = 10 },
+
+	lsp = { name = 'nvim_lsp', group_index = 2, priority = 2, max_item_count = 10 },
+	snip = { name = 'luasnip', group_index = 2, keyword_length = 3, max_item_count = 10 },
+
+	buf = { name = 'buffer', group_index = 3, max_item_count = 20 },
+}
+local function on_plugged()
+	local f = io.open('/sys/class/power_supply/BAT0/status', 'r')
+	local plugged = f:read '*l' ~= 'Discharging'
+	f:close()
+	if not plugged then return end
+	src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
+	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
+	return {
+		'tzachar/cmp-tabnine',
+		build = './install.sh',
+		config = function() require('cmp_tabnine.config'):setup { max_num_results = 2 } end,
+	}, { 'zbirenbaum/copilot-cmp', opts = {} }, {
+		'zbirenbaum/copilot.lua',
+		opts = {
+			panel = { enabled = false },
+			suggestion = { enabled = false },
+			filetypes = { config = false, swayconfig = false, text = false },
+		},
+	}
+end
 
 local M = {
 	'hrsh7th/nvim-cmp',
@@ -13,26 +41,7 @@ local M = {
 		'hrsh7th/cmp-cmdline',
 		'hrsh7th/cmp-path',
 		'JosefLitos/cmp-calc',
-		plugged and {
-			'zbirenbaum/copilot-cmp',
-			dependencies = {
-				{
-					'zbirenbaum/copilot.lua',
-					config = function()
-						require('copilot').setup {
-							panel = { enabled = false },
-							suggestion = { enabled = false },
-							filetypes = { ['*'] = false },
-						}
-						require('mylsp').on_attach(function(client, bufnr)
-							require('copilot.config').config.filetypes[vim.bo[bufnr].ft] = true
-							require('copilot.client').buf_attach()
-						end)
-					end,
-				},
-			},
-			opts = {},
-		} or nil,
+		on_plugged(),
 	},
 }
 function M.config()
@@ -69,23 +78,7 @@ function M.config()
 		Folder = '  ',
 
 		Copilot = ' 󰋎 ',
-	}
-
-	local src = {
-		cmd = { name = 'cmdline', group_index = 0 },
-		calc = { name = 'calc', group_index = 1 },
-		font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-
-		path = { name = 'path', group_index = 2, keyword_length = 1 },
-
-		copilot = plugged
-				and { name = 'copilot', group_index = 2, keyword_length = 0, trigger_characters = {} }
-			or nil,
-		lsp = { name = 'nvim_lsp', group_index = 2 },
-		snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
-
-		buf = { name = 'buffer', group_index = 3 },
+		TabNine = ' 𝟗 ',
 	}
 
 	vim.o.completeopt = 'menu,menuone,noselect'
@@ -108,12 +101,9 @@ function M.config()
 		mapping = {
 			['<C-b>'] = cmp.mapping(cmp.mapping.scroll_docs(-4), { 'i', 'c' }),
 			['<C-f>'] = cmp.mapping(cmp.mapping.scroll_docs(4), { 'i', 'c' }),
-			['<Esc>'] = cmp.mapping {
-				i = cmp.mapping.abort(),
-				c = function()
-					if not cmp.abort() then vim.api.nvim_feedkeys('\03', 'n', false) end
-				end,
-			},
+			['<Esc>'] = cmp.mapping(function()
+				if not cmp.abort() then vim.api.nvim_feedkeys('\03', 'n', false) end
+			end, { 'i', 'c' }),
 			['<CR>'] = cmp.mapping {
 				i = cmp.mapping.confirm { behavior = cmp.ConfirmBehavior.Replace, select = false },
 			},
@@ -182,8 +172,10 @@ function M.config()
 				return item
 			end,
 		},
-		completion = { keyword_length = 2 },
-		performance = { max_view_entries = 50 },
+		completion = {
+			keyword_length = 2, --[[ autocomplete = false ]]
+		},
+		performance = { max_view_entries = 50, throttle = 1, fetching_timeout = 1 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
@@ -197,30 +189,32 @@ function M.config()
 				cmp.config.compare.length,
 			},
 		},
-		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot },
+		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot, src.tabnine },
 	}
 
-	cmp.setup.filetype(
-		{ 'markdown', 'text' },
-		{ sources = { src.calc, src.path, src.snip, src.font, src.latex } }
-	)
-	cmp.setup.filetype({ 'scheme', 'racket' }, { sources = { src.latex, src.copilot } })
+	cmp.setup.filetype({ 'markdown', 'text' }, {
+		completion = { autocomplete = { 'TextChanged' } },
+		sources = { src.calc, src.path, src.snip, src.font, src.latex },
+	})
 	cmp.setup.filetype(
 		{ 'lua' },
-		{ sources = { src.calc, src.path, src.lsp, src.snip, src.font, src.copilot } }
+		{ sources = { src.calc, src.path, src.lsp, src.snip, src.font, src.copilot, src.tabnine } }
 	)
 
-	cmp.setup.cmdline(':', { sources = { src.cmd, src.path, src.latex, src.buf } })
+	cmp.setup.cmdline(
+		':',
+		{ sources = { { name = 'cmdline', group_index = 0 }, src.path, src.latex, src.buf } }
+	)
 	cmp.setup.cmdline('/', { sources = { src.latex, src.buf } })
 end
 return {
 	M,
-	{
+	--[[ {
 		'hrsh7th/cmp-buffer',
 		ft = { 'markdown', 'text' },
 		event = 'CmdlineEnter',
 		dependencies = 'nvim-cmp',
-	},
+	}, ]]
 	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text' }, dependencies = 'nvim-cmp' },
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
 }

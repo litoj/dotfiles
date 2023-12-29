@@ -21,6 +21,7 @@ vim.o.swf = false
 vim.o.cuc = true
 vim.o.cul = true
 vim.o.nu = true
+vim.o.rnu = true
 vim.o.laststatus = 3
 vim.o.signcolumn = 'number'
 vim.o.incsearch = true

@@ -111,8 +111,8 @@ function M.config()
         command! -buffer JdtJol lua require'jdtls'.jol()
         command! -buffer JdtBytecode lua require'jdtls'.javap()
         ]]
-		map({ 'n', 'i' }, '<M-r>', function() jdtls.compile 'full' end, opts)
-		map({ 'n', 'i' }, '<M-I>', jdtls.organize_imports, opts)
+		map({ 'n', 'i' }, '<A-r>', function() jdtls.compile 'full' end, opts)
+		map({ 'n', 'i' }, '<A-I>', jdtls.organize_imports, opts)
 	end
 
 	if vim.g.initialized then

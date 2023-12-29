@@ -78,18 +78,13 @@ function M.config()
 						provider = function() return (vim.bo.et and '_' or 't') .. vim.bo.ts end,
 						hl = { fg = 'Yellow' },
 						right_sep = ' ',
+						update = { 'BufEnter' },
 					},
 					{
 						provider = function()
 							return vim.fn.line '.' .. ':' .. vim.fn.virtcol '.' .. '/' .. vim.fn.line '$'
 						end,
-						hl = { fg = 'Green' },
-						right_sep = ' ',
-					},
-					{
-						provider = function() return math.modf(vim.fn.line '.' * 100 / vim.fn.line '$') .. '%%' end,
-						update = { 'CursorMoved', 'CursorMovedI' },
-						hl = { fg = 'Cyan' },
+						hl = { fg = 'Fg4' },
 						right_sep = ' ',
 					},
 				},

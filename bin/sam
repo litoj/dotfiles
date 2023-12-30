@@ -1,121 +1,131 @@
 #!/usr/bin/bash
-# sam = System APK Manager
 
+ABOUT='SAM - System APK Manager
+This program uses ADB to manage system applications on your Android phone.'
+
+. sss
+
+actionInfo connect 'connect to a device with given ip/port'
+connectParams=(dst '' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
 connect() {
-	[[ $1 ]] && dst=$1 || read -rp 'adb port: ' dst
 	[[ $dst != *:* ]] && dst=$(
 		nmap -T4 -p$dst $(
-			ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
+			ip a | sed -nE 's,.*inet ((1[^2][^.]|12[^7]|[1-9][0-9])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
 		) | grep -B4 '/tcp open' | sed -n 's,.*report for ,,p'
 	):$dst
-	adb connect $dst
+	exec adb connect $dst
 }
 
+actionInfo screen 'capture/share screen, sound and controls'
+screenParams=(fps '?' '[0-9]+' 'Max framerate' extra '*' '.+' 'Extra params for `scrcpy`')
 screen() {
-	read -rp 'scrcpy --max-fps ' fps
-	[[ $fps ]] && scrcpy --max-fps $fps || scrcpy
+	exec scrcpy "${extra[@]}" ${fps:+--max-fps $fps}
 }
 
-packages() {
-	adb shell pm list packages $1 | sed 's/package://' | sort -r | fzf -m --prompt="$2"
+declare -A pkgConf=(
+	[filter]=''
+	[preview]='adb shell dumpsys package {} | grep ^Packages -A999 | grep ^Queries -B999')
+actionInfo pkgconf c 'pkg[c]onf' 'set options for package picker'
+pkgconfParams=(
+	filter '-f' '(-[edsu]( -[edsu])*)?' 'Default app picker filter ("" for no filter)'
+	preview '-p' '.+' 'Command for fzf previewing')
+pkgconf() {
+	if [[ ${filter+1} ]]; then
+		[[ $filter ]] && pkgConf[filter]=${filter} || pkgConf[filter]=''
+	fi
+	[[ ! $preview ]] || pkgConf[preview]="$preview"
 }
 
-# Display a menu for disabling applications as long as there is a selection
+pickPackage() {
+	local _opts=(--prompt "$4: " --preview "${pkgConf[preview]}")
+	[[ $2 == [+*] ]] && _opts+=(-m)
+	local _filter=${pkgConf[$action]:-${pkgConf[filter]}}
+	if [[ $_filter == *-u* ]]; then # filter only uninstalled pkgs
+		local arr=()
+		declare -A installed
+		local pkg
+		for pkg in $(adb shell pm list packages ${_filter/-u/} | sed 's/package://'); do installed[$pkg]=1; done
+
+		for pkg in $(adb shell pm list packages $_filter | sed 's/package://'); do
+			[[ ${installed[$pkg]} ]] || arr+=("$pkg")
+		done
+		readarray -t $1 < <(
+			printf '%s\n' "${arr[@]}" | sort -r | fzf "${_opts[@]}"
+		)
+	else
+		readarray -t $1 < <(
+			adb shell pm list packages $_filter | sed 's/package://' | sort -r | fzf "${_opts[@]}"
+		)
+	fi
+}
+
+actionInfo disable 'disable installed apps'
+disableParams=(packages '+' "${REGEX[domain]}" 'Domain name to disable')
+declare -A disableBuilder=([packages]=pickPackage)
+pkgConf+=([disable]=-e)
 disable() {
-	packages=$(packages -e 'disable: ')
-	for package in $packages; do
-		adb shell pm disable-user --user 0 $package
+	for package in "${packages[@]}"; do
+		exec adb shell pm disable-user --user 0 "$package"
 	done
 }
 
-# Selectively enables previously disabled applications
+actionInfo enable 'enable disabled apps'
+enableParams=(packages '+' "${REGEX[domain]}" 'Domain name to enable')
+declare -A enableBuilder=([packages]=pickPackage)
+pkgConf+=([enable]=-d)
 enable() {
-	packages=$(packages -d 'enable: ')
-	for package in $packages; do
-		adb shell pm enable --user 0 $package
+	for package in "${packages[@]}"; do
+		exec adb shell pm enable --user 0 $package
 	done
 }
 
+actionInfo launch 'launch a package on the device'
+launchParams=(package '' "${REGEX[domain]}" 'Domain name to launch')
+declare -A launchBuilder=([package]=pickPackage)
+pkgConf+=([launch]=-e)
 launch() {
-	packages=$(packages -e 'launch: ')
 	activity=$(adb shell dumpsys package |
-		sed -n "s/^ \+[0-9a-f]\+ \(${packages[0]}\/[a-zA-Z.]\+\)$/\1/p" |
+		sed -n "s/^ \+[0-9a-f]\+ \($package\/[a-zA-Z.]\+\)$/\1/p" |
 		fzf -m --prompt="activity: ")
-	[[ $activity ]] && adb shell am start -n $activity
+	[[ $activity ]] && exec adb shell am start -n $activity
 }
 
 # Selectively uninstall every app onboard
+# only disabled apps by default, -e for direct uninstallation (of active/enabled apps)
+actionInfo uninstall 'uninstall disabled apps'
+uninstallParams=(
+	keep '-k' 'Keep app data/cache'
+	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
+declare -A uninstallBuilder=([packages]=pickPackage)
+pkgConf+=([uninstall]=-d)
 uninstall() {
-	# give param -d for only disabled, -e for direct uninstallation (of active/enabled apps)
-	packages=$(packages $1 'uninstall: ')
-	for package in $packages; do
-		printf "Uninstall '%s'? [Yes/no/(k)eep data and cache]: " $package
-		read -r -n 1 decision
-		[[ $decision ]] && printf '\n'
-		printf '\e[2A\n\e[KPackage %s uninstallation: ' $package
-		case $decision in
-			y | Y | "") adb uninstall --user 0 $package ;;
-			k | K) adb shell cmd package uninstall -k $package ;;
-		esac
+	local pkg cmd=(adb)
+	[[ $keep ]] && cmd+=(shell cmd package uninstall -k) || cmd+=(uninstall --user 0)
+	for pkg in "${packages[@]}"; do
+		exec "${cmd[@]}" "$pkg"
 	done
+}
+
+actionInfo remove 'uninstall enabled apps'
+removeParams=(
+	keep '-k' 'Keep app data/cache'
+	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
+declare -A removeBuilder=([packages]=pickPackage)
+pkgConf+=([remove]=-e)
+remove() {
+	uninstall
 }
 
 # Installs selected system apps that were uninstalled
-installUninstalled() {
-	sysapps=($(adb shell pm list packages -s -u))
-	for sysinstalled in $(adb shell pm list packages -s); do
-		declare -i c=0
-		while [[ ${sysapps[$c]} != $sysinstalled ]]; do c+=1; done
-		sysapps[$c]=
-	done
-	packages=$(
-		echo "${sysapps[@]}" | sed 's/package://g;s/^ \+//;s/ \+/\n/g' | fzf -m --prompt='install: '
-	)
-	for package in $packages; do
-		adb shell pm install-existing --user 0 $package
+actionInfo reinstall 'reinstall uninstalled default apps'
+reinstallParams=(packages '+' "${REGEX[domain]}" 'Domain name to reinstall')
+declare -A reinstallBuilder=([packages]=pickPackage)
+pkgConf+=([reinstall]='-s -u')
+reinstall() {
+	local pkg
+	for pkg in "${packages[@]}"; do
+		exec adb shell pm install-existing --user 0 $pkg
 	done
 }
 
-help() {
-	echo 'SAM - System APK Manager
-This program uses ADB to manage system applications on your Android phone.
-  c[onnect]   connect to a LAN device with given port
-  s[creen]    capture/share screen, sound and controls
-  d[isable]   provide app disabler
-  e[nable]    provide disabled-app enabler
-  u[ninstall] provide disabled-app uninstaller
-  r[emove]    provide enabled-app uninstaller
-  i[nstall]   provide uninstalled-default-app installer
-  l[aunch]    launch chosen package
-  h[elp]      display this help
-  q[uit]      exit if run as tui'
-}
-
-(($#)) && args=1 || args=0
-if [[ $1 != c* && -z "$(adb devices | sed 's/^List.*$//' 2> /dev/null)" ]]; then
-	echo 'No devices are connected.
-Please attach a usb cable or use "sam [-][-]c[onnect]".'
-fi
-
-while :; do
-	if ((args)); then
-		(($#)) || exit 0
-		[[ $1 == -* ]] && opt=${1##-} || opt=$1
-		shift
-	else
-		read -rp 'Choose action: ' -n 1 opt
-	fi
-
-	case $opt in
-		c | connect) connect "$@" ;;
-		s | screen) screen "$@" ;;
-		d | disable) disable "$@" ;;
-		e | enable) enable "$@" ;;
-		u | uninstall) uninstall -d "$@" ;;
-		r | remove) uninstall -e "$@" ;;
-		i | install) installUninstalled "$@" ;;
-		l | launch) launch "$@" ;;
-		h | help) help ;;
-		q | quit) exit 0 ;;
-	esac
-done
+main "$@"

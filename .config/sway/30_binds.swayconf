@@ -344,10 +344,9 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec songselect mpv
-	$Mod+$Alt+Shift+m exec songselect
-	$Mod+Ctrl+m exec songselect mpv "$($info\
-		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
+	$Mod+m exec mom -Gg -p
+	$Mod+$Alt+Shift+m exec mom -Gg -pd
+	$Mod+Ctrl+m exec mom -Gg -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+Shift+m exec pkill -f "mpv --ytdl-format=ba"

@@ -9,9 +9,13 @@ return {
 	},
 	{
 		'JosefLitos/reform.nvim',
-		event = 'LspAttach',
+		event = 'VeryLazy',
 		build = 'make',
-		opts = { docmd = { debug = '/tmp/docmd.md' }, man = true },
+		opts = {
+			docmd = { debug = '/tmp/docmd.md' },
+			open_link = { unknown = 'copy/print-current' },
+			man = true,
+		},
 	},
 	{
 		'danymat/neogen',

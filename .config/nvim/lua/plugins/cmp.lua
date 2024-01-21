@@ -15,19 +15,21 @@ local function on_plugged()
 	local plugged = f:read '*l' ~= 'Discharging'
 	f:close()
 	if not plugged then return end
-	src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
+	-- src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
 	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
-	return {
+	return  --[[ {
 		'tzachar/cmp-tabnine',
 		build = './install.sh',
 		config = function() require('cmp_tabnine.config'):setup { max_num_results = 2 } end,
-	}, { 'zbirenbaum/copilot-cmp', opts = {} }, {
+	}, ]]{
 		'zbirenbaum/copilot.lua',
 		opts = {
 			panel = { enabled = false },
 			suggestion = { enabled = false },
 			filetypes = { config = false, swayconfig = false, text = false },
 		},
+		dependencies = { { 'zbirenbaum/copilot-cmp', opts = {} } },
+		event = 'LspAttach',
 	}
 end
 
@@ -41,7 +43,6 @@ local M = {
 		'hrsh7th/cmp-cmdline',
 		'hrsh7th/cmp-path',
 		'JosefLitos/cmp-calc',
-		on_plugged(),
 	},
 }
 function M.config()
@@ -186,6 +187,7 @@ function M.config()
 				cmp.config.compare.offset,
 				cmp.config.compare.score,
 				-- cmp.config.compare.recently_used,
+				cmp.config.compare.kind,
 				cmp.config.compare.length,
 			},
 		},
@@ -217,4 +219,5 @@ return {
 	}, ]]
 	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text' }, dependencies = 'nvim-cmp' },
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
+	on_plugged(),
 }

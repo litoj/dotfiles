@@ -2,15 +2,16 @@
 exec $setbg
 
 exec {
+	mkdir -p /tmp/my/
+	which cpupower-gui &>/dev/null && cpupower-gui pr \
+		$([[ $(acpi) =~ D ]] && echo Powersave || echo Optimal) &>/dev/null
+	wlsunset -l 50 -L 14.5 &>/dev/null
+	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on'
+
 	gsettings set org.gnome.desktop.interface icon-theme 'Icons'
 	gsettings set org.gnome.desktop.interface cursor-theme 'Sweet-cursors'
 	gsettings set org.gnome.desktop.interface cursor-size 32
 	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
-	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on'
-	wlsunset -l 50 -L 14.5 &>/dev/null
-	which cpupower-gui &>/dev/null && cpupower-gui pr \
-		$([[ $(acpi) =~ D ]] && echo Powersave || echo Optimal) &>/dev/null
-	copyq -s
 }
 set $signal ~/.config/i3blocks/signal
 exec_always $signal wp
@@ -34,7 +35,7 @@ seat seat0 xcursor_theme 'Sweet-cursors' 32
 
 ## Sway specific
 bindswitch --locked lid:on exec \
-	[[ -f /tmp/nolidsleep ]] && swaymsg 'output $d1 power off' || systemctl suspend
+	[[ -f /tmp/my/nolidsleep ]] && swaymsg 'output $d1 power off' || systemctl suspend
 bindswitch --locked lid:off exec sleep 1 && swaymsg 'output $d1 power on'
 
 # Devices

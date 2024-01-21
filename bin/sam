@@ -25,7 +25,7 @@ screen() {
 declare -A pkgConf=(
 	[filter]=''
 	[preview]='adb shell dumpsys package {} | grep ^Packages -A999 | grep ^Queries -B999')
-actionInfo pkgconf c 'pkg[c]onf' 'set options for package picker'
+actionInfo pkgconf C 'pkg[C]onf' 'set options for package picker'
 pkgconfParams=(
 	filter '-f' '(-[edsu]( -[edsu])*)?' 'Default app picker filter ("" for no filter)'
 	preview '-p' '.+' 'Command for fzf previewing')
@@ -40,6 +40,7 @@ pickPackage() {
 	local _opts=(--prompt "$4: " --preview "${pkgConf[preview]}")
 	[[ $2 == [+*] ]] && _opts+=(-m)
 	local _filter=${pkgConf[$action]:-${pkgConf[filter]}}
+	declare -n _choice=$1
 	if [[ $_filter == *-u* ]]; then # filter only uninstalled pkgs
 		local arr=()
 		declare -A installed
@@ -49,11 +50,11 @@ pickPackage() {
 		for pkg in $(adb shell pm list packages $_filter | sed 's/package://'); do
 			[[ ${installed[$pkg]} ]] || arr+=("$pkg")
 		done
-		readarray -t $1 < <(
+		readarray -t _choice < <(
 			printf '%s\n' "${arr[@]}" | sort -r | fzf "${_opts[@]}"
 		)
 	else
-		readarray -t $1 < <(
+		readarray -t _choice < <(
 			adb shell pm list packages $_filter | sed 's/package://' | sort -r | fzf "${_opts[@]}"
 		)
 	fi
@@ -117,7 +118,7 @@ remove() {
 }
 
 # Installs selected system apps that were uninstalled
-actionInfo reinstall 'reinstall uninstalled default apps'
+actionInfo reinstall i 're[i]nstall' 'reinstall uninstalled default apps'
 reinstallParams=(packages '+' "${REGEX[domain]}" 'Domain name to reinstall')
 declare -A reinstallBuilder=([packages]=pickPackage)
 pkgConf+=([reinstall]='-s -u')

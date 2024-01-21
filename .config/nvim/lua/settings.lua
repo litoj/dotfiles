@@ -11,10 +11,6 @@ vim.o.wrap = true
 vim.o.sta = true
 vim.o.bri = true
 vim.o.si = true
-vim.o.fdl = 99
-vim.o.fdls = 99
-vim.o.fen = true
-vim.o.fml = 5
 
 vim.o.udf = true
 vim.o.swf = false

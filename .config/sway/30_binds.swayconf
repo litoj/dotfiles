@@ -60,7 +60,7 @@ bindsym {
 ## Termination
 # kill focused window
 	# $Mod+q kill
-	# Shift+KP_Subtract kill
+	Shift+KP_Subtract kill
 # force kill window on select
 	$Mod+$Alt+q exec killall -9 $(pgrep -u $USER -l | \
 		sed 's/^[0-9]* //' | sort | rofi -dmenu -i -p "force kill")
@@ -238,8 +238,8 @@ bindsym {
 	XF86Launch4 exec cpupower-gui
 	Shift+XF86Launch4 exec f=$(cat /sys/firmware/acpi/platform_profile) && notify-send \
 		-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
-	XF86PowerOff exec notify-send $(rm /tmp/nolidsleep &>/dev/null && echo LidSleep ||\
-		(touch /tmp/nolidsleep && echo -u critical NoLidSleep)) -t 1000
+	XF86PowerOff exec notify-send $(rm /tmp/my/nolidsleep &>/dev/null && echo LidSleep ||\
+		(touch /tmp/my/nolidsleep && echo -u critical NoLidSleep)) -t 1000
 	$Mod+x mode $Exit
 	KP_Insert nop
 }
@@ -264,7 +264,7 @@ mode $Exit {
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		p exit, exec cp /tmp/nextbg ~/.cache/nextbg, exec poweroff
+		p exit, exec cp /tmp/my/nextbg ~/.cache/nextbg, exec poweroff
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \
@@ -344,17 +344,16 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -Gg -p
-	$Mod+$Alt+Shift+m exec mom -Gg -pd
-	$Mod+Ctrl+m exec mom -Gg -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
+	$Mod+m exec mom -Dg -p
+	$Mod+$Alt+Shift+m exec mom -Dg -pRo
+	$Mod+Ctrl+m exec mom -Dg -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
-	$Mod+Shift+m exec pkill -f "mpv --ytdl-format=ba"
-	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display"
+	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15
 	XF86AudioPlay exec $mpv play-pause
 	KP_Subtract exec playerctl -a play-pause
 	$Mod+$Alt+space exec playerctl -a play-pause
-	XF86AudioNext exec [[ -f /tmp/song ]] && $mpv next || $mpv stop
+	XF86AudioNext exec $mpv next
 	XF86AudioPrev exec $mpv prev
 	XF86AudioStop exec playerctl -a pause
 

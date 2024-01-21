@@ -121,6 +121,7 @@ swayidle
 sweet-cursor-theme-git
 ttf-exo-2
 ttf-fira-code
+ttf-jetbrains-mono
 ttf-joypixels
 ttf-nerd-fonts-symbols-mono
 ttf-nova
@@ -158,12 +159,13 @@ firefox
 gimp
 jdk-openjdk
 netbeans
+prismlanucher-qt5-bin
+ripcord
 scrcpy
 thunderbird
 transmission-gtk
-qt6-wayland
-qt6ct
-prismlanucher-bin' | paru --needed -S -
+qt5-wayland
+qt5ct' | paru --needed -S -
 }
 
 configs() {
@@ -198,6 +200,7 @@ Name=Default
 Comment=Default Cursor Theme
 Inherits=Sweet-cursors' > ~/.icons/default/index.theme
 	mv */ ~/.icons/Icons
+	ln -s /tmp/my/gtk2rc ~/.gtkrc-2.0
 	cd ..
 }
 

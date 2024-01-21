@@ -3,7 +3,7 @@
 
 case "$1" in
 	"vol")
-		read -ra WP < /tmp/wp
+		read -ra WP < /tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[0]} "$2"
 		else
@@ -12,7 +12,7 @@ case "$1" in
 		pkill -RTMIN+10 i3blocks
 		;;
 	"mic")
-		read -ra WP < /tmp/wp
+		read -ra WP < /tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[1]} "$2"
 		else
@@ -34,7 +34,7 @@ case "$1" in
 	"wp")
 		declare -a echo norm hdmi
 		while [[ ${norm[2]} != \* && ${echo[2]} != \* && ${hdmi[2]} != \* ]]; do
-			[[ -e /tmp/wp ]] && rm /tmp/wp || sleep 1
+			[[ -e /tmp/my/wp ]] && rm /tmp/my/wp || sleep 1
 			while IFS=: read -ra line; do
 				case "${line[1]}" in
 					"Echo-Cancel Sink")
@@ -74,7 +74,7 @@ case "$1" in
 			notify-send -u critical -t 2000 'Audio Err'
 		fi
 		notify-send -t 1000 ${def[4]}
-		echo "${def[0]} ${def[1]}" > /tmp/wp
+		echo "${def[0]} ${def[1]}" > /tmp/my/wp
 		wpctl set-default ${def[2]}
 		wpctl set-default ${def[3]}
 		sleep 1

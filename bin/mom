@@ -7,9 +7,8 @@ A collection of media operation/manipulation scripts.'
 
 actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
 nometaParams=(
-	src '' "${REGEX[file]}\.(flac|wma|m4a|mp3|opus)" 'Audio file/dir to strip metadata from'
-	dst '?' "${REGEX[file]}" 'Put results into (default=replace original)')
-declare -A nometaBuilder=([src]=pickFilesOrDir [dst]=pickFilesOrDir)
+	src '' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
+	dst '?' '.+' 'Put results into (default=replace original)')
 nometa() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
@@ -39,21 +38,29 @@ nometa() {
 # }
 
 actionInfo convert 'convert audio files to opus'
-convertParams=(
+convertParams=( # TODO: opt for ignoring low qual mp3
 	NO_RM '-R' '' 'Prevent source file removal'
 	bitrate '-b' '[0-9]+' 'Output bitrate in kbps (default=96)'
-	src '' "${REGEX[file]}\.(flac|wma|m4a|mp3)" 'File to convert'
-	dst '?' "${REGEX[file]}\.opus" 'Output file (default=`$src.opus`, deletes `$src`)')
+	src '+' '$f\.(flac|wma|m4a|mp3)' 'File to convert'
+	dst '?' '$e\.opus' 'Output file (default=`$src.opus`, deletes `$src`)')
 convert() {
 	[[ $bitrate ]] ||
-		# [[ $f =~ \.(flac|wav)$ || $(
-		# 	ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
-		# ) > 192 ]] && local brate=128 ||
-		local bitrate=96
-	[[ $dst ]] || local dst=${src%.*}.opus defaultDst=true
-	if exec ffmpeg -v error -i "$src" -map_metadata -1 -map a -b:a ${bitrate}k "$dst"; then
-		[[ -z $defaultDst || $NO_RM ]] || exec rm "$src"
-	fi
+		[[ $f =~ \.(flac|wav)$ || $(
+			ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
+		) > 192 ]] && local brate=128 || local bitrate=96
+	[[ -f $dst && ${#src[@]} -gt 1 ]] && log Warn ': cannot specify multiple src and a file dst'
+
+	for src in "${src[@]}"; do
+		if [[ -z $dst ]]; then
+			local out=${src%.*}.opus defaultDst=true
+		else
+			[[ -d $dst ]] && local out="$dst/${src/*\//}" || local out=$dst
+			defaultDst=
+		fi
+		if exec ffmpeg -v error -i "$src" -map_metadata -1 -map a -b:a ${bitrate}k "$out"; then
+			[[ -z $defaultDst || $NO_RM ]] || exec rm "$src"
+		fi
+	done
 }
 
 actionInfo subtitles t 'sub[t]itles' 'convert mp4 with srt to mkv'
@@ -62,9 +69,9 @@ subtitlesParams=(
 	NO_DEF_CHANGE '-D' '' 'Prevent default-subs change (changes to first subs by default)'
 	lang '-l' '[a-z]+' 'Language in order of provided subtitles (default=eng)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
-	subs '*' '.*\.srt' 'Subtitles to add (default=*.srt)'
-	vid '?' '.*\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
-	dst '?' '.*\.mkv' 'Output file (default=`$vid.mkv`)')
+	subs '*' '$f\.srt' 'Subtitles to add (default=*.srt)'
+	vid '?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
+	dst '?' '$f\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
 	if [[ -z $subs ]]; then
@@ -115,46 +122,44 @@ subtitles() {
 
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
-	dirrnd '-d' '' 'Use randomization by dir structure instead of mpv'
-	NO_RND '-R' '' 'Do not randomize playlist (XOR with -i)'
+	randomizer '-R' '[deo]' 'd=disable; e=enable (default); o=once, then just play'
 	NO_LOOP '-L' '' 'Do not loop playlist'
-	src '' "${REGEX[file]}" 'Play file/dir')
+	src '' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
-	declare -g $1="$({
+	declare -n _choice=$1
+	_choice="$({
 		find ~/Music/* -type d
 		find ~/Music/Songs -type f
 	} | rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')"
 }
 play() {
-	local cmd=(mpv --no-audio-display --msg-level=all=no)
+	local playlistFile=/tmp/my/song
+	local cmd=(mpv --no-audio-display --msg-level=all=no --playlist=$playlistFile)
+	((NO_LOOP)) || cmd+=(--loop-playlist)
 	pkill -f "${cmd[*]::2}"
-	if [[ $dirrnd ]]; then
-		[[ -f $src ]] && exec "${cmd[@]}" "$src" && return 0
 
-		src=("$src"/*)
-		while (($? == 0)); do
-			local f="${src[$((RANDOM % ${#src[@]}))]}"
-			while [[ -d $f ]]; do
-				local d=("$f"/*)
-				f="${d[$((RANDOM % ${#d[@]}))]}"
-			done
-			exec "${cmd[@]}" "$f"
-		done
-	else
-		cmd+=(--playlist=/tmp/song)
-		[[ $NO_RND ]] || cmd+=(--shuffle)
-		[[ $NO_LOOP ]] || cmd+=(--loop-playlist)
-		exec echo "$src" > /tmp/song
-		[[ -f $src ]] && echo "${src%/*}" >> /tmp/song && cmd+=(--playlist-start=0)
-		exec "${cmd[@]}"
+	if [[ -f $src ]]; then
+		exec echo "$src" > $playlistFile
+		cmd+=(--playlist-start=0)
+		src=${src%/*}
+	elif [[ -f $playlistFile ]]; then
+		exec rm "$playlistFile"
 	fi
+
+	case "${randomizer:-e}" in
+		d) exec echo "$src" >> "$playlistFile" ;;
+		o) exec fd '' -t f "$src" | sort -R >> "$playlistFile" ;;
+		e) exec echo "$src" >> "$playlistFile" && cmd+=(--shuffle) ;;
+	esac
+
+	exec "${cmd[@]}" & disown >/dev/null
+	sleep 1 && exec rm "$playlistFile"
 	return 0
 }
 
 actionInfo compare C "play randomized files and reveal user's pick"
-compareParams=(files '+' "${REGEX[file]}" 'Files to compare')
-declare -A compareBuilder=([files]=pickFiles)
+compareParams=(files '+' '$f' 'Files to compare')
 compare() {
 	declare -i c=${#files[@]}*${#files[@]}+1 i j
 	for i in ${!files[@]}; do # absolute path for `ln -s`

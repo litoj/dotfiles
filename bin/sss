@@ -1,14 +1,14 @@
 #!/usr/bin/bash
 
-declare -A INFO
-declare -a ORDER
+declare -A INFO=()
+declare -a ORDER=()
 ALIGNER=0
 
 #######################################
 # Register fn/action docs and for execution
 # Arguments:
 #   name: name of the function
-#   key?: a unique one-letter shortcut for calling
+#   key?: a unique one-letter shortcut for calling, or '' for no shortcut
 #   helpsig?: function name displayed in help (with bracket-highlighted key)
 #   help: help text
 #######################################
@@ -20,13 +20,13 @@ actionInfo() {
 	else
 		[[ $key ]] && helpsig="[$key]${name:1}" || helpsig=$name
 	fi
-	((ALIGNER < ${#helpsig})) && ALIGNER=${#helpsig}
 	[[ $key ]] && INFO[$key]="$name"
+	((ALIGNER < ${#helpsig})) && ALIGNER=${#helpsig}
 	INFO[$name]="$helpsig $help"
 	ORDER+=($name)
 }
 
-# MODE: 1=CLI, 2=picker, 4=pick optional, 8=gui picker - XXX: pickers should respect this
+# MODE: 1=CLI, 2=picker, 4=pick optional, 8=gui picker - XXX: pickers should respect gui option
 declare -i MODE logLvl=100 DEBUG=2 DRY_RUN=0
 (($#)) && MODE=1 || MODE=2
 declare -A LOG_LEVELS=([Err]=1 [Warn]=2 [Info]=3 [Debug]=4)
@@ -50,15 +50,15 @@ exec() {
 	((DRY_RUN)) || "$@"
 }
 
-actionInfo global G 'set script-processing options'
-globalParams=( # TODO: consider a builtin way for +- toggle opts
-	dry '-E' '' 'Disable actual commands execution'
+actionInfo define D 'set script-processing options'
+defineParams=( # TODO: consider a builtin way for +- toggle opts
+	dry '-d' '' 'Disable actual commands execution'
 	tui '-t' '' 'Enter TUI mode after cli is parsed'
 	pick '-p' '' 'Enable picker in cli'
 	gui '-g' '' 'Enable gui picker'
 	opt '-o' '' 'Enable picker for optional arguments'
 	lvl '-l' '([0-9]+|Error|Warn|Info|Debug)' 'Depth of logging (default=Warn/2)')
-global() {
+define() {
 	((dry)) && DRY_RUN=1
 	if ((MODE)); then
 		((tui)) && ((MODE &= -2))
@@ -74,7 +74,6 @@ main() {
 		while (($#)); do
 			parseAction "$@"
 			shift $?
-			logLvl=100
 		done
 		((MODE & 1)) && quit
 	fi
@@ -104,11 +103,7 @@ parseAction() {
 	fi
 	((${#action} == 1)) && action=${INFO[$action]}
 	if [[ $action && ${INFO[$action]} ]]; then
-		if [[ $actionArg ]]; then
-			set -- "$actionArg"
-		else
-			shift
-		fi
+		[[ $actionArg ]] && set -- "$actionArg" || shift
 	else
 		action=$DEFAULT_ACTION actionArg=
 	fi
@@ -120,25 +115,26 @@ parseAction() {
 	# distinguish options and args
 	declare -A opts=()
 	for ((i = 0; i < sigN; i += 4)); do
-		if [[ ! ${sig[$((i + 1))]} =~ ^[+*?]?$ ]]; then
-			opts["${sig[$i]}"]=$i         # should require 0-2 --
-			opts["${sig[$((i + 1))]}"]=$i # shorthand should require one -
+		if [[ ${sig[$((i + 1))]} == [^+*?]* ]]; then
+			opts["${sig[$i]}"]=$i         # 0-2 '-' are deducted from input before opt match
+			opts["${sig[$((i + 1))]}"]=$i # shortopt should require 1 '-'
 		else
 			break
 		fi
 	done
 
+	declare -n builder=${action}Builder
 	# get options
 	while [[ $1 ]]; do
-		# parse arg
+		# parse option prefix
 		[[ $1 == -- ]] && shift && break
 		local i= arg=
 		if [[ $1 =~ ^-{,2}([^-][^=]+)(=.+)?$ ]]; then # -*opt(=Val)? → opt -opt --opt
 			i=${opts["${BASH_REMATCH[1]}"]}
 			[[ $i ]] && arg=${BASH_REMATCH[2]:1}
 		fi
-		if [[ !$i && ($1 =~ ^(-[^-])(.+)?$ || ("-$1" =~ ^(-[^-])(.+)?$ && $SHOPT)) ]]; then # -o(Val)?
-			i=${opts["${BASH_REMATCH[1]}"]}
+		if [[ !$i && ($1 =~ ^-([^-])(.+)?$ || ($1 =~ ^([^-])(.+)?$ && $SHOPT)) ]]; then # -o(Val)?
+			i=${opts["-${BASH_REMATCH[1]}"]}
 			arg=${BASH_REMATCH[2]}
 			while [[ $i && $arg ]]; do # -oooo toggle opts in succession
 				local varName=${sig[$i]//-/_} reg=${sig[$((i + 2))]}
@@ -151,17 +147,24 @@ parseAction() {
 		fi
 		[[ $i ]] && shift || break
 
-		# process option
+		# parse option arg / set value
 		local varName=${sig[$i]//-/_} reg=${sig[$((i + 2))]}
 		if [[ $reg ]]; then # requires arg
-			if [[ ${arg:-$1} =~ ^$reg$ ]]; then
-				declare -a $varName
+			declare -a $varName
+			if argMatch "${arg:-$1}"; then
 				declare -n varName
 				varName+=("${arg:-$1}")
 				declare +n varName
 				[[ $arg ]] || shift
 			else
-				log Warn " - Option argument expected, got '${arg:-$1}':
+				if ((MODE & 2)) && [[ -z $arg ]]; then
+					if ((MODE & 8)); then # picker for optional
+						log Debug ".$varName = ${builder[$varName]:-pickAny}()"
+						${builder[$varName]:-pickAny} "${sig[@]:i:4}"
+					fi
+				fi
+
+				[[ -z ${!varName} ]] && log Warn " - Option argument expected, got '${arg:-$1}':
 $(paramHelp $action $((i / 4)))" && return
 			fi
 		else
@@ -169,25 +172,21 @@ $(paramHelp $action $((i / 4)))" && return
 				log Warn " - Unexpected option argument '$arg':
 $(paramHelp $action $((i / 4)))" && return
 			else
-				declare -n varName
-				((varName += 1))
-				declare +n varName
+				declare -i $varName+=1
 			fi
 		fi
 	done
 	((i = ${#opts[@]} * 2)) # * 4 fields in sig / 2 opts per option (varName + short)
-	unset opts
+	unset opts arg
 
 	# get arguments
-	local builtArgs=()
-	declare -n builder=${action}Builder
 	for ((i; i < sigN; i += 4)); do
 		local varName=${sig[$i]} sign=${sig[$((i + 1))]} reg=${sig[$((i + 2))]}
-		if [[ $# -gt 0 && ${1#$varName=} =~ ^$reg$ ]]; then
-			if [[ $sign == [+*] ]]; then
+		if [[ $# -gt 0 ]] && argMatch "${1#$varName=}"; then
+			if [[ $sign == [+*] ]]; then # param is a list
 				declare -a $varName
 				declare -n args=$varName
-				while [[ $# -gt 0 && ${1#$varName=} =~ ^$reg$ ]]; do
+				while [[ $# -gt 0 ]] && argMatch "${1#$varName=}"; do
 					args+=("${1#$varName=}")
 					shift
 				done
@@ -198,10 +197,10 @@ $(paramHelp $action $((i / 4)))" && return
 			continue
 		else
 			if ((MODE & 2)); then
-				if ((MODE & 8)) || [[ $sign != [*?] ]]; then
-					log Debug "[$varName] < ${builder[$varName]:-pickAny}"
+				if ((MODE & 8)) || [[ $sign != [*?] ]]; then # picker for optional || arg required
+					log Debug ".$varName = ${builder[$varName]:-pickAny}()"
+					declare -a $varName # prepare variable as local
 					${builder[$varName]:-pickAny} "${sig[@]:i:4}"
-					[[ ${!varName} ]] && builtArgs+=("$varName")
 				fi
 			fi
 			if [[ ! ${!varName} && $sign != [*?] ]]; then
@@ -227,14 +226,28 @@ $(paramHelp $action $((i / 4)))" && return
 	unset sig i sigN
 	$action || log Warn ' failed!'
 	local arg
-	for arg in "${builtArgs[@]}"; do unset $arg; done
 	[[ $actionArg ]] && return 1 || return $((argc - $#))
 }
 
 declare -A REGEX=(
-	[file]='.*/.+' [word]='[A-Za-z]+' [var]='[0-9A-Za-z_]+' [domain]='[a-z]+\.[0-9A-Za-z.]+'
-	[dashvar]='[0-9A-Za-z_\-]+' [const]='[0-9A-Z_]+'
+	[var]='[0-9A-Za-z_]+' [dashvar]='[0-9A-Za-z_\-]+' [const]='[0-9A-Z_]+'
+	[domain]='[a-z0-9]+\.[0-9a-z.]+'
 )
+
+#######################################
+# Test if $reg matches $1, or the rest after parsing $reg == \$o.*; o = bash condexpr operator
+# example: reg='$f\.txt' → matches any existing file with 'txt' extension
+#######################################
+argMatch() {
+	if [[ $reg == '$'* ]]; then
+		if [[ ${reg:1:1} == e ]]; then # any dir or file with given pattern
+			[[ -d $1 ]] && return 0 || local reg="\$f${reg:2}"
+		fi
+		[[ $1 =~ ${reg:2}$ ]] && eval [[ -${reg:1:1} \$1 ]]
+	else
+		[[ $1 =~ ^$reg$ ]]
+	fi
+}
 
 #######################################
 # Print help about specified parameter from given action.
@@ -265,10 +278,11 @@ helpParams=(
 	legend '-l' '' 'Display legend for param notation'
 	matcher '-m' '' 'Show regex matching argument'
 	params '-p' '[01]' 'Display params=opt+arg (default=true)'
-	actions '*' "${REGEX[word]}" 'Display help for action(s) (default=all)')
+	actions '*' "[A-Za-z]+" 'Display help for action(s) (default=all)')
 declare -A helpBuilder=([actions]=pickHelpAction)
 pickHelpAction() {
-	declare -ga actions=($(printf '%s\n' "${ORDER[@]}" | fzf -m --prompt="$4: "))
+	declare -n arr=$1
+	arr=($(printf '%s\n' "${ORDER[@]}" | fzf -m --prompt="$4: "))
 }
 help() {
 	if [[ ! $actions ]]; then
@@ -324,6 +338,14 @@ unknown() {
 
 # Reads and sets matching value(s) from the user (all pickers must respect reg=$3)
 pickAny() {
+	if [[ $3 == '$'* ]]; then
+		case "${3:2:1}" in
+			e) pickFilesOrDir "$@" ;;
+			d) pickDir "$@" ;;
+			f) pickFile "$@" ;;
+		esac
+		return
+	fi
 	declare -ga $1
 	declare -n _dst=$1
 	while :; do
@@ -339,19 +361,27 @@ pickAny() {
 }
 
 pickDir() {
-	ranger --choosedir=/tmp/sss
-	[[ -e /tmp/sss ]] && declare -g $1="$(cat /tmp/sss)" && rm /tmp/sss
+	local tmp=$(mktemp)
+	ranger --choosedir="$tmp"
+	if [[ -e $tmp ]]; then
+		declare -n _choice=$1
+		_choice="$(cat "$tmp")"
+	fi
+	rm "$tmp"
 }
 
-pickFiles() {
-	ranger --choosefile$([[ $2 == [+*] ]] && echo s)=/tmp/sss
-	[[ -e /tmp/sss ]] && mapfile -t $1 < /tmp/sss && rm /tmp/sss
+pickFile() {
+	local tmp=$(mktemp)
+	ranger --choosefile$([[ $2 == [+*] ]] && echo s)="$tmp"
+	if [[ -e $tmp ]]; then
+		mapfile -t $1 < "$tmp"
+	fi
+	rm "$tmp"
 }
 
 pickFilesOrDir() {
 	[[ $2 == [+*] ]] && local _opts=(-m)
 	_opts+=(--prompt "$4: " --preview 'ls {}')
-	declare -ga $1
 	declare -n selected=$1
 	local toView=(.)
 	while :; do

@@ -1,5 +1,5 @@
 body {
-	font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font: 400 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
 	-webkit-text-size-adjust: 100%;
 	-webkit-font-feature-settings: "kern" 1;
 	-moz-font-feature-settings: "kern" 1;
@@ -28,7 +28,7 @@ pre {
 	font-size: 85%;
 	line-height: 1.45;
 	overflow: auto;
-	padding: 16px;
+	padding: 15px;
   background-color: #88888822;
 }
 

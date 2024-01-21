@@ -116,6 +116,7 @@ handle_extension() {
 		## Direct Stream Digital/Transfer (DSDIFF) and wavpack aren't detected
 		## by file(1).
 		dff | dsf | wv | wvc | html | htm | xhtml)
+			bat --color=always --tabs 2 --style="plain" -- "${FILE_PATH}" && exit 5
 			mediainfo "${FILE_PATH}" && exit 5
 			exiftool "${FILE_PATH}" && exit 5
 			;; # Continue with next handler on failure
@@ -130,13 +131,13 @@ handle_image() {
 	## rendered from vector graphics. If the conversion program allows
 	## specifying only one dimension while keeping the aspect ratio, the width
 	## will be used.
-	local DEFAULT_SIZE="1920x1080"
+	local DEFAULT_SIZE="1280x720"
 
 	local mimetype="${1}"
 	case "${mimetype}" in
 		## SVG
 		image/svg+xml|image/svg)
-		    convert -- "${FILE_PATH}" "${IMAGE_CACHE_PATH}" && exit 6
+		    magick -- "${FILE_PATH}" "${IMAGE_CACHE_PATH}" && exit 6
 		    exit 1;;
 
 		## DjVu
@@ -153,7 +154,7 @@ handle_image() {
 			## needs rotating ("1" means no rotation)...
 			if [[ -n $orientation && $orientation != 1 ]]; then
 				## ...auto-rotate the image according to the EXIF data.
-				convert -- "${FILE_PATH}" -auto-orient "${IMAGE_CACHE_PATH}" && exit 6
+				magick -- "${FILE_PATH}" -auto-orient "${IMAGE_CACHE_PATH}" && exit 6
 			fi
 
 			## `w3mimgdisplay` will be called for all images (unless overridden
@@ -347,7 +348,6 @@ handle_mime() {
 		## Image
 		image/*)
 			## Preview as text conversion
-			# img2txt --gamma=0.6 --width="${PV_WIDTH}" -- "${FILE_PATH}" && exit 4
 			exiftool "${FILE_PATH}" && exit 5
 			exit 1
 			;;

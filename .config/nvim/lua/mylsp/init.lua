@@ -16,6 +16,7 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 	-- Ignore result since buffer changed. This happens for slow language servers.
 	if vim.api.nvim_get_current_buf() ~= ctx.bufnr then return end
 	local c, v = vim.api.nvim_win_get_cursor(0), vim.api.nvim_win_is_valid(w)
+	-- same line, max Δ20 horizontal
 	local update = v and c[1] == cr and cc - 20 < c[2] and c[2] < cc + 20
 	local noSig = not (sig and sig.signatures and sig.signatures[1])
 	if v and (not update or noSig) then
@@ -25,7 +26,7 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 	if noSig or vim.api.nvim_get_mode().mode ~= 'i' then return end
 
 	-- ensure update on change only
-	local s = sig.signatures[(sig.activeSignature or -1) + 1] or sig.signatures[1]
+	local s = sig.signatures[(sig.activeSignature or 0) + 1]
 	local newAp = s.activeParameter or sig.activeParameter or -1
 	if v and pl == s.label and ap == newAp and ac == sig.activeSignature then return end
 	pl, ap, ac = s.label, newAp, sig.activeSignature
@@ -37,6 +38,7 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 		vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
 	else
 		config = config or {}
+		config.max_height = config.max_height or math.floor(vim.api.nvim_win_get_height(0) * 0.3)
 		config.border = 'rounded'
 		config.focus_id = ctx.method
 		config.close_events = { 'BufLeave', 'ModeChanged', 'WinScrolled' }
@@ -56,10 +58,6 @@ end
 local lsc = require 'lspconfig'
 
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
--- Ufo
-capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFoldingOnly = true }
-lsc.util.default_config.capabilities =
-	vim.tbl_deep_extend('force', lsc.util.default_config.capabilities, capabilities)
 
 local function setup(server, opts)
 	opts = opts or require('mylsp.' .. server)
@@ -67,9 +65,9 @@ local function setup(server, opts)
 	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
 		client.server_capabilities.documentFormattingProvider = opts.format == true
-		if client.server_capabilities.inlayHintProvider and opts.inlay then
-			-- vim.lsp.inlay_hint.enable(bufnr, true)
-		end
+		--[[ if client.server_capabilities.inlayHintProvider and opts.inlay then
+			vim.lsp.inlay_hint.enable(bufnr, true)
+		end ]]
 		if client.config.root_dir then vim.api.nvim_set_current_dir(client.config.root_dir) end
 		if client.server_capabilities.signatureHelpProvider then
 			vim.api.nvim_create_autocmd({ 'CursorHoldI', 'CompleteDone' }, {

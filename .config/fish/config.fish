@@ -4,6 +4,7 @@ set -x READER nvim
 set -x EDITOR nvim
 set -x BROWSER firefox
 set -x FZF_DEFAULT_COMMAND 'rg --hidden -l ""'
+set -x MANPAGER "sh -c 'col -bx | bat -l man -p'"
 
 function fish_greeting
 end
@@ -57,7 +58,7 @@ set fish_color_end red
 set fish_color_quote yellow
 set fish_color_escape cc6415
 set fish_color_comment grey
-set fish_color_autosuggestion brgrey
+set fish_color_autosuggestion grey
 set fish_pager_color_description magenta
 set fish_pager_color_prefix brcyan --bold
 set fish_pager_color_completion grey
@@ -84,12 +85,12 @@ abbr gparted "xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root
 abbr jctl   "journalctl -p 3 -b"
 
 # pacman
-abbr pq     "set pkg (paru -Qq | fzf -m --preview 'paru --color=always -Si {1}'); echo \$pkg"
-abbr pqr    "paru -Qq | fzf -m --preview 'paru --color=always -Si {1}' | paru -Rscn -"
-abbr pror   "paru -Qtqd | paru -Rscn -"
-abbr pss    "paru -Slq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -S -"
-abbr psr    "paru -Qttq | fzf -m --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Rscn -"
-abbr pfl    "paru -Qq | fzf --preview 'paru --color=always -Si {1}'  --preview-window=wrap | paru -Ql -"
+set pp "fzf -m --preview 'paru --color=always -Sii {1}' --preview-window=wrap" # package preview
+abbr psi    "paru -Slq | $pp | paru -S -" # search install
+abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
+abbr pir    "paru -Qdq | $pp | paru -Rscn -" # installed remove - only dependencies
+abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
+abbr por    "paru -Qtqd | paru -Rscn -" # orphans remove
 
 # navigation
 abbr ...    "cd ../.."
@@ -139,19 +140,15 @@ end
 if status is-login
 	if [ -z "$DISPLAY" -a "$XDG_VTNR" -eq 1 ]
 		eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
-		export JAVA_HOME=/usr/lib/jvm/default-runtime/
-		export _JAVA_AWT_WM_NONREPARENTING=1
-		export MANPAGER="sh -c 'col -bx | bat -l man -p'"
-		export MOZ_ENABLE_WAYLAND=1
-		export QT_QPA_PLATFORMTHEME=qt5ct
-		export GDK_BACKEND="wayland,x11"
-		export XDG_CURRENT_DESKTOP=sway # for xdg-desktop-portal
-		set XDG_CONFIG_HOME ~/.config
-		export XDG_CONFIG_HOME
+		export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
+		export QT_QPA_PLATFORMTHEME=qt5ct GDK_BACKEND="wayland,x11"
+		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1
+		set -x XDG_CONFIG_HOME ~/.config
+		set -x XDG_CACHE_HOME ~/.cache
+		export GRADLE_USER_HOME=$XDG_CACHE_HOME GOPATH=$XDG_CACHE_HOME
 
-		# WLR_RENDERER=vulkan 
+		# WLR_RENDERER=vulkan
 		sway
 		killall -15 ssh-agent
 	end
 end
-# vim: ft=bash

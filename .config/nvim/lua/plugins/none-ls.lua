@@ -35,6 +35,7 @@ function M.config()
 						'--tab-width',
 						vim.bo.tabstop,
 						'--prose-wrap=always',
+						'--no-bracket-spacing',
 						'--single-quote',
 						'--no-semi',
 						vim.bo.expandtab and '--no-semi' or '--use-tabs',

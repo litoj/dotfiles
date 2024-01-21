@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-read -ra WP < /tmp/wp
+read -ra WP < /tmp/my/wp
 if [[ $button ]]; then
 	if ((button > 3)); then
 		wpctl set-volume ${WP[1]} 1%$( ((button == 4)) && echo + || echo -)

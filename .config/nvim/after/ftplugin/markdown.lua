@@ -7,10 +7,10 @@ local function enter_or_list()
 	if not line then
 		return '\r'
 	else
-		local start, finish = line:find '[%d%-—.)]*%d'
+		local start, finish = line:find '[%d%-.)]*%d'
 		local main
 		if not start or not finish then
-			start, finish = line:find '[%-—.%)]+.?'
+			start, finish = line:find '[%-.%)]+.?'
 			return '\r' .. line:sub(start, finish)
 		else
 			main = line:sub(start, finish)
@@ -37,8 +37,9 @@ map(
 	'<C-s><Cmd>!pandoc --pdf-engine=pdfroff "%:p" -o "%:r.pdf" && zathura "%:r.pdf" &<CR><CR>',
 	{ buffer = true, remap = true }
 )
-map('i', '<M-b>', '<Esc>llbi**<Esc>ea**', { buffer = true })
+map('i', '<M-b>', '<C-o>ciw**<C-r>"**<Esc>', { buffer = true })
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map('i', '<M-d>', '<C-v>u2014', { buffer = true })
 map('i', '<M-q>', '\\', { buffer = true })
+map('i', '...', '…', { buffer = true })
 vim.wo.conceallevel = 2

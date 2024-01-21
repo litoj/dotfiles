@@ -121,19 +121,15 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	package.loaded[path] = res
 	if vim.startswith(path, 'nerdcontrast') then
 		local nc = require 'nerdcontrast'
-		for k, _ in pairs(res) do
-			nc.groups[k] = nil
-		end
-		if path:find '%.palette%.' then
-			-- if path:match '^dark$' or path:match '^light$' then
-			vim.o.background = path:find 'light' and 'light' or 'dark'
-			--[[ nc.addPalette { def = res }
-			else
-				nc.addPalette { link = res }
-			end ]]
-			nc.addPalette(res)
-			vim.api.nvim_exec_autocmds('ColorScheme', {})
+		if path:match '%.palette%.' then
+			nc.setConfig { [vim.o.bg] = { palette = { base = res } } }
+			vim.o.background = path:match 'light' or 'dark'
+		elseif path:match '%.theme%.' then
+			nc.setup { [vim.o.bg] = { theme = { base = res } } }
 		else
+			for k, _ in pairs(res) do
+				nc.deps[k] = nil
+			end
 			nc.hi(res)
 		end
 	elseif vim.startswith(path, 'reform') then
@@ -152,21 +148,4 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 		end
 		dst[path] = res
 	end
-end)
-map('n', 'gC', function()
-	local f = io.popen('git config --get remote.origin.url', 'r')
-	local s = f:read('*l'):gsub('git@(.-):', 'https://%1/'):gsub('%.git$', '')
-	s = s .. (s:match 'github.com' and '/blob/' or '/-/blob/')
-	f:close()
-	f = io.popen('git symbolic-ref refs/remotes/origin/HEAD', 'r')
-	s = s .. f:read('*l'):match '[^/]+$'
-	f:close()
-	f = io.popen('git rev-parse --show-toplevel', 'r')
-	vim.fn.setreg(
-		'+',
-		s
-			.. vim.api.nvim_buf_get_name(0):sub(#f:read '*l' + 1)
-			.. '#L'
-			.. vim.api.nvim_win_get_cursor(0)[1]
-	)
 end)

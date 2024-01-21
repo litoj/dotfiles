@@ -1,29 +1,39 @@
 #!/usr/bin/bash
 
-update() {
-	x=($(date +"%H %M %S"))
-	echo " ${x[0]}:${x[1]}"
-	((x[0] = ${x[0]#0} * 60 + ${x[1]#0}))
+setTheme() {
+	gsettings set org.gnome.desktop.interface gtk-theme ${1^}
+	sed "s/Dark/${1^}/" ~/.config/gtk-3.0/theme.ini > /tmp/my/gtk3rc
+	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc > /tmp/my/gtk2rc
+	ln -sf ~/.config/qt6ct/colors/$1.conf /tmp/my/qt
+	ln -sf ~/.config/rofi/$1.rasi /tmp/my/rofi
+
+	local todo=(/dev/pts/*)
+	if [[ $todo ]]; then
+		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2> /tmp/term > /dev/null
+		for f in "${todo[@]}"; do
+			[[ -O $f ]] && cat /tmp/term > "$f"
+		done
+		rm /tmp/term
+	fi
+
+	local msgpack="\x94\x0\x1\xafnvim_set_option\x92\xaabackground\xa${#1}$1"
+	for f in /run/user/$(id -u)/nvim.*.0; do
+		local pid=${f#*.}
+		ps -p ${pid%.*} > /dev/null && printf "$msgpack" | ncat -U "$f"
+	done
 }
 
-STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
 updateTheme() {
 	if ((STAT[0] <= x && x < STAT[1])); then
-		gsettings set org.gnome.desktop.interface gtk-theme Light
-		ln -sf ~/.config/gtk-3.0/light.ini /tmp/gtk3rc
-		ln -sf ~/.config/qt6ct/colors/Light.conf /tmp/qt
-		ln -sf ~/.config/rofi/Light.rasi /tmp/rofi
-		swaymsg -q 'set $bg #ffffff; set $fg #000000'
-		touch /tmp/day
 		next=${STAT[1]}
+		touch /tmp/my/day
+		setTheme light
+		swaymsg -q 'set $bg #ffffff; set $fg #000000'
 	else
-		gsettings set org.gnome.desktop.interface gtk-theme Dark
-		ln -sf ~/.config/gtk-3.0/dark.ini /tmp/gtk3rc
-		ln -sf ~/.config/qt6ct/colors/Dark.conf /tmp/qt
-		ln -sf ~/.config/rofi/Dark.rasi /tmp/rofi
-		swaymsg -q 'set $bg #101010; set $fg #ffffff'
-		[[ -e /tmp/day ]] && rm /tmp/day
 		((x > STAT[1])) && next=1440 || next=${STAT[0]}
+		[[ -e /tmp/my/day ]] && rm /tmp/my/day
+		setTheme dark
+		swaymsg -q 'set $bg #101010; set $fg #ffffff'
 	fi
 	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
 		grep '\$' -B 10 | sed '1d;/#/d;s/^/bar bar-0 colors/')"
@@ -31,16 +41,23 @@ updateTheme() {
 }
 
 if [[ $1 ]]; then
-	[[ $1 == light || ($1 == toggle && ! -e /tmp/day) ]] && x=${STAT[0]} || x=0
+	STAT=(0 1)
+	[[ $1 == light || ($1 == toggle && ! -e /tmp/my/day) ]] && x=0 || x=1
 	updateTheme
 	exit 0
 fi
 
-x=1
+STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
 next=0
+
+update() {
+	x=($(date +"%H %M %S"))
+	echo " ${x[0]}:${x[1]}"
+	((x[0] = ${x[0]#0} * 60 + ${x[1]#0}))
+}
 
 while :; do
 	update
 	((next < x || x < prev)) && updateTheme
-	sleep $((60 - x[2]))
+	sleep $((60 - ${x[2]#0}))
 done

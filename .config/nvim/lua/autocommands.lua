@@ -13,7 +13,10 @@ end
 local lastGit
 local invalidLsp = { ['null-ls'] = 1, copilot = 1 }
 local function setCWD(state)
-	if not vim.loop.fs_stat(state.file) then return end
+	local f = io.open(state.file)
+	if not f then return end
+	f:close()
+
 	local path = state.file:gsub('[^/]+$', '')
 	local git = path
 	while #git > 1 and not vim.loop.fs_stat(git .. '.git/') do
@@ -34,14 +37,10 @@ local function setCWD(state)
 	if path:find(vim.fn.getcwd(), 0, true) and git == lastGit then return end
 	lastGit = git
 	vim.api.nvim_set_current_dir(
-		path:match '.*/lua/'
-			or path:match '.*/src/'
-			or path:match '.*%.nvim/'
-			or path:match '.*/.config/[^/]+/'
-			or git
+		path:match '.*/lua/' or path:match '.*/src/' or path:match '.*%.nvim/' or git
 	)
 end
-au('BufEnter', setCWD, '*.*')
+au('BufEnter', setCWD, '*')
 
 local function indentMarks()
 	vim.wo.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1)
@@ -54,6 +53,7 @@ au(
 	function() require('vim.highlight').on_yank { higroup = 'Search', timeout = 50 } end
 )
 au('FileType', 'nnoremap <buffer> q <Cmd>close<CR>', { 'qf', 'help', 'man' })
+au('Filetype', 'setlocal expandtab', { 'yaml' })
 au('FileType', function()
 	for _, key in ipairs { 'p', 'r', 'e', 's', 'f', 'd', 'x', 'b', 'l', 'r', 't', 'm' } do
 		vim.keymap.set('n', key, 'ciw' .. key .. '<Esc>', { silent = true, buffer = true })

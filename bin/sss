@@ -27,26 +27,26 @@ actionInfo() {
 }
 
 # MODE: 1=CLI, 2=picker, 4=pick optional, 8=gui picker - XXX: pickers should respect gui option
-declare -i MODE logLvl=100 DEBUG=2 DRY_RUN=0
+declare -i MODE LOG_LVL=2 DRY_RUN=0
 (($#)) && MODE=1 || MODE=2
 declare -A LOG_LEVELS=([Err]=1 [Warn]=2 [Info]=3 [Debug]=4)
 #######################################
 # Print given message with context of current action and log level
 # Arguments:
 #   logLvl: one of LOG_LEVELS[@], determines message importance
-#   msg: message to print with context, ignored when DEBUG<logLvl
+#   msg: message to print with context, ignored when LOG_LVL<logLvl
 # Returns:
 #   success when message was printed, exits if Warn in cli mode or Error are reported
 #######################################
 log() {
-	logLvl=${LOG_LEVELS[$1]}
-	((DEBUG >= logLvl)) && echo "$1: $action$2" 1>&2
+	local logLvl=${LOG_LEVELS[$1]}
+	((LOG_LVL >= logLvl)) && echo "$1: $action$2" 1>&2
 	((!(MODE & 1) && logLvl > 1 || logLvl > 2)) || exit 1
-	((DEBUG >= logLvl))
+	((LOG_LVL >= logLvl))
 }
 
 exec() {
-	((DEBUG > 2)) && log Info "> $*"
+	((LOG_LVL > 2)) && log Info "> $*"
 	((DRY_RUN)) || "$@"
 }
 
@@ -66,7 +66,7 @@ define() {
 		((gui)) && ((MODE |= 2 | 4))
 		((opt)) && ((MODE |= 8))
 	fi
-	[[ ! $lvl ]] || DEBUG=${LOG_LEVELS[$lvl]:-$lvl}
+	[[ ! $lvl ]] || LOG_LVL=${LOG_LEVELS[$lvl]:-$lvl}
 }
 
 main() {
@@ -425,7 +425,7 @@ Usage:
   6. Picker gets full arg quaternion, saves selection to $1/argName
   7. Write your function.
   8?. for execution after configuration write an `execute/exec/run` action (with no required args)
-      it should only print commands intended for execution if `DEBUG>0`
+      it should only print commands intended for execution if `LOG_LVL>0`
   9. Call `main "$@"` at the end of your script; set DEFAULT_ACTION for single-script use
 There are a few predefined pickers and regexes you can use.'
 	main "$@"

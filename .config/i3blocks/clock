@@ -7,6 +7,7 @@ setTheme() {
 	ln -sf ~/.config/qt6ct/colors/$1.conf /tmp/my/qt
 	ln -sf ~/.config/rofi/$1.rasi /tmp/my/rofi
 
+	shopt -s nullglob
 	local todo=(/dev/pts/*)
 	if [[ $todo ]]; then
 		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2> /tmp/term > /dev/null

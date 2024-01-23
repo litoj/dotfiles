@@ -36,16 +36,16 @@ function M.config()
 			-- or name:match '%.cache'
 			or not vim.loop.fs_stat(name)
 		then
-			vim.cmd.bwipeout()
+			vim.cmd.BufferWipeout()
 		else
-			vim.cmd.bdelete()
+			vim.cmd.BufferClose() -- barbar commands keep window splits
 		end
 	end
 	local modes = { 'n', 'i' }
 	map(modes, '<C-w>', close)
-	map('n', '<C-S-W>', '<Cmd>bdelete!<CR>')
-	map('i', '<C-S-W>', '<C-o><Cmd>bdelete!<CR>')
-	map('t', '<C-S-D>', '<C-d><C-\\><C-o><Cmd>bdelete!<CR>')
+	map('n', '<C-S-W>', '<Cmd>BufferClose!<CR>')
+	map('i', '<C-S-W>', '<C-o><Cmd>BufferClose!<CR>')
+	map('t', '<C-S-D>', '<C-d><C-\\><C-o><Cmd>BufferClose!<CR>')
 	-- Direct selection
 	map(modes, '<A-1>', '<Cmd>BufferGoto 1<CR>')
 	map(modes, '<A-2>', '<Cmd>BufferGoto 2<CR>')

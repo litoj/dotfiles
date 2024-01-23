@@ -96,6 +96,7 @@ neovim
 net-tools
 networkmanager
 nm-connection-editor
+nmap
 npm
 ntfs-3g
 openssh
@@ -189,12 +190,12 @@ theming() {
 	cd theming
 	printf '\nInstalling themes.\n'
 	[[ -z "$(unzip)" ]] && paru --noconfirm -S unzip
-	tar -xf *Dark*.tar.xz
-	tar -xf *Light*.tar.gz
+	tar -xf *Dark*.tar.*
+	tar -xf *Light*.tar.*
 	mkdir -p ~/.themes
 	mv *Dark*/ ~/.themes/Dark
 	mv *Light*/ ~/.themes/Light
-	mkdir -p ~/.icons/default/ssss
+	mkdir -p ~/.icons/default/
 	echo '[Icon Theme]
 Name=Default
 Comment=Default Cursor Theme

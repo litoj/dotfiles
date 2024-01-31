@@ -1,8 +1,6 @@
 local M = { 'JosefLitos/nerdcontrast.nvim', lazy = false, priority = 72 }
 function M.config()
-	local day = io.open('/tmp/my/day', 'r')
-	if day then day:close() end
-	vim.o.bg = day and 'light' or 'dark'
+	vim.o.bg = exists '/tmp/my/day' and 'light' or 'dark'
 	require('nerdcontrast').setup {
 		export = true,
 		light = { opacity = 'ff' },

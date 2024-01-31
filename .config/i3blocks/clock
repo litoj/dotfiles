@@ -37,7 +37,7 @@ updateTheme() {
 		swaymsg -q 'set $bg #101010; set $fg #ffffff'
 	fi
 	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
-		grep '\$' -B 10 | sed '1d;/#/d;s/^/bar bar-0 colors/')"
+		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"
 	prev=$x
 }
 

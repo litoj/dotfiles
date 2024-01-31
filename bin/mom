@@ -75,11 +75,11 @@ subtitlesParams=(
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
 	if [[ -z $subs ]]; then
-		if [[ -z $vid ]]; then
-			local subs=(*.srt)
-		else
+		local subs=(*.srt)
+		if [[ $vid && ${#subs[@]} -gt 1 ]]; then
 			local match=${vid@L}
 			match=${match%.*}.srt
+			subs=()
 			for f in *.srt; do
 				[[ ${f@L} == "$match" ]] && local subs=$f && break
 			done
@@ -89,11 +89,15 @@ subtitles() {
 
 	[[ $vid == *.mkv && ! -f $vid && -z $dst ]] && local dst=$vid && vid=
 	if [[ -z $vid ]]; then
-		local match=${subs@L}
-		match=${match%.*}.
-		for f in *.mp4 *.mkv; do
-			[[ ${f@L} == "$match"* ]] && local vid=$f && break
-		done
+		local vid=(*.mp4)
+		if [[ ${#vid[@]} -ne 1 ]]; then
+			local match=${subs@L}
+			match=${match%.*}.
+			vid=()
+			for f in *.mp4 *.mkv; do
+				[[ ${f@L} == "$match"* ]] && local vid=$f && break
+			done
+		fi
 		[[ -z $vid ]] && log Warn " - no match for '$match'" && return
 	fi
 
@@ -153,7 +157,7 @@ play() {
 		e) exec echo "$src" >> "$playlistFile" && cmd+=(--shuffle) ;;
 	esac
 
-	exec "${cmd[@]}" & disown >/dev/null
+	exec "${cmd[@]}" \&
 	sleep 1 && exec rm "$playlistFile"
 	return 0
 }

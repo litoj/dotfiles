@@ -1,4 +1,17 @@
 ---@diagnostic disable: missing-fields
+local M = {
+	'hrsh7th/nvim-cmp',
+	dependencies = {
+		'L3MON4D3/LuaSnip',
+		'saadparwaiz1/cmp_luasnip',
+		'rafamadriz/friendly-snippets',
+		'hrsh7th/cmp-nvim-lsp',
+		'hrsh7th/cmp-cmdline',
+		'hrsh7th/cmp-path',
+		'JosefLitos/cmp-calc',
+	},
+}
+
 local src = {
 	calc = { name = 'calc', group_index = 1 },
 	font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
@@ -12,18 +25,6 @@ local src = {
 	buf = { name = 'buffer', group_index = 3, max_item_count = 20 },
 }
 
-local M = {
-	'hrsh7th/nvim-cmp',
-	dependencies = {
-		'L3MON4D3/LuaSnip',
-		'saadparwaiz1/cmp_luasnip',
-		'rafamadriz/friendly-snippets',
-		'hrsh7th/cmp-nvim-lsp',
-		'hrsh7th/cmp-cmdline',
-		'hrsh7th/cmp-path',
-		'JosefLitos/cmp-calc',
-	},
-}
 function M.config()
 	require('luasnip.loaders.from_vscode').lazy_load()
 	local kind_icons = {
@@ -188,38 +189,36 @@ function M.config()
 	)
 	cmp.setup.cmdline('/', { sources = { src.latex, src.buf } })
 end
-return {
+
+M = {
 	M,
 	{ 'kdheepak/cmp-latex-symbols', ft = { 'markdown', 'text' }, dependencies = 'nvim-cmp' },
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
-	(function()
-		local f = io.open '/sys/class/power_supply/BAT0/status'
-		local ok = f and f:read '*l' ~= 'Discharging'
-		if f then f:close() end
-		if not ok then return end
+}
 
-		f = io.open(os.getenv 'HOME' .. '/Documents/work')
-		if f then f:close() end
-		if not f or os.getenv 'USER' == 'root' then return end
-
-		-- src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
-		src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
-
-		return  --[[ {
+local f = io.open '/sys/class/power_supply/BAT0/status'
+local ok = f and f:read '*l' ~= 'Discharging'
+if f then f:close() end
+if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 'root' then
+	src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
+	M[#M + 1] = {
 		'tzachar/cmp-tabnine',
 		build = './install.sh',
 		config = function() require('cmp_tabnine.config'):setup { max_num_results = 2 } end,
 		dependencies = 'nvim-cmp',
 		event = 'InsertEnter',
-	}, ]]{
-			'zbirenbaum/copilot.lua',
-			opts = {
-				panel = { enabled = false },
-				suggestion = { enabled = false },
-				filetypes = { config = false, swayconfig = false, text = false },
-			},
-			dependencies = { { 'zbirenbaum/copilot-cmp', opts = {} }, 'nvim-cmp' },
-			event = 'LspAttach',
-		}
-	end)(),
-}
+	}
+
+	src.copilot = { name = 'copilot', group_index = 2, priority = 2 }
+	M[#M + 1] = {
+		'zbirenbaum/copilot.lua',
+		opts = {
+			panel = { enabled = false },
+			suggestion = { enabled = false },
+			filetypes = { config = false, swayconfig = false, text = false },
+		},
+		dependencies = { { 'zbirenbaum/copilot-cmp', opts = {} }, 'nvim-cmp' },
+		event = 'LspAttach',
+	}
+end
+return M

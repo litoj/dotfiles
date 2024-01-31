@@ -3,7 +3,16 @@ require 'settings'
 _G.map = vim.keymap.set
 
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not vim.loop.fs_stat(lazypath) then
+function _G.exists(f)
+	f = io.open(f)
+	if f then
+		f:close()
+		return true
+	else
+		return false
+	end
+end
+if not exists(lazypath) then
 	vim.fn.system {
 		'git',
 		'clone',

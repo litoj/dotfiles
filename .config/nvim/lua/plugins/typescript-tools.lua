@@ -38,7 +38,9 @@ M.config = function()
 				{ rule = '*/no-unused-vars-experimental', severity = 'off' },
 			},
 		},
-		single_file_support = true,
+		single_file_support = false,
+		inlay = false,
+		setCwd = false,
 	})
 end
 return M

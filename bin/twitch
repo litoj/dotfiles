@@ -110,8 +110,7 @@ if [[ -z $quality ]]; then
 		audio) quality="ba" ;;
 	esac
 fi
-mpv --ytdl-format="$quality" "$url" &> /dev/null &
-disown
+mpv --msg-level=all=no --ytdl-format="$quality" "$url" &
 
 params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
 

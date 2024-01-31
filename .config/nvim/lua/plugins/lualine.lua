@@ -4,6 +4,7 @@ local M = {
 	event = 'VeryLazy',
 }
 function M.config()
+	vim.o.laststatus = 3 -- show only one statusline at the bottom
 	require('nerdcontrast').hi {
 		SLRed = { bg = 'StatusLine', fg = 'Red' },
 		SLYellow = { bg = 'StatusLine', fg = 'Yellow' },

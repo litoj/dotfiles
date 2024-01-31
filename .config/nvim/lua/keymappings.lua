@@ -104,6 +104,7 @@ map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
 
 -- Extra
+map('n', '\\', '.')
 map('n', '<Leader>/', '<Cmd>noh<CR>') -- clears all highlights/searches
 map('n', '<A-C>', '<Cmd>Inspect<CR>')
 map('n', 'S', '<Cmd>term<CR>a')
@@ -111,14 +112,46 @@ map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')
 map('n', '<Leader>m', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
 map('n', '<Leader>l', function() -- load and execute lua code in current buffer
-	local path = vim.api
-		.nvim_buf_get_name(0)
-		:gsub('.-/lua/(.+)%.lua', '%1', 1)
-		:gsub('/init$', '', 1)
-		:gsub('/', '.')
+	local name = vim.api.nvim_buf_get_name(0)
+	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
+	if not vim.loop.fs_stat(name) then
+		function _G.bench(cfg, ...)
+			local arg = type(cfg) == 'table' and cfg.arg or cfg
+			cfg = type(cfg) == 'table' and cfg or {}
+			local tries = cfg.tries or 1000000
+			local dur = cfg.dur or cfg.duration or 1
+			local warmup = cfg.warmup or 5
+			local time = {}
+			local s = os.time()
+			while os.time() - s < warmup do
+				for _, f in ipairs { ... } do
+					f(arg)
+				end
+			end
+			for _, f in ipairs { ... } do
+				local s = os.clock()
+				for i = 1, tries do
+					f(arg)
+				end
+				time[#time + 1] = { os.clock() - s }
+				local c = 0
+				local s = os.time()
+				while os.time() - s < dur do
+					f(arg)
+					c = c + 1
+				end
+				time[#time][2] = c
+			end
+			vim.notify(vim.inspect(time))
+		end
+	end
 	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
 	local old = package.loaded[path]
-	package.loaded[path] = res
+	if not vim.loop.fs_stat(name) then
+		_G.bench = nil
+	else
+		package.loaded[path] = res
+	end
 	if vim.startswith(path, 'nerdcontrast') then
 		local nc = require 'nerdcontrast'
 		if path:match '%.palette%.' then

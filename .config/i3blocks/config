@@ -18,6 +18,8 @@ signal=11
 [battery]
 interval=60
 
+[updates]
+
 [kb]
 command=[[ $(swaymsg -t get_inputs -p | grep '(US)' -m 1) ]] && echo  US || echo  CZ
 signal=12

@@ -2,24 +2,21 @@
 # Checks for system updates, requires pacman-contrib installed
 
 if ((button == 1)); then
-	term -e paru --noconfirm -Syu &> /dev/null && exit 0
-	declare -i count=0
+	xterm -e paru -Syu &> /dev/null && exit 0
 elif ((button == 3)); then
 	update=$(checkupdates | awk '{print $1}' | rofi -dmenu -p 'update')
-	if [[ $update ]]; then
-		term -e paru --noconfirm -Sy $update &> /dev/null && exit 0
-	fi
-fi
-if [[ -z $count ]]; then
-	[[ "$(uptime)" =~ ' 0 min,' ]] && sleep 10
-	declare -i count=0
-	while read -r line; do
-		[[ $line ]] && count+=1
-	done <<< "$(checkupdates)"
+	[[ $update ]] && xterm -e paru -Sy $update &> /dev/null && exit 0
 fi
 
-TEXT=" <b>$count</b>"
-echo "$TEXT
+[[ "$(uptime)" =~ ' 0 min,' ]] && sleep 10
+declare -i count=0
+while read -r line; do
+	[[ $line == *linux* ]] && update=1
+	[[ $line ]] && count+=1
+done <<< "$(checkupdates)"
+
+if [[ $update ]]; then
+	TEXT=" <b>$count</b>"
+	echo "$TEXT
 $TEXT"
-~/.config/i3blocks/colorcode $((100 + count * 2))
-((count < 50)) || exit 33
+fi

@@ -11,7 +11,6 @@
 	spacing:0;
 	background-color:transparent;
 	font: "Nova Square 15";
-
 }
 
 element-icon {
@@ -69,15 +68,6 @@ mode-switcher, message {
 	border-color: @ac;
 }
 
-button {
-	background-color: @bg-e;
-	padding: 5px;
-}
-
-button selected {
-	background-color: @search;
-}
-
 element {
 	padding: 5px 2px;
 	spacing: 5px;
@@ -95,19 +85,12 @@ element alternate {
 element selected {
 	background-color: @ac;
 }
+
 selected {
 	text-color: @bg-alt;
 }
 
 normal normal, alternate normal {
 	text-color: @fg;
-}
-
-normal urgent, alternate urgent, selected urgent {
-	text-color: @side;
-}
-
-normal active, alternate active, selected active {
-	text-color: @search;
 }
 // vim: ft=css

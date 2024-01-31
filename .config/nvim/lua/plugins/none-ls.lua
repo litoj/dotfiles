@@ -14,7 +14,7 @@ function M.config()
 					local cwd = vim.fn.getcwd():gsub('/lua$', '')
 					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
 						f = cwd .. f
-						if vim.loop.fs_stat(f) then return { '--config-path', f } end
+						if exists(f) then return { '--config-path', f } end
 					end
 					return {
 						'--column-width=' .. vim.bo.textwidth,
@@ -27,7 +27,7 @@ function M.config()
 				end,
 			},
 			nls.builtins.formatting.prettier.with {
-				filetypes = { 'markdown', 'json', 'json5', 'jsonc', 'yaml' },
+				filetypes = { 'markdown', 'json', 'json5', 'jsonc', 'yaml', 'javascript' },
 				extra_args = function()
 					return {
 						'--print-width',
@@ -49,7 +49,7 @@ function M.config()
 			},
 			nls.builtins.formatting.clang_format.with {
 				extra_args = function(client)
-					if vim.loop.fs_stat(client.cwd .. '/.clang_format') then return { '--style', 'file' } end
+					if exists(client.cwd .. '/.clang_format') then return { '--style', 'file' } end
 					return {
 						'--style',
 						string.format( --RemoveBracesLLVM: true,

@@ -90,7 +90,7 @@ abbr psi    "paru -Slq | $pp | paru -S -" # search install
 abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
 abbr pir    "paru -Qdq | $pp | paru -Rscn -" # installed remove - only dependencies
 abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
-abbr por    "paru -Qtqd | paru -Rscn -" # orphans remove
+abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
 
 # navigation
 abbr ...    "cd ../.."
@@ -145,10 +145,11 @@ if status is-login
 		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1
 		set -x XDG_CONFIG_HOME ~/.config
 		set -x XDG_CACHE_HOME ~/.cache
-		export GRADLE_USER_HOME=$XDG_CACHE_HOME GOPATH=$XDG_CACHE_HOME
+		export GRADLE_USER_HOME=$XDG_CACHE_HOME/gradle GOPATH=$XDG_CACHE_HOME/go
 
 		# WLR_RENDERER=vulkan
 		sway
 		killall -15 ssh-agent
 	end
 end
+# vim: ft=bash

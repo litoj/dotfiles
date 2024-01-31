@@ -72,7 +72,7 @@ function M.config()
 	local function oldfiles(max)
 		local recent = {}
 		for _, v in ipairs(vim.v.oldfiles) do
-			if vim.loop.fs_stat(v) and not v:find('.git/', 1, true) then
+			if exists(v) and not v:find('.git/', 1, true) then
 				recent[#recent + 1] = { '' .. #recent, v }
 				if #recent == max then break end
 			end

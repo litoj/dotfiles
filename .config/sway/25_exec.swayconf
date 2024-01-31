@@ -5,7 +5,7 @@ exec {
 	mkdir -p /tmp/my/
 	[[ -f /bin/cpupower-gui ]] && cpupower-gui pr \
 		$([[ $(acpi) =~ D ]] && echo Powersave || echo Optimal) &>/dev/null
-	wlsunset -l 50 -L 14.5 &>/dev/null & disown
+	wlsunset -l 50 -L 14.5 &>/dev/null &
 	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on'
 
 	gsettings set org.gnome.desktop.interface icon-theme 'Icons'

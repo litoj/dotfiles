@@ -46,8 +46,9 @@ log() {
 }
 
 exec() {
-	((LOG_LVL > 2)) && log Info "> $*"
-	((DRY_RUN)) || "$@"
+	((LOG_LVL > 2)) && log Info "\$> $*"
+	((DRY_RUN)) && return 0
+	[[ ${!#} == \& ]] && { "${@:1:$((${#} - 1))}" & } || "$@"
 }
 
 actionInfo define D 'set script-processing options'
@@ -93,7 +94,8 @@ main() {
 parseAction() {
 	declare -i argc=$#
 	# get action name
-	local action=${1##-}
+	local action=${1#-}
+	action=${action#-}
 	if [[ $action == *=?* ]]; then
 		local actionArg=${action#*=}
 		action=${action/=*/}

@@ -10,29 +10,41 @@ vim.diagnostic.config {
 vim.lsp.handlers['textDocument/hover'] =
 	vim.lsp.with(vim.lsp.handlers.hover, { border = 'rounded' })
 
--- buf, win, cursor_row, cursor_col, previous_label, active_parameter
+-- buf, win, cur_row, cur_col, previous_label, active_parameter
 local b, w, cr, cc, pl, ap, ac = 0, -1, 0, 0, '', -1, -1
+local function winValid(close)
+	if w < 0 or not vim.api.nvim_win_is_valid(w) then return end
+	local s = vim.api.nvim_win_get_position(w)[1] + vim.fn.line 'w0' - 1 -- adjust by window scroll
+	local e = vim.api.nvim_win_get_height(w) + s + 1
+	local c = vim.api.nvim_win_get_cursor(0)
+	-- Δ5 lines, Δ20 horizontal
+	local ok = (c[1] < s or e < c[1]) -- cursor outside window
+		and (cr - 5 < c[1] and c[1] < cr + 5)
+		and (cc - 20 < c[2] and c[2] < cc + 20)
+	if not ok or close then
+		pl = ''
+		vim.api.nvim_win_close(w, false)
+		w = -1
+	end
+	return ok, c
+end
+local showSig = true
 vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 	-- Ignore result since buffer changed. This happens for slow language servers.
 	if vim.api.nvim_get_current_buf() ~= ctx.bufnr then return end
-	local c, v = vim.api.nvim_win_get_cursor(0), vim.api.nvim_win_is_valid(w)
-	-- same line, max Δ20 horizontal
-	local update = v and c[1] == cr and cc - 20 < c[2] and c[2] < cc + 20
 	local noSig = not (sig and sig.signatures and sig.signatures[1])
-	if v and (not update or noSig) then
-		pl = ''
-		vim.api.nvim_win_close(w, false)
-	end
+	local update, c = winValid()
+	c = c or vim.api.nvim_win_get_cursor(0)
 	if noSig or vim.api.nvim_get_mode().mode ~= 'i' then return end
 
 	-- ensure update on change only
 	local s = sig.signatures[(sig.activeSignature or 0) + 1]
 	local newAp = s.activeParameter or sig.activeParameter or -1
-	if v and pl == s.label and ap == newAp and ac == sig.activeSignature then return end
+	if update and pl == s.label and ap == newAp and ac == sig.activeSignature then return end
 	pl, ap, ac = s.label, newAp, sig.activeSignature
 
 	local lines, hl =
-		vim.lsp.util.convert_signature_help_to_markdown_lines(sig, vim.bo[ctx.bufnr].filetype)
+		vim.lsp.util.convert_signature_help_to_markdown_lines(sig, vim.bo[ctx.bufnr].filetype, {})
 	if not lines or #lines == 0 then return end
 	if update then
 		vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
@@ -43,8 +55,9 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 		config.focus_id = ctx.method
 		config.close_events = { 'BufLeave', 'ModeChanged', 'WinScrolled' }
 		b, w = vim.lsp.util.open_floating_preview(lines, 'markdown', config)
+		cr = c[1]
+		cc = c[2]
 		vim.bo[b].modifiable = true
-		cr, cc = c[1], c[2]
 	end
 	if hl then vim.api.nvim_buf_add_highlight(b, -1, 'LspSignatureActiveParameter', 1, unpack(hl)) end
 	return b, w
@@ -68,11 +81,26 @@ local function setup(server, opts)
 		--[[ if client.server_capabilities.inlayHintProvider and opts.inlay then
 			vim.lsp.inlay_hint.enable(bufnr, true)
 		end ]]
-		if client.config.root_dir then vim.api.nvim_set_current_dir(client.config.root_dir) end
+		if opts.setCwd ~= false then
+			local bname = vim.api.nvim_buf_get_name(bufnr)
+			for _, ws in ipairs(client.config.workspace_folders) do
+				ws = ws.name
+				if ws and bname:sub(1, #ws) == ws then
+					vim.b[bufnr].cwd = ws
+					vim.api.nvim_set_current_dir(ws)
+					break
+				end
+			end
+		end
 		if client.server_capabilities.signatureHelpProvider then
-			vim.api.nvim_create_autocmd({ 'CursorHoldI', 'CompleteDone' }, {
-				callback = function()
-					if b ~= -1 then vim.lsp.buf.signature_help() end
+			vim.api.nvim_create_autocmd({ 'CursorHoldI', 'CompleteDone', 'CursorMovedI' }, {
+				callback = function(state)
+					if state.event == 'CursorMovedI' then
+						-- TODO: base detection of context change off of treesitter
+						winValid()
+						return
+					end
+					if showSig then vim.lsp.buf.signature_help() end
 				end,
 				buffer = bufnr,
 			})
@@ -111,11 +139,16 @@ map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
 map({ 'n', 'i' }, '<C-I>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)
 map('i', '<C-S-Space>', function()
-	if vim.api.nvim_win_is_valid(w) then
-		b = -1
-		vim.api.nvim_win_close(w, false)
+	if vim.api.nvim_win_is_valid(w) == showSig then
+		if showSig then
+			vim.api.nvim_win_close(w, false)
+			w = -1
+		else
+			vim.lsp.buf.signature_help()
+		end
 	else
-		vim.lsp.buf.signature_help()
+		showSig = not showSig
+		vim.print('show signature: ' .. tostring(showSig))
 	end
 end)
 map({ 'n', 'i' }, '<A-c>', vim.lsp.buf.code_action)

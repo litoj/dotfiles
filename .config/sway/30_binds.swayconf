@@ -34,7 +34,7 @@ bindsym --to-code {
 	$Mod+4 exec W=$wMsg lof thunderbird thunderbird
 	$Mod+5 mode $IDE
 	$Mod+6 exec W=$wMsg lof ripcord Ripcord
-	$Mod+7 exec W=$wMedia lof gimp Gimp
+	$Mod+7 exec W=$wMedia lof gimp "Gimp|mpv"
 	$Mod+$Alt+9 exec W=$wGame lof prismlauncher null "^(Minecraft|Prism Launcher).*"
 	$Mod+9 exec W=$wGame lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
 }

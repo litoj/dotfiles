@@ -10,7 +10,6 @@ run() {
 	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
 	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || {
 		${cmd#@} "${arg[@]}" &
-		disown
 	}
 	exit 0
 }

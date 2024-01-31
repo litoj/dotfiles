@@ -1,21 +1,48 @@
-.tab-background[selected] {
-  border: 2px solid #bb33aa !important;
-	background: #0000 !important;
+@media (prefers-color-scheme: light) {
+	#TabsToolbar {
+		background: #fafafa !important;
+	}
+	.tab-background:is([selected],[multiselected]) {
+		background: #fff !important;
+		margin: 3px 0 0 0 !important;
+	}
+	#urlbar-background {
+		box-shadow: 0 0 5px #ccc !important;
+		margin: 1px !important;
+		background: #fff !important;
+	}
 }
-.tab-background:not([selected]) {
-  background: #9992 !important;
+@media (prefers-color-scheme: dark) {
+	#TabsToolbar {
+		background: #000 !important;
+	}
+	.tab-background:is([selected],[multiselected]) {
+		border: 2px solid #bb33aa !important;
+		background: #000 !important;
+		margin: 0 !important;
+		max-height: 38px !important;
+		min-height: 38px !important;
+	}
+	#urlbar-background {
+		background: #000 !important;
+	}
+}
+#nav-bar {
+	box-shadow: none !important;
+	background: #ffffff15 !important;
 }
 
-.tab-background[selected],
-.tab-content[selected] {
-  margin: 0 0 0 0 !important;
-  max-height: 40px !important;
-  min-height: 40px !important;
+.tab-background {
+  max-height: 34px !important;
+  min-height: 34px !important;
 }
-.tab-background,
+.tab-content:is([selected],[multiselected]) {
+  margin: 2px 0 0 0 !important;
+}
 .tab-content {
-  max-height: 32px !important;
-  min-height: 32px !important;
+  margin: 4px 0 0 0 !important;
+  max-height: 36px !important;
+  min-height: 36px !important;
 }
 
 .tabbrowser-tab[first-visible-tab]:last-of-type .tab-background[selected],
@@ -25,33 +52,17 @@
   max-width: 100% !important;
 }
 
-.tabbrowser-tab {
-  padding: 0px 0px 0px 4px !important;
-}
-
-.tabbrowser-tab[seleced] {
-  padding: 0 !important;
-}
-
-.tab-content[selected] .tab-icon-stack .tab-icon-image {
-  margin: 0 2px 0 -4px !important;
-}
-
 .tab-content .tab-icon-stack .tab-icon-image {
-  margin: 7px 2px 0 -4px !important;
+  margin: 0 2px 0 -4px !important;
   height: 25px !important;
   width: 25px !important;
 }
 
 .tab-close-button {
-  padding: 3px !important;
-  width: 17px !important;
-  height: 20px !important;
-}
-
-.tab-text:not([selected]),
-.tab-close-button:not([selected]) {
-  margin-bottom: -6px !important;
+	margin: 0 -7px 0 0 !important;
+  padding: 9px 4px 7px 5px !important;
+  width: 26px !important;
+  height: 35px !important;
 }
 
 #TabsToolbar,
@@ -60,10 +71,4 @@
 #tabbrowser-arrowscrollbox {
   --tab-min-height: 42px !important;
   max-height: 40px !important;
-}
-#nav-bar {
-	box-shadow: none !important;
-}
-#urlbar-background {
-	border: none !important;
 }

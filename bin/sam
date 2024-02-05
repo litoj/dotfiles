@@ -6,7 +6,7 @@ This program uses ADB to manage system applications on your Android phone.'
 . sss
 
 actionInfo connect 'connect to a device with given ip/port'
-connectParams=(dst '' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
+connectParams=(dst '.' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
 connect() {
 	[[ $dst != *:* ]] && dst=$(
 		nmap -T4 -p$dst $(
@@ -27,11 +27,11 @@ declare -A pkgConf=(
 	[preview]='adb shell dumpsys package {} | grep ^Packages -A999 | grep ^Queries -B999')
 actionInfo pkgconf C 'pkg[C]onf' 'set options for package picker'
 pkgconfParams=(
-	filter '-f' '(-[edsu]( -[edsu])*)?' 'Default app picker filter ("" for no filter)'
-	preview '-p' '.+' 'Command for fzf previewing')
+	filter 'f' '(-[edsu]( -[edsu])*)?' 'Default app picker filter (""/+f/-f for no filter)'
+	preview 'p' '.+' 'Command for fzf previewing')
 pkgconf() {
-	if [[ ${filter+1} ]]; then
-		[[ $filter ]] && pkgConf[filter]=${filter} || pkgConf[filter]=''
+	if [[ "$filter" ]]; then
+		[[ ${filter:=1} =~ ^-?[0-9]+$ ]] && pkgConf[filter]='' || pkgConf[filter]=${filter}
 	fi
 	[[ ! $preview ]] || pkgConf[preview]="$preview"
 }
@@ -81,7 +81,7 @@ enable() {
 }
 
 actionInfo launch 'launch a package on the device'
-launchParams=(package '' "${REGEX[domain]}" 'Domain name to launch')
+launchParams=(package '.' "${REGEX[domain]}" 'Domain name to launch')
 declare -A launchBuilder=([package]=pickPackage)
 pkgConf+=([launch]=-e)
 launch() {
@@ -95,13 +95,13 @@ launch() {
 # only disabled apps by default, -e for direct uninstallation (of active/enabled apps)
 actionInfo uninstall 'uninstall disabled apps'
 uninstallParams=(
-	keep '-k' 'Keep app data/cache'
+	keep 'k' 'Keep app data/cache'
 	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A uninstallBuilder=([packages]=pickPackage)
 pkgConf+=([uninstall]=-d)
 uninstall() {
 	local pkg cmd=(adb)
-	[[ $keep ]] && cmd+=(shell cmd package uninstall -k) || cmd+=(uninstall --user 0)
+	((keep > 0)) && cmd+=(shell cmd package uninstall -k) || cmd+=(uninstall --user 0)
 	for pkg in "${packages[@]}"; do
 		exec "${cmd[@]}" "$pkg"
 	done
@@ -109,7 +109,7 @@ uninstall() {
 
 actionInfo remove 'uninstall enabled apps'
 removeParams=(
-	keep '-k' 'Keep app data/cache'
+	keep 'k' 'Keep app data/cache'
 	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A removeBuilder=([packages]=pickPackage)
 pkgConf+=([remove]=-e)

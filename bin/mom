@@ -7,15 +7,15 @@ A collection of media operation/manipulation scripts.'
 
 actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
 nometaParams=(
-	src '' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
-	dst '?' '.+' 'Put results into (default=replace original)')
+	src '.' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
+	dst '?' '$E' 'Put results into (default=replace original)')
 nometa() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
 		cd "$src"
 		for f in *; do
-			[[ $f =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
-			src=$f
+			[[ -d $f || $f =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
+			local src=$f
 			nometa
 		done
 		cd "$CWD"
@@ -39,39 +39,38 @@ nometa() {
 
 actionInfo convert 'convert audio files to opus'
 convertParams=( # TODO: opt for ignoring low qual mp3
-	NO_RM '-R' '' 'Prevent source file removal'
-	bitrate '-b' '[0-9]+' 'Output bitrate in kbps (default=96)'
+	NO_RM 'R' '' 'Prevent source file removal'
+	bitrate 'b' '[0-9]+' 'Output bitrate in kbps (default=96)'
 	src '+' '$f\.(flac|wma|m4a|mp3)' 'File to convert'
-	dst '?' '$e\.opus' 'Output file (default=`$src.opus`, deletes `$src`)')
+	dst '?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 convert() {
 	[[ $bitrate ]] ||
 		[[ $f =~ \.(flac|wav)$ || $(
 			ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
 		) > 192 ]] && local brate=128 || local bitrate=96
-	[[ -f $dst && ${#src[@]} -gt 1 ]] && log Warn ': cannot specify multiple src and a file dst'
+	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
+		log Warn ': cannot specify multiple src and a file dst'
 
+	[[ -z $dst ]] || local NO_RM=1
+	local src
 	for src in "${src[@]}"; do
-		if [[ -z $dst ]]; then
-			local out=${src%.*}.opus defaultDst=true
-		else
-			[[ -d $dst ]] && local out="$dst/${src/*\//}" || local out=$dst
-			defaultDst=
-		fi
-		if exec ffmpeg -v error -i "$src" -map_metadata -1 -map a -b:a ${bitrate}k "$out"; then
-			[[ -z $defaultDst || $NO_RM ]] || exec rm "$src"
-		fi
+		[[ -d $dst ]] && src=${src##*\/}
+		[[ -z $dst || -d $dst ]] && local out="$dst/${src%.*}.opus" || local out=$dst
+		exec ffmpeg -v ${LOG_FULL_NAMES[$LOG_LVL],} -i "$src" -map_metadata -1 \
+			-map a -b:a ${bitrate}k "$out" && { ((NO_RM > 0)) || exec rm "$src"; }
 	done
 }
 
 actionInfo subtitles t 'sub[t]itles' 'convert mp4 with srt to mkv'
 subtitlesParams=(
-	NO_RM '-R' '' 'Prevent source file removal'
-	NO_DEF_CHANGE '-D' '' 'Prevent default-subs change (changes to first subs by default)'
-	lang '-l' '[a-z]+' 'Language in order of provided subtitles (default=eng)'
+	NO_RM 'R' '' 'Prevent source file removal (enabled for mkv for potential subtitle fail)'
+	NO_SRC_SUBS 'S' '' 'Do not keep source subtitles - can help if added are not visible'
+	NO_DEF_CHANGE 'D' '' 'Prevent default-subs change (changes to first subs by default)'
+	lang 'l' '[a-z]+' 'Language in order of provided subtitles (default=eng)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '*' '$f\.srt' 'Subtitles to add (default=*.srt)'
 	vid '?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
-	dst '?' '$f\.mkv' 'Output file (default=`$vid.mkv`)')
+	dst '?' '$F\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
 	if [[ -z $subs ]]; then
@@ -84,7 +83,7 @@ subtitles() {
 				[[ ${f@L} == "$match" ]] && local subs=$f && break
 			done
 		fi
-		[[ -z $subs ]] && log Warn " - no match for '$match'" && return
+		[[ -z $subs ]] && log Err " - no match for '$match'" && return
 	fi
 
 	[[ $vid == *.mkv && ! -f $vid && -z $dst ]] && local dst=$vid && vid=
@@ -98,37 +97,48 @@ subtitles() {
 				[[ ${f@L} == "$match"* ]] && local vid=$f && break
 			done
 		fi
-		[[ -z $vid ]] && log Warn " - no match for '$match'" && return
+		[[ -z $vid ]] && log Err " - no match for '$match'" && return
 	fi
 
 	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
-	local opts=(-v error)
+	local opts=(-v ${LOG_FULL_NAMES[$LOG_LVL],})
+
+	declare -i i=0
 	for sub in "${subs[@]}"; do
 		# if [[ $(file "$sub" -b) =~ ([^ ]+)\ text && ${BASH_REMATCH[1]} != $encoding ]]; then
 		# enca "$sub" -x "$encoding"
 		# fi
 		opts+=(-i "$sub")
 	done
-	opts+=(-i "$vid" -map s -map ${#subs[@]} -c copy)
+	opts+=(-i "$vid" -map ${#subs[@]}:a -map ${#subs[@]}:v -c copy)
+	((NO_SRC_SUBS > 0)) || opts+=(-map ${#subs[@]}:s)
+
 	declare -i i=0
 	for sub in "${subs[@]}"; do
 		[[ ${lang[$i]} ]] && opts+=(-metadata:s:s:$i language=${lang[$i]})
+		opts+=(-map $i)
 		i+=1
 	done
-	[[ $NO_DEF_CHANGE ]] || opts+=(-disposition:s:0 default)
-	[[ -z $dst ]] && local dst=${vid%.*}.mkv
+
+	((NO_DEF_CHANGE > 0)) || opts+=(-disposition:s:0 default)
+	if [[ -z $dst ]]; then
+		local dst=${vid%.*}.mkv
+		[[ -f $dst ]] && dst="${vid%.*} $lang-sub.mkv"
+	fi
 	opts+=("/tmp/${dst##*/}")
 
-	exec ffmpeg "${opts[@]}" &&
-		exec mv "/tmp/${dst##*/}" "$dst" && [[ -z $NO_RM ]] && exec rm "${subs[@]}" "$vid"
+	[[ ${vid} == *.mkv ]] && local NO_RM=1
+	exec ffmpeg "${opts[@]}" && exec mv "/tmp/${dst##*/}" "$dst" && if [[ $NO_RM -le 0 ]]; then
+		exec rm "${subs[@]}" "$vid"
+	fi
 }
 
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
-	randomizer '-R' '[deo]' 'd=disable; e=enable (default); o=once, then just play'
-	NO_LOOP '-L' '' 'Do not loop playlist'
-	src '' '$e' 'Play file/dir')
+	NO_LOOP 'L' '' 'Do not loop playlist'
+	randomizer 'r' 'o?' '+r=disable; -r=enable (default); o=once, then just play'
+	src '.' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
@@ -140,7 +150,7 @@ pickSong() {
 play() {
 	local playlistFile=/tmp/my/song
 	local cmd=(mpv --no-audio-display --msg-level=all=no --playlist=$playlistFile)
-	((NO_LOOP)) || cmd+=(--loop-playlist)
+	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 	pkill -f "${cmd[*]::2}"
 
 	if [[ -f $src ]]; then
@@ -151,11 +161,12 @@ play() {
 		exec rm "$playlistFile"
 	fi
 
-	case "${randomizer:-e}" in
-		d) exec echo "$src" >> "$playlistFile" ;;
-		o) exec fd '' -t f "$src" | sort -R >> "$playlistFile" ;;
-		e) exec echo "$src" >> "$playlistFile" && cmd+=(--shuffle) ;;
-	esac
+	if [[ $randomizer == o ]]; then
+		exec fd '' -t f "$src" | sort -R >> "$playlistFile"
+	else
+		exec echo "$src" >> "$playlistFile"
+		((randomizer >= 0)) && cmd+=(--shuffle)
+	fi
 
 	exec "${cmd[@]}" \&
 	sleep 1 && exec rm "$playlistFile"

@@ -2,7 +2,7 @@
 
 declare -A INFO=()
 declare -a ORDER=()
-ALIGNER=0
+ALIGNER=0 # TODO: allow loadable action config → only options are configurable
 
 #######################################
 # Register fn/action docs and for execution
@@ -33,6 +33,9 @@ declare -i FULL_LOG_NAMES=0 # script-level option
 declare -A LOG_LEVELS=([quiet]=0 [err]=1 [error]=1 [warn]=2 [warning]=2 [info]=3 [debug]=4)
 LOG_NAMES=(quiet err warn info debug)
 LOG_FULL_NAMES=(quiet error warning info debug)
+
+CLEANUP=exit # script option for custom cleanup function before exiting
+
 #######################################
 # Print given message with context of current action and log level
 # Arguments:
@@ -42,12 +45,12 @@ LOG_FULL_NAMES=(quiet error warning info debug)
 #   success when message was printed, exits if Warn in cli mode or Error are reported
 #######################################
 log() {
-	local logLvl=${LOG_LEVELS[${1,}]}
+	logLvl=${LOG_LEVELS[${1,}]}
 	if ((LOG_LVL >= logLvl)); then
 		((FULL_LOG_NAMES)) && local name=${LOG_FULL_NAMES[$logLvl]} || local name=${LOG_NAMES[$logLvl]}
 		echo "${name^}: $action$2" 1>&2
 	fi
-	((!(MODE & 1) && logLvl > 1 || logLvl > 2)) || exit 1
+	((!(MODE & 1) && logLvl > 1 || logLvl > 2)) || $CLEANUP 1
 	((LOG_LVL >= logLvl))
 }
 
@@ -255,6 +258,11 @@ $(paramHelp $action $((i / 4)))" && return
 	[[ $actionArg ]] && return 1 || return $((argc - $#))
 }
 
+call() { # for script usage - calling actions like itself with cli, without external process
+	parseAction "$@"
+	(($? == $# && logLvl > 2))
+}
+
 declare -A REGEX=(
 	[var]='[0-9A-Za-z_]+' [dashvar]='[0-9A-Za-z_\-]+' [const]='[0-9A-Z_]+'
 	[domain]='[a-z0-9]+\.[0-9a-z.]+'
@@ -369,7 +377,7 @@ quit() {
 		local runQueue=${INFO[commit]:-${INFO[run]:-${INFO[execute]}}}
 		[[ $runQueue ]] && $runQueue
 	fi
-	exit 0
+	$CLEANUP 0
 }
 
 # script option, set to main registered action if script is a single app

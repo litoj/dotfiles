@@ -5,8 +5,34 @@ A collection of media operation/manipulation scripts.'
 
 . sss
 
+actionInfo download 'download audio/video from given url with `yt-dlp`'
+downloadParams=(
+	metadata 'm' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
+	format 'f' '.+' 'yt-dl download format (default=ba[ext=webm])'
+	src '.' 'http.+' 'url to download' # dst as opt?
+	dst '?' '$E\.opus' 'output filename in yt-dlp format or dir (default=Artist - Song.opus)')
+download() { # TODO: allow video; allow qual/fmt selection through a picker
+	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
+	local dst=${dst:-.}
+	[[ -d $dst ]] && local tmp="%(creator)s - %(title)s.opus" || local tmp=${dst##*/}
+	local prefix=/tmp/mom-download-
+	cmd+=(-o "$prefix$tmp")
+	cmd+=("${src%%&*}")
+
+	((LOG_LVL < 3)) && cmd+=(-q)
+	exec "${cmd[@]}" && {
+		((metadata > 0)) && cmd=(mv) || cmd=(call nometa +k)
+		cmd+=("$prefix"*)
+		[[ -d $dst ]] && cmd+=("${dst%/}/$(
+			sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
+		)") || cmd+=("$dst")
+		exec "${cmd[@]}"
+	}
+}
+
 actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
 nometaParams=(
+	keep 'k' '' 'keep original (default=remove original)'
 	src '.' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
 	dst '?' '$E' 'Put results into (default=replace original)')
 nometa() {
@@ -20,12 +46,13 @@ nometa() {
 		done
 		cd "$CWD"
 	else
-		[[ $dst ]] || local dst=/tmp/ defaultDst=true
+		[[ ${dst:-$src} == $src ]] && local dst=/tmp/ defaultDst=true
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
-		if exec ffmpeg -v error -i "$src" -map_metadata -1 -map a -c copy "$dst"; then
-			[[ -z $defaultDst ]] || exec mv "$dst" "$src"
-		fi
+		exec ffmpeg -v ${LOG_FULL_NAMES[$LOG_LVL],} -i "$src" \
+			-map_metadata -1 -map a -c copy "$dst" && {
+			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
+		}
 	fi
 }
 

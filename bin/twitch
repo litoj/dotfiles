@@ -1,13 +1,5 @@
 #!/usr/bin/bash
 
-CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.toml"
-[[ -f $CONFIG_FILE ]] && while read line; do
-	case ${line%=*} in
-		token) token=${line#*=} ;;
-		expiry) expiry=${line#*=} ;;
-		streamers) streamerList=(${line#*=}) ;;
-	esac
-done < "$CONFIG_FILE"
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
 	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
@@ -54,22 +46,31 @@ wtwitch() {
 	done
 }
 
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.toml"
+[[ -f $CONFIG_FILE ]] && while read line; do
+	case ${line%=*} in
+		token) token=${line#*=} ;;
+		expiry) expiry=${line#*=} ;;
+		streamers) streamerList=(${line#*=}) ;;
+	esac
+done < "$CONFIG_FILE"
 streamer=$(printf '%s\n' ${streamerList[@]} | rofi -dmenu -p Streamer)
-if [[ -z $streamer ]]; then
-	exit 0
-elif [[ $streamer == [0-9] ]]; then
-	streamer=${streamerList[$streamer]}
-elif [[ $streamer == [a-z] ]]; then
-	for s in ${streamerList[@]}; do
-		if [[ $s == "$streamer"* ]]; then
-			streamer=$s
-			break
-		fi
-	done
-	[[ $streamer == [a-z] ]] && exit 1
-elif [[ $streamer == https://* ]]; then
-	url=$streamer
-fi
+case "$streamer" in
+	[0-9]) streamer=${streamerList[$streamer]} ;;
+	https://*) url=$streamer ;;
+	[a-z]*)
+		add=1
+		for s in ${streamerList[@]}; do
+			if [[ $s == "$streamer"* ]]; then
+				streamer=$s
+				unset add
+				break
+			fi
+		done
+		[[ $streamer == [a-z] ]] && exit 1
+		;;
+	*) exit 0 ;;
+esac
 
 if [[ -z $url ]]; then
 	streams=$(wtwitch $streamer)
@@ -112,8 +113,9 @@ if [[ -z $quality ]]; then
 fi
 mpv --msg-level=all=no --ytdl-format="$quality" "$url" &
 
-params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
+[[ $add ]] && sed -i "/^streamers=/s/\$/ $streamer/" "$CONFIG_FILE"
 
+params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
 while ! swaymsg $params &> /dev/null; do
 	sleep 1
 done

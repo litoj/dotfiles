@@ -10,7 +10,7 @@ downloadParams=(
 	metadata 'm' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
 	format 'f' '.+' 'yt-dl download format (default=ba[ext=webm])'
 	src '.' 'http.+' 'url to download' # dst as opt?
-	dst '?' '$E\.opus' 'output filename in yt-dlp format or dir (default=Artist - Song.opus)')
+	dst '?' '$E\.opus' 'output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
 	local dst=${dst:-.}
@@ -21,12 +21,12 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 
 	((LOG_LVL < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
-		((metadata > 0)) && cmd=(mv) || cmd=(call nometa +k)
+		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
 		cmd+=("$prefix"*)
 		[[ -d $dst ]] && cmd+=("${dst%/}/$(
 			sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
 		)") || cmd+=("$dst")
-		exec "${cmd[@]}"
+		"${cmd[@]}"
 	}
 }
 
@@ -233,4 +233,4 @@ compare() {
 	done
 }
 
-main "$@"
+main "$@" # TODO: default action that determines the right action to give the argument(s) to

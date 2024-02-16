@@ -67,14 +67,20 @@ return {
 	{
 		'JosefLitos/vim-mcfunction',
 		ft = 'mcfunction',
+		dependencies = 'reform.nvim',
 		config = function()
 			vim.g.mcversion = 'latest'
 			vim.g.mcEnableBuiltinIDs = false
 			vim.g.mcEnableBuiltinJSON = true
 			vim.api.nvim_create_autocmd(
 				'FileType',
-				{ pattern = 'mcfunction', command = 'setlocal tw=0 cms=#%s smc=255' }
+				{ pattern = 'mcfunction', command = 'setlocal tw=0 cms=#%s smc=1023' }
 			)
+
+			require('reform.open_link').config.handlers[6] = {
+				'function ([%w_]+:[%w_/]+)',
+				function(ref) vim.cmd.e(ref:gsub(':', '/functions/') .. '.mcfunction') end,
+			}
 		end,
 	},
 }

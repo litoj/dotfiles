@@ -21,7 +21,7 @@ local function setCWD(s)
 	end
 
 	local path = s.file:gsub('[^/]+$', '')
-	dir = path:match '.*/src/' or path:match '.*/lua/'
+	dir = path:match '.*/src/' or path:match '.*/lua/' or path:match '.*/data/'
 	if not dir then
 		local git = path
 		while #git > 1 and not exists(git .. '.git/') do
@@ -54,13 +54,13 @@ au('TermOpen', function(state)
 end)
 
 local function hiNotes()
-	vim.fn.matchadd('Todo', '\\<FIX')
+	vim.fn.matchadd('Todo', '\\<FIX\\w\\+\\>')
 	vim.fn.matchadd('Todo', 'TODO')
 	vim.fn.matchadd('Todo', '\\<NOTE')
 	vim.fn.matchadd('Todo', 'XXX')
 	vim.fn.matchadd('Todo', '\\<DEBUG')
-	vim.fn.matchadd('WarningMsg', '\\<WARN')
-	vim.fn.matchadd('ErrorMsg', '\\<ERR')
+	vim.fn.matchadd('WarningMsg', '\\<WARN\\w\\+\\>')
+	vim.fn.matchadd('ErrorMsg', '\\<ERR\\w\\+\\>')
 end
 hiNotes()
 au('WinNew', hiNotes)

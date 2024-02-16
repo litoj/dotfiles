@@ -17,7 +17,7 @@ function M.config()
 			sections_separators = { left = ' ', right = ' ' },
 			component_separators = { left = '', right = '' },
 			disabled_filetypes = {
-				statusline = { 'NvimTree', 'lazy', 'alpha', 'help', 'rnvimr' },
+				statusline = { 'NvimTree', 'lazy', 'alpha', 'help', 'rnvimr', 'fzf' },
 			},
 			always_divide_middle = false,
 			icon = false,

@@ -26,7 +26,9 @@ seat seat0 xcursor_theme 'Sweet-cursors' 32
 # seat seat0 attach 0:6:Video_Bus
 # seat seat0 attach 5075:22267:Integrated_Camera:_Integrated_C
 # seat seat0 attach 5075:22267:Integrated_Camera:_Integrated_I
-# seat seat1 fallback true
+
+# seat seat1 attach 1133:49166:Logitech_USB-PS/2_Optical_Mouse
+# seat seat1 attach 5215:611:MOSART_Semi._Trust_Wireless_Mouse
 # bindcode --whole-window 274 seat - cursor press BTN_LEFT, seat - cursor release BTN_LEFT
 # seat * {
 # 	hide_cursor 5000
@@ -48,5 +50,5 @@ input type:keyboard {
 input type:touchpad {
 	tap enabled
 	# natural_scroll enabled
-	dwt enabled
+	dwt disabled
 }

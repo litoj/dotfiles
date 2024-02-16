@@ -5,6 +5,7 @@ try @gimp .png .jpg .jpeg .xcf
 try @engrampa .jar
 try @inkscape .svg
 try @blockbench .json
+try @engrampa .zip
 BLOCKING=1
 try 'mom -c' .flac .m4a .mp3 .wav .wma
 try 'mom --subtitles' .srt .mp4

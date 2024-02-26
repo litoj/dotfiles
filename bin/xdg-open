@@ -8,9 +8,7 @@ declare EXT=.${arg##*.} URI=${arg/:*/:}
 run() {
 	local cmd=$1
 	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
-	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || {
-		${cmd#@} "${arg[@]}" &
-	}
+	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
 	exit 0
 }
 

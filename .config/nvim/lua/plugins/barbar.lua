@@ -34,7 +34,7 @@ function M.config()
 			name:find('.git/', 7, true)
 			-- or name:match 'node_modules'
 			-- or name:match '%.cache'
-			or not vim.loop.fs_stat(name)
+			or not exists(name)
 		then
 			vim.cmd.BufferWipeout()
 		else

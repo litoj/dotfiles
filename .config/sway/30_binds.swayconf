@@ -10,8 +10,8 @@ bindsym {
 	$Mod+$Alt+t border toggle $border
 	$Mod+$Alt+Shift+t exec $signal theme tgl
 
-	$Mod+u exec killall swaybg, exec $setbg
-	$Mod+Shift+u exec imv -f Pictures/screen
+	$Mod+u exec $setbg
+	$Mod+Shift+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
 
 #---------------+
 # App selection |
@@ -24,6 +24,7 @@ bindsym {
 # quick app starter
 	$Mod+Return exec xterm
 }
+set $Chat "[T]hunderbird [D]iscord [S]lack"
 set $IDE "[I]dea [N]etbeans [A]ndroid"
 bindsym --to-code {
 	$Mod+1 exec W=$wBrowser lof firefox "firefox"
@@ -31,12 +32,18 @@ bindsym --to-code {
 	$Mod+2 exec xterm nvim
 	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
 	$Mod+3 exec xterm
-	$Mod+4 exec W=$wMsg lof thunderbird thunderbird
+	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE
-	$Mod+6 exec W=$wMsg lof ripcord Ripcord
 	$Mod+7 exec W=$wMedia lof gimp "Gimp|mpv"
 	$Mod+$Alt+9 exec W=$wGame lof prismlauncher null "^(Minecraft|Prism Launcher).*"
 	$Mod+9 exec W=$wGame lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
+}
+mode $Chat {
+	bindsym {
+		t mode default, exec W=$wMsg lof thunderbird thunderbird
+		d mode default, exec W=$wMsg lof ripcord Ripcord
+		s mode default, exec W=$wMsg lof 'slack --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' Slack
+	}
 }
 mode $IDE {
 	bindsym {
@@ -264,7 +271,7 @@ mode $Exit {
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		p exit, exec cp /tmp/my/nextbg ~/.cache/nextbg, exec poweroff
+		p exit, exec 'cp /tmp/my/nextbg ~/.local/state/nextbg; poweroff'
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \
@@ -344,7 +351,7 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -Dg -p
+	$Mod+m exec mom -Dgp -p
 	$Mod+$Alt+Shift+m exec mom -Dg -pro
 	$Mod+Ctrl+m exec mom -Dg -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\

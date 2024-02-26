@@ -27,19 +27,20 @@ end
 
 map(
 	{ 'n', 'i' },
-	'<M-r>',
+	'<A-r>',
 	'<C-s><Cmd>!$BROWSER --new-tab (compiler "%:p") & && swaymsg [app_id="$BROWSER"] focus<CR><CR>',
 	{ buffer = true, remap = true }
 )
 map(
 	{ 'n', 'i' },
-	'<M-p>',
+	'<A-p>',
 	'<C-s><Cmd>!pandoc --pdf-engine=pdfroff "%:p" -o "%:r.pdf" && zathura "%:r.pdf" &<CR><CR>',
 	{ buffer = true, remap = true }
 )
-map('i', '<M-b>', '<C-o>ciw**<C-r>"**<Esc>', { buffer = true })
+map('i', '<A-b>', '<C-o>ciw**<C-r>"**<Esc>', { buffer = true })
+map('i', '<A-i>', '<C-o>ciw_<C-r>"_<Esc>', { buffer = true })
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
-map('i', '<M-d>', '<C-v>u2014', { buffer = true })
-map('i', '<M-q>', '\\', { buffer = true })
+map('i', '<A-d>', '<C-v>u2014', { buffer = true })
+map('i', '<A-q>', '\\', { buffer = true })
 map('i', '...', '…', { buffer = true })
 vim.wo.conceallevel = 2

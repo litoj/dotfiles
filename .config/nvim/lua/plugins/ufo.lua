@@ -19,6 +19,6 @@ function M.config()
 	map('n', '+', ufo.openAllFolds)
 	map('n', '-', 'za')
 	map('n', '=', 'zA')
-	map('n', 'K', ufo.peekFoldedLinesUnderCursor)
+	-- map('n', 'K', ufo.peekFoldedLinesUnderCursor)
 end
 return M

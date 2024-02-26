@@ -11,7 +11,7 @@ function M.config()
 		sources = {
 			nls.builtins.formatting.stylua.with {
 				extra_args = function(client)
-					local cwd = vim.fn.getcwd():gsub('/lua$', '')
+					local cwd = vim.loop.cwd():gsub('/lua$', '')
 					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
 						f = cwd .. f
 						if exists(f) then return { '--config-path', f } end
@@ -27,7 +27,7 @@ function M.config()
 				end,
 			},
 			nls.builtins.formatting.prettier.with {
-				filetypes = { 'markdown', 'json', 'json5', 'jsonc', 'yaml', 'javascript' },
+				filetypes = { 'markdown', 'json', 'json5', 'jsonc', 'yaml', 'javascript', 'vue' },
 				extra_args = function()
 					return {
 						'--print-width',
@@ -81,7 +81,6 @@ IndentWidth: %d, ContinuationIndentWidth: %d, TabWidth: %d, UseTab: %s, ColumnLi
 					}
 				end,
 			},
-			nls.builtins.code_actions.shellcheck,
 			nls.builtins.formatting.yapf,
 		},
 	}

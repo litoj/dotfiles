@@ -49,7 +49,7 @@ assign [app_id="firefox"] $wBrowser
 assign [class="NetBeans|jetbrains-.*" title=".* - .*"] $wCode
 assign [app_id="mpv|gimp|Inkscape"] $wMedia
 assign [class="Ripcord"] $wMsg
-assign [app_id="thunderbird|tutanota-desktop"] $wMsg
+assign [app_id="thunderbird|tutanota-desktop|Slack"] $wMsg
 assign [title="^Minecraft.? 1\.[1-2][0-9][0-9.]*$"] $wGame
 assign [app_id="org.prismlauncher.*"] $wGame
 assign [class=".*.exe"] $wGame

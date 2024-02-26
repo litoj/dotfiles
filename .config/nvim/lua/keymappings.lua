@@ -21,6 +21,7 @@ map('i', '<S-Enter>', '<C-o>o')
 map('i', '<C-Enter>', '<C-o>O')
 map('i', '<A-Enter>', '<C-o>md<C-o>O<C-o>`d')
 map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
+map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg('/', 1), 'n', false) end)
 -- Clipboard management
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')
@@ -51,16 +52,15 @@ map('i', '<C-Del>', '<C-o>"ddw')
 map('i', '<A-Del>', delExtended '<C-o>"ddw')
 map('i', '<C-S-Del>', '<C-o>"ddE')
 map('', '<Del>', '"_x')
--- inc/dec
-map('n', '<A-a>', '<C-a>')
-map('i', '<A-a>', '<C-o><C-a>')
-map('n', '<A-A>', '<C-x>')
-map('i', '<A-A>', '<C-o><C-x>')
+-- -- inc/dec
+-- map('n', '<A-a>', '<C-a>')
+-- map('i', '<A-a>', '<C-o><C-a>')
+-- map('n', '<A-A>', '<C-x>')
+-- map('i', '<A-A>', '<C-o><C-x>')
 -- indent
 map('i', '<C-S-T>', '<C-d>')
 map('i', '<C-S-.>', '<C-t>')
 -- undo/redo
-map('n', 'r', '<Cmd>redo<CR>')
 map({ '', 'i' }, '<C-z>', '<Cmd>undo<CR>')
 map({ '', 'i' }, '<C-y>', '<Cmd>redo<CR>')
 
@@ -114,7 +114,7 @@ map('n', '<Leader>m', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2)
 map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
-	if not vim.loop.fs_stat(name) then
+	if not exists(name) then
 		function _G.bench(cfg, ...)
 			local arg = type(cfg) == 'table' and cfg.arg or cfg
 			cfg = type(cfg) == 'table' and cfg or {}
@@ -147,7 +147,7 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	end
 	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
 	local old = package.loaded[path]
-	if not vim.loop.fs_stat(name) then
+	if not exists(name) then
 		_G.bench = nil
 	else
 		package.loaded[path] = res

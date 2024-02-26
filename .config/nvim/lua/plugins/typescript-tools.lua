@@ -14,7 +14,11 @@ M.config = function()
 			'jsconfig.json',
 			'.git'
 		),
-		init_options = { suggestFromUnimportedLibraries = false, closingLabels = true },
+		init_options = {
+			suggestFromUnimportedLibraries = false,
+			closingLabels = true,
+			preferences = { includeCompletionsForModuleExports = false },
+		},
 		settings = {
 			separate_diagnostic_server = false,
 			expose_as_code_action = { 'add_missing_imports' },
@@ -38,7 +42,7 @@ M.config = function()
 				{ rule = '*/no-unused-vars-experimental', severity = 'off' },
 			},
 		},
-		single_file_support = false,
+		single_file_support = false, -- runs but gives no useful information
 		inlay = false,
 		setCwd = false,
 	})

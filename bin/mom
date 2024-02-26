@@ -1,15 +1,15 @@
 #!/usr/bin/bash
 
-ABOUT='MOM - Media Operation/Manipulation
-A collection of media operation/manipulation scripts.'
-
 . sss
+
+SCRIPT_OPTS[about]='MOM - Media Operation/Manipulation
+A collection of media operation/manipulation scripts.'
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
 downloadParams=(
-	metadata 'm' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
-	format 'f' '.+' 'yt-dl download format (default=ba[ext=webm])'
-	src '.' 'http.+' 'url to download' # dst as opt?
+	metadata 'm?' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
+	format 'f?' '.+' 'yt-dl download format (default=ba[ext=webm])'
+	src '!' 'http.+' 'url to download'
 	dst '?' '$E\.opus' 'output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
@@ -19,7 +19,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	cmd+=(-o "$prefix$tmp")
 	cmd+=("${src%%&*}")
 
-	((LOG_LVL < 3)) && cmd+=(-q)
+	((SSS_OPTS[log] < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
 		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
 		cmd+=("$prefix"*)
@@ -32,8 +32,8 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 
 actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
 nometaParams=(
-	keep 'k' '' 'keep original (default=remove original)'
-	src '.' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
+	keep 'k?' '' 'keep original (default=remove original)'
+	src '!' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
 	dst '?' '$E' 'Put results into (default=replace original)')
 nometa() {
 	if [[ -d $src ]]; then
@@ -49,8 +49,9 @@ nometa() {
 		[[ ${dst:-$src} == $src ]] && local dst=/tmp/ defaultDst=true
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
-		exec ffmpeg -v ${LOG_FULL_NAMES[$LOG_LVL],} -i "$src" \
-			-map_metadata -1 -map a -c copy "$dst" && {
+		local logLvl=${LOG_FULL_NAMES[${SSS_OPTS[log]}],}
+		((SSS_OPTS[log] == 2)) && logLvl=warning
+		exec ffmpeg -v $logLvl -i "$src" -map_metadata -1 -map a -c copy "$dst" && {
 			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
 		}
 	fi
@@ -66,8 +67,8 @@ nometa() {
 
 actionInfo convert 'convert audio files to opus'
 convertParams=( # TODO: opt for ignoring low qual mp3
-	NO_RM 'R' '' 'Prevent source file removal'
-	bitrate 'b' '[0-9]+' 'Output bitrate in kbps (default=96)'
+	NO_RM 'R?' '' 'Prevent source file removal'
+	bitrate 'b?' '[0-9]+' 'Output bitrate in kbps (default=96)'
 	src '+' '$f\.(flac|wma|m4a|mp3)' 'File to convert'
 	dst '?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 convert() {
@@ -76,24 +77,26 @@ convert() {
 			ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
 		) > 192 ]] && local brate=128 || local bitrate=96
 	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
-		log Warn ': cannot specify multiple src and a file dst'
+		log Warning ': cannot specify multiple src and a file dst'
 
 	[[ -z $dst ]] || local NO_RM=1
 	local src
 	for src in "${src[@]}"; do
 		[[ -d $dst ]] && src=${src##*\/}
 		[[ -z $dst || -d $dst ]] && local out="$dst/${src%.*}.opus" || local out=$dst
-		exec ffmpeg -v ${LOG_FULL_NAMES[$LOG_LVL],} -i "$src" -map_metadata -1 \
+		local logLvl=${LOG_FULL_NAMES[${SSS_OPTS[log]}],}
+		((SSS_OPTS[log] == 2)) && logLvl=warning
+		exec ffmpeg -v $logLvl -i "$src" -map_metadata -1 \
 			-map a -b:a ${bitrate}k "$out" && { ((NO_RM > 0)) || exec rm "$src"; }
 	done
 }
 
-actionInfo subtitles t 'sub[t]itles' 'convert mp4 with srt to mkv'
+actionInfo subtitles 'convert mp4 with srt to mkv'
 subtitlesParams=(
-	NO_RM 'R' '' 'Prevent source file removal (enabled for mkv for potential subtitle fail)'
-	NO_SRC_SUBS 'S' '' 'Do not keep source subtitles - can help if added are not visible'
-	NO_DEF_CHANGE 'D' '' 'Prevent default-subs change (changes to first subs by default)'
-	lang 'l' '[a-z]+' 'Language in order of provided subtitles (default=eng)'
+	NO_RM 'R?' '' 'Prevent source file removal (enabled for mkv for potential subtitle fail)'
+	NO_SRC_SUBS 'S?' '' 'Do not keep source subtitles - can help if added are not visible'
+	NO_DEF_CHANGE 'D?' '' 'Prevent default-subs change (changes to first subs by default)'
+	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default=eng)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '*' '$f\.srt' 'Subtitles to add (default=*.srt)'
 	vid '?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
@@ -110,7 +113,7 @@ subtitles() {
 				[[ ${f@L} == "$match" ]] && local subs=$f && break
 			done
 		fi
-		[[ -z $subs ]] && log Err " - no match for '$match'" && return
+		[[ -z $subs ]] && log Error " - no match for '$match'" && return
 	fi
 
 	[[ $vid == *.mkv && ! -f $vid && -z $dst ]] && local dst=$vid && vid=
@@ -124,12 +127,13 @@ subtitles() {
 				[[ ${f@L} == "$match"* ]] && local vid=$f && break
 			done
 		fi
-		[[ -z $vid ]] && log Err " - no match for '$match'" && return
+		[[ -z $vid ]] && log Error " - no match for '$match'" && return
 	fi
 
 	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
-	local opts=(-v ${LOG_FULL_NAMES[$LOG_LVL],})
+	local opts=(-v)
+	((SSS_OPTS[log] == 2)) && opts+=(warning) || opts+=(${LOG_FULL_NAMES[${SSS_OPTS[log]}],})
 
 	declare -i i=0
 	for sub in "${subs[@]}"; do
@@ -139,7 +143,7 @@ subtitles() {
 		opts+=(-i "$sub")
 	done
 	opts+=(-i "$vid" -map ${#subs[@]}:a -map ${#subs[@]}:v -c copy)
-	((NO_SRC_SUBS > 0)) || opts+=(-map ${#subs[@]}:s)
+	((NO_SRC_SUBS <= 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && opts+=(-map ${#subs[@]}:s)
 
 	declare -i i=0
 	for sub in "${subs[@]}"; do
@@ -163,9 +167,9 @@ subtitles() {
 
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
-	NO_LOOP 'L' '' 'Do not loop playlist'
-	randomizer 'r' 'o?' '+r=disable; -r=enable (default); o=once, then just play'
-	src '.' '$e' 'Play file/dir')
+	NO_LOOP 'L?' '' 'Do not loop playlist'
+	randomizer 'r?' 'o?' '+r=disable; -r=enable (default); o=once, then just play'
+	src '!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1

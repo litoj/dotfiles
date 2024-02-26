@@ -2,7 +2,7 @@
 # This I use for my own use, simply put, it installs all the packages I need and puts all theme
 # files where I want them. Use only as the user on the machine who you want to affect
 
-cd "${0%bin/install.sh}" || cd ..
+cd "${0%bin/install.sh}" 2> /dev/null || cd ..
 
 if [[ ! $(which paru) ]]; then
 	(
@@ -61,7 +61,6 @@ basics() {
 	printf '\nInstalling basics.\n'
 	# picked hwdec drivers for AMD based on https://wiki.archlinux.org/title/Hardware_video_acceleration#Installation
 	echo '
-acpi
 alsa-utils
 arch-install-scripts
 arp-scan
@@ -186,21 +185,29 @@ configs() {
 }
 
 theming() {
-	ln -s "$PWD"/.gtkrc-2.0 ~/
 	cd theming
 	printf '\nInstalling themes.\n'
 	[[ -z "$(unzip)" ]] && paru --noconfirm -S unzip
-	tar -xf *Dark*.tar.*
-	tar -xf *Light*.tar.*
-	mkdir -p ~/.themes
-	mv *Dark*/ ~/.themes/Dark
-	mv *Light*/ ~/.themes/Light
-	mkdir -p ~/.icons/default/
-	echo '[Icon Theme]
-Name=Default
-Comment=Default Cursor Theme
+	for f in *.tar.*; do tar -xf "$f"; done
+	if [[ $THEME_LOCAL ]]; then
+		mkdir -p ~/.themes
+		mv *Dark*/ ~/.themes/Dark
+		mv *Light*/ ~/.themes/Light
+		mkdir -p ~/.icons/default/
+		echo '[Icon Theme]
 Inherits=Sweet-cursors' > ~/.icons/default/index.theme
-	mv */ ~/.icons/Icons
+		mv */ ~/.icons/Icons
+	else
+		local dark=/usr/share/themes/Dark light=/usr/share/themes/Light icons=/usr/share/icons/Icons
+		[[ -d $dark ]] && sudo rm -r "$dark"
+		sudo mv *Dark*/ "$dark"
+		[[ -d $light ]] && sudo rm -r "$light"
+		sudo mv *Light*/ "$light"
+		sudo sed -i 's/^\(Inherits=\).*$/\1Sweet-cursors/' /usr/share/icons/default/index.theme
+		[[ -d $icons ]] && sudo rm -r "$icons"
+		sudo mv */ "$icons"
+	fi
+	[[ -f ~/.gtkrc-2.0 ]] && rm ~/.gtkrc-2.0
 	ln -s /tmp/my/gtk2rc ~/.gtkrc-2.0
 	cd ..
 }

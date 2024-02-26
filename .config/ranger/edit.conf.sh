@@ -1,11 +1,10 @@
 # config for ../../bin/xdg-open
 # functions must be prefixed with @ otherwise they're run as external commands (and not found)
 # -t $(ffprobe "$f" -show_entries format=duration -v quiet -of csv="p=0" | awk '{print $1-2}') \
-try @gimp .png .jpg .jpeg .xcf
-try @engrampa .jar
-try @inkscape .svg
-try @blockbench .json
-try @engrampa .zip
+try @gimp .png .jpg .jpeg .xcf &>/dev/null
+try @inkscape .svg &>/dev/null
+try @blockbench .json &>/dev/null
+try @engrampa .zip .jar
 BLOCKING=1
 try 'mom -c' .flac .m4a .mp3 .wav .wma
 try 'mom --subtitles' .srt .mp4

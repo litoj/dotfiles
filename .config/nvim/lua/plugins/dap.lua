@@ -1,7 +1,7 @@
 local M = {
 	'rcarriga/nvim-dap-ui',
 	dependencies = { 'mfussenegger/nvim-dap', 'theHamsta/nvim-dap-virtual-text' },
-	ft = { 'c', 'cpp', 'rust', 'java' },
+	ft = { 'c', 'cpp', 'rust', 'java', 'cs' },
 }
 function M.config()
 	local dap, dapui = require 'dap', require 'dapui'
@@ -13,6 +13,12 @@ function M.config()
 			args = { '--port', '${port}' },
 		},
 	}
+	dap.adapters.coreclr = {
+		type = 'executable',
+		command = 'netcoredbg',
+		args = { '--interpreter=vscode' },
+	}
+
 	dap.configurations.c = {
 		{
 			name = 'Launch',
@@ -20,9 +26,9 @@ function M.config()
 			request = 'launch',
 			cwd = '${workspaceFolder}',
 			program = function()
-				if vim.loop.fs_stat 'main.out' then return 'main.out' end
+				if exists 'main.out' then return 'main.out' end
 				local name = vim.api.nvim_buf_get_name(0)
-				return name:gsub('%.[ch].*$', '.out')
+				return name:gsub('%.[ch]+$', '.out')
 				-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 			end,
 		},
@@ -40,6 +46,25 @@ function M.config()
 			end,
 		},
 	}
+	dap.configurations.cs = {
+		{
+			name = 'Launch',
+			type = 'coreclr',
+			request = 'launch',
+			env = 'ASPNETCORE_ENVIRONMENT=Development',
+			args = {
+				'/p:EnvironmentName=Development', -- this is a msbuild jk
+				'--urls=http://localhost:5002',
+				'--environment=Development',
+			},
+			program = function()
+				local dir = vim.loop.cwd() .. '/' .. vim.fn.glob 'bin/Debug/net*/linux-x64/'
+				local name = dir .. vim.fn.glob('*.csproj'):gsub('%.csproj$', '.dll')
+				if not exists(name) then os.execute 'dotnet build -r linux-x64' end
+				return name
+			end,
+		},
+	}
 
 	local function run()
 		local config = dap.configurations[vim.o.filetype]
@@ -48,22 +73,32 @@ function M.config()
 			return
 		end
 		config = config[1]
-		if config.type == 'codelldb' then
-			config.args = {}
-			config.stdio = { nil, nil, nil }
-			vim.ui.input({ prompt = 'Args: ' }, function(res)
-				if res == '' then return end
+
+		config.stdio = { nil, nil, nil }
+		vim.ui.input(
+			{ prompt = 'Args: ', cancelreturn = false, default = table.concat(config.args or {}, ' ') },
+			function(res)
+				if not res then return end
+				local args = {}
+				local concat = false
 				for arg in res:gmatch '[^ ]+' do
-					table.insert(config.args, arg)
+					if concat then
+						args[#args] = args[#args]:sub(1, -2) .. ' ' .. arg
+						concat = false
+					else
+						args[#args + 1] = arg
+					end
+					if arg:sub(-1) == '\\' then concat = true end
 				end
-				if config.args[#config.args - 1] == '<' then
-					config.stdio = { config.args[#config.args], nil, nil }
-					config.args[#config.args] = nil
-					config.args[#config.args] = nil
+				if args[#args - 1] == '<' then
+					config.stdio = { args[#args], nil, nil }
+					args[#args] = nil
+					args[#args] = nil
 				end
+				config.args = args
 				dap.run(config)
-			end)
-		end
+			end
+		)
 	end
 
 	dap.defaults.fallback.external_terminal = { command = 'xterm' }
@@ -82,7 +117,7 @@ function M.config()
 
 	dap.listeners.after.event_initialized['dapui_config'] = dapui.open
 	dap.listeners.before.event_terminated['dapui_config'] = dapui.close
-	dap.listeners.before.event_exited['dapui_config'] = dapui.close()
+	dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
 	dapui.setup {
 		layouts = {

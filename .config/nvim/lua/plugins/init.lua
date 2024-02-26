@@ -12,8 +12,7 @@ return {
 		event = 'VeryLazy',
 		opts = {
 			docmd = { debug = '/tmp/docmd.md' },
-			open_link = { unknown = 'copy/print-current' },
-			man = true,
+			link = { fallback = { copy = true, print = true, branch = 'current' } },
 		},
 	},
 	{
@@ -77,9 +76,10 @@ return {
 				{ pattern = 'mcfunction', command = 'setlocal tw=0 cms=#%s smc=1023' }
 			)
 
-			require('reform.open_link').config.handlers[6] = {
-				'function ([%w_]+:[%w_/]+)',
-				function(ref) vim.cmd.e(ref:gsub(':', '/functions/') .. '.mcfunction') end,
+			local matchers = require('reform.link').config.matchers
+			matchers[#matchers + 1] = {
+				luapat = 'function ([%w_]+:[%w_/]+)',
+				use = function(ref) vim.cmd.e(ref:gsub(':', '/functions/') .. '.mcfunction') end,
 			}
 		end,
 	},

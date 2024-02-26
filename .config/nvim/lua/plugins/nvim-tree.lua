@@ -11,7 +11,7 @@ function M.config()
 		respect_buf_cwd = true,
 		update_focused_file = { enable = true, update_root = true, ignore_list = { 'term://' } },
 		sync_root_with_cwd = true,
-		filters = { dotfiles = true, custom = { '.git$', 'node_modules', '.cache' } },
+		filters = { dotfiles = true, custom = { '.git$', 'node_modules', '.cache' }, exclude = {'.config'} },
 		renderer = {
 			indent_markers = { enable = true },
 			icons = { show = { git = false } },

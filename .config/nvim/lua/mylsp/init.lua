@@ -113,9 +113,12 @@ M.setup = setup
 
 setup('bashls', { root_dir = function(fname) return fname:match '.+/' end })
 setup 'clangd'
+-- setup('marksman', {}) -- can generate table of contents
 setup('pyright', {})
+setup 'omnisharp'
 setup('rust_analyzer', {})
 setup 'texlab'
+setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
 -- setup "jsonls"

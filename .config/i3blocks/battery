@@ -1,51 +1,36 @@
 #!/usr/bin/bash
-read -a line <<< "$(acpi)"
-TEXT=${line[2]:0:1}
-STATE=${line[3]%\%*}
-TIME=${line[4]%:??}
-
-if [[ -z $TEXT ]]; then
-	echo 
-elif [[ ${line[6]} == zero ]]; then
-	echo " $STATE%"
+bat=(/sys/class/power_supply/BAT*)
+eval "$(sed 's/^.\{13\}//' ${bat[${BAT:-0}]}/uevent)"
+if [[ -z $STATUS || $POWER_NOW == 0 ]]; then
+	echo " $CAPACITY%"
 else
-	case "$TEXT" in
-		'D')
-			if ((STATE <= 20)); then
+	((TIME = ENERGY_NOW * 60 / POWER_NOW))
+	((M = TIME % 60))
+	((M < 10)) && M=0$M
+	TIME="$((TIME / 60)):$M"
+	case "$STATUS" in
+		D*)
+			USAGE=$((POWER_NOW / 100000))
+			if ((CAPACITY > 40)); then
+				((CAPACITY > 80)) && TEXT= || { ((CAPACITY > 60)) && TEXT= || TEXT=; }
+			elif ((CAPACITY > 20)); then
+				TEXT=
+			else
 				TEXT=
-				if ((STATE > 17)); then
-					notify-send -t 0 -u low -h int:value:$STATE \
-						-h string:synchronous:battery "Battery   $STATE%" 'Plug the system in.'
-				elif ((STATE > 14)); then
-					notify-send -u critical -h int:value:$STATE \
-						-h string:synchronous:battery "Battery   $STATE%" 'Plug the system in.'
-					case "$(rofi -dmenu -l 3 -p "  $STATE%" <<< 'Suspend
-Hibernate
-Power off')" in
-						'Suspend') systemctl suspend ;;
-						'Hibernate') { [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
-							systemctl hibernate && sleep 60 && sudo swapoff /swapfile ;;
-						'Power off') systemctl poweroff ;;
-					esac
+				if [[ $CAPACITY_LEVEL != Low ]]; then
+					notify-send -t 0 -u low -h int:value:$CAPACITY \
+						-h string:synchronous:battery "Battery   $CAPACITY%" 'Plug the system in.'
 				else
 					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
 						hibernate && sleep 60 && sudo swapoff /swapfile
 				fi
-				echo "$TEXT $STATE% $TIME"
-				exit 33
-			elif ((STATE < 40)); then
-				TEXT=
-			elif ((STATE < 60)); then
-				TEXT=
-			elif ((STATE < 80)); then
-				TEXT=
-			else
-				TEXT=
 			fi
+			bad=1
 			;;
-		'C') TEXT= ;;
-		'F') TEXT= ;;
+		C*) TEXT= USAGE=$((POWER_NOW / 100000)) ;;
+		F*) TEXT= ;;
 		*) TEXT= ;;
 	esac
-	echo "$TEXT $STATE% $TIME"
+	echo "$TEXT $CAPACITY%${USAGE:+/$((USAGE / 10)).${USAGE:0-1}W} $TIME"
+	[[ -z $bad ]] || exit 33
 fi

@@ -2,7 +2,7 @@
 BROWSER="@$BROWSER"
 try @mpv .mkv .mp4 .webm
 try "mpv --no-audio-display" .aac .mp3 .m4a .m3u .flac .ogg .opus .wav
-try @imv-dir .png .jpg .jpeg .webp .gif
+try @imv-dir .png .jpg .jpeg .webp .gif .svg
 try @zathura .pdf
 try @transmission-gtk magnet:
 try @thunderbird mailto:

@@ -93,7 +93,7 @@ function M.config()
 				lineFoldingOnly = true,
 			}
 		end
-		if vim.loop.fs_stat(vim.api.nvim_buf_get_name(0)) and vim.bo.modifiable then
+		if exists(vim.api.nvim_buf_get_name(0)) and vim.bo.modifiable then
 			config.root_dir = root_dir()
 			config.cmd[#config.cmd + 1] = '/tmp/' .. config.root_dir:gsub('.*/', '')
 		end

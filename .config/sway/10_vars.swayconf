@@ -8,7 +8,7 @@ set $bg #222222
 set $fg #ffffff
 set $border 4
 set $gaps 16
-set $setbg ~/.config/sway/bg.sh
+set $nextbg ~/.config/sway/nextbg
 
 set $Mod Mod4
 set $Alt Mod1

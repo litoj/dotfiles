@@ -1,6 +1,6 @@
 # set background
 exec {
-	mkdir -p /tmp/my/ && $setbg
+	mkdir -p /tmp/my/ && $nextbg
 	[[ -f /bin/cpupower-gui ]] && cpupower-gui pr \
 		$([[ $(cat /sys/class/power_supply/BAT0/status) == D* ]] && echo Powersave || echo Optimal) &>/dev/null
 	wlsunset -l 50 -L 14.5 &>/dev/null &

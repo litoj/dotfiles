@@ -39,6 +39,7 @@ map(
 )
 map('i', '<A-b>', '<C-o>ciw**<C-r>"**<Esc>', { buffer = true })
 map('i', '<A-i>', '<C-o>ciw_<C-r>"_<Esc>', { buffer = true })
+map('i', '<A-`>', '<C-o>ciw`<C-r>"`<Esc>', { buffer = true })
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map('i', '<A-d>', '<C-v>u2014', { buffer = true })
 map('i', '<A-q>', '\\', { buffer = true })

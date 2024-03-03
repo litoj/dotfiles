@@ -102,10 +102,8 @@ function M.config()
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },
-				{ 'j', '~/Documents/school/PG/Java/' },
 				{ 'k', '~/Documents/school/PG/Kotlin/' },
-				{ 's', '~/Documents/school/PG/SKJ/' },
-				{ 'w', '~/Documents/work/projects-fit/' },
+				{ 's', '~/Documents/school/PG/SP/' },
 			}),
 			buttons('[C]onfigs', {
 				{ 'c', '~/dotfiles/.config/' },

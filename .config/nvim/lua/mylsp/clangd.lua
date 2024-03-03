@@ -1,5 +1,5 @@
 return {
-	capabilities = { offsetEncoding = 'utf-16' },
+	capabilities = { offsetEncoding = 'utf-8' },
 	root_dir = function(fname)
 		return vim.fs.dirname(vim.fs.find({
 			'src',

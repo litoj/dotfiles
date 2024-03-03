@@ -111,13 +111,14 @@ if [[ -z $quality ]]; then
 		audio) quality="ba" ;;
 	esac
 fi
-mpv --msg-level=all=no --ytdl-format="$quality" "$url" &
+mpv --ytdl-format="$quality" --no-terminal "$url" &
 
 [[ $add ]] && sed -i "/^streamers=/s/\$/ $streamer/" "$CONFIG_FILE"
 
 params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
-declare -i tries=0
-while ! swaymsg $params &> /dev/null && ((tries < 30)); do
+declare -i max=120
+while ! swaymsg $params &> /dev/null && ((max)); do
 	sleep 1
-	tries+=1
+	max+=1
 done
+((max)) || pkill -P $$

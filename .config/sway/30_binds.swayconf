@@ -10,7 +10,7 @@ bindsym {
 	$Mod+$Alt+t border toggle $border
 	$Mod+$Alt+Shift+t exec $signal theme tgl
 
-	$Mod+u exec $setbg
+	$Mod+u exec $nextbg
 	$Mod+Shift+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
 
 #---------------+
@@ -25,31 +25,34 @@ bindsym {
 	$Mod+Return exec xterm
 }
 set $Chat "[T]hunderbird [D]iscord [S]lack"
-set $IDE "[I]dea [N]etbeans [A]ndroid"
+set $IDE "[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip"
+set $lof ~/.config/sway/lof
 bindsym --to-code {
-	$Mod+1 exec W=$wBrowser lof firefox "firefox"
-	$Mod+$Alt+1 exec W=$wBrowser lof work "firefox"
+	$Mod+1 exec W=$wBrowser $lof firefox "firefox"
+	$Mod+$Alt+1 exec W=$wBrowser $lof work "firefox"
 	$Mod+2 exec xterm nvim
 	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
 	$Mod+3 exec xterm
 	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE
-	$Mod+7 exec W=$wMedia lof gimp "Gimp|mpv"
-	$Mod+$Alt+9 exec W=$wGame lof prismlauncher null "^(Minecraft|Prism Launcher).*"
-	$Mod+9 exec W=$wGame lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
+	$Mod+7 exec W=$wMedia $lof gimp "Gimp|mpv"
+	$Mod+$Alt+9 exec W=$wGame $lof prismlauncher null "^(Minecraft|Prism Launcher).*"
+	$Mod+9 exec W=$wGame $lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
 }
 mode $Chat {
 	bindsym {
-		t mode default, exec W=$wMsg lof thunderbird thunderbird
-		d mode default, exec W=$wMsg lof ripcord Ripcord
-		s mode default, exec W=$wMsg lof 'slack --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' Slack
+		t mode default, exec W=$wMsg $lof thunderbird thunderbird
+		d mode default, exec W=$wMsg $lof ripcord Ripcord
+		s mode default, exec W=$wMsg $lof 'slack --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' Slack
 	}
 }
 mode $IDE {
 	bindsym {
-		i mode default, exec W=$wCode lof idea jetbrains-idea-ce
-		n mode default, exec W=$wCode lof netbeans NetBeans
-		a mode default, exec W=$wCode lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
+		i mode default, exec W=$wCode $lof idea jetbrains-idea-ce
+		d mode default, exec W=$wCode $lof datagrip jetbrains-datagrip
+		n mode default, exec W=$wCode $lof netbeans NetBeans
+		a mode default, exec W=$wCode $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
+		e mode default, exec W=$wCode $lof 'gtk-launch ea' 'ea.exe'
 		q mode default
 		Escape mode default
 	}
@@ -105,18 +108,19 @@ bindsym --to-code {
 #--------+
 # Arrows |
 #--------+
+set $floatpos ~/.config/sway/floatpos
 bindsym {
 # floating mode, with tilling mode compatibility
-	$Mod+Left exec floatpos l
-	$Mod+Down exec floatpos d
-	$Mod+Up exec floatpos u
-	$Mod+Right exec floatpos r
-	$Mod+Shift+c exec floatpos c
+	$Mod+Left exec $floatpos l
+	$Mod+Down exec $floatpos d
+	$Mod+Up exec $floatpos u
+	$Mod+Right exec $floatpos r
+	$Mod+Shift+c exec $floatpos c
 # snap to side or focus in tiling mode
-	$Mod+Shift+Left exec floatpos l focusable
-	$Mod+Shift+Down exec floatpos d focusable
-	$Mod+Shift+Up exec floatpos u focusable
-	$Mod+Shift+Right exec floatpos r focusable
+	$Mod+Shift+Left exec $floatpos l focusable
+	$Mod+Shift+Down exec $floatpos d focusable
+	$Mod+Shift+Up exec $floatpos u focusable
+	$Mod+Shift+Right exec $floatpos r focusable
 # resize
 	$Mod+$Alt+Left resize shrink width 4
 	$Mod+$Alt+Down resize grow height 4
@@ -138,15 +142,15 @@ bindsym {
 	KP_Up focus up
 	KP_Right focus right
 # move
-	Shift+KP_Left exec floatpos l
-	Shift+KP_Down exec floatpos d
-	Shift+KP_Up exec floatpos u
-	Shift+KP_Right exec floatpos r
+	Shift+KP_Left exec $floatpos l
+	Shift+KP_Down exec $floatpos d
+	Shift+KP_Up exec $floatpos u
+	Shift+KP_Right exec $floatpos r
 # snap to side or focus in tiling mode
-	Ctrl+KP_Left exec floatpos l focusable
-	Ctrl+KP_Down exec floatpos d focusable
-	Ctrl+KP_Up exec floatpos u focusable
-	Ctrl+KP_Right exec floatpos r focusable
+	Ctrl+KP_Left exec $floatpos l focusable
+	Ctrl+KP_Down exec $floatpos d focusable
+	Ctrl+KP_Up exec $floatpos u focusable
+	Ctrl+KP_Right exec $floatpos r focusable
 # focus workspace
 	KP_Add workspace back_and_forth
 	KP_Home workspace next
@@ -271,7 +275,7 @@ mode $Exit {
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		p exit, exec 'cp /tmp/my/nextbg ~/.local/state/nextbg; poweroff'
+		p exit, exec $nextbg save; exec systemctl poweroff
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \
@@ -352,8 +356,8 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -Dgp -p
-	$Mod+$Alt+Shift+m exec mom -Dg -pro
-	$Mod+Ctrl+m exec mom -Dg -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
+	$Mod+$Alt+Shift+m exec mom -Dgp -pro
+	$Mod+Ctrl+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15

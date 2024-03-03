@@ -35,3 +35,5 @@ map(
 	'<Cmd>w|!set x (compiler "%:p"); if not pgrep -f "zathura $x"; zathura "$x" &; end<CR><CR>',
 	{ buffer = true }
 )
+
+withMod('mylsp', function(ml) ml.setup 'texlab' end)

@@ -2,7 +2,7 @@
 
 if [[ -z $1 ]]; then
 	cd ~/Pictures/screen
-	[[ ! -f /tmp/my/nextbg ]] && cp ~/.local/state/nextbg /tmp/my/nextbg
+	[[ -f /tmp/my/nextbg ]] || cp ~/.local/state/nextbg /tmp/my/nextbg
 	bg=$(head -n 1 /tmp/my/nextbg 2> /dev/null)
 	if [[ $bg ]]; then
 		sed -i '1d' /tmp/my/nextbg
@@ -10,6 +10,10 @@ if [[ -z $1 ]]; then
 		bg=(*)
 		printf '%s\n' "${bg[@]:1}" | shuf > /tmp/my/nextbg
 	fi
+elif [[ $1 == save ]]; then
+	hr=$(date +%H)
+	((${hr#0} > 17)) && cp /tmp/my/nextbg ~/.local/state/nextbg &> /dev/null
+	exit 0
 fi
 
 killall swaybg 2> /dev/null

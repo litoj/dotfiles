@@ -24,8 +24,8 @@ else
 					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
 						hibernate && sleep 60 && sudo swapoff /swapfile
 				fi
+				bad=1
 			fi
-			bad=1
 			;;
 		C*) TEXT= USAGE=$((POWER_NOW / 100000)) ;;
 		F*) TEXT= ;;

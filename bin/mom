@@ -180,11 +180,11 @@ pickSong() {
 }
 play() {
 	local playlistFile=/tmp/my/song
-	local cmd=(mpv --no-audio-display --msg-level=all=no --playlist=$playlistFile)
+	local cmd=(mpv --no-audio-display --no-terminal --playlist=$playlistFile)
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 	pkill -f "${cmd[*]::2}"
 
-	if [[ -f $src ]]; then
+	if [[ -f $src ]]; then # TODO: improve way of exec to actually not write to the file
 		exec echo "$src" > $playlistFile
 		cmd+=(--playlist-start=0)
 		src=${src%/*}

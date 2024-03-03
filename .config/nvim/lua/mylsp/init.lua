@@ -73,6 +73,7 @@ local lsc = require 'lspconfig'
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
 local function setup(server, opts)
+	if server and lsc[server].autostart ~= nil then return end
 	opts = opts or require('mylsp.' .. server)
 	local on_attach = opts.on_attach
 	opts.on_attach = function(client, bufnr)
@@ -112,23 +113,18 @@ end
 M.setup = setup
 
 setup('bashls', { root_dir = function(fname) return fname:match '.+/' end })
-setup 'clangd'
--- setup('marksman', {}) -- can generate table of contents
 setup('pyright', {})
-setup 'omnisharp'
-setup('rust_analyzer', {})
-setup 'texlab'
 setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
--- setup "jsonls"
+setup 'jsonls'
 -- setup("yamlls", {})
 
-map('i', '<A-g>', '<C-o>g', { remap = true })
-map('i', '<A-[>', '<C-o>[', { remap = true })
-map('i', '<A-]>', '<C-o>]', { remap = true })
-map('i', '<A->>', '<C-o>>', { remap = true })
-map('i', '<A-<>', '<C-o><', { remap = true })
+map('i', '<A-g>', '<C-o>g')
+map('i', '<A-[>', '<C-o>[')
+map('i', '<A-]>', '<C-o>]')
+map('i', '<A->>', '<C-o>>')
+map('i', '<A-<>', '<C-o><')
 -- Lsp diagnostic
 map({ 'n', 'i' }, '<A-d>', vim.diagnostic.open_float)
 map('n', '[d', vim.diagnostic.goto_prev)
@@ -136,7 +132,7 @@ map('n', ']d', vim.diagnostic.goto_next)
 -- Lsp code helpers
 map('n', 'gD', vim.lsp.buf.declaration)
 map('n', 'gt', vim.lsp.buf.type_definition)
--- gd,gr in plugins.fzf
+-- gd,gr in ../plugins/fzf.lua
 map('n', 'gI', vim.lsp.buf.implementation)
 map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
 map({ 'n', 'i' }, '<C-I>', vim.lsp.buf.document_highlight)

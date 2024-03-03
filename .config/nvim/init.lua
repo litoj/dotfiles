@@ -12,6 +12,26 @@ function _G.exists(f)
 		return false
 	end
 end
+function _G.withMod(mod, cb)
+	if package.loaded[mod] then return cb(package.loaded[mod]) end
+	local old = package.preload[mod]
+	package.preload[mod] = function()
+		package.preload[mod] = nil
+		if old then
+			old()
+		else
+			for _, loader in pairs(package.loaders) do
+				local ret = loader(mod)
+				if type(ret) == 'function' then
+					package.loaded[mod] = ret()
+					break
+				end
+			end
+		end
+		cb(package.loaded[mod])
+	end
+end
+
 if not exists(lazypath) then
 	vim.fn.system {
 		'git',

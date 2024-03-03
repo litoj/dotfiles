@@ -4,7 +4,7 @@ title_text="imv - $imv_current_file"
 upscaling_method = nearest_neighbour
 [binds]
 <Shift+Delete> = exec rm "$imv_current_file";close
-b = exec ~/.config/sway/bg.sh "$imv_current_file"
+b = exec ~/.config/sway/nextbg "$imv_current_file"
 s = scaling crop
 r = rotate by 1
 <Shift+R> = rotate by -1

@@ -1,17 +1,4 @@
-local M = {
-	'ibhagwan/fzf-lua',
-	keys = {
-		' s',
-		' a',
-		' o',
-		' f',
-		' g',
-		' d',
-		' c',
-		{ 'gd', vim.lsp.buf.definition },
-		{ 'gr', vim.lsp.buf.references },
-	},
-}
+local M = { 'ibhagwan/fzf-lua', keys = { ' s', ' a', ' o', ' f', ' g', ' d', 'gd', 'gr' } }
 function M.config()
 	local fzf = require 'fzf-lua'
 	fzf.setup {
@@ -41,6 +28,8 @@ function M.config()
 	vim.lsp.handlers['textDocument/references'] = fzf.lsp_references
 	vim.lsp.handlers['textDocument/implementation'] = fzf.lsp_implementation
 
+	map('n', 'gd', vim.lsp.buf.definition)
+	map('n', 'gr', vim.lsp.buf.references)
 	map('n', ' s', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
 	map('n', ' a', fzf.files)
 	map('n', ' o', fzf.oldfiles)

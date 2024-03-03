@@ -141,7 +141,7 @@ yt-dlp' | paru --needed -S -
 	sudo ln -s "$PWD"/bin/* /usr/local/bin/ && {
 		sudo rm /usr/local/bin/install.sh
 		sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
-		sudo sudo chmod +s /usr/local/bin/backlight
+		sudo chmod +s /usr/local/bin/backlight
 		sudo systemctl enable NetworkManager
 		sudo systemctl enable ufw.service
 		sudo rm -r /var/log/journal

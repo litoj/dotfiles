@@ -58,7 +58,6 @@ map('', '<Del>', '"_x')
 -- map('n', '<A-A>', '<C-x>')
 -- map('i', '<A-A>', '<C-o><C-x>')
 -- indent
-map('i', '<C-S-T>', '<C-d>')
 map('i', '<C-S-.>', '<C-t>')
 -- undo/redo
 map({ '', 'i' }, '<C-z>', '<Cmd>undo<CR>')
@@ -166,7 +165,11 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 			nc.hi(res)
 		end
 	elseif vim.startswith(path, 'reform') then
-		res.setup(path == 'reform' and old.config or require('reform').config[path:sub(8)])
+		if not path:find 'util' then
+			res.setup(path == 'reform' and old.config or require('reform').config[path:sub(8)])
+		else
+			res.debug = old.debug
+		end
 	elseif vim.startswith(path, 'plugins') then
 		if type(res[1]) == 'string' then res = { res } end
 		for _, cfg in ipairs(res) do

@@ -49,9 +49,9 @@ nometa() {
 		[[ ${dst:-$src} == $src ]] && local dst=/tmp/ defaultDst=true
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
-		local logLvl=${LOG_FULL_NAMES[${SSS_OPTS[log]}],}
-		((SSS_OPTS[log] == 2)) && logLvl=warning
-		exec ffmpeg -v $logLvl -i "$src" -map_metadata -1 -map a -c copy "$dst" && {
+		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
+		cmd+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
+		exec "${cmd[@]}" && {
 			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
 		}
 	fi
@@ -84,10 +84,9 @@ convert() {
 	for src in "${src[@]}"; do
 		[[ -d $dst ]] && src=${src##*\/}
 		[[ -z $dst || -d $dst ]] && local out="$dst/${src%.*}.opus" || local out=$dst
-		local logLvl=${LOG_FULL_NAMES[${SSS_OPTS[log]}],}
-		((SSS_OPTS[log] == 2)) && logLvl=warning
-		exec ffmpeg -v $logLvl -i "$src" -map_metadata -1 \
-			-map a -b:a ${bitrate}k "$out" && { ((NO_RM > 0)) || exec rm "$src"; }
+		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -b:a ${bitrate}k "$out" -v)
+		cmd+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
+		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$src"; }
 	done
 }
 
@@ -133,7 +132,7 @@ subtitles() {
 	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
 	local opts=(-v)
-	((SSS_OPTS[log] == 2)) && opts+=(warning) || opts+=(${LOG_FULL_NAMES[${SSS_OPTS[log]}],})
+	opts+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
 
 	declare -i i=0
 	for sub in "${subs[@]}"; do

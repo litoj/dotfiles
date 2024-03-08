@@ -12,7 +12,7 @@ if [[ -z $1 ]]; then
 	fi
 elif [[ $1 == save ]]; then
 	hr=$(date +%H)
-	((${hr#0} > 17)) && cp /tmp/my/nextbg ~/.local/state/nextbg &> /dev/null
+	((${hr#0} > 19)) && cp /tmp/my/nextbg ~/.local/state/nextbg &> /dev/null
 	exit 0
 fi
 

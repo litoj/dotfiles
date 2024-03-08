@@ -242,7 +242,7 @@ $(paramHelp $action $((i / 4)))" && return
 						declare +n varName
 					else
 						declare $varName="$1" # single argument expected
-						posArg+=4
+						((posArg += 4))
 					fi
 					shift
 					break # continue in parsing cli
@@ -256,7 +256,7 @@ $(paramHelp $action $((i / 4)))" && return
 					fi
 					if [[ ! ${!varName} ]]; then
 						if [[ $sign == [?*] ]]; then
-							posArg+=4
+							((posArg += 4))
 						else
 							log Error " - Argument expected:
 $(paramHelp $action $((posArg / 4)))" && return
@@ -265,7 +265,7 @@ $(paramHelp $action $((posArg / 4)))" && return
 						break
 					fi
 				else # arg already set, given value doesn't match → try next arg
-					posArg+=4
+					((posArg += 4))
 				fi
 			done
 		fi

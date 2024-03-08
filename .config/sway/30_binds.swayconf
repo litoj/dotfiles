@@ -25,13 +25,12 @@ bindsym {
 	$Mod+Return exec xterm
 }
 set $Chat "[T]hunderbird [D]iscord [S]lack"
-set $IDE "[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip"
+set $IDE "[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider"
 set $lof ~/.config/sway/lof
 bindsym --to-code {
 	$Mod+1 exec W=$wBrowser $lof firefox "firefox"
-	$Mod+$Alt+1 exec W=$wBrowser $lof work "firefox"
 	$Mod+2 exec xterm nvim
-	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
+	$Mod+$Alt+2 exec work xterm nvim -i ~/Documents/work/session.shada
 	$Mod+3 exec xterm
 	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE
@@ -44,12 +43,14 @@ mode $Chat {
 		t mode default, exec W=$wMsg $lof thunderbird thunderbird
 		d mode default, exec W=$wMsg $lof ripcord Ripcord
 		s mode default, exec W=$wMsg $lof 'slack --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' Slack
+		Escape mode default
 	}
 }
 mode $IDE {
 	bindsym {
 		i mode default, exec W=$wCode $lof idea jetbrains-idea-ce
 		d mode default, exec W=$wCode $lof datagrip jetbrains-datagrip
+		r mode default, exec W=$wCode $lof rider jetbrains-rider
 		n mode default, exec W=$wCode $lof netbeans NetBeans
 		a mode default, exec W=$wCode $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
 		e mode default, exec W=$wCode $lof 'gtk-launch ea' 'ea.exe'

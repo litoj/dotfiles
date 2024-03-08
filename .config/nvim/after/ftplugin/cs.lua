@@ -21,6 +21,8 @@ map({ 'n', 'i' }, '<M-R>', function()
 	if path then vim.cmd.term(path) end
 end, { buffer = true })
 
+if vim.g.cs_loaded then return end
+vim.g.cs_loaded = true
 withMod('dap', function(dap)
 	dap.adapters.coreclr = {
 		type = 'executable',
@@ -43,7 +45,7 @@ withMod('dap', function(dap)
 	}
 end)
 
-withMod(
-	'mylsp',
-	function(ml) ml.setup('omnisharp', { cmd = { 'omnisharp' }, enable_import_completion = true }) end
-)
+withMod('mylsp', function(ml)
+	ml.setup('omnisharp', { cmd = { 'omnisharp' }, enable_import_completion = true })
+	vim.cmd.LspStart 'omnisharp'
+end)

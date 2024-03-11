@@ -12,7 +12,7 @@ exec {
 	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
 }
 set $signal ~/.config/i3blocks/signal
-exec_always $signal wp
+exec_always $signal wp detect
 
 seat seat0 xcursor_theme 'Sweet-cursors' 32
 

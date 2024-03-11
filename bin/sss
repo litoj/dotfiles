@@ -439,7 +439,7 @@ quit() {
 
 unknownParams=(received '+' '.*' 'consumes all remaining args to end execution')
 unknown() {
-	log Error " action '$received'!"
+	log Warn " action '$received'!"
 }
 
 # Reads and sets matching value(s) from the user (all pickers must respect reg=$3)

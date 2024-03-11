@@ -6,9 +6,12 @@
 declare EXT=.${arg##*.} URI=${arg/:*/:}
 
 run() {
+	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
+		arg[$i]="$PWD/${arg[$i]}"
+	done
 	local cmd=$1
 	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
-	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
+	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || swaymsg exec "${cmd#@}" "${arg[@]}"
 	exit 0
 }
 

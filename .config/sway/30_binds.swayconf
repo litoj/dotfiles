@@ -331,7 +331,7 @@ bindsym {
 	Shift+KP_Next exec $signal light - 2
 
 # Audio / Volume
-	$Mod+$Alt+Shift+v exec $signal wp tgl
+	$Mod+$Alt+Shift+v exec $signal wp
 	$Mod+v exec $signal vol 5%+
 	$Mod+Shift+v exec $signal vol 5%-
 	$Mod+$Alt+v exec $signal vol toggle
@@ -348,7 +348,7 @@ bindsym {
 	Ctrl+KP_Multiply exec $signal mic 2%+
 	Shift+KP_Divide exec $signal vol toggle
 	Shift+KP_Multiply exec $signal mic toggle
-	$Alt+KP_Divide exec $signal wp tgl
+	$Alt+KP_Divide exec $signal wp
 
 # Media management
 	$Mod+t exec twitch

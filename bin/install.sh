@@ -182,6 +182,7 @@ configs() {
 		xdg-mime default opener.desktop $mime
 	done
 	[[ -f /bin/fish ]] && chsh -s /bin/fish
+	gsettings set org.gtk.Settings.FileChooser sort-directories-first true
 }
 
 theming() {

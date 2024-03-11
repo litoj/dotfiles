@@ -73,7 +73,7 @@ function M.config()
 		map('n', '}' .. key, goTo(dst, true, { destination = 'siblings' }))
 	end
 	mapAll('f', { 'function', 'arrow_function', 'function_definition', 'method_declaration' })
-	mapAll('s', {
+	mapAll('i', {
 		'if_statement',
 		'elseif_statement',
 		'else_clause',

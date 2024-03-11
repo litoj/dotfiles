@@ -11,7 +11,11 @@ function M.config()
 		respect_buf_cwd = true,
 		update_focused_file = { enable = true, update_root = true, ignore_list = { 'term://' } },
 		sync_root_with_cwd = true,
-		filters = { dotfiles = true, custom = { '.git$', 'node_modules', '.cache' }, exclude = {'.config'} },
+		filters = {
+			dotfiles = true,
+			custom = { '.git$', 'node_modules', '.cache' },
+			exclude = { '.config' },
+		},
 		renderer = {
 			indent_markers = { enable = true },
 			icons = { show = { git = false } },
@@ -36,8 +40,8 @@ function M.config()
 			end
 			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
 			map({ 'l', '<Right>', '<CR>' }, api.node.open.edit)
-			map('K', api.node.navigate.sibling.prev)
-			map('J', api.node.navigate.sibling.next)
+			map({ 'K', ',' }, api.node.navigate.sibling.prev)
+			map({ 'J', '.' }, api.node.navigate.sibling.next)
 			map({ '<A-k>', '<' }, api.node.navigate.parent)
 			map({ '<A-j>', '>' }, function()
 				api.node.navigate.parent()

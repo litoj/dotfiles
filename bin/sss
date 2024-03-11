@@ -175,9 +175,10 @@ parseAction() {
 		# parse option prefix
 		[[ $1 == -- && ${#ids[@]} -gt 0 ]] && shift && ids=() && continue
 		local i= arg= optCnt=+
-		if [[ $1 =~ ^(${SCRIPT_OPTS[optPrefix]})([^-][^=]+)(=.+)?$ && -z $actionArg ]]; then
-			i=${ids["${BASH_REMATCH[2]}"]} # full option name
-			[[ $i ]] && arg=${BASH_REMATCH[3]:1}
+		if [[ $1 =~ ^(${SCRIPT_OPTS[optPrefix]})(no-|NO_)?([^- ][^= ]+)(=.+)?$ && -z $actionArg ]]; then
+			i=${ids["${BASH_REMATCH[3]}"]} # full option name
+			[[ $i ]] && arg=${BASH_REMATCH[4]:1}
+			[[ ${BASH_REMATCH[2]} ]] && optCnt=-
 		fi
 		if [[ !$i && $1 =~ ^[+-]([^-+])(.+)?$ ]]; then # short option -o(Val)?
 			[[ $1 == +* ]] && optCnt=-                    # +o means toggle off → -=
@@ -382,6 +383,7 @@ paramHelp() {
 }
 
 actionInfo help 'display this help'
+ACTION_INFO['?']=help
 helpParams=(
 	legend 'l?' '' 'Toggle legend for param notation (default=false)'
 	matcher 'm?' '' 'Toggle regex matching argument (default=false)'
@@ -407,18 +409,21 @@ help() {
       - prefix must match /'"${SCRIPT_OPTS[optPrefix]}"'/
       - value given with `=` or as the next arg (--act=val / --act val)
     - orderless (aside of repeated uses)
-  option/orderless parameter: OPTION[o]? option[o]* opt[]=*
-    - orderless parameters are required → `!` and `+` suffixes
-    - like action, short name always appended in brackets (option[o])
-    - type suffix: `<>` means option requires an argument
-      - options represent toggles by default (`-o` → on, `+o` → off, chain: `+oO`)
-      - can act as a toggle if accepts '' as an argument
+  options/named params: option[o] + suffix ?*!+
+    - like action, short name appended in brackets → option[o]
+		- suffixes:
+	    - `!`,`+`: required; `?`,`*`: optional
+	    - `?`,`!`: meant for one mention; `*`,`+`: all uses are accounted for
+		- opts in CAPS are simple on/off toggles
+    - toggleable by default (`-o` → on, `+o` → off, chainable: `+oOarg`)
+			- long names can be prefixed with `no-`/`NO_` → --no-option, NO_OPTION
+    - type suffix `<>`: for opts requiring an arg
+			- can act as a toggle if accepts '' as an arg
     - quantifier suffix: see bellow
-  positional parameter: name? name* name! name+
+  positional parameter: name + suffix ?*!+
     - var name displayed for better referencing, can be used like long option
     - order matters (when unnamed); matched with regexes - list ended by first unmatched
-    - required (`!`, `+`) or optional (`?`, `*`)
-    - single arg (`?`, `!`) or a list of values (`*`, `+`)'
+    - suffixes: `?`,`!`: single arg; `*`,`+`: list of values'
 
 	[[ $default && ${#actions[@]} -gt 9 ]]
 	declare -i params=${params:-$?}
@@ -518,7 +523,7 @@ pickFilesOrDir() {
 
 if [[ $0 == *sss ]]; then
 	SCRIPT_OPTS[about]='SSS - A script simplifying scripting
-Provides automatized param handling, arg parsing and basic autodoc.
+Provides automatized param handling, arg/opt parsing+autodoc.
 Usage:
   1. Change SCRIPT_OPTS to suit your script.
   2. Source this script: `. sss`

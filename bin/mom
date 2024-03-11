@@ -79,14 +79,13 @@ convert() {
 	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
 		log Warning ': cannot specify multiple src and a file dst'
 
-	[[ -z $dst ]] || local NO_RM=1
-	local src
-	for src in "${src[@]}"; do
-		[[ -d $dst ]] && src=${src##*\/}
-		[[ -z $dst || -d $dst ]] && local out="$dst/${src%.*}.opus" || local out=$dst
-		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -b:a ${bitrate}k "$out" -v)
+	[[ -z $dst ]] || local NO_RM=1 dst=${dst%/}
+	local f out
+	for f in "${src[@]}"; do
+		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
+		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${bitrate}k "${out%.*}.opus" -v)
 		cmd+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
-		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$src"; }
+		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
 	done
 }
 

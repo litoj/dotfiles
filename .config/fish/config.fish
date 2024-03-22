@@ -88,7 +88,7 @@ abbr jctl   "journalctl -p 3 -b"
 set pp "fzf -m --preview 'paru --color=always -Sii {1}' --preview-window=wrap" # package preview
 abbr psi    "paru -Slq | $pp | paru -S -" # search install
 abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
-abbr pir    "paru -Qdq | $pp | paru -Rscn -" # installed remove - only dependencies
+abbr pir    "paru -Qq | $pp | paru -Rscn -" # installed remove - only dependencies
 abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
 

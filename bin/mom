@@ -19,7 +19,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	cmd+=(-o "$prefix$tmp")
 	cmd+=("${src%%&*}")
 
-	((SSS_OPTS[log] < 3)) && cmd+=(-q)
+	((SSS_OPTS[logLevel] < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
 		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
 		cmd+=("$prefix"*)
@@ -50,7 +50,7 @@ nometa() {
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
 		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
-		cmd+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
+		cmd+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
 		exec "${cmd[@]}" && {
 			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
 		}
@@ -84,7 +84,7 @@ convert() {
 	for f in "${src[@]}"; do
 		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
 		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${bitrate}k "${out%.*}.opus" -v)
-		cmd+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
+		cmd+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
 		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
 	done
 }
@@ -131,7 +131,7 @@ subtitles() {
 	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
 	local opts=(-v)
-	opts+=(${LOG_NAMES[${SSS_OPTS[log]}]/warn/warning})
+	opts+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
 
 	declare -i i=0
 	for sub in "${subs[@]}"; do
@@ -166,7 +166,7 @@ subtitles() {
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
-	randomizer 'r?' 'o?' '+r=disable; -r=enable (default); o=once, then just play'
+	randomizer 'r?' 'o?' '(default=-r/enabled); o=once, then just play'
 	src '!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
@@ -233,6 +233,32 @@ compare() {
 	while ((--i)); do
 		exec rm /tmp/mediacmp$i
 	done
+}
+
+actionInfo linkFix 'fix symlinked files - find new paths'
+linkFixParams=()
+linkFix() {
+	local dir=/home/kepis/Music/Songs/
+	local f
+	while read f; do
+		if [[ ! -f $f ]]; then
+			local name=${f##*[-/]}
+			local all="" found=
+			while read found; do
+				if ((${#all} && ${#all} < ${#found})); then
+					log Info ": unused match '$found' to '$f'"
+				else
+					all=$found
+				fi
+			done < <(fd -t f "${name%.*}" "$dir")
+			if [[ $all ]]; then
+				exec rm "$f"
+				exec ln -s "$all" "${f%.*}.${all##*.}"
+			else
+				log Warn ": unmatched $f"
+			fi
+		fi
+	done < <(fd -t l)
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

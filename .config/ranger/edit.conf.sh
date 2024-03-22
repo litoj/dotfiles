@@ -4,8 +4,10 @@
 try @gimp .png .jpg .jpeg .xcf &>/dev/null
 try @inkscape .svg &>/dev/null
 try @blockbench .json &>/dev/null
-try @engrampa .zip .jar
+try @engrampa .jar
 BLOCKING=1
+try 'tar -xvf' .bz2 .gz .tgz .xz .zst
+try '7z x' .7z .tar .rar .zip
 try 'mom -c' .flac .m4a .mp3 .wav .wma
 try 'mom --subtitles' .srt .mp4
 # try @"kdenlive & dragon-drop -x -a" .mkv
@@ -23,11 +25,11 @@ editDir() {
 		#   sed -En "s/.*datetime=(....):(..):(..) (..):(..):(..).*/\1_\2_\3_\4\5\6/p").${x//*.}"'
 		cd "$CWD"
 	elif [[ $f =~ \.(mp3|m4a|flac)$ ]]; then
-		toOpus "${f[@]}"
+		mom -c "${f[@]}"
 		cd "$CWD"
 	else
 		cd "$CWD"
-		pcmanfm "$@"
+		which pcmanfm && pcmanfm "$@" || xterm ranger "$@" &
 	fi
 }
 EXPLORER=@editDir

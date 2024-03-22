@@ -7,7 +7,10 @@ function M.config()
 		dark = { opacity = 'cc' },
 		theme = { override = { StatusLine = 'Bg0' } },
 	}
-	require('nerdcontrast').hi { ['@keyword.return'] = 'Red' }
+	require('nerdcontrast').hi {
+		['@keyword.return'] = 'Red',
+		['@markup.heading.marker'] = { fg = 'Delimiter', bold = true },
+	}
 	-- Dark/Light theme toggle
 	map('n', '<Leader>t', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)
 end

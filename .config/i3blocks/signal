@@ -33,26 +33,30 @@ case "$1" in
 		;;
 	"wp")
 		declare -A sinks sources def
-		{
-			while read -r line; do
-				[[ -z $line ]] && break
-				[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
-				sinks["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
-				if [[ ${BASH_REMATCH[1]} == \* ]]; then
-					def[sink]=${BASH_REMATCH[2]}
-					def[sinkName]=${BASH_REMATCH[3]}
-				fi
-			done
-			while read -r line; do
-				[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
-				sources["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
-				if [[ ${BASH_REMATCH[1]} == \* ]]; then
-					def[source]=${BASH_REMATCH[2]}
-					def[sourceName]=${BASH_REMATCH[3]}
-				fi
-			done
-		} < <(wpctl status | awk '/Sink endpoints:$/{p=0;print ""};/Source endpoints:$/{exit};
+		declare -i attempts=5
+		while :; do
+			{
+				while read -r line; do
+					[[ -z $line ]] && break
+					[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
+					sinks["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
+					if [[ ${BASH_REMATCH[1]} == \* ]]; then
+						def[sink]=${BASH_REMATCH[2]}
+						def[sinkName]=${BASH_REMATCH[3]}
+					fi
+				done
+				while read -r line; do
+					[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
+					sources["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
+					if [[ ${BASH_REMATCH[1]} == \* ]]; then
+						def[source]=${BASH_REMATCH[2]}
+						def[sourceName]=${BASH_REMATCH[3]}
+					fi
+				done
+			} < <(wpctl status | awk '/Sink endpoints:$/{p=0;print ""};/Source endpoints:$/{exit};
 p==1 && /^ │  .+/{print};/S(ink|ource)s:/{p=1}')
+			((${def[sink]} || (attempts -= 1) > 0)) && break || sleep 1
+		done
 
 		if [[ $2 != detect ]]; then
 			[[ $2 ]] && glob=$2 || glob=$(printf '%s\n' "${!sinks[@]}" "${!sources[@]}" |
@@ -75,10 +79,17 @@ p==1 && /^ │  .+/{print};/S(ink|ource)s:/{p=1}')
 		fi
 
 		notify-send -t 1500 "Audio ${glob:-default}" "$msg"
-		echo "${def[sink]} ${def[source]}" > /tmp/my/wp
 		wpctl set-default ${def[sink]}
 		wpctl set-default ${def[source]}
-		sleep 1
+		if [[ ${def[sinkName]} == Echo* ]]; then
+			for k in "${!sinks[@]}"; do
+				[[ $k == Builtin* ]] && def[sink]=${sinks["$k"]%;*} && break
+			done
+			for k in "${!sources[@]}"; do
+				[[ $k == Builtin* ]] && def[source]=${sources["$k"]%;*} && break
+			done
+		fi
+		echo "${def[sink]} ${def[source]}" > /tmp/my/wp
 		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
 		;;
 	"theme") ~/.config/i3blocks/clock toggle ;;

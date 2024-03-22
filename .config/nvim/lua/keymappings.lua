@@ -185,3 +185,37 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 		dst[path] = res
 	end
 end)
+map('x', '<Tab>', function()
+	local from, to = vim.fn.line 'v', vim.api.nvim_win_get_cursor(0)[1]
+	if from > to then
+		local x = to
+		to = from
+		from = x
+	end
+	local lines = vim.api.nvim_buf_get_lines(0, from - 1, to, true)
+	for i, line in ipairs(lines) do
+		local indent = line:match '^%s'
+		if not indent then
+			indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
+		elseif indent == ' ' then
+			indent = string.rep(' ', vim.bo.sw)
+		end
+		lines[i] = indent .. line
+	end
+	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
+end)
+map('x', '<S-Tab>', function()
+	local from, to = vim.fn.line 'v', vim.api.nvim_win_get_cursor(0)[1]
+	if from > to then
+		local x = to
+		to = from
+		from = x
+	end
+	local lines = vim.api.nvim_buf_get_lines(0, from - 1, to, true)
+	for i, line in ipairs(lines) do
+		local indent = line:match '^%s'
+		if not indent then return end
+		lines[i] = line:sub((indent == ' ' and vim.bo.sw or 1) + 1)
+	end
+	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
+end)

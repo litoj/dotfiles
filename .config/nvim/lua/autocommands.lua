@@ -48,9 +48,6 @@ end, 'gitrebase')
 au('TermOpen', function(state)
 	vim.opt_local.nu = false
 	vim.opt_local.rnu = false
-	au('BufLeave', function()
-		if vim.api.nvim_get_mode().mode == 't' then vim.schedule(vim.cmd.startinsert) end
-	end, state.buf)
 end)
 
 local function hiNotes()

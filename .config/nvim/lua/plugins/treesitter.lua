@@ -10,7 +10,7 @@ local M = {
 					if ({ markdown = 1 })[vim.bo[buf].ft] then return false end
 					map(
 						'n',
-						'gp',
+						'gR',
 						require('treesitter-context').go_to_context,
 						{ buffer = buf, silent = true }
 					)

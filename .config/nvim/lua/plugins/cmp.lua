@@ -114,12 +114,18 @@ function M.config()
 					else
 						fallback()
 					end
-				elseif luasnip.expand_or_locally_jumpable(1) then
-					luasnip.expand_or_jump(1)
-				else
+				elseif luasnip.locally_jumpable(1) then
+					luasnip.jump(1)
+				elseif vim.api.nvim_get_mode().mode ~= 'c' then
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-					local indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
+					if (line:byte(col) or 0) > 44 then return end
+					local indent = line:match '^%s'
+					if not indent then
+						indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
+					elseif indent == ' ' then
+						indent = string.rep(' ', vim.bo.sw)
+					end
 					line = indent .. line
 					vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
 					vim.api.nvim_win_set_cursor(0, { row, col + #indent })
@@ -134,10 +140,12 @@ function M.config()
 					-- vim.cmd '<'
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-					local indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
-					line = line:gsub('^' .. indent, '')
+					local indent = line:match '^%s'
+					if not indent then return end
+					indent = indent == ' ' and vim.bo.sw or 1
+					line = line:sub(indent + 1)
 					vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
-					vim.api.nvim_win_set_cursor(0, { row, col > #indent and col - #indent or 0 })
+					vim.api.nvim_win_set_cursor(0, { row, col > indent and col - indent or 0 })
 				end
 			end, { 'i', 'c', 's' }),
 			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 'c' }),
@@ -226,7 +234,17 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 		opts = {
 			panel = { enabled = false },
 			suggestion = { enabled = false },
-			filetypes = { config = false, swayconfig = false, text = false },
+			filetypes = {
+				['*'] = false,
+				lua = true,
+				c = true,
+				cpp = true,
+				python = true,
+				typescript = true,
+				javascript = true,
+				sh = true,
+				vue = true,
+			},
 		},
 		dependencies = { { 'zbirenbaum/copilot-cmp', opts = {} }, 'nvim-cmp' },
 		event = 'LspAttach',

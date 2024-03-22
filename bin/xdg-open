@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 # simpler=faster xdg-open replacement
 
-[[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=~/.config/open.conf.sh
+[[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
 declare EXT=.${arg##*.} URI=${arg/:*/:}
 
@@ -11,7 +11,7 @@ run() {
 	done
 	local cmd=$1
 	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
-	[[ $BLOCKING ]] && ${cmd#@} "${arg[@]}" || swaymsg exec "${cmd#@}" "${arg[@]}"
+	((BLOCKING)) && ${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
 	exit 0
 }
 

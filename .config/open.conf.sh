@@ -1,7 +1,9 @@
 #config for ../bin/xdg-open
 BROWSER=@$BROWSER
 try @'mpv --no-terminal' .mkv .mp4 .webm
-try 'mpv --no-audio-display' .aac .mp3 .m4a .m3u .flac .ogg .opus .wav
+BLOCKING=1
+try 'mpv --no-audio-display' .aac .mp3 .m4a .m3u .flac .ogg .opus .wav .wma
+BLOCKING=0
 try @imv-dir .png .jpg .jpeg .webp .gif .svg
 try @zathura .pdf
 try @transmission-gtk magnet:

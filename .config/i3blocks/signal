@@ -32,64 +32,63 @@ case "$1" in
 		pkill -RTMIN+12 i3blocks
 		;;
 	"wp")
-		declare -A sinks sources def
-		declare -i attempts=5
+		declare -A nodes def
 		while :; do
 			{
 				while read -r line; do
-					[[ -z $line ]] && break
-					[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
-					sinks["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
-					if [[ ${BASH_REMATCH[1]} == \* ]]; then
-						def[sink]=${BASH_REMATCH[2]}
-						def[sinkName]=${BASH_REMATCH[3]}
-					fi
+					[[ $line == '├─ Sinks:' ]] && break
 				done
+				category=sink
 				while read -r line; do
-					[[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]
-					sources["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};${BASH_REMATCH[1]}"
-					if [[ ${BASH_REMATCH[1]} == \* ]]; then
-						def[source]=${BASH_REMATCH[2]}
-						def[sourceName]=${BASH_REMATCH[3]}
+					if [[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]; then
+						if [[ $category == filter ]]; then
+							type=${BASH_REMATCH[3]##*-}
+							BASH_REMATCH[3]="Echo ${type^}"
+						else
+							type=$category
+						fi
+						nodes["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};$type"
+						if [[ ${BASH_REMATCH[1]} == \* ]]; then
+							def[$type]=${BASH_REMATCH[3]}
+						fi
+					elif [[ ${line:3} =~ ^([A-Z][a-z]+)s ]]; then
+						[[ $BASH_REMATCH == Streams ]] && break
+						category=${BASH_REMATCH[1],}
 					fi
 				done
-			} < <(wpctl status | awk '/Sink endpoints:$/{p=0;print ""};/Source endpoints:$/{exit};
-p==1 && /^ │  .+/{print};/S(ink|ource)s:/{p=1}')
-			((${def[sink]} || (attempts -= 1) > 0)) && break || sleep 1
+			} < <(wpctl status)
+			[[ ${def[@]} ]] || ((++tries > 5)) && break || sleep 1
 		done
+		unset nodes['Echo Capture'] nodes['Echo Playback']
 
 		if [[ $2 != detect ]]; then
-			[[ $2 ]] && glob=$2 || glob=$(printf '%s\n' "${!sinks[@]}" "${!sources[@]}" |
-				rofi -dmenu -i -p 'Set default:')
-			[[ $glob == *\* ]] || glob="${glob%% *}*"
+			if [[ $2 ]]; then
+				glob=$2
+			else
+				glob=${def[sink]:-${def[source]}}
+				glob=$(printf '%s\n' "${!nodes[@]}" | rofi -dmenu -i -p "Audio (${glob%% *})")
+			fi
+			if [[ $glob ]]; then
+				[[ $glob == *\* ]] || glob="${glob%% *}*"
 
-			for k in "${!sinks[@]}"; do
-				[[ $k == $glob ]] && def[sink]=${sinks["$k"]%;*} def[sinkName]=$k && break
-			done
-			for k in "${!sources[@]}"; do
-				[[ $k == $glob ]] && def[source]=${sources["$k"]%;*} def[sourceName]=$k && break
-			done
+				for k in "${!nodes[@]}"; do
+					[[ $k == $glob ]] && def[${nodes["$k"]#*;}]=$k
+				done
+			fi
 		fi
+		msg="Sink: ${def[sink]:=Echo Sink}\nSource: ${def[source]:=Echo Source}"
 
-		msg="Sink: ${def[sinkName]}\nSource: ${def[sourceName]}"
-
-		if [[ -z ${def[sink]} || -z ${def[source]} ]]; then
+		if ! [[ ${nodes[${def[sink]}]} && ${nodes[${def[source]}]} ]]; then
 			notify-send -u critical -t 2000 'Audio Err' "$msg"
 			exit 1
 		fi
 
-		notify-send -t 1500 "Audio ${glob:-default}" "$msg"
-		wpctl set-default ${def[sink]}
-		wpctl set-default ${def[source]}
-		if [[ ${def[sinkName]} == Echo* ]]; then
-			for k in "${!sinks[@]}"; do
-				[[ $k == Builtin* ]] && def[sink]=${sinks["$k"]%;*} && break
-			done
-			for k in "${!sources[@]}"; do
-				[[ $k == Builtin* ]] && def[source]=${sources["$k"]%;*} && break
-			done
-		fi
-		echo "${def[sink]} ${def[source]}" > /tmp/my/wp
+		notify-send -t 1500 "Audio ${glob:-Default}" "$msg"
+		wpctl set-default ${nodes[${def[sink]}]%;*}
+		wpctl set-default ${nodes[${def[source]}]%;*}
+		[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
+		[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
+		echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
 		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
 		;;
 	"theme") ~/.config/i3blocks/clock toggle ;;

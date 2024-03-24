@@ -2,7 +2,7 @@
 
 . sss
 
-SCRIPT_OPTS[about]='SAM - System APK Manager
+SSS_OPTS[about]='SAM - System APK Manager
 This program uses ADB to manage system applications on your Android phone.'
 
 actionInfo connect 'connect to a device with given ip/port'

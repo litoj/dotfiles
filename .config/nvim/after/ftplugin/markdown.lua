@@ -38,20 +38,24 @@ map(
 	{ buffer = true, remap = true }
 )
 local opt = { buffer = true }
-map('i', '<A-b>', '<C-o>ciw**<C-r>"**<Esc>', opt)
-map('i', '<A-i>', '<C-o>ciw_<C-r>"_<Esc>', opt) -- toggle přístup, aby se vyplo na druhou akci
-map('i', '<A-`>', '<C-o>ciw`<C-r>"`<Esc>', opt)
+local reformGen = require('reform.toggle').genSubApplicator
+local function genFor(str)
+	return reformGen {
+		luapat = '(' .. str:gsub('.', '%%%1?') .. ')([^:=*_,` ]+)%1',
+		use = function(val, match) return #match[1] > 0 and match[2] or str .. match[2] .. str end,
+	}
+end
+map('i', '<A-b>', genFor '**', opt)
+map('i', '<A-i>', genFor '_', opt)
+map('i', '<A-`>', genFor '`', opt)
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
-map('i', '<A-d>', '<C-v>u2014', opt)
 map('i', '<A-q>', '\\', opt)
 map('i', '...', '…', opt)
-map('i', '<C-b>', function() -- TODO: add toggle function for markdown _ → ** to toggle.lua
-	local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-	local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-	local from, _, _ = line:find '(%W)(%w[%w/%% ]+%w):'
-	if from and from > col then return end -- TODO: toggle.lua match text between %W
-	line = line:gsub('(%W)(%w[%w/%% ]+%w)', '%1**%2**', 1) -- allow toggle of _; **, %w contains_
-	vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
-	vim.api.nvim_win_set_cursor(0, { row, col + 2 })
-end, opt) -- TODO: try vim regex for unicode support
+local wrapper = reformGen {
+	vimre = [[\(\*\*\)\?\([^ :=*\-_`,]\+\( \?[^:=*\-_`, ]\+-\?\)*\)\1\(:\)\?]],
+	use = function(val, match)
+		return #match[2] > 0 and match[3] .. match[5] or '**' .. match[3] .. '**' .. match[5]
+	end,
+}
+map('i', '<C-b>', wrapper, opt)
 vim.wo.conceallevel = 2

@@ -2,7 +2,7 @@
 
 . sss
 
-SCRIPT_OPTS[about]='MOM - Media Operation/Manipulation
+SSS_OPTS[about]='MOM - Media Operation/Manipulation
 A collection of media operation/manipulation scripts.'
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
@@ -19,7 +19,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	cmd+=(-o "$prefix$tmp")
 	cmd+=("${src%%&*}")
 
-	((SSS_OPTS[logLevel] < 3)) && cmd+=(-q)
+	((SCRIPT_OPTS[logLevel] < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
 		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
 		cmd+=("$prefix"*)
@@ -50,7 +50,7 @@ nometa() {
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
 		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
-		cmd+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
+		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
 		exec "${cmd[@]}" && {
 			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
 		}
@@ -68,23 +68,29 @@ nometa() {
 actionInfo convert 'convert audio files to opus'
 convertParams=( # TODO: opt for ignoring low qual mp3
 	NO_RM 'R?' '' 'Prevent source file removal'
-	bitrate 'b?' '[0-9]+' 'Output bitrate in kbps (default=96)'
-	src '+' '$f\.(flac|wma|m4a|mp3)' 'File to convert'
+	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96)'
+	src '+' '$f\.(flac|mp3|m4a|wma)' 'File to convert'
 	dst '?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 convert() {
-	[[ $bitrate ]] ||
-		[[ $f =~ \.(flac|wav)$ || $(
-			ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
-		) > 192 ]] && local brate=128 || local bitrate=96
 	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
-		log Warning ': cannot specify multiple src and a file dst'
+		log Warn ': cannot specify multiple src and a file dst'
 
 	[[ -z $dst ]] || local NO_RM=1 dst=${dst%/}
 	local f out
-	for f in "${src[@]}"; do
+	declare -i i
+	for ((i = ${#src[@]} - 1; i >= 0; i--)); do
+		local f=${src[i]} b=${bitrate[i]:-$bitrate}
+		if [[ -z $b ]]; then
+			[[ $src =~ \.(flac|wav)$ || $(
+				ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
+			) > 192 ]] && b=128 || b=96
+			log Info "['$src'].bitrate = $b"
+		fi
+
 		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
-		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${bitrate}k "${out%.*}.opus" -v)
-		cmd+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
+		[[ $dst && ! -d $dst ]] || log Info "['$src'].dst = '$out'"
+		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${b}k "${out%.*}.opus" -v)
+		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
 		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
 	done
 }
@@ -131,7 +137,7 @@ subtitles() {
 	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
 	local opts=(-v)
-	opts+=(${LOG_NAMES[${SSS_OPTS[logLevel]}]/warn/warning})
+	opts+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
 
 	declare -i i=0
 	for sub in "${subs[@]}"; do
@@ -235,10 +241,14 @@ compare() {
 	done
 }
 
-actionInfo linkFix 'fix symlinked files - find new paths'
-linkFixParams=()
+actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
+linkFixParams=(
+	dst 'd?' '$d' 'Dir with broken links (default=./)'
+	resources '!' '$d' 'Dir with referrence files')
 linkFix() {
-	local dir=/home/kepis/Music/Songs/
+	[[ $dst ]] && dst=${dst%/}/ || local dst=${dst:-./}
+	local CWD=$PWD
+	cd "$dst"
 	local f
 	while read f; do
 		if [[ ! -f $f ]]; then
@@ -259,6 +269,7 @@ linkFix() {
 			fi
 		fi
 	done < <(fd -t l)
+	cd "$CWD"
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

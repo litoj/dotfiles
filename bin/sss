@@ -55,28 +55,31 @@ actionInfo() {
 
 declare -A LOG_LEVELS=([quiet]=0 [error]=1 [warn]=2 [warning]=2 [info]=3 [verbose]=4 [debug]=5)
 LOG_NAMES=(quiet error warn info verbose debug)
+LOG_COLORS=(0 31 33 32 35 37)
 
+[[ $# == 0 && -t 0 && -t 1 ]]
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
-	[cli]=0 # user currently runs in CLI
+	[cli]=$? # user currently runs in CLI
+	[tui]=$((1 - $?))
 	[dryRun]=0
-	[tui]=0
+	[color]=0
 	[picker]=0
 	[guiPicker]=0
 	[optArgPicker]=0
-	[exitLogLvl]=2
+	[exitLogLvl]=$((1 + $?))
 	[logLvl]=3
 	# TODO: color option (for help display etc.)
 )
-[[ $# == 0 && -t 0 ]] && SCRIPT_OPTS[tui]=1 SCRIPT_OPTS[exitLogLvl]=1 || SCRIPT_OPTS[cli]=1
-[[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1
+[[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1 SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1
 
 # TODO: config as toml (action as sections) or bash map <action>ParamDefaults
 actionInfo define D 'set script-processing options'
 defineParams=( # TODO: consider a builtin action [c]onfig loader (bash script)
-	dryRun 'd?' '' 'Disable actual commands execution'
 	tui 't?' '' 'Enter TUI after CLI is parsed'
-	picker 'p?' '' 'Enable picker in CLI (always enabled in TUI)'
+	dryRun 'd?' '' 'Disable actual commands execution'
+	color 'c?' '' 'Colorize output (default=1 when not redirected)'
+	picker 'p?' '' 'Enable picker in CLI (default=1 for TUI, 0 for CLI)'
 	guiPicker 'g?' '' 'Use GUI pickers'
 	optArgPicker 'o?' '' 'Enable picker for optional arguments'
 	exitLogLvl 'e?' '([0-9]+|[A-Za-z]+)?'
@@ -135,8 +138,9 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS[${1,}]:-$1}
 	if ((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL)); then
-		local name=${LOG_NAMES[$LAST_LOG_LVL]}
-		echo "${name^}: $ACTION$2" 1>&2
+		local name=${LOG_NAMES[$LAST_LOG_LVL]^^}
+		((${SCRIPT_OPTS[color]})) && name="[${LOG_COLORS[$LAST_LOG_LVL]}m$name[m"
+		echo "$name: $ACTION$2" 1>&2
 	fi
 	((LAST_LOG_LVL > ${SCRIPT_OPTS[exitLogLvl]})) || ${SSS_OPTS[exitFn]} 1
 	((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL))
@@ -144,18 +148,16 @@ log() {
 
 # Supports ... '&' at the end or simple redirection ... '>'/'>>' 'path'
 exec() {
-	((SCRIPT_OPTS[logLvl] > 3)) && log Verbose "\$> $*"
-	((SCRIPT_OPTS[dryRun])) && return 0
-	if [[ ${!#} == \& ]]; then
-		"${@:1:$#-1}" &
-	elif [[ ${@:0-1:1} == \>* ]]; then
-		if [[ ${@:0-1:1} == \>\> ]]; then
+	((SCRIPT_OPTS[logLvl] > 3)) && log Verbose " \$> $*"
+	((SCRIPT_OPTS[dryRun] > 0)) && return 0
+	if [[ ${@:0-2:1} == \>* ]]; then
+		if [[ ${@:0-2:1} == \>\> ]]; then
 			"${@:1:$#-2}" >> "${!#}"
 		else
 			"${@:1:$#-2}" > "${!#}"
 		fi
 	else
-		"$@"
+		[[ ${!#} == \& ]] && { "${@:1:$#-1}" & } || "$@"
 	fi
 }
 
@@ -393,7 +395,7 @@ argMatch() {
 #   paramIdx?: integer
 #######################################
 paramHelp() {
-	local action=$1
+	local action=$1 fmt
 	declare -n name=${action}Params
 	[[ $2 ]] && declare -i i=$2*4 end=i+4 || declare -i i=0 end=${#name[@]}
 	declare -a sig desc
@@ -416,8 +418,9 @@ paramHelp() {
 		desc+=("$help")
 		i+=4
 	done
+	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
 	for ((i = 0; i < ${#sig[@]}; i += 1)); do
-		printf '     %-*s   %s\n' $maxLen "${sig[$i]}" "${desc[$i]}"
+		printf "     $fmt\n" $maxLen "${sig[$i]}" "${desc[$i]}"
 	done
 }
 
@@ -466,12 +469,13 @@ help() {
 	declare -i params=${params:-$?}
 
 	echo 'Actions:'
-	local act
+	local act fmt
+	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s   \033[0;33m%s\033[0m' || fmt='%-*s   %s'
 	for act in "${action[@]}"; do
 		[[ $act =~ ^-*([^-][^=]*)$ ]] && act=$(argToCase "${BASH_REMATCH[1]}")
 		((${#act} == 1)) && act=${ACTION_INFO[$act]:-$act}
 		if [[ ${ACTION_INFO[$act]} ]]; then
-			printf '  %-*s   %s\n' $ALIGNER "${ACTION_INFO[$act]%% *}" "${ACTION_INFO[$act]#* }"
+			printf "  $fmt\n" $ALIGNER "${ACTION_INFO[$act]%% *}" "${ACTION_INFO[$act]#* }"
 			((params <= 0)) || paramHelp $act
 		else
 			echo "  No help for unknown action '$act'"

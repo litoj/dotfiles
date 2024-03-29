@@ -52,7 +52,7 @@ nometa() {
 		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
 		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
 		exec "${cmd[@]}" && {
-			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
+			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || exec rm "$src"; }
 		}
 	fi
 }
@@ -175,7 +175,7 @@ subtitles() {
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
-	randomizer 'r?' 'o?' '(default=-r/enabled); o=once, then just play'
+	randomizer 'r?' 'o?' '(default=1); o=once, then just play'
 	src '$!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
@@ -189,7 +189,7 @@ play() {
 	local playlistFile=/tmp/my/song
 	local cmd=(mpv --no-audio-display --no-terminal --playlist=$playlistFile)
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
-	pkill -f "${cmd[*]::2}"
+	exec pkill -f "${cmd[*]::2}"
 
 	if [[ -f $src ]]; then
 		exec echo "$src" \> "$playlistFile"
@@ -259,7 +259,7 @@ linkFix() {
 			local all="" found=
 			while read found; do
 				if ((${#all} && ${#all} < ${#found})); then
-					log Info ": unused match '$found' to '$f'"
+					log Warn ": unused match '$found' to '$f'"
 				else
 					all=$found
 				fi

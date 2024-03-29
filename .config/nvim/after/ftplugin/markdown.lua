@@ -1,3 +1,4 @@
+if not vim.bo.modifiable then return end
 vim.bo.expandtab = true
 vim.bo.tabstop = 2
 vim.bo.shiftwidth = 2
@@ -25,6 +26,7 @@ local function enter_or_list()
 	end
 end
 
+map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map(
 	{ 'n', 'i' },
 	'<A-r>',
@@ -38,24 +40,51 @@ map(
 	{ buffer = true, remap = true }
 )
 local opt = { buffer = true }
-local reformGen = require('reform.toggle').genSubApplicator
-local function genFor(str)
-	return reformGen {
-		luapat = '(' .. str:gsub('.', '%%%1?') .. ')([^:=*_,` ]+)%1',
-		use = function(val, match) return #match[1] > 0 and match[2] or str .. match[2] .. str end,
-	}
-end
-map('i', '<A-b>', genFor '**', opt)
-map('i', '<A-i>', genFor '_', opt)
-map('i', '<A-`>', genFor '`', opt)
-map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map('i', '<A-q>', '\\', opt)
 map('i', '...', '…', opt)
-local wrapper = reformGen {
-	vimre = [[\(\*\*\)\?\([^ :=*\-_`,]\+\( \?[^:=*\-_`, ]\+-\?\)*\)\1\(:\)\?]],
-	use = function(val, match)
-		return #match[2] > 0 and match[3] .. match[5] or '**' .. match[3] .. '**' .. match[5]
-	end,
-}
-map('i', '<C-b>', wrapper, opt)
+
+local reformGen = require('reform.toggle').genSubApplicator
+local function genFor1W(str)
+	return reformGen {
+		vimre = [[[(*_`]\@!\(]]
+			.. str:gsub('%*', '\\*')
+			.. [[\)\?\([^/;:=, +]]
+			.. str:sub(1, 1)
+			.. [[]\+\)\1[)*_`]\@<!\([);:=,]\)\?]],
+		use = function(_, match)
+			return (#match[2] > 0 and match[3] or str .. match[3] .. str) .. match[4]
+		end,
+	}
+end
+map('i', '<A-b>', genFor1W '**', opt)
+map('i', '<A-i>', genFor1W '_', opt)
+map('i', '<A-`>', genFor1W '`', opt)
+local function genForNW(str)
+	return reformGen {
+		vimre = '\\('
+			.. str:gsub('%*', '\\*')
+			.. [[\)\?\([*_` ]\@!\( \?(\@![^;:=, ]]
+			.. str:sub(1, 1)
+			.. [[]\+\( \W\|[)*_`]\)\@<!\)\+\)\1\([;:=,]\)\?]],
+		use = function(_, match)
+			return (#match[2] > 0 and match[3] or str .. match[3] .. str) .. match[6]
+		end,
+	}
+end
+map('i', '<C-b>', genForNW '**', opt)
+map('i', '<C-I>', genForNW '_', opt)
+local tabmap
+map('i', '<Tab>', function()
+	if not tabmap then
+		for _, v in ipairs(vim.api.nvim_get_keymap 'i') do
+			if v.lhs == '<Tab>' then
+				tabmap = v.callback
+				break
+			end
+		end
+	end
+	if tabmap then tabmap() end
+end, opt)
+map('i', '<C-;>', genForNW '`', opt)
+map('i', '<C-@>', genForNW '`', opt)
 vim.wo.conceallevel = 2

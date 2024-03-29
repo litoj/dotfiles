@@ -9,8 +9,8 @@ actionInfo download 'download audio/video from given url with `yt-dlp`'
 downloadParams=(
 	metadata 'm?' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
 	format 'f?' '.+' 'yt-dl download format (default=ba[ext=webm])'
-	src '!' 'http.+' 'url to download'
-	dst '?' '$E\.opus' 'output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
+	src '$!' 'http.+' 'url to download'
+	dst '$?' '$E\.opus' 'output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
 	local dst=${dst:-.}
@@ -19,7 +19,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	cmd+=(-o "$prefix$tmp")
 	cmd+=("${src%%&*}")
 
-	((SCRIPT_OPTS[logLevel] < 3)) && cmd+=(-q)
+	((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
 		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
 		cmd+=("$prefix"*)
@@ -33,8 +33,8 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
 nometaParams=(
 	keep 'k?' '' 'keep original (default=remove original)'
-	src '!' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
-	dst '?' '$E' 'Put results into (default=replace original)')
+	src '$!' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
+	dst '$?' '$E' 'Put results into (default=replace original)')
 nometa() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
@@ -50,7 +50,7 @@ nometa() {
 
 		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
 		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
-		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
+		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
 		exec "${cmd[@]}" && {
 			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || rm "$src"; }
 		}
@@ -69,8 +69,8 @@ actionInfo convert 'convert audio files to opus'
 convertParams=( # TODO: opt for ignoring low qual mp3
 	NO_RM 'R?' '' 'Prevent source file removal'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96)'
-	src '+' '$f\.(flac|mp3|m4a|wma)' 'File to convert'
-	dst '?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
+	src '$+' '$f\.(flac|mp3|m4a|wma)' 'File to convert'
+	dst '$?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 convert() {
 	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
 		log Warn ': cannot specify multiple src and a file dst'
@@ -84,27 +84,27 @@ convert() {
 			[[ $src =~ \.(flac|wav)$ || $(
 				ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
 			) > 192 ]] && b=128 || b=96
-			log Info "['$src'].bitrate = $b"
+			log Info "['${src/*\/...}'].bitrate = $b"
 		fi
 
 		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
-		[[ $dst && ! -d $dst ]] || log Info "['$src'].dst = '$out'"
+		[[ $dst && ! -d $dst ]] || log Info "['${src/*\/...}'].dst = '$out'"
 		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${b}k "${out%.*}.opus" -v)
-		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
+		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
 		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
 	done
 }
 
 actionInfo subtitles 'convert mp4 with srt to mkv'
 subtitlesParams=(
-	NO_RM 'R?' '' 'Prevent source file removal (enabled for mkv for potential subtitle fail)'
-	NO_SRC_SUBS 'S?' '' 'Do not keep source subtitles - can help if added are not visible'
-	NO_DEF_CHANGE 'D?' '' 'Prevent default-subs change (changes to first subs by default)'
-	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default=eng)'
+	keepSrc 'k?' '' 'Keep used files (default=false, true for mkv for potential subtitle fail)'
+	clearSrcSubs 'c?' '' 'Purge original video subtitles - enable if added are not visible'
+	updateDefault 'd?' '' 'Change default subs to the first ones added (default=true)'
+	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
-	subs '*' '$f\.srt' 'Subtitles to add (default=*.srt)'
-	vid '?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
-	dst '?' '$F\.mkv' 'Output file (default=`$vid.mkv`)')
+	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
+	vid '$?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
+	dst '$?' '$F\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
 	if [[ -z $subs ]]; then
@@ -117,7 +117,7 @@ subtitles() {
 				[[ ${f@L} == "$match" ]] && local subs=$f && break
 			done
 		fi
-		[[ -z $subs ]] && log Error " - no match for '$match'" && return
+		[[ -z $subs ]] && log Warn " - no match for '$match'" && return
 	fi
 
 	[[ $vid == *.mkv && ! -f $vid && -z $dst ]] && local dst=$vid && vid=
@@ -131,40 +131,43 @@ subtitles() {
 				[[ ${f@L} == "$match"* ]] && local vid=$f && break
 			done
 		fi
-		[[ -z $vid ]] && log Error " - no match for '$match'" && return
+		[[ -z $vid ]] && log Warn " - no match for '$match'" && return
 	fi
 
-	[[ $lang ]] || local lang=eng
 	# [[ $encoding ]] || local encoding=UTF-8
 	local opts=(-v)
-	opts+=(${LOG_NAMES[${SCRIPT_OPTS[logLevel]}]/warn/warning})
+	opts+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
 
-	declare -i i=0
+	local sub i len=${#subs[@]}
 	for sub in "${subs[@]}"; do
 		# if [[ $(file "$sub" -b) =~ ([^ ]+)\ text && ${BASH_REMATCH[1]} != $encoding ]]; then
 		# enca "$sub" -x "$encoding"
 		# fi
 		opts+=(-i "$sub")
 	done
-	opts+=(-i "$vid" -map ${#subs[@]}:a -map ${#subs[@]}:v -c copy)
-	((NO_SRC_SUBS <= 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && opts+=(-map ${#subs[@]}:s)
+	opts+=(-i "$vid" -map $len:a -map $len:v -c copy)
+	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && opts+=(-map $len:s)
 
-	declare -i i=0
-	for sub in "${subs[@]}"; do
-		[[ ${lang[$i]} ]] && opts+=(-metadata:s:s:$i language=${lang[$i]})
-		opts+=(-map $i)
-		i+=1
+	[[ $lang ]] || local lang=()
+	for ((i = 0; i < len; i++)); do
+		if [[ -z ${lang[i]} ]]; then
+			sub=${subs[i]##*/}
+			[[ $sub == [a-z][a-z][a-z].srt ]] && lang[i]=${sub%.srt} || lang[i]=eng
+			log Info "['${subs[i]/*\/...}'].lang = ${lang[i]}"
+		fi
+		opts+=(-metadata:s:s:$i language=${lang[i]} -map $i)
 	done
 
-	((NO_DEF_CHANGE > 0)) || opts+=(-disposition:s:0 default)
+	((updateDefault >= 0)) && opts+=(-disposition:s:0 default)
 	if [[ -z $dst ]]; then
 		local dst=${vid%.*}.mkv
 		[[ -f $dst ]] && dst="${vid%.*} $lang-sub.mkv"
 	fi
-	opts+=("/tmp/${dst##*/}")
+	local tmp="/tmp/mom-${dst##*/}"
+	opts+=("$tmp")
 
-	[[ ${vid} == *.mkv ]] && local NO_RM=1
-	exec ffmpeg "${opts[@]}" && exec mv "/tmp/${dst##*/}" "$dst" && if [[ $NO_RM -le 0 ]]; then
+	[[ ${vid} == *.mkv ]] && local keepSrc=1
+	exec ffmpeg "${opts[@]}" && exec mv "$tmp" "$dst" && if ((keepSrc <= 0)); then
 		exec rm "${subs[@]}" "$vid"
 	fi
 }
@@ -173,7 +176,7 @@ actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
 	randomizer 'r?' 'o?' '(default=-r/enabled); o=once, then just play'
-	src '!' '$e' 'Play file/dir')
+	src '$!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
@@ -188,8 +191,8 @@ play() {
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 	pkill -f "${cmd[*]::2}"
 
-	if [[ -f $src ]]; then # TODO: improve way of exec to actually not write to the file
-		exec echo "$src" > $playlistFile
+	if [[ -f $src ]]; then
+		exec echo "$src" \> "$playlistFile"
 		cmd+=(--playlist-start=0)
 		src=${src%/*}
 	elif [[ -f $playlistFile ]]; then
@@ -209,7 +212,7 @@ play() {
 }
 
 actionInfo compare C "play randomized files and reveal user's pick"
-compareParams=(files '+' '$f' 'Files to compare')
+compareParams=(files '$+' '$f' 'Files to compare')
 compare() {
 	declare -i c=${#files[@]}*${#files[@]}+1 i j
 	for i in ${!files[@]}; do # absolute path for `ln -s`
@@ -244,7 +247,7 @@ compare() {
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
 linkFixParams=(
 	dst 'd?' '$d' 'Dir with broken links (default=./)'
-	resources '!' '$d' 'Dir with referrence files')
+	resources '$!' '$d' 'Dir with referrence files')
 linkFix() {
 	[[ $dst ]] && dst=${dst%/}/ || local dst=${dst:-./}
 	local CWD=$PWD

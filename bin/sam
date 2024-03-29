@@ -6,7 +6,7 @@ SSS_OPTS[about]='SAM - System APK Manager
 This program uses ADB to manage system applications on your Android phone.'
 
 actionInfo connect 'connect to a device with given ip/port'
-connectParams=(dst '!' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
+connectParams=(dst '$!' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
 connect() {
 	[[ $dst != *:* ]] && dst=$(
 		nmap -T4 -p$dst $(
@@ -17,7 +17,7 @@ connect() {
 }
 
 actionInfo screen 'capture/share screen, sound and controls'
-screenParams=(fps '?' '[0-9]+' 'Max framerate' extra '*' '.+' 'Extra params for `scrcpy`')
+screenParams=(fps '$?' '[0-9]+' 'Max framerate' extra '$*' '.+' 'Extra params for `scrcpy`')
 screen() {
 	exec scrcpy "${extra[@]}" ${fps:+--max-fps $fps}
 }
@@ -25,11 +25,11 @@ screen() {
 declare -A pkgConf=(
 	[filter]=''
 	[preview]='adb shell dumpsys package {} | grep ^Packages -A999 | grep ^Queries -B999')
-actionInfo pkgconf C 'pkg[C]onf' 'set options for package picker'
-pkgconfParams=(
+actionInfo pkgConf C 'pkg[C]onf' 'set options for package picker'
+pkgConfParams=(
 	filter 'f?' '(-[edsu]( -[edsu])*)?' 'Default app picker filter (""/+f/-f for no filter)'
 	preview 'p?' '.+' 'Command for fzf previewing')
-pkgconf() {
+pkgConf() {
 	if [[ "$filter" ]]; then
 		[[ ${filter:=1} =~ ^-?[0-9]+$ ]] && pkgConf[filter]='' || pkgConf[filter]=${filter}
 	fi
@@ -39,7 +39,7 @@ pkgconf() {
 pickPackage() {
 	local _opts=(--prompt "$4: " --preview "${pkgConf[preview]}")
 	[[ $2 == [+*] ]] && _opts+=(-m)
-	local _filter=${pkgConf[$action]:-${pkgConf[filter]}}
+	local _filter=${pkgConf[$ACTION]:-${pkgConf[filter]}}
 	declare -n _choice=$1
 	if [[ $_filter == *-u* ]]; then # filter only uninstalled pkgs
 		local arr=()
@@ -61,9 +61,9 @@ pickPackage() {
 }
 
 actionInfo disable 'disable installed apps'
-disableParams=(packages '+' "${REGEX[domain]}" 'Domain name to disable')
+disableParams=(packages '$+' "${REGEX[domain]}" 'Domain name to disable')
 declare -A disableBuilder=([packages]=pickPackage)
-pkgConf+=([disable]=-e)
+pkgConf[disable]=-e
 disable() {
 	for package in "${packages[@]}"; do
 		exec adb shell pm disable-user --user 0 "$package"
@@ -71,9 +71,9 @@ disable() {
 }
 
 actionInfo enable 'enable disabled apps'
-enableParams=(packages '+' "${REGEX[domain]}" 'Domain name to enable')
+enableParams=(packages '$+' "${REGEX[domain]}" 'Domain name to enable')
 declare -A enableBuilder=([packages]=pickPackage)
-pkgConf+=([enable]=-d)
+pkgConf[enable]=-d
 enable() {
 	for package in "${packages[@]}"; do
 		exec adb shell pm enable --user 0 $package
@@ -81,9 +81,9 @@ enable() {
 }
 
 actionInfo launch 'launch a package on the device'
-launchParams=(package '!' "${REGEX[domain]}" 'Domain name to launch')
+launchParams=(package '$!' "${REGEX[domain]}" 'Domain name to launch')
 declare -A launchBuilder=([package]=pickPackage)
-pkgConf+=([launch]=-e)
+pkgConf[launch]=-e
 launch() {
 	activity=$(adb shell dumpsys package |
 		sed -n "s/^ \+[0-9a-f]\+ \($package\/[a-zA-Z.]\+\)$/\1/p" |
@@ -96,9 +96,9 @@ launch() {
 actionInfo uninstall 'uninstall disabled apps'
 uninstallParams=(
 	keep 'k?' 'Keep app data/cache'
-	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
+	packages '$+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A uninstallBuilder=([packages]=pickPackage)
-pkgConf+=([uninstall]=-d)
+pkgConf[uninstall]=-d
 uninstall() {
 	local pkg cmd=(adb)
 	((keep > 0)) && cmd+=(shell cmd package uninstall -k) || cmd+=(uninstall --user 0)
@@ -110,18 +110,18 @@ uninstall() {
 actionInfo remove 'uninstall enabled apps'
 removeParams=(
 	keep 'k?' 'Keep app data/cache'
-	packages '+' "${REGEX[domain]}" 'Domain name to uninstall')
+	packages '$+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A removeBuilder=([packages]=pickPackage)
-pkgConf+=([remove]=-e)
+pkgConf[remove]=-e
 remove() {
 	uninstall
 }
 
 # Installs selected system apps that were uninstalled
 actionInfo reinstall i 're[i]nstall' 'reinstall uninstalled default apps'
-reinstallParams=(packages '+' "${REGEX[domain]}" 'Domain name to reinstall')
+reinstallParams=(packages '$+' "${REGEX[domain]}" 'Domain name to reinstall')
 declare -A reinstallBuilder=([packages]=pickPackage)
-pkgConf+=([reinstall]='-s -u')
+pkgConf[reinstall]='-s -u'
 reinstall() {
 	local pkg
 	for pkg in "${packages[@]}"; do

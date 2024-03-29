@@ -48,6 +48,7 @@ assign [title="Transmission"] $w1
 assign [app_id="firefox"] $wBrowser
 assign [class="NetBeans|jetbrains-.*|ea.exe"] $wCode
 assign [app_id="mpv|gimp|Inkscape"] $wMedia
+assign [instance="gimp"] $wMedia
 assign [class="Ripcord"] $wMsg
 assign [app_id="thunderbird|tutanota-desktop|Slack"] $wMsg
 assign [title="^Minecraft.? 1\.[1-2][0-9][0-9.]*$"] $wGame

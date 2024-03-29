@@ -244,7 +244,7 @@ bindsym --to-code {
 #--------------+
 
 set $dpmsOff pkill -USR1 swayidle
-set $Exit "C: L: D: Q: S: H: P: R: Esc:"
+set $Exit "C: D: Q: S: H: P: R: Esc:"
 bindsym {
 	$Mod+o bar mode toggle
 	XF86Launch4 exec cpupower-gui

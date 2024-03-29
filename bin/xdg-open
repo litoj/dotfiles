@@ -3,7 +3,8 @@
 
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
-declare EXT=.${arg##*.} URI=${arg/:*/:}
+EXT=.${arg##*.} URI=${arg/:*/:}
+read MIME < <(file -b --mime-type "$1")
 
 run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
@@ -15,13 +16,15 @@ run() {
 	exit 0
 }
 
-# prefix gui/bg apps with '@', $1=cmd
+# prefix gui/bg apps with '@', $1=cmd TODO: separate bg+gui opts per item or global?
 try() {
 	local app="$1"
 	shift
 	while (($#)); do
 		if [[ $1 == .* ]]; then
 			[[ $EXT == $1 ]] && run "$app"
+		elif [[ $1 == +* ]]; then
+			[[ $MIME == ${1#+}* ]] && run "$app"
 		elif [[ $1 == *: ]]; then
 			[[ $URI == $1 ]] && run "$app"
 		elif [[ $arg =~ $1 ]]; then
@@ -33,6 +36,6 @@ try() {
 
 [[ -f $CFG ]] && . "$CFG"
 
-[[ -d $arg ]] && run "$EXPLORER"
-[[ -e $arg ]] && run "$EDITOR"
+[[ -d $arg ]] && run "${EXPLORER:-ranger}"
+[[ $MIME == text* || -z $MIME ]] && run "$EDITOR"
 run "$BROWSER"

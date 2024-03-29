@@ -13,9 +13,9 @@ local function au(ev, cb, extra)
 end
 
 local function setCWD(s)
-	if not exists(s.file) then return end
+	if not exists(s.file) or not vim.bo[s.buf].modifiable then return end
 	local dir = vim.b[s.buf].cwd -- storing determined cwd
-	if dir then
+	if dir --[[ and exists(dir) ]] then
 		if vim.loop.cwd() ~= dir then vim.api.nvim_set_current_dir(dir) end
 		return
 	end

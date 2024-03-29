@@ -10,6 +10,8 @@ configuration {
 	max-history-size: 0;
 	kb-row-up: "Up";
 	kb-row-down: "Down";
+	kb-element-next: "";
+	kb-accept-alt: "Tab,Shift+Return";
 	kb-cancel: "Escape,Super+q";
 	icon-theme: "Icons";
 }

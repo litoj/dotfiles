@@ -58,7 +58,7 @@ function M.config()
 		File = ' 󰈔 ',
 		Folder = '  ',
 
-		Copilot = ' 󰋎 ',
+		Copilot = '  ',
 		TabNine = ' 𝟗 ',
 	}
 
@@ -119,7 +119,7 @@ function M.config()
 				elseif vim.api.nvim_get_mode().mode ~= 'c' then
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-					if (line:byte(col) or 0) > 45 then return end
+					if line:sub(col, col):match '%w' then return end
 					local indent = line:match '^%s'
 					if not indent then
 						indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
@@ -183,6 +183,9 @@ function M.config()
 		experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
 		sorting = {
 			comparators = {
+				function(a, b)
+					if a.copilot ~= b.copilot then return a.copilot end
+				end,
 				cmp.config.compare.offset,
 				cmp.config.compare.score,
 				-- cmp.config.compare.recently_used,

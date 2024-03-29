@@ -8,6 +8,7 @@ function M.config()
 	require('nerdcontrast').hi {
 		SLRed = { bg = 'StatusLine', fg = 'Red' },
 		SLYellow = { bg = 'StatusLine', fg = 'Yellow' },
+		SLOrange = { bg = 'StatusLine', fg = 'LightOrange' },
 		SLOlive = { bg = 'StatusLine', fg = 'Olive' },
 		SLBg = { bg = 'StatusLine' },
 	}
@@ -38,7 +39,7 @@ function M.config()
 					symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
 					diagnostics_color = {
 						error = 'SLRed',
-						warn = 'SLYellow',
+						warn = 'SLOrange',
 						info = 'SLOlive',
 						hint = 'StatusLineDef',
 					},

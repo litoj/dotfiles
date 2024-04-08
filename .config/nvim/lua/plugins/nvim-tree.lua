@@ -3,7 +3,7 @@ function M.config()
 	local api = require 'nvim-tree.api'
 	local function label(path)
 		path = path:gsub(os.getenv 'HOME', '~', 1)
-		return path:gsub('([a-zA-Z])[a-z0-9]+', '%1') .. path:match '[a-zA-Z]([a-z0-9]*)$'
+		return path:gsub('([a-zA-Z])[a-z0-9]+', '%1') .. (path:match '[a-zA-Z]([a-z0-9]*)$' or '')
 	end
 	local nt = require 'nvim-tree'
 	nt.setup {

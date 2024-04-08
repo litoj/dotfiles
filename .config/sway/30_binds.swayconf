@@ -358,7 +358,7 @@ bindsym {
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -Dgp -p
 	$Mod+$Alt+Shift+m exec mom -Dgp -pro
-	$Mod+Ctrl+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
+	$Mod+Ctrl+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15

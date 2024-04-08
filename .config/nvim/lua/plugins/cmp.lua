@@ -241,6 +241,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 				['*'] = false,
 				lua = true,
 				c = true,
+				cs = true,
 				cpp = true,
 				python = true,
 				typescript = true,

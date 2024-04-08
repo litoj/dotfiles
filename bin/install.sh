@@ -61,7 +61,7 @@ basics() {
 	printf '\nInstalling basics.\n'
 	# picked hwdec drivers for AMD based on https://wiki.archlinux.org/title/Hardware_video_acceleration#Installation
 	echo '
-alsa-utils
+acpid
 arch-install-scripts
 arp-scan
 bc
@@ -147,6 +147,7 @@ yt-dlp' | paru --needed -S -
 		sudo rm -r /var/log/journal
 		git clone https://github.com/mariusor/mpris-ctl.git && cd mpris-ctl &&
 			sudo CC='gcc -O2' make release install && cd .. && rm -rf mpris-ctl
+		sudo systemctl enable acpid
 	}
 }
 

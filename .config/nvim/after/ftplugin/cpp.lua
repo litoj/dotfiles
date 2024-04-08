@@ -8,6 +8,12 @@ map(
 )
 map({ 'n', 'i' }, '<A-M>', '<Cmd>w|!cd %:h && make<CR>', { buffer = true })
 
+if vim.g.loaded then
+	if vim.g.loaded['cpp'] then return end
+	vim.g.loaded['cpp'] = true
+end
+vim.g.loaded = { ['cpp'] = true }
+
 withMod('dap', function(dap)
 	dap.configurations.cpp = {
 		{
@@ -18,11 +24,14 @@ withMod('dap', function(dap)
 			program = function()
 				if exists 'main.out' then return 'main.out' end
 				local name = vim.api.nvim_buf_get_name(0)
-				return name:gsub('%.[chp]+$', '.out')
+				return name:gsub('%.c$', '.out')
 				-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 			end,
 		},
 	}
 end)
 
-withMod('mylsp', function(ml) ml.setup 'clangd' end)
+withMod('mylsp', function(ml)
+	ml.setup 'clangd'
+	vim.cmd.LspStart 'clangd'
+end)

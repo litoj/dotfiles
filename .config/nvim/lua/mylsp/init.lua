@@ -78,7 +78,9 @@ local function setup(server, opts)
 	local on_attach = opts.on_attach
 	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
-		client.server_capabilities.documentFormattingProvider = opts.format == true
+		if client.server_capabilities.documentFormattingProvider then
+			client.server_capabilities.documentFormattingProvider = opts.format ~= false
+		end
 		--[[ if client.server_capabilities.inlayHintProvider and opts.inlay then
 			vim.lsp.inlay_hint.enable(bufnr, true)
 		end ]]

@@ -27,6 +27,7 @@ local function enter_or_list()
 end
 
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
+map('i', '<S-Enter>', '<End><Enter>', { buffer = true, remap = true })
 map(
 	{ 'n', 'i' },
 	'<A-r>',
@@ -46,11 +47,11 @@ map('i', '...', '…', opt)
 local reformGen = require('reform.toggle').genSubApplicator
 local function genFor1W(str)
 	return reformGen {
-		vimre = [[[(*_`]\@!\(]]
+		vimre = [[[(*_`]\@<!\(]]
 			.. str:gsub('%*', '\\*')
 			.. [[\)\?\([^/;:=, +]]
 			.. str:sub(1, 1)
-			.. [[]\+\)\1[)*_`]\@<!\([);:=,]\)\?]],
+			.. [[]\+\)\1[)*_`]\@!\([);:=,]\)\?]],
 		use = function(_, match)
 			return (#match[2] > 0 and match[3] or str .. match[3] .. str) .. match[4]
 		end,
@@ -59,13 +60,13 @@ end
 map('i', '<A-b>', genFor1W '**', opt)
 map('i', '<A-i>', genFor1W '_', opt)
 map('i', '<A-`>', genFor1W '`', opt)
+
 local function genForNW(str)
 	return reformGen {
-		vimre = '\\('
-			.. str:gsub('%*', '\\*')
-			.. [[\)\?\([*_` ]\@!\( \?(\@![^;:=, ]]
-			.. str:sub(1, 1)
-			.. [[]\+\( \W\|[)*_`]\)\@<!\)\+\)\1\([;:=,]\)\?]],
+		vimre = '\\(' .. str:gsub('%*', '\\*') .. [[\)\?\([*_` \-]\@!\( \?(\@![^;:=, ]] .. str:sub(
+			1,
+			1
+		) .. [[]\+\( \W\|[)*_`]\)\@<!\)\+\)\1\([;:=,]\)\?]],
 		use = function(_, match)
 			return (#match[2] > 0 and match[3] or str .. match[3] .. str) .. match[6]
 		end,
@@ -87,4 +88,64 @@ map('i', '<Tab>', function()
 end, opt)
 map('i', '<C-;>', genForNW '`', opt)
 map('i', '<C-@>', genForNW '`', opt)
+
+local function genForVisual(str) -- doesn't work for visual line nor multiline
+	return function()
+		local pos = vim.api.nvim_win_get_cursor(0)
+		local from, to = vim.fn.col 'v', pos[2] + 1
+		if from > to then
+			local tmp = from
+			from = to
+			to = tmp
+		end
+		local line = vim.api.nvim_get_current_line()
+		vim.api.nvim_set_current_line(
+			line:sub(1, from - 1) .. str .. line:sub(from, to) .. str .. line:sub(to + 1)
+		)
+	end
+end
+map('v', '<A-b>', genForVisual '**', opt)
+map('v', '<A-i>', genForVisual '_', opt)
+map('v', '<A-`>', genForVisual '`', opt)
+
+local function genForMove(toStart)
+	local ev = {
+		filter = {
+			tolerance = { startPost = toStart and 0 or 6, endPre = toStart and 6 or 0 },
+			sorting = function(ev, order, matcher, match)
+				return (match.from <= ev.column and match.to >= ev.column - 1) and -1000
+					or (toStart and ev.column - match.from or match.to - ev.column)
+			end,
+		},
+	}
+	local matcher = {
+		vimre = [[\(\*\*\|[_`]\)\?\([*_` \-]\@!\( \?(\@![^;:=, _*`]\+\( \W\|[)*_`]\)\@<!\)\+\)\1\([;:=,]\)\?]],
+		use = function(_, match, ev)
+			if match.from >= 1 then match.from = match.from - 1 end
+			if (toStart and match.from or match.to) == ev.column - 1 then return false end
+			vim.api.nvim_win_set_cursor(0, {
+				ev.line,
+				toStart and match.from or match.to,
+				--[[ toStart and (match.to < ev.column - 2 and match.to or match.from)
+					or (match.from > ev.column and match.from or match.to), ]]
+			})
+		end,
+	}
+	return function()
+		if require('reform.util').applyMatcher(matcher, ev) then return end
+		local line = vim.fn.line '.'
+		if toStart then
+			if line == 1 then return end
+			vim.api.nvim_win_set_cursor(0, { line - 1, 1000 })
+		else
+			if line >= vim.api.nvim_buf_line_count(0) then return end
+			vim.api.nvim_win_set_cursor(0, { line + 1, 0 })
+			local textStart = vim.api.nvim_get_current_line():find '[^ %-0-9.]' - 1
+			vim.api.nvim_win_set_cursor(0, { line + 1, textStart })
+		end
+	end
+end
+map({ '', 'i' }, '<C-Left>', genForMove(true), opt)
+map({ '', 'i' }, '<C-Right>', genForMove(false), opt)
+
 vim.wo.conceallevel = 2

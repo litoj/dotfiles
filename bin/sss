@@ -68,7 +68,6 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[optArgPicker]=0
 	[exitLogLvl]=$((1 + $?))
 	[logLvl]=3
-	# TODO: color option (for help display etc.)
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1 SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1
@@ -470,7 +469,7 @@ help() {
 
 	echo 'Actions:'
 	local act fmt
-	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s   \033[0;33m%s\033[0m' || fmt='%-*s   %s'
+	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s   \033[0;4m%s\033[0m' || fmt='%-*s   %s'
 	for act in "${action[@]}"; do
 		[[ $act =~ ^-*([^-][^=]*)$ ]] && act=$(argToCase "${BASH_REMATCH[1]}")
 		((${#act} == 1)) && act=${ACTION_INFO[$act]:-$act}

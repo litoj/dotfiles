@@ -15,7 +15,9 @@ end
 local function setCWD(s)
 	if not exists(s.file) or not vim.bo[s.buf].modifiable then return end
 	local dir = vim.b[s.buf].cwd -- storing determined cwd
-	if dir --[[ and exists(dir) ]] then
+	if
+		dir --[[ and exists(dir) ]]
+	then
 		if vim.loop.cwd() ~= dir then vim.api.nvim_set_current_dir(dir) end
 		return
 	end
@@ -33,6 +35,15 @@ local function setCWD(s)
 	if vim.loop.cwd() ~= dir then vim.api.nvim_set_current_dir(dir) end
 end
 au('BufEnter', setCWD, '*') -- to execute on every focus change
+
+local function setIndent(state)
+	vim.opt_local.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks
+	local f = state.file
+	if f:find('.git/', 1, true) or f:find '^/tmp' or f:find('.cache/', 1, true) then
+		vim.bo[state.buf].undofile = false -- Temp-file cleanliness
+	end
+end
+au('BufRead', setIndent)
 
 au(
 	'TextYankPost',
@@ -58,20 +69,16 @@ end
 hiNotes()
 au('WinNew', hiNotes)
 
-au('BufRead', function(state)
-	vim.opt_local.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks
-	local f = state.file
-	if f:find('.git/', 1, true) or f:find '^/tmp' or f:find('.cache/', 1, true) then
-		vim.bo[state.buf].undofile = false -- Temp-file cleanliness
-	end
-end)
-
 -- a fix for neovim shada '%' openning an empty buffer
 if vim.fn.bufname() == '' then
 	if vim.fn.bufnr '$' > 1 then vim.schedule(function() vim.cmd.bwipeout(1) end) end
 else
 	local stat = vim.loop.fs_stat(vim.api.nvim_buf_get_name(0))
-	if stat and stat.type == 'file' then setCWD { file = vim.api.nvim_buf_get_name(0), buf = 0 } end
+	if stat and stat.type == 'file' then
+		local state = { file = vim.api.nvim_buf_get_name(0), buf = 0 }
+		setCWD(state)
+		setIndent(state)
+	end
 end
 
 return au

@@ -1,9 +1,8 @@
 #config for ../bin/xdg-open
 BROWSER=@$BROWSER
+TERM_BLOCKING=1
 try @'mpv --no-terminal' +video
-BLOCKING=1
 try 'mpv --no-audio-display' +audio .m3u
-BLOCKING=0
 try @imv-dir +image
 try @zathura .pdf
 try @transmission-gtk magnet:

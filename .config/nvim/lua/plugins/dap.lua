@@ -1,6 +1,10 @@
 local M = {
 	'rcarriga/nvim-dap-ui',
-	dependencies = { 'mfussenegger/nvim-dap', 'theHamsta/nvim-dap-virtual-text' },
+	dependencies = {
+		'mfussenegger/nvim-dap',
+		'theHamsta/nvim-dap-virtual-text',
+		'nvim-neotest/nvim-nio',
+	},
 	keys = { '<F6>', '<F18>' },
 }
 function M.config()

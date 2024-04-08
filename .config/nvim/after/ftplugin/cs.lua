@@ -1,5 +1,7 @@
 map({ 'n', 'i' }, '<A-b>', '<Cmd>w|term dotnet build -r linux-x64<CR>', { buffer = true })
-map({ 'n', 'i' }, '<A-r>', '<Cmd>w|!dotnet build -r linux-x64<CR><CR>', { buffer = true })
+map({ 'n', 'i' }, '<A-r>', '<Cmd>w|! dotnet build -r linux-x64<CR><CR>', { buffer = true })
+map({ 'n', 'i' }, '<A-m>', '<Cmd>w|! dotnet build<CR><CR>', { buffer = true })
+map({ 'n', 'i' }, '<A-R>', '<Cmd>term dotnet watch<CR>', { buffer = true })
 
 local function getExecPath(dll)
 	local dir = vim.api.nvim_buf_get_name(0)
@@ -21,8 +23,12 @@ map({ 'n', 'i' }, '<M-R>', function()
 	if path then vim.cmd.term(path) end
 end, { buffer = true })
 
-if vim.g.cs_loaded then return end
-vim.g.cs_loaded = true
+if vim.g.loaded then
+	if vim.g.loaded['cs'] then return end
+	vim.g.loaded['cs'] = true
+end
+vim.g.loaded = { ['cs'] = true }
+
 withMod('dap', function(dap)
 	dap.adapters.coreclr = {
 		type = 'executable',
@@ -46,6 +52,6 @@ withMod('dap', function(dap)
 end)
 
 withMod('mylsp', function(ml)
-	ml.setup('omnisharp', { cmd = { 'omnisharp' }, enable_import_completion = true })
+	ml.setup 'omnisharp'
 	vim.cmd.LspStart 'omnisharp'
 end)

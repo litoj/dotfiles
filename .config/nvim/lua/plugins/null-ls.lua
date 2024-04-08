@@ -48,6 +48,7 @@ function M.config()
 				end,
 			},
 			nls.builtins.formatting.clang_format.with {
+				filetypes = { 'c', 'cpp', 'java' },
 				extra_args = function(client)
 					if exists(client.cwd .. '/.clang_format') then return { '--style', 'file' } end
 					return {

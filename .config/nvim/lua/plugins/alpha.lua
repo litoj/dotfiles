@@ -102,7 +102,7 @@ function M.config()
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },
-				{ 'k', '~/Documents/school/PG/Kotlin/' },
+				{ 'k', '~/Documents/school/PG/Theory/KAB/' },
 				{ 's', '~/Documents/school/PG/SP/' },
 			}),
 			buttons('[C]onfigs', {

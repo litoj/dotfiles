@@ -1,6 +1,6 @@
-return {
+return { -- https://luals.github.io/wiki/settings/
 	settings = {
-		Lua = { -- https://luals.github.io/wiki/settings/
+		Lua = {
 			format = { enable = false },
 			runtime = { version = 'LuaJIT' },
 			diagnostics = { globals = { 'vim' } },

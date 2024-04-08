@@ -10,6 +10,12 @@ map(
 map({ 'n', 'i' }, '<A-T>', "<C-s><Cmd>!cd '%:h' && make test<CR>", { buffer = true, remap = true })
 map({ 'n', 'i' }, '<A-M>', "<Cmd>w|!cd '%:h' && make all<CR>", { buffer = true })
 
+if vim.g.loaded then
+	if vim.g.loaded['c'] then return end
+	vim.g.loaded['c'] = true
+end
+vim.g.loaded = { ['c'] = true }
+
 withMod('dap', function(dap)
 	dap.configurations.c = {
 		{
@@ -25,6 +31,10 @@ withMod('dap', function(dap)
 			end,
 		},
 	}
+	dap.configurations.cpp = dap.configurations.c
 end)
 
-withMod('mylsp', function(ml) ml.setup 'clangd' end)
+withMod('mylsp', function(ml)
+	ml.setup 'clangd'
+	vim.cmd.LspStart 'clangd'
+end)

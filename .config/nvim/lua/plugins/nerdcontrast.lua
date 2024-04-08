@@ -8,7 +8,6 @@ function M.config()
 		theme = { override = { StatusLine = 'Bg0' } },
 	}
 	require('nerdcontrast').hi {
-		['@keyword.return'] = 'Red',
 		['@markup.heading.marker'] = { fg = 'Delimiter', bold = true },
 	}
 	-- Dark/Light theme toggle

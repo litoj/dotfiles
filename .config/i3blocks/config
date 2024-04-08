@@ -10,10 +10,10 @@ signal=10
 
 [mic]
 interval=0
-signal=13
+signal=11
 
 [backlight]
-signal=11
+signal=12
 
 [battery]
 interval=60
@@ -22,7 +22,7 @@ interval=60
 
 [kb]
 command=[[ $(swaymsg -t get_inputs -p | grep '(US)' -m 1) ]] && echo  US || echo  CZ
-signal=12
+signal=13
 
 [date]
 command=date +" %a %d.%m."

@@ -3,7 +3,7 @@
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
 	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
-	local CACHE_USER_ID_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.toml"
+	local CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.toml"
 	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")
 
 	if [[ -z $token || $token == null ]] ||
@@ -16,12 +16,12 @@ wtwitch() {
 
 	# Search for streamer ID in cache
 	local ID
-	[[ -f $CACHE_USER_ID_FILE ]] && while read line; do
+	[[ -f $CACHE_FILE ]] && while read line; do
 		if [[ ${line%=*} == $1 ]]; then
 			ID=${line#*=}
 			break
 		fi
-	done < "$CACHE_USER_ID_FILE"
+	done < "$CACHE_FILE"
 
 	# If user login not cached, fetch from Twitch API
 	if [[ -z $ID ]]; then
@@ -30,7 +30,7 @@ wtwitch() {
 				"${T[0]}/users?login=$1" | jq -r ".data[0].id"
 		)
 		[[ -z $ID || $ID == null ]] && exit 1
-		echo "$1=$ID" >> "$CACHE_USER_ID_FILE"
+		echo "$1=$ID" >> "$CACHE_FILE"
 	fi
 
 	# Get list of VODs

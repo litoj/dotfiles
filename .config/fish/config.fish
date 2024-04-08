@@ -149,8 +149,8 @@ if status is-login
 		export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
 		export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 		export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
-
-		# WLR_RENDERER=vulkan
+		export RADV_PERFTEST=video_decode
+		set WLR_RENDERER vulkan
 		sway
 		killall -15 ssh-agent
 	end

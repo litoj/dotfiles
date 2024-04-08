@@ -1,5 +1,4 @@
-return {
-	format = true,
+return { -- https://github.com/latex-lsp/texlab/wiki/Configuration
 	settings = {
 		texlab = {
 			formatterLineLength = 100,

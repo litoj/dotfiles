@@ -18,23 +18,24 @@ case "$1" in
 		else
 			wpctl set-volume ${WP[1]} "$2"
 		fi
-		pkill -RTMIN+13 i3blocks
+		pkill -RTMIN+11 i3blocks
 		;;
 	"light")
 		light=$(backlight "$2" "$3")
 		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
-		pkill -RTMIN+11 i3blocks
+		pkill -RTMIN+12 i3blocks
 		;;
 	"kb")
 		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
 		swaymsg input type:keyboard xkb_switch_layout next
 		notify-send -a signal -h string:synchronous:kb " $kb"
-		pkill -RTMIN+12 i3blocks
+		pkill -RTMIN+13 i3blocks
 		;;
 	"wp")
 		declare -A nodes def
 		while :; do
 			{
+				sleep 1
 				while read -r line; do
 					[[ $line == '├─ Sinks:' ]] && break
 				done
@@ -57,7 +58,7 @@ case "$1" in
 					fi
 				done
 			} < <(wpctl status)
-			[[ ${def[@]} ]] || ((++tries > 5)) && break || sleep 1
+			[[ ${def[@]} ]] || ((++tries > 5)) && break
 		done
 		unset nodes['Echo Capture'] nodes['Echo Playback']
 
@@ -89,7 +90,8 @@ case "$1" in
 		[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
 		[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
 		echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
-		pkill -RTMIN+10 i3blocks && pkill -RTMIN+13 i3blocks
+		pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
+		pgrep -f audio-plug-detect || "${0%signal}audio-plug-detect"  &
 		;;
 	"theme") ~/.config/i3blocks/clock toggle ;;
 esac

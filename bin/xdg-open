@@ -3,16 +3,17 @@
 
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
-EXT=.${arg##*.} URI=${arg/:*/:}
-read MIME < <(file -b --mime-type "$1")
+URI=${arg/:*/:} && [[ $arg == *.* ]] && EXT=.${arg##*.} || EXT=.
 
 run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
 		arg[$i]="$PWD/${arg[$i]}"
 	done
 	local cmd=$1
-	[[ $cmd == @* || ($BLOCKING && -t 0 && -t 1 && -t 2) ]] || cmd="${TERMINAL:-xterm} $cmd"
-	((BLOCKING)) && ${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
+	[[ $cmd == @* || ${BLOCKING:-$TERM_BLOCKING} == 1 && -t 0 && -t 1 && -t 2 ]] ||
+		cmd="${TERMINAL:-xterm} $cmd"
+	[[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]] &&
+		${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
 	exit 0
 }
 
@@ -24,7 +25,7 @@ try() {
 		if [[ $1 == .* ]]; then
 			[[ $EXT == $1 ]] && run "$app"
 		elif [[ $1 == +* ]]; then
-			[[ $MIME == ${1#+}* ]] && run "$app"
+			[[ ${MIME:=$(file -b --mime-type "$arg")} == ${1#+}* ]] && run "$app"
 		elif [[ $1 == *: ]]; then
 			[[ $URI == $1 ]] && run "$app"
 		elif [[ $arg =~ $1 ]]; then
@@ -37,5 +38,5 @@ try() {
 [[ -f $CFG ]] && . "$CFG"
 
 [[ -d $arg ]] && run "${EXPLORER:-ranger}"
-[[ $MIME == text* || -z $MIME ]] && run "$EDITOR"
+[[ -f $arg ]] && try "$EDITOR" . +text +*empty
 run "$BROWSER"

@@ -33,9 +33,9 @@ case "$1" in
 		;;
 	"wp")
 		declare -A nodes def
+		[[ $2 == detect ]] && sleep 1
 		while :; do
 			{
-				sleep 1
 				while read -r line; do
 					[[ $line == '├─ Sinks:' ]] && break
 				done
@@ -58,7 +58,7 @@ case "$1" in
 					fi
 				done
 			} < <(wpctl status)
-			[[ ${def[@]} ]] || ((++tries > 5)) && break
+			[[ ${def[@]} ]] || ((++tries > 5)) && break || sleep 1
 		done
 		unset nodes['Echo Capture'] nodes['Echo Playback']
 
@@ -91,7 +91,6 @@ case "$1" in
 		[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
 		echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
 		pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
-		pgrep -f audio-plug-detect || "${0%signal}audio-plug-detect"  &
 		;;
 	"theme") ~/.config/i3blocks/clock toggle ;;
 esac

@@ -11,7 +11,7 @@ return {
 		'JosefLitos/reform.nvim',
 		event = 'VeryLazy',
 		opts = {
-			docmd = { debug = '/tmp/docmd.md' },
+			-- docmd = { debug = '/tmp/docmd.md' },
 			link = { fallback = { copy = true, print = true, branch = 'current' } },
 		},
 	},

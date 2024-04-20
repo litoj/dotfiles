@@ -19,8 +19,8 @@ local src = {
 
 	path = { name = 'path', group_index = 2, max_item_count = 10 },
 
-	lsp = { name = 'nvim_lsp', group_index = 2, priority = 2, max_item_count = 10 },
-	snip = { name = 'luasnip', group_index = 2, keyword_length = 3, max_item_count = 10 },
+	lsp = { name = 'nvim_lsp', group_index = 2, max_item_count = 10, priority = 2 },
+	snip = { name = 'luasnip', group_index = 2, keyword_length = 3, max_item_count = 5 },
 
 	buf = { name = 'buffer', group_index = 3, max_item_count = 20 },
 }
@@ -77,6 +77,15 @@ function M.config()
 		return { i = exec, c = exec }
 	end
 
+	local comparators = {
+		cmp.config.compare.offset,
+		cmp.config.compare.score,
+		-- cmp.config.compare.recently_used,
+		cmp.config.compare.kind,
+		cmp.config.compare.length,
+	}
+	if src.copilot then comparators[2] = require('cmp_copilot.comparators').score end
+
 	cmp.setup {
 		snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
 		mapping = {
@@ -108,6 +117,7 @@ function M.config()
 				if cmp.visible() then
 					if
 						vim.api.nvim_get_mode().mode == 'c'
+						or vim.lsp.get_active_clients { bufnr = 0 } -- copilot on empty lines
 						or vim.api.nvim_get_current_line():sub(1, vim.api.nvim_win_get_cursor(0)[2]):match '%S'
 					then
 						cmp.confirm { select = true }
@@ -116,7 +126,7 @@ function M.config()
 					end
 				elseif luasnip.locally_jumpable(1) then
 					luasnip.jump(1)
-				elseif vim.api.nvim_get_mode().mode ~= 'c' then
+				elseif vim.api.nvim_get_mode().mode ~= 'c' then -- indentation changer
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
 					if line:sub(col, col):match '%w' then return end
@@ -181,23 +191,12 @@ function M.config()
 			documentation = { border = 'rounded', winhighlight = '' },
 		},
 		experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
-		sorting = {
-			comparators = {
-				function(a, b)
-					if a.copilot ~= b.copilot then return a.copilot end
-				end,
-				cmp.config.compare.offset,
-				cmp.config.compare.score,
-				-- cmp.config.compare.recently_used,
-				cmp.config.compare.kind,
-				cmp.config.compare.length,
-			},
-		},
+		sorting = { comparators = comparators },
 		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot, src.tabnine },
 	}
 
 	cmp.setup.filetype({ 'markdown', 'text' }, {
-		completion = { autocomplete = { 'TextChanged' } },
+		completion = { autocomplete = false },
 		sources = { src.calc, src.path, src.snip, src.font, src.latex },
 	})
 	cmp.setup.filetype(
@@ -231,7 +230,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 		event = 'InsertEnter',
 	}
 
-	src.copilot = { name = 'copilot', group_index = 2, priority = 2 }
+	src.copilot = { name = 'copilot', group_index = 2 }
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
 		opts = {
@@ -239,18 +238,18 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 			suggestion = { enabled = false },
 			filetypes = {
 				['*'] = false,
-				lua = true,
 				c = true,
-				cs = true,
 				cpp = true,
-				python = true,
-				typescript = true,
+				cs = true,
 				javascript = true,
+				lua = true,
+				python = true,
 				sh = true,
+				typescript = true,
 				vue = true,
 			},
 		},
-		dependencies = { { 'zbirenbaum/copilot-cmp', opts = {} }, 'nvim-cmp' },
+		dependencies = { { 'JosefLitos/cmp-copilot', opts = {} }, 'nvim-cmp' },
 		event = 'LspAttach',
 	}
 end

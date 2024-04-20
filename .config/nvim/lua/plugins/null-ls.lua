@@ -14,7 +14,7 @@ function M.config()
 					local cwd = vim.loop.cwd():gsub('/lua$', '')
 					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
 						f = cwd .. f
-						if exists(f) then return { '--config-path', f } end
+						if exists(f) then return {} end
 					end
 					return {
 						'--column-width=' .. vim.bo.textwidth,

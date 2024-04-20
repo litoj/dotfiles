@@ -14,5 +14,7 @@ u = upscaling linear
 <Shift+B> = exec cp "$imv_current_file" ~/Pictures/screen/
 <Shift+E> = exec cp "$imv_current_file" ~/Downloads/
 <Meta+f> = exec dragon-drop -x -T "$imv_current_file" &
-<Meta+e> = exec xterm ranger --selectfile="$imv_current_file" &
+# imv must register key unpress - otherwise it keeps repeating the binding
+<Meta+e> = exec sleep 0.1 && xterm ranger --selectfile="$imv_current_file" &
+<Meta+r> = exec sleep 0.1 && xterm ranger --selectfile="$imv_current_file" &
 <Ctrl+e> = exec gimp "$imv_current_file" &

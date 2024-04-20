@@ -10,6 +10,7 @@ exec {
 	gsettings set org.gnome.desktop.interface cursor-theme 'Sweet-cursors'
 	gsettings set org.gnome.desktop.interface cursor-size 32
 	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
+	~/.config/i3blocks/audio-plug-detect
 }
 set $signal ~/.config/i3blocks/signal
 exec_always $signal wp detect

@@ -15,7 +15,7 @@ function M.config()
 	require('lualine').setup {
 		options = {
 			theme = 'nerdcontrast',
-			sections_separators = { left = ' ', right = ' ' },
+			section_separators = { left = '', right = '' },
 			component_separators = { left = '', right = '' },
 			disabled_filetypes = {
 				statusline = { 'NvimTree', 'lazy', 'alpha', 'help', 'rnvimr', 'fzf' },
@@ -24,8 +24,8 @@ function M.config()
 			icon = false,
 		},
 		sections = {
-			lualine_a = { { function() return '▊' end, padding = 0 } },
-			lualine_b = { { 'filetype', color = 'SLBg' } },
+			lualine_a = { { function() return '▊' end, padding = 0 }, { 'filetype', color = 'SLBg' } },
+			lualine_b = {},
 			lualine_c = {
 				{
 					function() return #vim.lsp.get_active_clients { bufnr = 0 } end,
@@ -46,7 +46,11 @@ function M.config()
 				},
 			},
 			lualine_y = {
-				{ function() return (vim.bo.et and '_' or 't') .. vim.bo.ts end, color = 'SLYellow' },
+				{
+					function() return (vim.bo.et and '_' or 't') .. vim.bo.sw end,
+					color = 'SLYellow',
+				},
+				{ function() return '<' .. vim.bo.tw end, padding = 0 },
 			},
 			lualine_z = {
 				{

@@ -1,4 +1,4 @@
-local M = { 'ibhagwan/fzf-lua', keys = { ' s', ' a', ' o', ' f', ' g', ' d', 'gd', 'gr' } }
+local M = { 'ibhagwan/fzf-lua', event = 'VeryLazy' }
 function M.config()
 	local fzf = require 'fzf-lua'
 	fzf.setup {
@@ -30,12 +30,13 @@ function M.config()
 
 	map('n', 'gd', vim.lsp.buf.definition)
 	map('n', 'gr', vim.lsp.buf.references)
-	map('n', ' s', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
-	map('n', ' a', fzf.files)
-	map('n', ' o', fzf.oldfiles)
-	map('n', ' f', function() fzf.oldfiles { cwd_only = true } end)
-	map('n', ' g', fzf.live_grep)
-	map('n', ' d', fzf.lsp_workspace_diagnostics)
-	map('n', ' c', fzf.highlights)
+	map('n', ' fb', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
+	map('n', ' fl', fzf.files)
+	map('n', ' fo', fzf.oldfiles)
+	map('n', ' fO', function() fzf.oldfiles { cwd_only = true } end)
+	map('n', ' fg', fzf.live_grep)
+	map('n', ' b', fzf.buffers)
+	map('n', ' dl', fzf.lsp_workspace_diagnostics) -- list diagnostics
+	map('n', ' mc', fzf.highlights) -- my - colors
 end
 return M

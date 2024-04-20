@@ -11,7 +11,7 @@ bindsym {
 	$Mod+$Alt+Shift+t exec $signal theme tgl
 
 	$Mod+u exec $nextbg
-	$Mod+Shift+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
+	$Mod+Ctrl+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
 
 #---------------+
 # App selection |
@@ -357,9 +357,9 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -Dgp -p
-	$Mod+$Alt+Shift+m exec mom -Dgp -pro
-	$Mod+Ctrl+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
-	$Mod+$Alt+m exec xterm ranger --selectfile="$($info\
+	$Mod+$Alt+m exec mom -Dgp -pro
+	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15
 	XF86AudioPlay exec $mpv play-pause

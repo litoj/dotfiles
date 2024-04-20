@@ -15,5 +15,9 @@
   (atx_h4_marker) @markup.heading.marker
   (inline) @markup.heading.4) (#set! conceal "Ⅳ"))
 
+((atx_heading
+  (atx_h5_marker) @markup.heading.marker
+  (inline) @markup.heading.5) (#set! conceal "Ⅴ"))
+
 (fenced_code_block
   (fenced_code_block_delimiter) @markup.raw.delimiter)

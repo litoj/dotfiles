@@ -38,5 +38,5 @@ try() {
 [[ -f $CFG ]] && . "$CFG"
 
 [[ -d $arg ]] && run "${EXPLORER:-ranger}"
-[[ -f $arg ]] && try "$EDITOR" . +text +*empty
+[[ -f $arg ]] && try "$EDITOR" . +text +*empty +*json
 run "$BROWSER"

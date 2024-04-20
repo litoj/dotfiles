@@ -6,7 +6,7 @@ function M.config()
 		local key
 		if name:byte(1) == 91 then
 			key = string.char(name:byte(2) + 32)
-			group.val[1].opts.hl = { { 'Red', 2, 5 }, { 'LightBlue', 3, 4 }, { 'Title', 5, -1 } }
+			group.val[1].opts.hl = { { 'LightRed', 2, 5 }, { 'LightBlue', 3, 4 }, { 'Title', 5, -1 } }
 		else
 			key = ''
 			group.val[1].opts.hl = 'Title'
@@ -55,11 +55,11 @@ function M.config()
 					shortcut = '   [' .. val[1] .. ']' .. (' '):rep(4 - #val[1]),
 					cursor = 1,
 					align_shortcut = 'left',
-					hl_shortcut = { { 'Red', 3, #val[1] + 5 }, { 'LightBlue', 4, #val[1] + 4 } },
+					hl_shortcut = { { 'LightRed', 3, #val[1] + 5 }, { 'LightBlue', 4, #val[1] + 4 } },
 					hl = {
 						{ hlCol, 0, hlStart },
 						{ 'Fg3', hlStart, hlPath },
-						{ 'Red', hlFt, hlFt + 1 },
+						{ 'LightRed', hlFt, hlFt + 1 },
 						{ 'Fg1', hlFt + 1, -1 },
 					},
 				},
@@ -96,9 +96,9 @@ function M.config()
 				{ 'dp', '~/Documents/personal/' },
 				{ 'ds', '~/Documents/school/' },
 				{ 'dw', '~/Documents/work/' },
+				{ 'dn', '~/Documents/personal/nvim/' },
 				{ 'nn', '~/Documents/personal/nvim/nerdcontrast.nvim/lua/nerdcontrast/' },
 				{ 'nr', '~/Documents/personal/nvim/reform.nvim/' },
-				{ 'nc', '~/dotfiles/.config/' },
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },

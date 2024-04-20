@@ -42,7 +42,7 @@ map({ 'i', 'c' }, '<C-BS>', '<C-w>')
 local function delExtended(keybind)
 	return function()
 		vim.bo.isk = vim.bo.isk .. ',.,*'
-		vim.api.nvim_feedkeys(vim.keycode(keybind), 'n', false)
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keybind, true, false, true), 'n', false)
 		vim.schedule(function() vim.bo.isk = vim.bo.isk:gsub(',%.,%*$', '') end)
 	end
 end
@@ -72,8 +72,10 @@ map('i', '<A-`>', '<C-o>`') -- quick mark jump
 map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
 map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')
 map({ '', 'i', 't' }, '<C-h>', '<C-Left>')
-map({ '', 'i', 't' }, '<C-k>', '<PageUp>')
-map({ '', 'i', 't' }, '<C-j>', '<PageDown>')
+map('', '<C-j>', '<PageDown>zz')
+map('', '<C-k>', '<PageUp>zz')
+map({ 'i', 't' }, '<C-j>', '<PageDown><Cmd>stopinsert<CR>zza')
+map({ 'i', 't' }, '<C-k>', '<PageUp><Cmd>stopinsert<CR>zza')
 map({ '', 'i', 't' }, '<C-l>', '<C-Right>')
 map({ 'i', 't' }, '<A-h>', '<Left>')
 map({ 'i', 't' }, '<A-j>', '<Down>', { remap = true })
@@ -96,24 +98,39 @@ map({ '', 'i' }, '<C-S-Q>', '<Cmd>q!<CR>')
 map('t', '<C-Esc>', '<C-\\><C-n>')
 map('t', '<S-Esc>', '<C-\\><C-o>')
 -- splits
-map('n', '<Leader>v', '<Cmd>split<CR>')
-map('n', '<Leader>h', '<Cmd>vsplit<CR>')
+map('n', ' v', '<Cmd>split<CR>')
+map('n', ' h', '<Cmd>vsplit<CR>')
 -- reload
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
 
 -- Extra
 map('n', '\\', '.')
-map('n', '<Leader>/', '<Cmd>noh<CR>') -- clears all highlights/searches
+map('n', ' /', '<Cmd>noh<CR>') -- clears all highlights/searches
 map('n', '<A-C>', '<Cmd>Inspect<CR>')
 map('n', 'S', '<Cmd>term<CR>a')
 map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')
-map('n', '<Leader>m', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
-map('n', '<Leader>l', function() -- load and execute lua code in current buffer
+map('n', ' mm', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
+map('n', ' ml', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
-	if not exists(name) then
+
+	function _G.printTbl(x, depth)
+		local function toDepth(x, depth)
+			local copy = {}
+			for k, v in pairs(x) do
+				if type(v) == 'table' then
+					if depth > 0 then copy[k] = toDepth(v, depth - 1) end
+				else
+					copy[k] = v
+				end
+			end
+			return copy
+		end
+		vim.notify(vim.inspect(toDepth(x, depth or 2)))
+	end
+	if not exists(name) then -- helper functions for testing
 		function _G.bench(cfg, ...)
 			local arg = type(cfg) == 'table' and cfg.arg or cfg
 			cfg = type(cfg) == 'table' and cfg or {}
@@ -144,6 +161,7 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 			vim.notify(vim.inspect(time))
 		end
 	end
+
 	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
 	local old = package.loaded[path]
 	if not exists(name) then
@@ -151,7 +169,8 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 	else
 		package.loaded[path] = res
 	end
-	if vim.startswith(path, 'nerdcontrast') then
+
+	if vim.startswith(path, 'nerdcontrast') then -- determine code origin
 		local nc = require 'nerdcontrast'
 		if path:match '%.palette%.' then
 			nc.setConfig { [vim.o.bg] = { palette = { base = res } } }
@@ -185,7 +204,8 @@ map('n', '<Leader>l', function() -- load and execute lua code in current buffer
 		dst[path] = res
 	end
 end)
-map('x', '<Tab>', function()
+
+map('x', '<Tab>', function() -- simple indentation changer ('>>' cancels visual mode)
 	local from, to = vim.fn.line 'v', vim.api.nvim_win_get_cursor(0)[1]
 	if from > to then
 		local x = to

@@ -54,7 +54,7 @@ function M.config()
 		end
 	end
 	map('n', 'gv', list { 'variable_declaration', 'parameter_declaration' })
-	map('n', 'ge', list { 'function_call', 'call_expression' }) -- execution
+	map('n', 'ge', list { 'function_call', 'call_expression', 'return_statement' }) -- execution
 	local function goTo(dst, fwd, opts)
 		return function()
 			last = dst

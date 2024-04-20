@@ -5,7 +5,7 @@ local M = {
 		'theHamsta/nvim-dap-virtual-text',
 		'nvim-neotest/nvim-nio',
 	},
-	keys = { '<F6>', '<F18>' },
+	keys = { ' db' },
 }
 function M.config()
 	local dap, dapui = require 'dap', require 'dapui'
@@ -18,7 +18,7 @@ function M.config()
 	local function run()
 		local config = dap.configurations[vim.o.filetype]
 		if config == nil then return vim.notify('No config for `' .. vim.o.filetype .. '`') end
-		config = config[1]
+		config = config[1] --[[@as {}]]
 
 		config.stdio = { nil, nil, nil }
 		vim.ui.input(
@@ -62,6 +62,7 @@ function M.config()
 	dap.listeners.before.event_terminated['dapui_config'] = dapui.close
 	dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
+	---@diagnostic disable-next-line: missing-fields
 	dapui.setup {
 		layouts = {
 			{
@@ -86,13 +87,13 @@ function M.config()
 	}
 	require('nvim-dap-virtual-text').setup { highlight_new_as_changed = true, enabled_commands = false }
 
-	map('n', '<Leader>b', dap.toggle_breakpoint)
-	map('n', '<Leader>B', dap.clear_breakpoints)
-	map('n', 'gt', dap.goto_)
-	map('n', 'gB', function() dap.list_breakpoints(true) end)
-	map('n', 'dr', dap.run_to_cursor)
-	map('n', '<A-e>', dapui.eval)
-	map('n', '<Leader>e', function()
+	map('n', ' db', dap.toggle_breakpoint)
+	map('n', ' dB', dap.clear_breakpoints)
+	map('n', ' dg', dap.goto_)
+	map('n', ' dL', function() dap.list_breakpoints(true) end)
+	map('n', ' dr', dap.run_to_cursor)
+	map('n', ' dE', dapui.eval)
+	map('n', ' de', function()
 		vim.ui.input(
 			{ prompt = 'Eval: ', default = vim.fn.expand '/nat' },
 			function(res) dapui.eval(res) end

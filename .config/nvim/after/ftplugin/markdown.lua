@@ -47,11 +47,11 @@ map('i', '...', '…', opt)
 local reformGen = require('reform.toggle').genSubApplicator
 local function genFor1W(str)
 	return reformGen {
-		vimre = [[[(*_`]\@<!\(]]
+		vimre = [[[*_`]\@<!\(]]
 			.. str:gsub('%*', '\\*')
 			.. [[\)\?\([^/;:=, +]]
 			.. str:sub(1, 1)
-			.. [[]\+\)\1[)*_`]\@!\([);:=,]\)\?]],
+			.. [[]\+\)\1[*_`]\@!\([;:=,]\)\?]],
 		use = function(_, match)
 			return (#match[2] > 0 and match[3] or str .. match[3] .. str) .. match[4]
 		end,
@@ -138,14 +138,17 @@ local function genForMove(toStart)
 			if line == 1 then return end
 			vim.api.nvim_win_set_cursor(0, { line - 1, 1000 })
 		else
-			if line >= vim.api.nvim_buf_line_count(0) then return end
-			vim.api.nvim_win_set_cursor(0, { line + 1, 0 })
-			local textStart = vim.api.nvim_get_current_line():find '[^ %-0-9.]' - 1
-			vim.api.nvim_win_set_cursor(0, { line + 1, textStart })
+			if line + 1 >= vim.api.nvim_buf_line_count(0) then
+				vim.api.nvim_win_set_cursor(0, { line, #vim.api.nvim_get_current_line() })
+			else
+				vim.api.nvim_win_set_cursor(0, { line + 1, 0 })
+				local textStart = vim.api.nvim_get_current_line():find '[^ %-0-9.]' - 1
+				vim.api.nvim_win_set_cursor(0, { line + 1, textStart })
+			end
 		end
 	end
 end
-map({ '', 'i' }, '<C-Left>', genForMove(true), opt)
-map({ '', 'i' }, '<C-Right>', genForMove(false), opt)
+map({ '', 'i' }, '<C-h>', genForMove(true), opt)
+map({ '', 'i' }, '<C-l>', genForMove(false), opt)
 
 vim.wo.conceallevel = 2

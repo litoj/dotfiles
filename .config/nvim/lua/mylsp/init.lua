@@ -12,20 +12,25 @@ vim.lsp.handlers['textDocument/hover'] =
 
 -- buf, win, cur_row, cur_col, previous_label, active_parameter
 local b, w, cr, cc, pl, ap, ac = 0, -1, 0, 0, '', -1, -1
-local function winValid(close)
+local function winClose()
+	if w < 0 then return end
+	pl = ''
+	vim.api.nvim_win_close(w, false)
+	w = -1
+end
+local function winValid()
 	if w < 0 or not vim.api.nvim_win_is_valid(w) then return end
 	local s = vim.api.nvim_win_get_position(w)[1] + vim.fn.line 'w0' - 1 -- adjust by window scroll
 	local e = vim.api.nvim_win_get_height(w) + s + 1
 	local c = vim.api.nvim_win_get_cursor(0)
 	-- Δ5 lines, Δ20 horizontal
 	local ok = (c[1] < s or e < c[1]) -- cursor outside window
-		and (cr - 5 < c[1] and c[1] < cr + 5)
-		and (cc - 20 < c[2] and c[2] < cc + 20)
-	if not ok or close then
-		pl = ''
-		vim.api.nvim_win_close(w, false)
-		w = -1
-	end
+		and math.abs(cr - c[1]) < 5 -- line distance limit
+		and (
+			math.abs(cc - c[2]) < vim.go.columns / 5 -- column limit
+			or math.abs(vim.api.nvim_win_get_width(w) - vim.go.columns) < vim.go.columns / 5
+		)
+	if not ok then winClose() end
 	return ok, c
 end
 local showSig = true
@@ -35,7 +40,7 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 	local noSig = not (sig and sig.signatures and sig.signatures[1])
 	local update, c = winValid()
 	c = c or vim.api.nvim_win_get_cursor(0)
-	if noSig or vim.api.nvim_get_mode().mode ~= 'i' then return end
+	if noSig or not ({ i = 1, s = 1 })[vim.api.nvim_get_mode().mode] then return end
 
 	-- ensure update on change only
 	local s = sig.signatures[(sig.activeSignature or 0) + 1]
@@ -50,10 +55,10 @@ vim.lsp.handlers['textDocument/signatureHelp'] = function(_, sig, ctx, config)
 		vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
 	else
 		config = config or {}
-		config.max_height = config.max_height or math.floor(vim.api.nvim_win_get_height(0) * 0.3)
+		config.max_height = config.max_height or math.floor(vim.api.nvim_win_get_height(0) / 3)
 		config.border = 'rounded'
 		config.focus_id = ctx.method
-		config.close_events = { 'BufLeave', 'ModeChanged', 'WinScrolled' }
+		config.close_events = { 'BufLeave', 'WinScrolled' }
 		b, w = vim.lsp.util.open_floating_preview(lines, 'markdown', config)
 		cr = c[1]
 		cc = c[2]
@@ -96,17 +101,27 @@ local function setup(server, opts)
 			end
 		end
 		if client.server_capabilities.signatureHelpProvider then
-			vim.api.nvim_create_autocmd({ 'CursorHoldI', 'CompleteDone', 'CursorMovedI' }, {
-				callback = function(state)
-					if state.event == 'CursorMovedI' then
-						-- TODO: base detection of context change off of treesitter
-						winValid()
-						return
-					end
-					if showSig then vim.lsp.buf.signature_help() end
-				end,
-				buffer = bufnr,
-			})
+			vim.api.nvim_create_autocmd(
+				{ 'CursorHoldI', 'CompleteDone', 'CursorMovedI', 'ModeChanged' },
+				{
+					callback = function(state)
+						if state.event == 'CursorMovedI' then
+							winValid()
+							if showSig == nil then showSig = true end
+							return
+						elseif state.event == 'ModeChanged' then
+							if state.match:match ':[^is]' then
+								vim.schedule(function() -- delay for detecting snippet jumps
+									if vim.api.nvim_get_mode().mode == state.match:sub(3, 3) then winClose() end
+								end)
+							end
+							return
+						end
+						if showSig then vim.lsp.buf.signature_help() end
+					end,
+					buffer = bufnr,
+				}
+			)
 		end
 		if on_attach then on_attach(client, bufnr) end
 	end
@@ -144,11 +159,12 @@ map('i', '<C-S-Space>', function()
 		if showSig then
 			vim.api.nvim_win_close(w, false)
 			w = -1
+			showSig = nil -- to not display the window until new info
 		else
 			vim.lsp.buf.signature_help()
 		end
 	else
-		showSig = not showSig
+		showSig = vim.api.nvim_win_is_valid(w)
 		vim.print('show signature: ' .. tostring(showSig))
 	end
 end)
@@ -162,7 +178,7 @@ map(
 			tabSize = vim.bo.tabstop,
 			insertSpaces = vim.bo.expandtab,
 			trimTrailingWhitespace = true,
-			insertFinalNewline = false,
+			insertFinalNewline = true,
 			async = true,
 		}
 	end

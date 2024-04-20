@@ -112,6 +112,7 @@ local schemas = {
 }
 
 return {
+	format = false,
 	cmd = { 'vscode-json-language-server', '--stdio' },
 	settings = { json = { schemas = schemas } },
 }

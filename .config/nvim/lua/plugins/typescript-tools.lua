@@ -5,6 +5,7 @@ local M = {
 }
 M.config = function()
 	require('typescript-tools').setup(require('mylsp').setup(nil, {
+		format = false,
 		inlay = true,
 		folding = true,
 		root_dir = require('lspconfig.util').root_pattern(

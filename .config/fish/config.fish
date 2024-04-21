@@ -143,7 +143,9 @@ if status is-login
 		export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
 		export QT_QPA_PLATFORMTHEME=qt5ct GDK_BACKEND="wayland,x11"
 		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1
-		export XDG_CONFIG_HOME=~/.config XDG_CACHE_HOME=~/.cache
+		# for '~' expansion
+		set -x XDG_CONFIG_HOME ~/.config
+		set -x XDG_CACHE_HOME ~/.cache
 		set cache $XDG_CACHE_HOME
 		export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
 		export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd

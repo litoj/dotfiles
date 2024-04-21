@@ -13,6 +13,7 @@ return {
 		opts = {
 			-- docmd = { debug = '/tmp/docmd.md' },
 			link = { fallback = { copy = true, print = true, branch = 'current' } },
+			tbl_extras = true,
 		},
 	},
 	{

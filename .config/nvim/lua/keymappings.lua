@@ -116,20 +116,6 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
 
-	function _G.printTbl(x, depth)
-		local function toDepth(x, depth)
-			local copy = {}
-			for k, v in pairs(x) do
-				if type(v) == 'table' then
-					if depth > 0 then copy[k] = toDepth(v, depth - 1) end
-				else
-					copy[k] = v
-				end
-			end
-			return copy
-		end
-		vim.notify(vim.inspect(toDepth(x, depth or 2)))
-	end
 	if not exists(name) then -- helper functions for testing
 		function _G.bench(cfg, ...)
 			local arg = type(cfg) == 'table' and cfg.arg or cfg
@@ -205,7 +191,7 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 	end
 end)
 
-map('x', '<Tab>', function() -- simple indentation changer ('>>' cancels visual mode)
+map('x', '<Tab>', function() -- simple indentation changer ('>' cancels visual mode)
 	local from, to = vim.fn.line 'v', vim.api.nvim_win_get_cursor(0)[1]
 	if from > to then
 		local x = to

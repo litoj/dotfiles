@@ -102,11 +102,10 @@ function M.config()
 					local entries = cmp.get_entries()
 					if #entries > 0 and #entries == 1 then
 						cmp.confirm { select = true }
-					elseif #entries == 2 and cmp.get_active_entry then
+					elseif #entries == 2 and cmp.get_active_entry() then
 						cmp.select_prev_item()
 						cmp.confirm()
 					else
-						if cmp.get_active_entry() == nil then cmp.select_next_item() end
 						cmp.select_next_item()
 					end
 				else
@@ -117,7 +116,6 @@ function M.config()
 				if cmp.visible() then
 					if
 						vim.api.nvim_get_mode().mode == 'c'
-						or vim.lsp.get_active_clients { bufnr = 0 } -- copilot on empty lines
 						or vim.api.nvim_get_current_line():sub(1, vim.api.nvim_win_get_cursor(0)[2]):match '%S'
 					then
 						cmp.confirm { select = true }

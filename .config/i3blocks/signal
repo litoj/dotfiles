@@ -68,10 +68,10 @@ cpu() {
 	[[ -f /bin/cpupower-gui ]] || return
 	# from ../cpupower_gui/
 	local profile=$1 state
-	declare -A urgency=([Powersave]=normal [Auto]=low [Schedutil]=critical)
+	declare -A urgency=([Auto]=low [Schedutil]=critical)
 	cpupower-gui pr $profile &> /dev/null || return
 	notify-send -t 1000 -h string:synchronous:battery \
-		-u ${urgency[$profile]} " $profile"
+		-u ${urgency[$profile]:-normal} " $profile"
 }
 
 load() {
@@ -89,13 +89,13 @@ load() {
 	[[ -f /bin/acpi_listen ]] || exit
 
 	declare -i old=$SECONDS
-	while read -ra line; do
+	while read -r line; do
 		case "$line" in
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
-			ac_adapter)
-				((SECONDS - old < 2)) && continue || old=$SECONDS
-				((${line[3]})) && profile=Auto || profile=Powersave
+			ac_adapter*)
+				((SECONDS == old)) && continue || old=$SECONDS
+				[[ $line == *1 ]] && profile=Auto || profile=Powersave
 				cpu "$profile"
 				;;
 		esac

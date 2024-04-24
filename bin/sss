@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 
+LC_ALL=C # improves regex by ~10%
 declare -A ACTION_INFO=()
 declare -a ACTION_ORDER=()
 ALIGNER=8
@@ -212,11 +213,11 @@ parseAction() {
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
 	((sigN % 4)) && log Error "Params definition is missing $((4 - sigN % 4)) fields" && return
-	local i posArg firstArg # not `declare -i` to keep unset values as ""
+	local i=-4 posArg firstArg # not `declare -i` to keep unset values as ""
 
 	# distinguish options and args
 	declare -A opts=() # opt names = identifiers
-	for ((i = 0; i < sigN; i += 4)); do
+	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
 		[[ $sign != \$? || ${SSS_OPTS[argAsLongOpt]} ]] && opts["${sigs[$i]}"]=$i
 		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i
@@ -315,8 +316,8 @@ $(paramHelp $ACTION $((i / 4)))" && return
 	done
 
 	# verify all required arguments are set + pick args where allowed and needed
-	i=$firstArg
-	for ((i; i < sigN; i += 4)); do
+	i=firstArg-4
+	while (((i += 4) < sigN)); do
 		local varName=${sigs[$i]} sign=${sigs[i + 1]} reg=${sigs[i + 2]}
 		[[ $sign == [^$][?*] ]] && continue # opt definition between params
 		if [[ ! ${!varName} ]]; then
@@ -399,7 +400,8 @@ paramHelp() {
 	[[ $2 ]] && declare -i i=$2*4 end=i+4 || declare -i i=0 end=${#name[@]}
 	declare -a sig desc
 	declare -i maxLen=$ALIGNER
-	while ((i < end)); do
+	i+=-4
+	while (((i += 4) < end)); do
 		local varName=$(caseToArg ${name[$i]})
 		local sign=${name[i + 1]} regex=${name[i + 2]} help=${name[i + 3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
@@ -415,10 +417,10 @@ paramHelp() {
 
 		[[ $matcher -gt 0 && $regex ]] && help="/$regex/ $help"
 		desc+=("$help")
-		i+=4
 	done
 	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
-	for ((i = 0; i < ${#sig[@]}; i += 1)); do
+	i=-1
+	while ((++i < ${#sig[@]})); do
 		printf "     $fmt\n" $maxLen "${sig[$i]}" "${desc[$i]}"
 	done
 }

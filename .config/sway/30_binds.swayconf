@@ -265,10 +265,11 @@ mode $Exit {
 	bindsym {
 		c mode default, reload
 		e mode default, exec $signal cpu Powersave
-		Shift+E mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
 		a mode default, exec $signal cpu Auto
-		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
 		w mode default, exec $signal cpu Schedutil
+		t mode default, exec $signal cpu Test
+		Shift+E mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
+		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle

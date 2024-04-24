@@ -1,8 +1,109 @@
 #!/usr/bin/bash
 #Signal managing script for statusbar
 
+wp() {
+	local arg=$1
+	declare -A nodes def
+	[[ $arg == detect ]] && sleep 1
+	while :; do
+		{
+			while read -r line; do
+				[[ $line == '├─ Sinks:' ]] && break
+			done
+			category=sink
+			while read -r line; do
+				if [[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]; then
+					if [[ $category == filter ]]; then
+						type=${BASH_REMATCH[3]##*-}
+						BASH_REMATCH[3]="Echo ${type^}"
+					else
+						type=$category
+					fi
+					nodes["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};$type"
+					if [[ ${BASH_REMATCH[1]} == \* ]]; then
+						def[$type]=${BASH_REMATCH[3]}
+					fi
+				elif [[ ${line:3} =~ ^([A-Z][a-z]+)s ]]; then
+					[[ $BASH_REMATCH == Streams ]] && break
+					category=${BASH_REMATCH[1],}
+				fi
+			done
+		} < <(wpctl status)
+		[[ ${def[@]} ]] || ((++tries > 5)) && break || sleep 1
+	done
+	unset nodes['Echo Capture'] nodes['Echo Playback']
+
+	if [[ $arg != detect ]]; then
+		if [[ $arg ]]; then
+			glob=$arg
+		else
+			glob=${def[sink]:-${def[source]}}
+			glob=$(printf '%s\n' "${!nodes[@]}" | rofi -dmenu -i -p "Audio (${glob%% *})")
+		fi
+		if [[ $glob ]]; then
+			[[ $glob == *\* ]] || glob="${glob%% *}*"
+
+			for k in "${!nodes[@]}"; do
+				[[ $k == $glob ]] && def[${nodes["$k"]#*;}]=$k
+			done
+		fi
+	fi
+	msg="Sink: ${def[sink]:=Echo Sink}\nSource: ${def[source]:=Echo Source}"
+
+	if ! [[ ${nodes[${def[sink]}]} && ${nodes[${def[source]}]} ]]; then
+		notify-send -u critical -t 2000 'Audio Err' "$msg"
+		exit 1
+	fi
+
+	notify-send -t 1500 "Audio ${glob:-Default}" "$msg"
+	wpctl set-default ${nodes[${def[sink]}]%;*}
+	wpctl set-default ${nodes[${def[source]}]%;*}
+	[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
+	[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
+	echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
+	pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
+}
+
+cpu() {
+	[[ -f /bin/cpupower-gui ]] || return
+	# from ../cpupower_gui/
+	local profile=$1 state
+	declare -A urgency=([Powersave]=normal [Auto]=low [Schedutil]=critical)
+	cpupower-gui pr $profile &> /dev/null || return
+	notify-send -t 1000 -h string:synchronous:battery \
+		-u ${urgency[$profile]} " $profile"
+}
+
+load() {
+	local profile
+	read profile < /sys/class/power_supply/BAT0/status
+	[[ $profile != D* ]] && profile=Auto || profile=Powersave
+	cpu "$profile"
+	wp detect
+
+	local old
+	readarray -t old < <(pgrep -f signal)
+	((${#old[@]} > 1)) && kill -9 "${old[*]/$$/}"
+	unset old
+
+	[[ -f /bin/acpi_listen ]] || exit
+
+	declare -i old=$SECONDS
+	while read -ra line; do
+		case "$line" in
+			jack/head*) pkill -RTMIN+10 i3blocks ;;
+			jack/micro*) pkill -RTMIN+11 i3blocks ;;
+			ac_adapter)
+				((SECONDS - old < 2)) && continue || old=$SECONDS
+				((${line[3]})) && profile=Auto || profile=Powersave
+				cpu "$profile"
+				;;
+		esac
+	done < <(acpi_listen)
+}
+
 case "$1" in
-	"vol")
+	vol)
 		read -ra WP < /tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[0]} "$2"
@@ -11,7 +112,7 @@ case "$1" in
 		fi
 		pkill -RTMIN+10 i3blocks
 		;;
-	"mic")
+	mic)
 		read -ra WP < /tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[1]} "$2"
@@ -20,77 +121,21 @@ case "$1" in
 		fi
 		pkill -RTMIN+11 i3blocks
 		;;
-	"light")
+	light)
 		light=$(backlight "$2" "$3")
 		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
 		pkill -RTMIN+12 i3blocks
 		;;
-	"kb")
+	kb)
 		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
 		swaymsg input type:keyboard xkb_switch_layout next
 		notify-send -a signal -h string:synchronous:kb " $kb"
 		pkill -RTMIN+13 i3blocks
 		;;
-	"wp")
-		declare -A nodes def
-		[[ $2 == detect ]] && sleep 1
-		while :; do
-			{
-				while read -r line; do
-					[[ $line == '├─ Sinks:' ]] && break
-				done
-				category=sink
-				while read -r line; do
-					if [[ ${line:3} =~ ^(\*)?\ +([0-9]+)\.\ ([^ ]+(\ [^ ]+)*) ]]; then
-						if [[ $category == filter ]]; then
-							type=${BASH_REMATCH[3]##*-}
-							BASH_REMATCH[3]="Echo ${type^}"
-						else
-							type=$category
-						fi
-						nodes["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};$type"
-						if [[ ${BASH_REMATCH[1]} == \* ]]; then
-							def[$type]=${BASH_REMATCH[3]}
-						fi
-					elif [[ ${line:3} =~ ^([A-Z][a-z]+)s ]]; then
-						[[ $BASH_REMATCH == Streams ]] && break
-						category=${BASH_REMATCH[1],}
-					fi
-				done
-			} < <(wpctl status)
-			[[ ${def[@]} ]] || ((++tries > 5)) && break || sleep 1
-		done
-		unset nodes['Echo Capture'] nodes['Echo Playback']
-
-		if [[ $2 != detect ]]; then
-			if [[ $2 ]]; then
-				glob=$2
-			else
-				glob=${def[sink]:-${def[source]}}
-				glob=$(printf '%s\n' "${!nodes[@]}" | rofi -dmenu -i -p "Audio (${glob%% *})")
-			fi
-			if [[ $glob ]]; then
-				[[ $glob == *\* ]] || glob="${glob%% *}*"
-
-				for k in "${!nodes[@]}"; do
-					[[ $k == $glob ]] && def[${nodes["$k"]#*;}]=$k
-				done
-			fi
-		fi
-		msg="Sink: ${def[sink]:=Echo Sink}\nSource: ${def[source]:=Echo Source}"
-
-		if ! [[ ${nodes[${def[sink]}]} && ${nodes[${def[source]}]} ]]; then
-			notify-send -u critical -t 2000 'Audio Err' "$msg"
-			exit 1
-		fi
-
-		notify-send -t 1500 "Audio ${glob:-Default}" "$msg"
-		wpctl set-default ${nodes[${def[sink]}]%;*}
-		wpctl set-default ${nodes[${def[source]}]%;*}
-		[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
-		[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
-		echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
-		pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
+	theme) ~/.config/i3blocks/clock $2 ;;
+	wp) wp "$2" ;;
+	cpu) cpu "$2" ;;
+	load)
+		load
 		;;
-	"theme") ~/.config/i3blocks/clock toggle ;;
 esac

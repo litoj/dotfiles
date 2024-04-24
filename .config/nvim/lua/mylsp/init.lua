@@ -22,6 +22,8 @@ lsu.default_config.capabilities = vim.tbl_deep_extend(
 	'force',
 	lsu.default_config.capabilities,
 	require('cmp_nvim_lsp').default_capabilities()
+	-- ../plugins/ufo.lua
+	-- { textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
 )
 
 lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(config)

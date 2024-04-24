@@ -194,8 +194,13 @@ function M.config()
 	}
 
 	cmp.setup.filetype({ 'markdown', 'text' }, {
-		completion = { autocomplete = false },
-		sources = { src.calc, src.path, src.snip, src.font, src.latex },
+		sources = {
+			src.calc,
+			vim.tbl_extend('force', src.path, { trigger_characters = {}, keyword_length = 100 }),
+			src.snip,
+			src.font,
+			src.latex,
+		},
 	})
 	cmp.setup.filetype(
 		{ 'lua' },

@@ -1,6 +1,6 @@
 map({ 'n', 'i' }, '<A-b>', '<Cmd>w|cd %:h|term compiler %:p<CR>', { buffer = true })
 map({ 'n', 'i' }, '<A-r>', '<Cmd>w|make||!compiler %:p<CR><CR>', { buffer = true })
-map({ 'n', 'i' }, '<C-s>', "<Cmd>w|!rm '%:r'.o<CR><CR>", { buffer = true })
+map({ 'n', 'i' }, '<C-s>', "<Cmd>w|!rm '%:r'.o '%:r'.out<CR><CR>", { buffer = true })
 map(
 	{ 'n', 'i' },
 	'<A-B>',
@@ -9,6 +9,14 @@ map(
 )
 map({ 'n', 'i' }, '<A-T>', "<C-s><Cmd>!cd '%:h' && make test<CR>", { buffer = true, remap = true })
 map({ 'n', 'i' }, '<A-M>', "<Cmd>w|!cd '%:h' && make all<CR>", { buffer = true })
+
+map({ 'n', 'i' }, '<A-R>', function()
+	local name = vim.api.nvim_buf_get_name(0)
+	local out = name:gsub('%.c$', '.out')
+	if not exists(out) then vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end
+	if not exists(out) then return vim.notify 'No executable found' end
+	vim.cmd.term(out)
+end, { buffer = true })
 
 if vim.g.loaded then
 	if vim.g.loaded['c'] then return end

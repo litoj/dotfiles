@@ -147,7 +147,8 @@ yt-dlp' | paru --needed -S -
 		sudo rm -r /var/log/journal
 		git clone https://github.com/mariusor/mpris-ctl.git && cd mpris-ctl &&
 			sudo CC='gcc -O2' make release install && cd .. && rm -rf mpris-ctl
-		sudo systemctl enable acpid
+		acpi=/etc/acpi/events/anything
+		sudo systemctl enable acpid && sudo rm $acpi && sudo touch $acpi
 	}
 }
 

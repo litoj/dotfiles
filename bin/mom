@@ -84,11 +84,11 @@ convert() {
 			[[ $src =~ \.(flac|wav)$ || $(
 				ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
 			) > 192 ]] && b=128 || b=96
-			log Info "['${src/*\/...}'].bitrate = $b"
+			log Info "['${src/*\/.../}'].bitrate = $b"
 		fi
 
 		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
-		[[ $dst && ! -d $dst ]] || log Info "['${src/*\/...}'].dst = '$out'"
+		[[ $dst && ! -d $dst ]] || log Info "['${src/*\/.../}'].dst = '$out'"
 		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${b}k "${out%.*}.opus" -v)
 		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
 		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
@@ -153,7 +153,7 @@ subtitles() {
 		if [[ -z ${lang[i]} ]]; then
 			sub=${subs[i]##*/}
 			[[ $sub == [a-z][a-z][a-z].srt ]] && lang[i]=${sub%.srt} || lang[i]=eng
-			log Info "['${subs[i]/*\/...}'].lang = ${lang[i]}"
+			log Info "['${subs[i]/*\/.../}'].lang = ${lang[i]}"
 		fi
 		opts+=(-metadata:s:s:$i language=${lang[i]} -map $i)
 	done
@@ -175,7 +175,9 @@ subtitles() {
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
-	randomizer 'r?' 'o?' '(default=1); o=once, then just play'
+	randomizer 'r?' '(a([0-9]*)s?|d([0-9]*)(:[0-9]+)?s?)?'
+	'(default=1=mpv --shuffle); a<f>= <f> picks per artist/final dir;
+	      d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
@@ -199,10 +201,40 @@ play() {
 		exec rm "$playlistFile"
 	fi
 
-	if [[ $randomizer == o ]]; then
-		exec fd '' -t f "$src" | sort -R >> "$playlistFile"
+	if [[ $randomizer == [da]* ]]; then
+		local allDirs=() artistDirs=() d f
+		readarray -t allDirs < <(fd '' -Lt d "$src")
+		for d in "${allDirs[@]}"; do # filter out dirs with no files
+			local contents=("$d"/*)
+			for f in "${contents[@]}"; do
+				[[ -f $f ]] && artistDirs+=("$d") && break
+			done
+		done
+		unset allDirs
+
+		if [[ $randomizer == d* ]]; then
+			[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
+			declare -i len=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} f=${BASH_REMATCH[3]:-1} i
+			while ((n-- > 0)); do
+				d=("${artistDirs[RANDOM % len]%/}"/*)
+				for ((i = 0; i < f; i++)); do
+					exec echo "${d[RANDOM % ${#d[@]}]}" \>\> "$playlistFile"
+				done
+			done
+		else # randomizer == a*
+			[[ $randomizer =~ ^a([0-9]*)s?$ ]]
+			declare -i f=${BASH_REMATCH[1]:-1} i
+			for d in "${artistDirs[@]}"; do
+				d=("${d%/}"/*)
+				declare -i len=${#d[@]}
+				for ((i = 0; i < f; i++)); do
+					exec echo "${d[RANDOM % len]}" \>\> "$playlistFile"
+				done
+			done
+		fi
+		[[ $randomizer == *s ]] && cmd+=(--shuffle)
 	else
-		exec echo "$src" >> "$playlistFile"
+		exec echo "$src" \>\> "$playlistFile"
 		((randomizer >= 0)) && cmd+=(--shuffle)
 	fi
 

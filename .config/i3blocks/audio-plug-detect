@@ -1,9 +1,0 @@
-#!/usr/bin/bash
-# requires acpid for acpi_listen
-
-while read -r line; do
-	case "$line" in
-		jack/head*) pkill -RTMIN+10 i3blocks ;;
-		jack/micro*) pkill -RTMIN+11 i3blocks ;;
-	esac
-done < <(acpi_listen)

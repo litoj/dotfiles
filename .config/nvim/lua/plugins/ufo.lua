@@ -8,7 +8,11 @@ function M.config()
 	ufo.setup {
 		open_fold_hl_timeout = 0,
 		provider_selector = function(buf, ft, type)
-			return ft == 'markdown' and 'indent' or { 'treesitter', 'indent' }
+			return ft == 'markdown' and 'indent'
+				-- or (
+					-- #vim.lsp.get_active_clients { bufnr = buf } > 0 and { 'lsp', 'treesitter' }
+					or { 'treesitter', 'indent' }
+				-- )
 		end,
 	}
 	vim.o.fdl = 99
@@ -19,6 +23,5 @@ function M.config()
 	map('n', '+', ufo.openAllFolds)
 	map('n', '-', 'za')
 	map('n', '=', 'zA')
-	-- map('n', 'K', ufo.peekFoldedLinesUnderCursor)
 end
 return M

@@ -1,8 +1,9 @@
+set $signal ~/.config/i3blocks/signal
+exec_always $signal load
+
 # set background
 exec {
 	mkdir -p /tmp/my/ && $nextbg
-	[[ -f /bin/cpupower-gui ]] && cpupower-gui pr \
-		$([[ $(cat /sys/class/power_supply/BAT0/status) == D* ]] && echo Powersave || echo Optimal) &>/dev/null
 	wlsunset -l 50 -L 14.5 &>/dev/null &
 	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on'
 
@@ -10,10 +11,7 @@ exec {
 	gsettings set org.gnome.desktop.interface cursor-theme 'Sweet-cursors'
 	gsettings set org.gnome.desktop.interface cursor-size 32
 	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
-	~/.config/i3blocks/audio-plug-detect
 }
-set $signal ~/.config/i3blocks/signal
-exec_always $signal wp detect
 
 seat seat0 xcursor_theme 'Sweet-cursors' 32
 

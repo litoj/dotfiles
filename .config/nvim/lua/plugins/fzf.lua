@@ -31,10 +31,10 @@ function M.config()
 	map('n', 'gd', vim.lsp.buf.definition)
 	map('n', 'gr', vim.lsp.buf.references)
 	map('n', ' fb', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
-	map('n', ' fl', fzf.files)
+	map('n', ' fp', fzf.files)
 	map('n', ' fo', fzf.oldfiles)
-	map('n', ' fO', function() fzf.oldfiles { cwd_only = true } end)
-	map('n', ' fg', fzf.live_grep)
+	map('n', ' fc', function() fzf.oldfiles { cwd_only = true } end)
+	map('n', ' g', fzf.live_grep)
 	map('n', ' b', fzf.buffers)
 	map('n', ' dl', fzf.lsp_workspace_diagnostics) -- list diagnostics
 	map('n', ' mc', fzf.highlights) -- my - colors

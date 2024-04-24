@@ -269,8 +269,8 @@ parseAction() {
 				else
 					if ((SCRIPT_OPTS[picker])) && [[ -z $arg && ${sigs[i + 1]} != ?[+!] ]]; then
 						declare -a $varName # picker for options
-						log Debug "/opt.$varName = <${builder[$varName]:-pickAny}>"
 						${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
+						log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= ${!varName}"
 					fi
 
 					[[ -z ${!varName} ]] && log Error " - Argument expected, got '${arg:-$1}':
@@ -322,9 +322,9 @@ $(paramHelp $ACTION $((i / 4)))" && return
 		if [[ ! ${!varName} ]]; then
 			if ((SCRIPT_OPTS[picker])); then # picker for optional args || arg required
 				if ((SCRIPT_OPTS[optArgPicker])) || [[ $sign == ?[+!] ]]; then
-					log Debug "/arg.$varName = <${builder[$varName]:-pickAny}>"
 					declare -a $varName # prepare variable as local
 					${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
+					log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= ${!varName}"
 				fi
 			fi
 			[[ ! ${!varName} && ${sign:0-1} == [+!] ]] && log Error " - Argument expected:

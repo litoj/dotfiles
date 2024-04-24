@@ -17,6 +17,7 @@ signal=12
 
 [battery]
 interval=60
+signal=14
 
 [updates]
 

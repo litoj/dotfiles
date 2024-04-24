@@ -8,7 +8,7 @@ bindsym {
 	$Mod+$Alt+Shift+g gaps outer current minus 5
 	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
-	$Mod+$Alt+Shift+t exec $signal theme tgl
+	$Mod+$Alt+Shift+t exec $signal theme toggle
 
 	$Mod+u exec $nextbg
 	$Mod+Ctrl+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
@@ -264,11 +264,11 @@ bindsym --release {
 mode $Exit {
 	bindsym {
 		c mode default, reload
-		e mode default, exec cpupower-gui pr Powersave &>/dev/null && notify-send -t 1000 " Efficiency"
+		e mode default, exec $signal cpu Powersave
 		Shift+E mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
-		a mode default, exec cpupower-gui pr Optimal &>/dev/null && notify-send -u low -t 1000 " Auto"
+		a mode default, exec $signal cpu Auto
 		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
-		w mode default, exec cpupower-gui pr Auto &>/dev/null && notify-send -u critical -t 1000 " Performance"
+		w mode default, exec $signal cpu Schedutil
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
@@ -357,7 +357,7 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -Dgp -p
-	$Mod+$Alt+m exec mom -Dgp -pro
+	$Mod+$Alt+m exec mom -Dgp -pLrd10:2
 	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"

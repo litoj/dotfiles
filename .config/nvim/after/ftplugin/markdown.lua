@@ -28,6 +28,7 @@ end
 
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
 map('i', '<S-Enter>', '<End><Enter>', { buffer = true, remap = true })
+map('n', '<A-R>', '<Cmd>MarpToggle<CR><CR>')
 map(
 	{ 'n', 'i' },
 	'<A-r>',
@@ -36,7 +37,7 @@ map(
 )
 map(
 	{ 'n', 'i' },
-	'<A-p>',
+	'<A-B>',
 	'<C-s><Cmd>!pandoc --pdf-engine=pdfroff "%:p" -o "%:r.pdf" && zathura "%:r.pdf" &<CR><CR>',
 	{ buffer = true, remap = true }
 )
@@ -44,7 +45,7 @@ local opt = { buffer = true }
 map('i', '<A-q>', '\\', opt)
 map('i', '...', '…', opt)
 
-local reformGen = require('reform.toggle').genSubApplicator
+local reformGen = require('reform.toggle').gen_sub_applicator
 local function genFor1W(str)
 	return reformGen {
 		vimre = [[[*_`]\@<!\(]]
@@ -108,13 +109,13 @@ map('v', '<A-b>', genForVisual '**', opt)
 map('v', '<A-i>', genForVisual '_', opt)
 map('v', '<A-`>', genForVisual '`', opt)
 
-local function genForMove(toStart)
+local function genForMove(backward) -- TODO: generalize→reform as matcher → node → operators (del/mv)
 	local ev = {
 		filter = {
-			tolerance = { startPost = toStart and 0 or 6, endPre = toStart and 6 or 0 },
+			tolerance = { startPost = backward and 0 or 6, endPre = backward and 6 or 0 },
 			sorting = function(ev, order, matcher, match)
 				return (match.from <= ev.column and match.to >= ev.column - 1) and -1000
-					or (toStart and ev.column - match.from or match.to - ev.column)
+					or (backward and ev.column - match.from or match.to - ev.column)
 			end,
 		},
 	}
@@ -122,19 +123,19 @@ local function genForMove(toStart)
 		vimre = [[\(\*\*\|[_`]\)\?\([*_` \-]\@!\( \?(\@![^;:=, _*`]\+\( \W\|[)*_`]\)\@<!\)\+\)\1\([;:=,]\)\?]],
 		use = function(_, match, ev)
 			if match.from >= 1 then match.from = match.from - 1 end
-			if (toStart and match.from or match.to) == ev.column - 1 then return false end
+			if (backward and match.from or match.to) == ev.column - 1 then return false end
 			vim.api.nvim_win_set_cursor(0, {
 				ev.line,
-				toStart and match.from or match.to,
+				backward and match.from or match.to,
 				--[[ toStart and (match.to < ev.column - 2 and match.to or match.from)
 					or (match.from > ev.column and match.from or match.to), ]]
 			})
 		end,
 	}
 	return function()
-		if require('reform.util').applyMatcher(matcher, ev) then return end
+		if require('reform.util').apply_matcher(matcher, ev) then return end
 		local line = vim.fn.line '.'
-		if toStart then
+		if backward then
 			if line == 1 then return end
 			vim.api.nvim_win_set_cursor(0, { line - 1, 1000 })
 		else
@@ -142,8 +143,8 @@ local function genForMove(toStart)
 				vim.api.nvim_win_set_cursor(0, { line, #vim.api.nvim_get_current_line() })
 			else
 				vim.api.nvim_win_set_cursor(0, { line + 1, 0 })
-				local textStart = vim.api.nvim_get_current_line():find '[^ %-0-9.]' - 1
-				vim.api.nvim_win_set_cursor(0, { line + 1, textStart })
+				local textStart = vim.api.nvim_get_current_line():find '[^ %-0-9.]'
+				vim.api.nvim_win_set_cursor(0, { line + 1, textStart and textStart - 1 or 1000 })
 			end
 		end
 	end

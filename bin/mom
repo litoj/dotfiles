@@ -61,6 +61,8 @@ nometa() {
 # scripts to generate options
 # Do as batch operations - option for loading input/output
 # option for additional options / envvars
+# Ideally: -from -to - arg opts with picker opening mpv but parsing piped user input
+# figure out how to get back the mpv current time
 # cut() {
 
 # }
@@ -212,24 +214,32 @@ play() {
 		done
 		unset allDirs
 
-		if [[ $randomizer == d* ]]; then
+		pickFromDir() {
+			((perDir >= $#)) && echo "$@" | exec sort -R \>\> "$playlistFile" && return
+			declare -i cnt=$perDir pick
+			while ((cnt--)); do
+				((pick = RANDOM % $#))
+				if [[ $(file -b --mime-type "${!pick}") == audio/* ]]; then
+					exec echo "${!pick}" \>\> "$playlistFile"
+				else
+					((cnt++))
+				fi
+			done
+		}
+
+		if ((!${#artistDirs[@]})); then
+			exec echo "$src" \>\> "$playlistFile"
+		elif [[ $randomizer == d* ]]; then
 			[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
-			declare -i len=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} f=${BASH_REMATCH[3]:-1} i
+			declare -i fileCnt=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
 			while ((n-- > 0)); do
-				d=("${artistDirs[RANDOM % len]%/}"/*)
-				for ((i = 0; i < f; i++)); do
-					exec echo "${d[RANDOM % ${#d[@]}]}" \>\> "$playlistFile"
-				done
+				pickFromDir "${artistDirs[RANDOM % len]%/}"/*
 			done
 		else # randomizer == a*
 			[[ $randomizer =~ ^a([0-9]*)s?$ ]]
-			declare -i f=${BASH_REMATCH[1]:-1} i
+			declare -i perDir=${BASH_REMATCH[1]:-1}
 			for d in "${artistDirs[@]}"; do
-				d=("${d%/}"/*)
-				declare -i len=${#d[@]}
-				for ((i = 0; i < f; i++)); do
-					exec echo "${d[RANDOM % len]}" \>\> "$playlistFile"
-				done
+				pickFromDir "${d%/}"/*
 			done
 		fi
 		[[ $randomizer == *s ]] && cmd+=(--shuffle)

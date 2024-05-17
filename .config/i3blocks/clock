@@ -9,7 +9,7 @@ setTheme() {
 
 	shopt -s nullglob
 	local todo=(/dev/pts/*)
-	if [[ $todo ]]; then
+	if [[ $todo ]]; then # use nerdcontrast to generate terminal colors
 		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2> /tmp/term > /dev/null
 		for f in "${todo[@]}"; do
 			[[ -O $f ]] && cat /tmp/term > "$f"
@@ -25,6 +25,7 @@ setTheme() {
 }
 
 updateTheme() {
+	pkill -RTMIN+20 i3blocks
 	if ((STAT[0] <= x && x < STAT[1])); then
 		next=${STAT[1]}
 		touch /tmp/my/day

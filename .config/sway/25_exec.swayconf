@@ -16,8 +16,8 @@ exec {
 seat seat0 xcursor_theme 'Sweet-cursors' 32
 
 # seat seat0 attach 1:1:AT_Translated_Set_2_keyboard
-# seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Touchpad
-# seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Mouse
+seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Touchpad
+seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Mouse
 # seat seat0 attach 0:1:Power_Button
 # seat seat0 attach 0:5:Lid_Switch
 # seat seat0 attach 0:6:Video_Bus

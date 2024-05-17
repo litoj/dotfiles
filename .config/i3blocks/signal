@@ -69,16 +69,19 @@ cpu() {
 	# from ../cpupower_gui/
 	local profile=$1 state
 	declare -A urgency=([Auto]=low [Schedutil]=critical)
-	cpupower-gui pr $profile &> /dev/null || return
-	notify-send -t 1000 -h string:synchronous:battery \
-		-u ${urgency[$profile]:-normal} " $profile"
+	cpupower-gui pr $profile &> /dev/null &&
+		notify-send -t 1000 -h string:synchronous:battery -u ${urgency[$profile]:-normal} " $profile"
 }
 
-load() {
+cpuByBattery() {
 	local profile
 	read profile < /sys/class/power_supply/BAT0/status
 	[[ $profile != D* ]] && profile=Auto || profile=Powersave
 	cpu "$profile"
+}
+
+load() {
+	cpuByBattery
 	wp detect
 
 	local old
@@ -93,11 +96,9 @@ load() {
 		case "$line" in
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
-			ac_adapter*)
-				((SECONDS == old)) && continue || old=$SECONDS
-				[[ $line == *1 ]] && profile=Auto || profile=Powersave
-				cpu "$profile"
-				;;
+			ac_adapter*1)((SECONDS != old)) && old=$SECONDS  && cpu Auto;;
+			ac_adapter*0)((SECONDS != old)) && old=$SECONDS  && cpu Powersave;;
+			button/lid*open) sleep 1 && cpuByBattery;;
 		esac
 	done < <(acpi_listen)
 }
@@ -133,9 +134,5 @@ case "$1" in
 		pkill -RTMIN+13 i3blocks
 		;;
 	theme) ~/.config/i3blocks/clock $2 ;;
-	wp) wp "$2" ;;
-	cpu) cpu "$2" ;;
-	load)
-		load
-		;;
+	*) "$@" ;;
 esac

@@ -35,6 +35,7 @@ bindsym --to-code {
 	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE
 	$Mod+7 exec W=$wMedia $lof gimp "Gimp|mpv"
+	$Mod+$Alt+7 exec W=$wMedia $lof darktable darktable
 	$Mod+$Alt+9 exec W=$wGame $lof prismlauncher null "^(Minecraft|Prism Launcher).*"
 	$Mod+9 exec W=$wGame $lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
 }
@@ -116,7 +117,6 @@ bindsym {
 	$Mod+Down exec $floatpos d
 	$Mod+Up exec $floatpos u
 	$Mod+Right exec $floatpos r
-	$Mod+Shift+c exec $floatpos c
 # snap to side or focus in tiling mode
 	$Mod+Shift+Left exec $floatpos l focusable
 	$Mod+Shift+Down exec $floatpos d focusable
@@ -167,16 +167,17 @@ bindsym {
 	$Mod+s focus down
 	$Mod+w focus up
 	$Mod+d focus right
-# resize
-	$Mod+$Alt+a resize shrink width 4
-	$Mod+$Alt+s resize grow height 4
-	$Mod+$Alt+w resize shrink height 4
-	$Mod+$Alt+d resize grow width 4
 # move
 	$Mod+Shift+a move left
 	$Mod+Shift+s move down
 	$Mod+Shift+w move up
 	$Mod+Shift+d move right
+	$Mod+Shift+c exec $floatpos c
+# resize
+	$Mod+$Alt+a resize shrink width 4
+	$Mod+$Alt+s resize grow height 4
+	$Mod+$Alt+w resize shrink height 4
+	$Mod+$Alt+d resize grow width 4
 # focus workspace
 	$Mod+Ctrl+s workspace prev
 	$Mod+Ctrl+w workspace next
@@ -189,6 +190,20 @@ bindsym {
 	$Mod+Ctrl+a move workspace prev, workspace prev
 	$Mod+Ctrl+d move workspace next, workspace next
 	$Mod+Ctrl+f move workspace back_and_forth, workspace back_and_forth
+
+#------------+
+# Right Hand |
+#------------+
+# snap to side or focus in tiling mode
+	$Mod+h focus left
+	$Mod+j focus down
+	$Mod+k focus up
+	$Mod+l focus right
+# move
+	$Mod+Shift+h exec $floatpos l
+	$Mod+Shift+j exec $floatpos d
+	$Mod+Shift+k exec $floatpos u
+	$Mod+Shift+l exec $floatpos r
 
 # both hands
 	$Mod+period workspace next

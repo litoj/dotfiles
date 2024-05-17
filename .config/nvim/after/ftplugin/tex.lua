@@ -36,6 +36,11 @@ map(
 	{ buffer = true }
 )
 
+withMod('syntax-tree-surfer', function(sts)
+	map('n', 'gs', sts.list { 'chapter', 'section', 'subsection' })
+	map('n', 'gf', sts.list { 'begin' })
+end)
+
 if vim.g.loaded then
 	if vim.g.loaded['tex'] then return end
 	vim.g.loaded['tex'] = true

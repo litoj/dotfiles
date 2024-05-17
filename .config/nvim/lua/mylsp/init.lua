@@ -26,17 +26,17 @@ lsu.default_config.capabilities = vim.tbl_deep_extend(
 	-- { textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
 )
 
-lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(config)
-	config.on_attach = lsu.add_hook_before(config.on_attach, function(client, bufnr)
+lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(opts)
+	opts.on_attach = lsu.add_hook_before(opts.on_attach, function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
 		-- custom settings for dynamic capability override
 		if client.server_capabilities.documentFormattingProvider then
-			client.server_capabilities.documentFormattingProvider = config.format ~= false
+			client.server_capabilities.documentFormattingProvider = opts.format ~= false
 		end
-		--[[ if client.server_capabilities.inlayHintProvider and opts.inlay then
+		if client.server_capabilities.inlayHintProvider and opts.inlay then
 			vim.lsp.inlay_hint.enable(bufnr, true)
-		end ]]
-		if config.setCwd ~= false then
+		end
+		if opts.setCwd ~= false then
 			local bname = vim.api.nvim_buf_get_name(bufnr)
 			for _, ws in ipairs(client.config.workspace_folders) do
 				ws = ws.name
@@ -79,11 +79,17 @@ map('n', 'gD', vim.lsp.buf.declaration)
 map('n', 'gt', vim.lsp.buf.type_definition)
 -- gd,gr in ../plugins/fzf.lua
 map('n', 'gI', vim.lsp.buf.implementation)
-map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
-map({ 'n', 'i' }, '<C-I>', vim.lsp.buf.document_highlight)
+-- map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
+map(
+	{ 'n', 'i' },
+	'<A-i>',
+	function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end
+)
+map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)
 map({ 'n', 'i' }, '<A-c>', vim.lsp.buf.code_action)
 map({ 'n', 'i' }, '<F2>', vim.lsp.buf.rename)
+map({ 'n', 'i' }, '<C-r>', vim.lsp.buf.rename)
 map(
 	{ 'n', 'i' },
 	'<A-F>',

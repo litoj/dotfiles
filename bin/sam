@@ -6,13 +6,21 @@ SSS_OPTS[about]='SAM - System APK Manager
 This program uses ADB to manage system applications on your Android phone.'
 
 actionInfo connect 'connect to a device with given ip/port'
-connectParams=(dst '$!' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:)?[0-9]+' 'Port or ip:port')
+connectParams=(dst '$!' '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)?(:?[0-9]+|:)' 'ip?:port?')
 connect() {
-	[[ $dst != *:* ]] && dst=$(
-		nmap -T4 -p$dst $(
+	[[ $dst =~ ^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)?:?([0-9]*)$ ]]
+	local ip=${BASH_REMATCH[1]} port=${BASH_REMATCH[2]}
+	if [[ -z $ip || -z $port ]]; then
+		[[ $ip ]] || ip=$(
 			ip a | sed -nE 's,.*inet ((1[^2][^.]|12[^7]|[1-9][0-9])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
-		) | grep -B4 '/tcp open' | sed -n 's,.*report for ,,p'
-	):$dst
+		)
+		[[ $port ]] || port=30000-50000
+		dst=$(
+			exec nmap -T4 -p$port $ip | awk '$4=="for"{ip=$5};$2=="open"{print ip":"gensub("/tcp","",1,$1)}'
+		)
+	else
+		dst=$ip:$port
+	fi
 	exec adb connect $dst
 }
 

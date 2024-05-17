@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+export LC_ALL=C LANG=C
 
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
@@ -7,11 +8,11 @@ wtwitch() {
 	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")
 
 	if [[ -z $token || $token == null ]] ||
-		(($(LANG=C date +%s) > expiry)); then
+		(($(date +%s) >= expiry)); then
 		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
 		[[ -z $newToken || $newToken == null ]] && exit 1
 		token=$newToken
-		sed -i "s/^\(token=\).*/\1$newToken/;s/^\(expiry=\).*/\1$(LANG=C date -d tomorrow +'%s')/" "$CONFIG_FILE"
+		sed -i "s/^\(token=\).*/\1$newToken/;s/^\(expiry=\).*/\1$(date -d tomorrow +%s)/" "$CONFIG_FILE"
 	fi
 
 	# Search for streamer ID in cache
@@ -55,6 +56,7 @@ CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.toml"
 	esac
 done < "$CONFIG_FILE"
 streamer=$(printf '%s\n' ${streamerList[@]} | rofi -dmenu -p Streamer)
+(($?)) && exit 0
 case "$streamer" in
 	[0-9]) streamer=${streamerList[$streamer]} ;;
 	https://*) url=$streamer ;;
@@ -69,7 +71,6 @@ case "$streamer" in
 		done
 		[[ $streamer == [a-z] ]] && exit 1
 		;;
-	*) exit 0 ;;
 esac
 
 if [[ -z $url ]]; then
@@ -88,28 +89,13 @@ if [[ -z $url ]]; then
 fi
 
 if [[ -z $quality ]]; then
-	quals=(best 720 480 360 audio)
-	quality=$(printf '%s\n' ${quals[@]} | rofi -dmenu -p Quality)
+	qualtOpts=(360 720 1440 best 480 audio)
+	declare -A presets=([best]="bv*+ba" [360]="bv*[height=360],ba" [audio]="ba")
+	quality=$(printf '%s\n' ${qualtOpts[@]} | rofi -dmenu -p Quality)
+	(($?)) && exit 0
 
-	if [[ -z $quality ]]; then
-		exit 0
-	elif [[ $quality == [a-z] ]]; then
-		for q in ${quals[@]}; do
-			if [[ $q == "$quality"* ]]; then
-				quality=$q
-				break
-			fi
-		done
-		[[ $quality == [a-z] ]] && exit 0
-	fi
-
-	case "$quality" in
-		best) quality="" ;;
-		720) quality="bv*[height=720]+ba" ;;
-		480) quality="bv*[height=480]+ba" ;;
-		360) quality="bv*[height=360],ba" ;;
-		audio) quality="ba" ;;
-	esac
+	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
+		quality=${presets[$quality]:-bv*[height=$quality]+ba}
 fi
 mpv --ytdl-format="$quality" --no-terminal "$url" &
 

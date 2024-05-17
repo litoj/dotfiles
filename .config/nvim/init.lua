@@ -5,12 +5,8 @@ _G.map = vim.keymap.set
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 function _G.exists(f)
 	f = io.open(f)
-	if f then
-		f:close()
-		return true
-	else
-		return false
-	end
+	if f then f:close() end
+	return f ~= nil
 end
 function _G.withMod(mod, cb)
 	if package.loaded[mod] then return cb(package.loaded[mod]) end
@@ -20,13 +16,8 @@ function _G.withMod(mod, cb)
 		if old then
 			old()
 		else
-			for _, loader in pairs(package.loaders) do
-				local ret = loader(mod)
-				if type(ret) == 'function' then
-					package.loaded[mod] = ret()
-					break
-				end
-			end
+			package.loaded[mod] = nil
+			package.loaded[mod] = package.loaders[2](mod)()
 		end
 		cb(package.loaded[mod])
 	end

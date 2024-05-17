@@ -26,6 +26,7 @@ function M.config()
 			open_file = { quit_on_open = true, window_picker = { enable = true } },
 			change_dir = { global = true },
 			file_popup = { open_win_config = { border = 'single', col = -1 } },
+			expand_all = { max_folder_discovery = 100, exclude = {} },
 		},
 		on_attach = function(bufnr)
 			-- vim.wo.wrap = true
@@ -40,10 +41,10 @@ function M.config()
 			end
 			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
 			map({ 'l', '<Right>', '<CR>' }, api.node.open.edit)
-			map({ 'K', ',' }, api.node.navigate.sibling.prev)
-			map({ 'J', '.' }, api.node.navigate.sibling.next)
-			map({ '<A-k>', '<' }, api.node.navigate.parent)
-			map({ '<A-j>', '>' }, function()
+			map({ '<A-k>', ',' }, api.node.navigate.sibling.prev)
+			map({ '<A-j>', '.' }, api.node.navigate.sibling.next)
+			map({ 'K', '<' }, api.node.navigate.parent)
+			map({ 'J', '>' }, function()
 				api.node.navigate.parent()
 				api.node.navigate.sibling.next()
 			end)

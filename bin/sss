@@ -227,6 +227,7 @@ parseAction() {
 	firstArg=$posArg
 
 	declare -n builder=${ACTION}Builder
+	[[ ${builder[@]} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
 	while [[ $1 ]]; do # get options and args
 		# parse option prefix
 		[[ $1 == -- && ${#opts[@]} -gt 0 ]] && shift && opts=() && continue # only args will be found
@@ -271,7 +272,7 @@ parseAction() {
 					if ((SCRIPT_OPTS[picker])) && [[ -z $arg && ${sigs[i + 1]} != ?[+!] ]]; then
 						declare -a $varName # picker for options
 						${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
-						log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= ${!varName}"
+						log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= '${!varName}'"
 					fi
 
 					[[ -z ${!varName} ]] && log Error " - Argument expected, got '${arg:-$1}':
@@ -325,7 +326,7 @@ $(paramHelp $ACTION $((i / 4)))" && return
 				if ((SCRIPT_OPTS[optArgPicker])) || [[ $sign == ?[+!] ]]; then
 					declare -a $varName # prepare variable as local
 					${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
-					log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= ${!varName}"
+					log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= '${!varName}'"
 				fi
 			fi
 			[[ ! ${!varName} && ${sign:0-1} == [+!] ]] && log Error " - Argument expected:

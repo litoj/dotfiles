@@ -20,7 +20,6 @@ for_window [app_id="dragon-drop"] floating enable, sticky enable, move position 
 for_window [app_id="com.github.hluk.copyq"] floating enable, sticky enable
 for_window [app_id="firefox" title="Picture-in-Picture|Obraz v obraze"] \
 	floating enable, sticky enable, border pixel $border
-for_window [app_id="firefox"] inhibit_idle fullscreen
 for_window [title=".*Android Emulator.*"] floating enable, border none
 for_window [title="win0"] floating enable
 for_window [app_id="cpupower-gui"] floating enable, border pixel $border
@@ -47,7 +46,7 @@ smart_gaps on
 assign [title="Transmission"] $w1
 assign [app_id="firefox"] $wBrowser
 assign [class="NetBeans|jetbrains-.*|ea.exe"] $wCode
-assign [app_id="mpv|gimp|Inkscape"] $wMedia
+assign [app_id="mpv|gimp|Inkscape|darktable"] $wMedia
 assign [instance="gimp"] $wMedia
 assign [class="Ripcord"] $wMsg
 assign [app_id="thunderbird|tutanota-desktop|Slack"] $wMsg

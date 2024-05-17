@@ -42,8 +42,8 @@ local function runWithConfig(cmd)
 	}, ' '))
 end
 
-map({ 'n', 'i' }, '<A-B>', function() runWithConfig 'dotnet watch' end, { buffer = true })
-map({ 'n', 'i' }, '<A-R>', function() runWithConfig(getExecPath()) end, { buffer = true })
+map({ 'n', 'i' }, '<A-R>', function() runWithConfig 'dotnet watch' end, { buffer = true })
+map({ 'n', 'i' }, '<A-B>', function() runWithConfig(getExecPath()) end, { buffer = true })
 
 if vim.g.loaded then
 	if vim.g.loaded['cs'] then return end

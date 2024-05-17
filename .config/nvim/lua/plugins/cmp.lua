@@ -157,7 +157,9 @@ function M.config()
 				end
 			end, { 'i', 'c', 's' }),
 			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 'c' }),
+			['<A-k>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 'c' }),
 			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
+			['<A-j>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
 			['<C-2>'] = select(2),
 			['<C-ě>'] = select(2),
 			['<C-3>'] = select(3),
@@ -224,7 +226,7 @@ local f = io.open '/sys/class/power_supply/BAT0/status'
 local ok = f and f:read '*l' ~= 'Discharging'
 if f then f:close() end
 if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 'root' then
-	src.tabnine = { name = 'cmp_tabnine', group_index = 2 }
+	src.tabnine = { name = 'cmp_tabnine', group_index = 3 }
 	M[#M + 1] = {
 		'tzachar/cmp-tabnine',
 		build = './install.sh',
@@ -252,7 +254,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 				vue = true,
 			},
 		},
-		dependencies = { { 'JosefLitos/cmp-copilot', opts = {} }, 'nvim-cmp' },
+		dependencies = { { 'JosefLitos/cmp-copilot', opts = {} } },
 		event = 'LspAttach',
 	}
 end

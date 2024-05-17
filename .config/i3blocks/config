@@ -2,17 +2,16 @@ command=~/.config/i3blocks/$BLOCK_NAME
 separator_block_width=15
 separator=true
 markup=pango
-interval=once
+interval=0
 
 [volume]
-interval=0
 signal=10
 
 [mic]
-interval=0
 signal=11
 
 [backlight]
+interval=once
 signal=12
 
 [battery]
@@ -22,11 +21,13 @@ signal=14
 [updates]
 
 [kb]
+interval=once
 command=[[ $(swaymsg -t get_inputs -p | grep '(US)' -m 1) ]] && echo  US || echo  CZ
 signal=13
 
 [date]
 command=date +" %a %d.%m."
+signal=20
 
 [clock]
 interval=-3

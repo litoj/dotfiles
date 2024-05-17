@@ -34,11 +34,24 @@ map('i', '<A-V>', '<C-r>"')
 map('i', '<C-S-V>', '<C-o>gP')
 map('n', '<C-v>', 'p')
 map('v', '<C-v>', '"ddP')
+map('v', 'P', '"ddP')
 map('', 'c', '"dc')
 -- Deleting text
-map('n', '<C-d>', '"ddd')
 map('i', '<C-d>', '<C-o>"ddd')
-map({ 'i', 'c' }, '<C-BS>', '<C-w>')
+map('n', '<C-d>', '"ddd')
+map('i', '<A-d>', '<C-o>"dd')
+map('i', '<A-d>b', '<Esc>"ddbi<Del>')
+map('i', '<A-d>B', '<Esc>"ddBi<Del>')
+map('i', '<A-x>', '<BS>')
+map('i', '<A-X>', '<Del>')
+-- gui-like remap
+map('', '<Del>', '"_x')
+map('', '<BS>', '"_X')
+map('c', '<C-BS>', '<C-w>')
+map('i', '<C-BS>', '<Esc>"ddbi<Del>')
+map('i', '<C-S-BS>', '<Esc>"ddBi<Del>')
+map('i', '<C-Del>', '<C-o>"dde')
+map('i', '<C-S-Del>', '<C-o>"ddE')
 local function delExtended(keybind)
 	return function()
 		vim.bo.isk = vim.bo.isk .. ',.,*'
@@ -47,51 +60,37 @@ local function delExtended(keybind)
 	end
 end
 map('i', '<A-BS>', delExtended '<C-w>')
-map('i', '<C-S-BS>', '<C-o>"ddB')
-map('i', '<C-Del>', '<C-o>"ddw')
 map('i', '<A-Del>', delExtended '<C-o>"ddw')
-map('i', '<C-S-Del>', '<C-o>"ddE')
-map('', '<Del>', '"_x')
--- -- inc/dec
--- map('n', '<A-a>', '<C-a>')
--- map('i', '<A-a>', '<C-o><C-a>')
--- map('n', '<A-A>', '<C-x>')
--- map('i', '<A-A>', '<C-o><C-x>')
--- indent
-map('i', '<C-S-.>', '<C-t>')
--- undo/redo
+-- undo/redo gui-like remap
 map({ '', 'i' }, '<C-z>', '<Cmd>undo<CR>')
 map({ '', 'i' }, '<C-y>', '<Cmd>redo<CR>')
 
 -- Moving around
-map('i', '<S-Left>', '<C-o>ms<Left><C-o>v')
-map('i', '<S-Down>', '<C-o>ms<C-o>v<Down>')
-map('i', '<S-Up>', '<C-o>ms<C-o>v<Up>')
-map('i', '<S-Right>', '<C-o>ms<C-o>v')
 map('i', '<A-`>', '<C-o>`') -- quick mark jump
-map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
-map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')
-map({ '', 'i', 't' }, '<C-h>', '<C-Left>')
 map('', '<C-j>', '<PageDown>zz')
 map('', '<C-k>', '<PageUp>zz')
-map({ 'i', 't' }, '<C-j>', '<PageDown><Cmd>stopinsert<CR>zza')
-map({ 'i', 't' }, '<C-k>', '<PageUp><Cmd>stopinsert<CR>zza')
-map({ '', 'i', 't' }, '<C-l>', '<C-Right>')
-map({ 'i', 't' }, '<A-h>', '<Left>')
-map({ 'i', 't' }, '<A-j>', '<Down>', { remap = true })
-map({ 'i', 't' }, '<A-k>', '<Up>', { remap = true })
-map({ 'i', 't' }, '<A-l>', '<Right>')
+map({ 'i', 't' }, '<C-j>', '<PageDown><C-o>zz')
+map({ 'i', 't' }, '<C-k>', '<PageUp><C-o>zz')
+map({ '', '!', 't' }, '<C-h>', '<C-Left>')
+map({ '', '!', 't' }, '<C-l>', '<C-Right>')
+map({ '!', 't' }, '<C-S-H>', '<C-o>B')
+map({ '!', 't' }, '<C-S-L>', '<C-o>W')
+map({ '!', 't' }, '<A-h>', '<Left>')
+map({ '!', 't' }, '<A-j>', '<Down>')
+map({ '!', 't' }, '<A-k>', '<Up>')
+map({ '!', 't' }, '<A-l>', '<Right>')
+map({ '!', 't' }, '<C-A-h>', '<C-o>^')
+map({ '!', 't' }, '<C-A-l>', '<C-o>$')
+-- gui-like remap
+map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
+map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')
+
+-- Window actions
+-- focus
 map('n', '<A-h>', '<C-w>h')
-map('i', '<A-H>', '<C-o><C-w>h')
-map('t', '<A-H>', '<C-\\><C-o><C-w>h')
 map('n', '<A-j>', '<C-w>j')
 map('n', '<A-k>', '<C-w>k')
 map('n', '<A-l>', '<C-w>l')
-map('i', '<A-L>', '<C-o><C-w>l')
-map('t', '<A-L>', '<C-\\><C-o><C-w>l')
-map('v', '<Tab>', 'o')
-
--- Window actions
 -- leaving
 map({ '', 'i' }, '<C-q>', '<Cmd>q<CR>')
 map({ '', 'i' }, '<C-S-Q>', '<Cmd>q!<CR>')
@@ -103,6 +102,12 @@ map('n', ' h', '<Cmd>vsplit<CR>')
 -- reload
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
+-- search
+map('n', ' qN', '<Cmd>cp<CR>')
+map('n', ' qn', '<Cmd>cn<CR>')
+map('n', ' qc', '<Cmd>cclose<CR>')
+map('n', 'n', 'nzz')
+map('n', 'N', 'Nzz')
 
 -- Extra
 map('n', '\\', '.')
@@ -225,3 +230,8 @@ map('x', '<S-Tab>', function()
 	end
 	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
 end)
+
+map({ '', 'i' }, '<Left>', '')
+map({ '', 'i' }, '<Right>', '')
+map({ '', 'i' }, '<Up>', '')
+map({ '', 'i' }, '<Down>', '')

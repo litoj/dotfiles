@@ -46,18 +46,6 @@ return {
 			}
 		end,
 	},
-	-- { 'utilyre/sentiment.nvim', event = 'VeryLazy', opts = {} },
-	--[[ {
-		'j-hui/fidget.nvim',
-		event = 'LspAttach',
-		tag = 'legacy',
-		opts = {
-			text = { spinner = 'dots' },
-			timer = { spinner_rate = 225, fidget_decay = 500, task_decay = 500 },
-			window = { blend = 0 },
-		},
-	}, ]]
-	-- { 'Darazaki/indent-o-matic', dependencies = 'nvim-treesitter', event = 'BufEnter', opts = {} },
 	{ 'JosefLitos/i3config.vim', ft = 'swayconfig' },
 	{
 		'habamax/vim-asciidoctor',
@@ -84,4 +72,5 @@ return {
 			}
 		end,
 	},
+	-- { 'mpas/marp-nvim', cmd = 'MarpToggle', opts = { port = 8080 } },
 }

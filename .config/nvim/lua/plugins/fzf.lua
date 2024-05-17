@@ -2,7 +2,10 @@ local M = { 'ibhagwan/fzf-lua', event = 'VeryLazy' }
 function M.config()
 	local fzf = require 'fzf-lua'
 	fzf.setup {
+		'skim',
 		fzf_colors = {
+			current_match_bg = '#0000', -- skim specific
+			header = { 'fg', 'Fg3' },
 			hl = { 'fg', 'LightBlue' },
 			gutter = { 'bg', 'Bg1' },
 			prompt = { 'fg', 'FloatTitle', 'bold' },
@@ -17,10 +20,16 @@ function M.config()
 		files = {
 			prompt = 'Files> ',
 			git_icons = false,
-			fd_opts = [[--color=never --type f --follow -d 10 -E Android \
-		-E node_modules -E deps -E build -S '-100k']],
+			fd_opts = [[--color=never --type f --follow -d 10 \
+				-E Android -E node_modules -E deps -E build -S '-100k']],
+		},
+		grep = {
+			rg_opts = [[--column --line-number --no-heading --color=always --smart-case \
+				--max-columns=255 --colors=line:fg:magenta --colors=column:fg:magenta \
+				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
 		lsp = { jump_to_single_result = true, ignore_current_line = true },
+		oldfiles = { stat_file = false },
 	}
 
 	vim.lsp.handlers['textDocument/declaration'] = fzf.lsp_declarations
@@ -30,13 +39,19 @@ function M.config()
 
 	map('n', 'gd', vim.lsp.buf.definition)
 	map('n', 'gr', vim.lsp.buf.references)
-	map('n', ' fb', function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end)
-	map('n', ' fp', fzf.files)
-	map('n', ' fo', fzf.oldfiles)
-	map('n', ' fc', function() fzf.oldfiles { cwd_only = true } end)
-	map('n', ' g', fzf.live_grep)
-	map('n', ' b', fzf.buffers)
-	map('n', ' dl', fzf.lsp_workspace_diagnostics) -- list diagnostics
-	map('n', ' mc', fzf.highlights) -- my - colors
+	map(
+		'n',
+		' fb',
+		function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end
+	)
+	map('n', ' pf', fzf.files)
+	map('n', ' pg', fzf.live_grep_native)
+	map('n', ' of', fzf.oldfiles)
+	map('n', ' ql', fzf.quickfix)
+	map('n', ' bl', fzf.buffers)
+	map({ '', 'i' }, '<C-/>', fzf.blines)
+	map({ '', 'i' }, '<C-f>', fzf.blines)
+	map('n', ' dl', fzf.diagnostics_workspace) -- list diagnostics
+	map('n', ' mc', fzf.highlights) -- my colors
 end
 return M

@@ -1,4 +1,3 @@
-vim.opt.iskeyword:append '-'
 vim.o.shortmess = 'asWIcCFt'
 vim.o.formatoptions = 'tcqjl1'
 vim.o.tw = 100

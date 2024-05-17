@@ -46,7 +46,20 @@ function fish_prompt
 	printf '\033[?1h\033=' >/dev/tty
 end
 
-bind  exit
+# https://fishshell.com/docs/3.1/cmds/bind.html
+bind \cq exit
+bind \eh backward-char
+bind \ej down-line
+bind \ek up-line
+bind \el forward-char
+bind \ch backward-word
+bind \cl forward-word
+bind \ex backward-delete-char
+bind \eX delete-char
+bind \edb backward-kill-word
+bind \edB backward-kill-bigword
+bind \ede kill-word
+bind \edE kill-bigword
 
 set fish_color_normal normal
 set fish_color_command blue
@@ -78,7 +91,6 @@ abbr sr     "sudo ranger"
 abbr s      "sensors"
 abbr cp     "cp -i"
 abbr mv     "mv -i"
-abbr smci   "sudo make clean install"
 abbr gparted "xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root"
 
 # get error messages from journalctl
@@ -140,6 +152,7 @@ end
 if status is-login
 	if [ -z "$DISPLAY" -a "$XDG_VTNR" -eq 1 ]
 		eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
+		export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
 		export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
 		export QT_QPA_PLATFORMTHEME=qt5ct GDK_BACKEND="wayland,x11"
 		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1

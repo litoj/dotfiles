@@ -1,4 +1,4 @@
-local M = { 'ziontee113/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
+local M = { 'JosefLitos/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
 	local sts = require 'syntax-tree-surfer'
 	sts.setup {
@@ -25,10 +25,10 @@ function M.config()
 	local opt = { silent = true }
 	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>', opt)
 
-	map({ 'n', 'i' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
+	map({ 'n' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
 	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
 	map({ 'n', 'i' }, '<A-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
-	map({ 'n', 'i' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
+	map({ 'n' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
 
 	map('x', '<A-J>', '<Cmd>STSSwapNextVisual<CR>', opt)
 	map('x', '<A-K>', '<Cmd>STSSwapPrevVisual<CR>', opt)
@@ -50,10 +50,10 @@ function M.config()
 	local function list(dst)
 		return function()
 			last = dst
-			sts.targeted_jump(dst)
+			sts.fzf_jump(dst)
 		end
 	end
-	map('n', 'gv', list { 'variable_declaration', 'parameter_declaration' })
+	map('n', 'gv', list { 'variable_declaration', 'parameter_declaration', 'field' })
 	map('n', 'ge', list { 'function_call', 'call_expression', 'return_statement' }) -- execution
 	local function goTo(dst, fwd, opts)
 		return function()
@@ -61,6 +61,7 @@ function M.config()
 			sts.filtered_jump(dst, fwd, opts)
 		end
 	end
+	-- TODO: change this to match any last local jump action -> integration across mappings
 	map({ 'n', 'i' }, '<A-n>', function() sts.filtered_jump(last, true) end)
 	map({ 'n', 'i' }, '<A-N>', function() sts.filtered_jump(last, false) end)
 	local function mapAll(key, dst)
@@ -72,8 +73,15 @@ function M.config()
 		map('n', '{' .. key, goTo(dst, false, { destination = 'siblings' }))
 		map('n', '}' .. key, goTo(dst, true, { destination = 'siblings' }))
 	end
-	mapAll('f', { 'function', 'arrow_function', 'function_definition', 'method_declaration' })
-	mapAll('i', {
+	sts.list = list
+	sts.goTo = goTo
+	sts.malPall = mapAll
+	mapAll('f', {
+		'function',
+		'arrow_function', --[[ 'function_definition', ]]
+		'method_declaration',
+	})
+	mapAll('s', {
 		'if_statement',
 		'elseif_statement',
 		'else_clause',
@@ -82,5 +90,8 @@ function M.config()
 		'case_statement',
 	})
 	mapAll('l', { 'for_statement', 'while_statement', 'do_statement' })
+	-- TODO:  I want to combine this with navbuddy to display matches in a window - treesitter fzf
+	map('v', '<A-s>', 'o<Esc>i')
+	map('v', '<A-e>', 'A')
 end
 return M

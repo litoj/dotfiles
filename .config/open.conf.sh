@@ -9,3 +9,4 @@ try @transmission-gtk magnet:
 try @thunderbird mailto:
 try @engrampa .7z .bz2 .gz .rar .tar .tgz .xz .zip .zst
 try 'java -jar' .jar
+FALLBACK=$EDITOR

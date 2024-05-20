@@ -3,7 +3,8 @@
 
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
-URI=${arg/:*/:} && [[ $arg == *.* ]] && EXT=.${arg##*.} || EXT=.
+[[ $arg == *:* ]] && URI=${arg#:*}: || URI=:
+[[ $arg == *.* ]] && EXT=.${arg##*.} || EXT=.
 
 run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
@@ -38,5 +39,6 @@ try() {
 [[ -f $CFG ]] && . "$CFG"
 
 [[ -d $arg ]] && run "${EXPLORER:-ranger}"
-[[ -f $arg ]] && try "$EDITOR" . +text +*empty +*json
-run "$BROWSER"
+[[ $EXT != . || -f $arg ]] && try "$EDITOR" . +text +*empty +*json
+[[ $URI != : ]] && run "$BROWSER"
+run "${FALLBACK:-$BROWSER}"

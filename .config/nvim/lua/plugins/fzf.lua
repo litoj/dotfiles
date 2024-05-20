@@ -29,7 +29,7 @@ function M.config()
 				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
 		lsp = { jump_to_single_result = true, ignore_current_line = true },
-		oldfiles = { check_file = true },
+		oldfiles = { stat_file = exists },
 	}
 
 	vim.lsp.handlers['textDocument/declaration'] = fzf.lsp_declarations
@@ -39,13 +39,8 @@ function M.config()
 
 	map('n', 'gd', vim.lsp.buf.definition)
 	map('n', 'gr', vim.lsp.buf.references)
-	map(
-		'n',
-		' fb',
-		function() fzf.files { cwd = vim.api.nvim_buf_get_name(0):gsub('[^/]+$', '') } end
-	)
 	map('n', ' pf', fzf.files)
-	map('n', ' pd', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
+	map('n', ' bd', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
 	map('n', ' pg', fzf.live_grep_native)
 	map('n', ' of', fzf.oldfiles)
 	map('n', ' ql', fzf.quickfix)

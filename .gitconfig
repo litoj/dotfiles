@@ -1,7 +1,7 @@
 [user]
 	name = JosefLitos
-	email = litosjos@fit.cvut.cz
-	signingkey = /home/kepis/.ssh/id_ecdsa.pub
+	email = invisiblemancz@gmail.com
+	signingkey = AB94EE6ED73A8FBF
 [color]
   ui = true
 [color "branch"]
@@ -28,5 +28,3 @@
 	editor = nvim --cmd 'let g:unception_block_while_host_edits=1'
 [commit]
 	gpgsign = true
-[gpg]
-	format = ssh

@@ -39,7 +39,7 @@ map('', 'c', '"dc')
 -- Deleting text
 map('i', '<C-d>', '<C-o>"ddd')
 map('n', '<C-d>', '"ddd')
-map('i', '<A-d>', '<C-o>"dd')
+map('i', '<A-d>', '<C-o>"dd') -- overrides lsp diagnostic
 map('i', '<A-d>b', '<Esc>"ddbi<Del>')
 map('i', '<A-d>B', '<Esc>"ddBi<Del>')
 map('i', '<A-x>', '<BS>')
@@ -66,6 +66,9 @@ map({ '', 'i' }, '<C-z>', '<Cmd>undo<CR>')
 map({ '', 'i' }, '<C-y>', '<Cmd>redo<CR>')
 
 -- Moving around
+map('i', '<A-g>', '<C-o>g', { remap = true })
+map('i', '<A-[>', '<C-o>[', { remap = true })
+map('i', '<A-]>', '<C-o>]', { remap = true })
 map('i', '<A-`>', '<C-o>`') -- quick mark jump
 map('', '<C-j>', '<PageDown>zz')
 map('', '<C-k>', '<PageUp>zz')

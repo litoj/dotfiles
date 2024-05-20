@@ -1,23 +1,9 @@
 ;; extends
-((atx_heading
-  (atx_h1_marker) @markup.heading.marker
-  (inline) @markup.heading.1) (#set! conceal "Ⅰ"))
-
-((atx_heading
-  (atx_h2_marker) @markup.heading.marker
-  (inline) @markup.heading.2) (#set! conceal "Ⅱ"))
-
-((atx_heading
-  (atx_h3_marker) @markup.heading.marker
-  (inline) @markup.heading.3) (#set! conceal "Ⅲ"))
-
-((atx_heading
-  (atx_h4_marker) @markup.heading.marker
-  (inline) @markup.heading.4) (#set! conceal "Ⅳ"))
-
-((atx_heading
-  (atx_h5_marker) @markup.heading.marker
-  (inline) @markup.heading.5) (#set! conceal "Ⅴ"))
+((atx_h1_marker) @markup.heading.marker (#set! conceal "Ⅰ"))
+((atx_h2_marker) @markup.heading.marker (#set! conceal "Ⅱ"))
+((atx_h3_marker) @markup.heading.marker (#set! conceal "Ⅲ"))
+((atx_h4_marker) @markup.heading.marker (#set! conceal "Ⅳ"))
+((atx_h5_marker) @markup.heading.marker (#set! conceal "Ⅴ"))
 
 (fenced_code_block
   (fenced_code_block_delimiter) @markup.raw.delimiter)

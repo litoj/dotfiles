@@ -10,7 +10,7 @@ function M.config()
 		provider_selector = function(buf, ft, type)
 			return ft == 'markdown' and 'indent'
 				-- or (
-					-- #vim.lsp.get_active_clients { bufnr = buf } > 0 and { 'lsp', 'treesitter' }
+					-- #vim.lsp.get_clients { bufnr = buf } > 0 and { 'lsp', 'treesitter' }
 					or { 'treesitter', 'indent' }
 				-- )
 		end,

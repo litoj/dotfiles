@@ -1,6 +1,7 @@
 [user]
 	name = JosefLitos
 	email = litosjos@fit.cvut.cz
+	signingkey = /home/kepis/.ssh/id_ecdsa.pub
 [color]
   ui = true
 [color "branch"]
@@ -25,3 +26,7 @@
 	la = log --oneline --graph --decorate --all
 [core]
 	editor = nvim --cmd 'let g:unception_block_while_host_edits=1'
+[commit]
+	gpgsign = true
+[gpg]
+	format = ssh

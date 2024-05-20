@@ -8,7 +8,7 @@ local M = {
 		'hrsh7th/cmp-nvim-lsp',
 		'hrsh7th/cmp-cmdline',
 		'hrsh7th/cmp-path',
-		'JosefLitos/cmp-calc',
+		'hrsh7th/cmp-calc',
 	},
 }
 
@@ -235,7 +235,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 		event = 'InsertEnter',
 	}
 
-	src.copilot = { name = 'copilot', group_index = 2 }
+	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
 		opts = {
@@ -254,7 +254,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 				vue = true,
 			},
 		},
-		dependencies = { { 'JosefLitos/cmp-copilot', opts = {} } },
+		dependencies = { { 'JosefLitos/cmp-copilot', opts = { update_on_keypress = false } } },
 		event = 'LspAttach',
 	}
 end

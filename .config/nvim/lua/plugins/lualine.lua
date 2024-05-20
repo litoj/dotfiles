@@ -28,7 +28,7 @@ function M.config()
 			lualine_b = {},
 			lualine_c = {
 				{
-					function() return #vim.lsp.get_active_clients { bufnr = 0 } end,
+					function() return #vim.lsp.get_clients { bufnr = 0 } end,
 					icon = '%=',
 				},
 			},

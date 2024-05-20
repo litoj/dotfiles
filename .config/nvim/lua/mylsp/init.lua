@@ -38,7 +38,7 @@ lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(opts)
 		end
 		if opts.setCwd ~= false then
 			local bname = vim.api.nvim_buf_get_name(bufnr)
-			for _, ws in ipairs(client.config.workspace_folders) do
+			for _, ws in ipairs(client.config.workspace_folders or {}) do
 				ws = ws.name
 				if ws and bname:sub(1, #ws) == ws then
 					vim.b[bufnr].cwd = ws
@@ -65,11 +65,6 @@ setup 'volar'
 setup 'jsonls'
 -- setup("yamlls", {})
 
-map('i', '<A-g>', '<C-o>g')
-map('i', '<A-[>', '<C-o>[')
-map('i', '<A-]>', '<C-o>]')
-map('i', '<A->>', '<C-o>>')
-map('i', '<A-<>', '<C-o><')
 -- Lsp diagnostic
 map({ 'n', 'i' }, '<A-d>', vim.diagnostic.open_float)
 map('n', '[d', vim.diagnostic.goto_prev)
@@ -79,10 +74,10 @@ map('n', 'gD', vim.lsp.buf.declaration)
 map('n', 'gt', vim.lsp.buf.type_definition)
 -- gd,gr in ../plugins/fzf.lua
 map('n', 'gI', vim.lsp.buf.implementation)
--- map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
+map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
 map(
 	{ 'n', 'i' },
-	'<A-i>',
+	'<A-I>',
 	function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end
 )
 map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)

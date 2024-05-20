@@ -1,5 +1,5 @@
 if vim.bo.bufhidden ~= '' then return end
-vim.bo.textwidth = 90
+vim.bo.textwidth = 80
 vim.bo.commentstring = '%%s'
 -- \usepackage[autostyle]{csquotes}
 local function enter_or_item()
@@ -37,8 +37,8 @@ map(
 )
 
 withMod('syntax-tree-surfer', function(sts)
-	map('n', 'gs', sts.list { 'chapter', 'section', 'subsection' })
-	map('n', 'gf', sts.list { 'begin' })
+	map('n', 'gts', sts.list { 'chapter', 'section', 'subsection', 'subsubsection' })
+	map('n', 'gtf', sts.list { 'begin', 'end' })
 end)
 
 if vim.g.loaded then

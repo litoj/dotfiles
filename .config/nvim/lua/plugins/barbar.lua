@@ -44,7 +44,7 @@ function M.config()
 		end
 	end
 	local modes = { 'n', 'i' }
-	map(modes, '<C-w>', close)
+	map(modes, '<C-w>', close, { nowait = true })
 	map('n', '<C-S-W>', '<Cmd>BufferClose!<CR>')
 	map('i', '<C-S-W>', '<C-o><Cmd>BufferClose!<CR>')
 	map('t', '<C-S-D>', '<C-d><C-\\><C-o><Cmd>BufferClose!<CR>')

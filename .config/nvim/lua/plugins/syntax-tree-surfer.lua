@@ -46,36 +46,32 @@ function M.config()
 	map('x', 'P', '<Cmd>STSSelectParentNode<CR>', opt)
 	map('x', 'n', '<Cmd>STSSelectNextSiblingNode<CR>', opt)
 
-	local last = 'default'
+	local last = {}
 	local function list(dst)
 		return function()
 			last = dst
 			sts.fzf_jump(dst)
 		end
 	end
-	map('n', 'gv', list { 'variable_declaration', 'parameter_declaration', 'field' })
-	map('n', 'ge', list { 'function_call', 'call_expression', 'return_statement' }) -- execution
+	map('n', 'gtv', list { 'variable_declaration', 'parameter_declaration', 'field' })
+	map('n', 'gtc', list { 'function_call', 'call_expression', 'return_statement' })
 	local function goTo(dst, fwd, opts)
 		return function()
 			last = dst
 			sts.filtered_jump(dst, fwd, opts)
 		end
 	end
-	-- TODO: change this to match any last local jump action -> integration across mappings
+	map('n', 'gtt', function() sts.fzf_jump(last) end)
 	map({ 'n', 'i' }, '<A-n>', function() sts.filtered_jump(last, true) end)
 	map({ 'n', 'i' }, '<A-N>', function() sts.filtered_jump(last, false) end)
 	local function mapAll(key, dst)
-		map('n', 'g' .. key, list(dst))
+		map('n', 'gt' .. key, list(dst))
 		map('n', '[' .. key, goTo(dst, false))
 		map('n', ']' .. key, goTo(dst, true))
-		map('n', '<' .. key, goTo(dst, false, { destination = 'parent' }))
-		map('n', '>' .. key, goTo(dst, true, { destination = 'children' }))
-		map('n', '{' .. key, goTo(dst, false, { destination = 'siblings' }))
-		map('n', '}' .. key, goTo(dst, true, { destination = 'siblings' }))
 	end
 	sts.list = list
 	sts.goTo = goTo
-	sts.malPall = mapAll
+	sts.mapAll = mapAll
 	mapAll('f', {
 		'function',
 		'arrow_function', --[[ 'function_definition', ]]
@@ -90,8 +86,5 @@ function M.config()
 		'case_statement',
 	})
 	mapAll('l', { 'for_statement', 'while_statement', 'do_statement' })
-	-- TODO:  I want to combine this with navbuddy to display matches in a window - treesitter fzf
-	map('v', '<A-s>', 'o<Esc>i')
-	map('v', '<A-e>', 'A')
 end
 return M

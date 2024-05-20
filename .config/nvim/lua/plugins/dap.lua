@@ -16,6 +16,8 @@ function M.config()
 	}
 
 	local function run()
+		if dap.sessions()[1] then return dap.run_to_cursor() end
+
 		local config = dap.configurations[vim.o.filetype]
 		if config == nil then return vim.notify('No config for `' .. vim.o.filetype .. '`') end
 		config = config[1] --[[@as {}]]
@@ -91,7 +93,7 @@ function M.config()
 	map('n', ' dB', dap.clear_breakpoints)
 	map('n', ' dg', dap.goto_)
 	map('n', ' dL', function() dap.list_breakpoints(true) end)
-	map('n', ' dr', dap.run_to_cursor)
+	map('n', ' du', dapui.toggle)
 	map('n', ' dE', dapui.eval)
 	map('n', ' de', function()
 		vim.ui.input(

@@ -1,6 +1,6 @@
 local M = {
 	'pmizio/typescript-tools.nvim',
-	ft = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' },
+	ft = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact', 'vue' },
 	dependencies = { 'nvim-lua/plenary.nvim', 'nvim-lspconfig' },
 }
 M.config = function()
@@ -47,5 +47,59 @@ M.config = function()
 		inlay = false,
 		setCwd = false,
 	})
+
+	local dap = require 'dap'
+	local dapcfg = {
+		{
+			type = 'pwa-node',
+			request = 'launch',
+			name = 'Launch file',
+			program = '${file}',
+			cwd = vim.fn.getcwd(),
+			sourceMaps = true,
+		},
+		{
+			type = 'pwa-node',
+			request = 'attach',
+			name = 'Attach (for "npx --inspect" cmds)',
+			processId = require('dap.utils').pick_process,
+			cwd = vim.fn.getcwd(),
+			sourceMaps = true,
+		},
+		{
+			type = 'pwa-chrome',
+			request = 'launch',
+			name = 'Debug Browser Client',
+			url = function()
+				local co = coroutine.running()
+				return coroutine.create(function()
+					vim.ui.input({
+						prompt = 'Enter URL: ',
+						default = 'http://localhost:3000',
+					}, function(url)
+						if url == nil or url == '' then
+							return
+						else
+							coroutine.resume(co, url)
+						end
+					end)
+				end)
+			end,
+			webRoot = vim.fn.getcwd(),
+			protocol = 'inspector',
+			sourceMaps = true,
+			userDataDir = false,
+		},
+		-- Divider for the launch.json derived configs
+		{
+			name = '----- ↓ launch.json configs ↓ -----',
+			type = '',
+			request = 'launch',
+		},
+	}
+
+	for _, l in ipairs(M.ft) do
+		dap.configurations[l] = dapcfg
+	end
 end
 return M

@@ -56,7 +56,6 @@ actionInfo() {
 
 declare -A LOG_LEVELS=([quiet]=0 [error]=1 [warn]=2 [warning]=2 [info]=3 [verbose]=4 [debug]=5)
 LOG_NAMES=(quiet error warn info verbose debug)
-LOG_COLORS=(0 31 33 32 35 37)
 
 [[ $# == 0 && -t 0 && -t 1 ]]
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
@@ -79,24 +78,24 @@ defineParams=( # TODO: consider a builtin action [c]onfig loader (bash script)
 	tui 't?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'd?' '' 'Disable actual commands execution'
 	color 'c?' '' 'Colorize output (default=1 when not redirected)'
-	picker 'p?' '' 'Enable picker in CLI (default=1 for TUI, 0 for CLI)'
+	picker 'p?' '' 'Enable arg/opt param picker (default=1 for TUI, 0 for CLI)'
 	guiPicker 'g?' '' 'Use GUI pickers'
 	optArgPicker 'o?' '' 'Enable picker for optional arguments'
 	exitLogLvl 'e?' '([0-9]+|[A-Za-z]+)?'
 	"At which level to abort execution and exit (default=${LOG_NAMES[${SCRIPT_OPTS[exitLogLvl]}]}=${SCRIPT_OPTS[exitLogLvl]})"
 	logLvl 'l?' '([0-9]+|[A-Za-z]+)?'
 	"Depth of logging, '-lll'='-l3'→3 (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
-	logLvl '$?')
-defineParams+=("${defineParams[@]:0-4:2}")
+)
+defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
 define() {
 	declare -i i=0
 	local opt
 	while [[ -z ${defineParams[i + 2]} ]]; do
-		opt=${defineParams[i]}
-		((${!opt})) && SCRIPT_OPTS[$opt]=${!opt%-*}
+		opt=${defineParams[i]} # test for param value presence and set it when present
+		((${!opt})) && SCRIPT_OPTS[$opt]=${!opt}
 		i+=4
 	done
-	while [[ ${defineParams[i]} ]]; do
+	while [[ ${defineParams[i]} ]]; do # opts with an arg value
 		opt=${defineParams[i]}
 		if [[ ${!opt} ]]; then
 			if [[ ${!opt} == [A-Za-z]* && -z ${LOG_LEVELS[${!opt,,}]} ]]; then
@@ -127,22 +126,92 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 	[argAsLongOpt]=1    # allow arguments to be also parsed as long options
 )
 
+declare -A COLORS=(
+	[black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [brgray]=37
+	[gray]=90 [brred]=91 [brgreen]=92 [bryellow]=93 [brblue]=94
+	[brmagenta]=95 [brcyan]=96 [white]=97
+	[bg]=30 [fg]=97 [reset]=0 [bold]=1 [italic]=3 [underline]=4 [reverse]=7 [strike]=9
+	# log level colors
+	[quiet]=0 [error]=31 [warn]=33 [info]=32 [verbose]=35 [debug]=37
+	# theme colors
+	[oper]=31 [punct]=91 [bool]=34 [var]=32 [param]=96 [str]=33 [num]=95 [def]=3
+)
+ansi() {
+	local ret code
+	while (($#)); do
+		[[ -z $1 || $1 == *[^a-z]* ]] && code= || code=${COLORS[$1]}
+		[[ $code ]] && ret+="[${code}m" || ret+=$1
+		shift
+	done
+	echo "$ret"
+}
+print() {
+	if ((SCRIPT_OPTS[color] < 0)); then
+		echo "$@"
+		return
+	fi
+
+	local ret str=$1 hlStr
+	while [[ $str ]]; do
+		case "$str" in
+			false* | true*)
+				[[ $str == t* ]] && hlStr=true || hlStr=false
+				ret+="$(ansi bool "$hlStr" fg)" str=${str:${#hlStr}}
+				;;
+			[A-Za-z]*) hlStr=${str/[^0-9A-Za-z]*/} ret+=$hlStr str=${str:${#hlStr}} ;;
+			[.:[\]{}]*) ret+=$(ansi punct "${str::1}" fg) str=${str:1} ;;
+			\(default*) ret+=\($(ansi def default reset) str=${str:8} ;;
+			[*+?!=\<\>^\|/%]*) ret+=$(ansi oper "${str::1}" fg) str=${str:1} ;;
+			-*)
+				if [[ ${str:1:1} == [0-9\ ] ]]; then
+					ret+=$(ansi oper - fg)
+					str=${str:1}
+				elif [[ ${ret:0-1} == [a-z] ]]; then
+					ret+=-
+					str=${str:1}
+				else
+					hlStr=${str/[^0-9a-z\-]*/} ret+=$(ansi param "$hlStr" fg) str=${str:${#hlStr}}
+				fi
+				;;
+			[\'\"\`]*)
+				local delim=${str::1}
+				str=${str:1}
+				hlStr=${str/${delim}*/$delim}
+				[[ ${hlStr:0-1} != $delim ]] && hlStr= ret+=$delim || ret+=$(ansi str "$delim$hlStr" fg)
+				str=${str:${#hlStr}}
+				;;
+			[0-9]*) hlStr=${str/[^0-9_]*/} ret+=$(ansi num "$hlStr" fg) str=${str:${#hlStr}} ;;
+			'['*) hlStr=${str/m*/} ret+=$hlStr str=${str:${#hlStr}} ;;
+			[\$]*)
+				local delim=${str::1}
+				str=${str:1}
+				hlStr=${str/[^0-9A-Za-z_\-]*/}
+				ret+=$(ansi punct $delim var "$hlStr" fg)
+				str=${str:${#hlStr}}
+				;;
+			*) ret+=${str::1} str=${str:1} ;;
+		esac
+	done
+
+	echo "$ret"
+}
+
 #######################################
 # Print given message with context of current action and log level
 # Arguments:
 #   LAST_LOG_LVL: one of ${!LOG_LEVELS[@]}, determines message importance
 #   msg: message to print with context, ignored when SCRIPT_OPTS[logLvl]<LAST_LOG_LVL
 # Returns:
-#   success when message was printed, exits if Warning in cli mode or Error are reported
+#   success if message was printed, calls the exitFn for too urgent log level
 #######################################
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS[${1,}]:-$1}
 	if ((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL)); then
-		local name=${LOG_NAMES[$LAST_LOG_LVL]^^}
-		((${SCRIPT_OPTS[color]})) && name="[${LOG_COLORS[$LAST_LOG_LVL]}m$name[m"
-		echo "$name: $ACTION$2" 1>&2
+		local type=${LOG_NAMES[$LAST_LOG_LVL]}
+		((${SCRIPT_OPTS[color]} > 0)) && type=$(ansi $type ${type^^} fg) || type=${type^^}
+		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
-	((LAST_LOG_LVL > ${SCRIPT_OPTS[exitLogLvl]})) || ${SSS_OPTS[exitFn]} 1
+	((SCRIPT_OPTS[exitLogLvl] >= LAST_LOG_LVL)) && ${SSS_OPTS[exitFn]} 1
 	((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL))
 }
 
@@ -162,12 +231,12 @@ exec() {
 }
 
 main() {
-	if ((SCRIPT_OPTS[cli])); then
+	if ((SCRIPT_OPTS[cli] > 0)); then
 		while (($#)); do
 			parseAction "$@"
 			shift $?
 		done
-		((SCRIPT_OPTS[tui])) || quit
+		((SCRIPT_OPTS[tui] > 0)) || quit
 		SCRIPT_OPTS[cli]=0
 	fi
 
@@ -212,7 +281,10 @@ parseAction() {
 
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
-	((sigN % 4)) && log Error "Params definition is missing $((4 - sigN % 4)) fields" && return
+	if ((sigN % 4)); then
+		log Error "Params definition is missing $((4 - sigN % 4)) fields"
+		return 1
+	fi
 	local i=-4 posArg firstArg # not `declare -i` to keep unset values as ""
 
 	# distinguish options and args
@@ -228,7 +300,7 @@ parseAction() {
 
 	declare -n builder=${ACTION}Builder
 	[[ ${builder[@]} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
-	while [[ $1 ]]; do # get options and args
+	while [[ $1 ]]; do                                 # get options and args
 		# parse option prefix
 		[[ $1 == -- && ${#opts[@]} -gt 0 ]] && shift && opts=() && continue # only args will be found
 		local i= arg= optCnt=+
@@ -252,7 +324,10 @@ parseAction() {
 					[[ $i ]] && arg=${arg:1}
 				done
 				[[ -z $i && -z $arg ]] && shift && continue
-				[[ -z $i ]] && log Error " - Unknown option '${arg::1}' in chunk '$1'" && return
+				if [[ -z $i ]]; then
+					log Error " - Unknown option '${arg::1}' in chunk '$1'"
+					return 1
+				fi
 			fi
 		fi
 
@@ -269,13 +344,13 @@ parseAction() {
 				elif [[ -z $arg && '' =~ ^$reg$ ]]; then # no arg, allows '' → number of uses as value
 					declare -i $varName+=${optCnt}1
 				else
-					if ((SCRIPT_OPTS[picker])) && [[ -z $arg && ${sigs[i + 1]} != ?[+!] ]]; then
+					if ((SCRIPT_OPTS[picker] > 0)) && [[ -z $arg && ${sigs[i + 1]} != ?[+!] ]]; then
 						declare -a $varName # picker for options
+						log Debug ".$varName <${builder[$varName]:-pickAny}>"
 						${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
-						log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= '${!varName}'"
 					fi
 
-					[[ -z ${!varName} ]] && log Error " - Argument expected, got '${arg:-$1}':
+					[[ -z ${!varName+ok} ]] && log Error " - Argument expected, got '${arg:-$1}':
 $(paramHelp $ACTION $((i / 4)))" && return
 				fi
 			else
@@ -286,7 +361,7 @@ $(paramHelp $ACTION $((i / 4)))" && return
 					declare -i $varName+=${optCnt}1
 				fi
 			fi
-			log Debug "/opt.$varName = '${!varName}'"
+			log Debug ".$varName = '${!varName}'"
 			if [[ ${sigs[i + 1]} == \$? ]]; then
 				((i < posArg)) && log Warn " - Breaking order of arguments: ${sigs[$i]} < ${sigs[$posArg]}"
 				posArg=$i
@@ -307,7 +382,7 @@ $(paramHelp $ACTION $((i / 4)))" && return
 						((posArg += 4))
 					fi
 					shift
-					log Debug "/arg.$varName = '${!varName}'"
+					log Debug "\$$varName = '${!varName}'"
 					break # continue in parsing cli
 				else
 					((posArg += 4)) # given value doesn't match → try next arg
@@ -321,15 +396,15 @@ $(paramHelp $ACTION $((i / 4)))" && return
 	while (((i += 4) < sigN)); do
 		local varName=${sigs[$i]} sign=${sigs[i + 1]} reg=${sigs[i + 2]}
 		[[ $sign == [^$][?*] ]] && continue # opt definition between params
-		if [[ ! ${!varName} ]]; then
-			if ((SCRIPT_OPTS[picker])); then # picker for optional args || arg required
-				if ((SCRIPT_OPTS[optArgPicker])) || [[ $sign == ?[+!] ]]; then
+		if [[ ! ${!varName+ok} ]]; then
+			if ((SCRIPT_OPTS[picker] > 0)); then # picker for optional args || arg required
+				if ((SCRIPT_OPTS[optArgPicker] > 0)) || [[ $sign == ?[+!] ]]; then
 					declare -a $varName # prepare variable as local
-					${builder[$varName]:-pickAny} "${sigs[@]:i:4}"
-					log Debug "/opt.$varName <${builder[$varName]:-pickAny}>= '${!varName}'"
+					${builder[$varName]:-pickAny} "${sigs[@]:i:4}" &&
+						log Debug "\$$varName <${builder[$varName]:-pickAny}>= '${!varName}'"
 				fi
 			fi
-			[[ ! ${!varName} && ${sign:0-1} == [+!] ]] && log Error " - Argument expected:
+			[[ ! ${!varName+ok} && ${sign:0-1} == [+!] ]] && log Error " - Argument expected:
 $(paramHelp $ACTION $((i / 4)))" && return
 		fi
 	done
@@ -342,7 +417,10 @@ $(paramHelp $ACTION $((i / 4)))" && return
 		$# -gt 0 && ! ${SSS_OPTS[defActionRep]} ]]; then
 		log Error " - Default action must be used last, but was followed by: $*"
 	fi
-	[[ $actionArg && $# -eq 1 ]] && log Error " - Unexpected argument '$actionArg'" && return
+	if [[ $actionArg && $# -eq 1 ]]; then
+		log Error " - Unexpected argument '$actionArg'"
+		return 1
+	fi
 
 	# cleanup and action call
 	declare +n sigs
@@ -406,10 +484,14 @@ paramHelp() {
 		local varName=$(caseToArg ${name[$i]})
 		local sign=${name[i + 1]} regex=${name[i + 2]} help=${name[i + 3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
-			[[ $sign == _? ]] && varName=[]$varName || varName="[${sign::1}]$varName"
+			[[ $sign == _? ]] && varName=[]$varName || {
+				local _s=${sign::1} _v=${varName::1}
+				[[ $_s == "${_v,}" ]] && varName="[$_s]${varName:1}" || varName="[$_s]$varName"
+			}
 			sign=${sign:1}
 			[[ $regex ]] && sign+='<>' # no regex → toggle option
 		else
+			varName=\$$varName
 			sign=${sign:1} # positional param
 		fi
 		sign="$varName$sign"
@@ -419,10 +501,10 @@ paramHelp() {
 		[[ $matcher -gt 0 && $regex ]] && help="/$regex/ $help"
 		desc+=("$help")
 	done
-	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
+	((${SCRIPT_OPTS[color]} > 0)) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
 	i=-1
 	while ((++i < ${#sig[@]})); do
-		printf "     $fmt\n" $maxLen "${sig[$i]}" "${desc[$i]}"
+		print "     $(printf "$fmt" $maxLen "${sig[$i]}" "${desc[$i]}")"
 	done
 }
 
@@ -442,9 +524,9 @@ help() {
 	if [[ ! $action ]]; then
 		declare -n action=ACTION_ORDER
 		local default=true
-		((SCRIPT_OPTS[cli])) && echo "${SSS_OPTS[about]}"
+		((SCRIPT_OPTS[cli] > 0)) && echo "${SSS_OPTS[about]}"
 	fi
-	((legend > 0)) && echo 'Legend:
+	((legend > 0)) && print 'Legend:
   action: [a]ction
     - short name: in brackets if exists
       - in CLI prefix with `-`, not necessary in TUI
@@ -453,7 +535,7 @@ help() {
       - prefix must match /'"${SSS_OPTS[optPrefix]}"'/
       - value given with `=` or as the next arg (--act=val / --act val)
     - orderless (aside of repeated uses)
-  options/named params: [o]option + suffix + type suffix
+  options/named params: [o]ption + suffix + type suffix (or [a]option or []option)
     - short names can be chained with argument as last: `-aoOarg` (also `+aoOarg`)
     - `+` sets option to false / adds negative value (`+lll` → logLvl+=-3) 
     - suffix:
@@ -470,14 +552,15 @@ help() {
 	[[ $default && ${#action[@]} -gt 9 ]]
 	declare -i params=${params:-$?}
 
-	echo 'Actions:'
+	echo 'Actions: (more info available per action)'
 	local act fmt
-	((${SCRIPT_OPTS[color]})) && fmt='\033[1m%-*s   \033[0;4m%s\033[0m' || fmt='%-*s   %s'
+	((${SCRIPT_OPTS[color]} > 0)) && fmt='\033[1;4m%-*s   \033[0;4m%s\033[m' || fmt='%-*s   %s'
 	for act in "${action[@]}"; do
 		[[ $act =~ ^-*([^-][^=]*)$ ]] && act=$(argToCase "${BASH_REMATCH[1]}")
 		((${#act} == 1)) && act=${ACTION_INFO[$act]:-$act}
-		if [[ ${ACTION_INFO[$act]} ]]; then
-			printf "  $fmt\n" $ALIGNER "${ACTION_INFO[$act]%% *}" "${ACTION_INFO[$act]#* }"
+		local desc="${ACTION_INFO[$act]}"
+		if [[ $desc ]]; then
+			printf "  $fmt\n" $ALIGNER "${desc%% *}" "$(print "${desc#* }")"
 			((params <= 0)) || paramHelp $act
 		else
 			echo "  No help for unknown action '$act'"
@@ -490,9 +573,9 @@ quit() {
 	${SSS_OPTS[exitFn]} 0 # override this for commit-before-exit
 }
 
-unknownParams=(received '$+' '.*' 'consumes all remaining args to end execution')
+unknownParams=(argument '$+' '.*' 'consumes all remaining args to end execution')
 unknown() {
-	log Warn " action '$received'!"
+	log Error " action '$argument'!"
 }
 
 # Reads and sets matching value(s) from the user (all pickers must respect reg=$3)
@@ -503,10 +586,12 @@ pickAny() {
 			d) pickDir "$@" ;;
 			f) pickFile "$@" ;;
 		esac
-		return
+	else
+		pickValue "$@"
 	fi
+}
 
-	declare -ga $1
+pickValue() {
 	declare -n _dst=$1
 	while :; do
 		local _pick=

@@ -103,6 +103,7 @@ abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
 abbr pir    "paru -Qq | $pp | paru -Rscn -" # installed remove - only dependencies
 abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
+abbr paru   "exit" # block myself from constantly checking for updates manually
 
 # navigation
 abbr ...    "cd ../.."

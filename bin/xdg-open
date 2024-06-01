@@ -1,10 +1,11 @@
 #!/usr/bin/bash
 # simpler=faster xdg-open replacement
+LC_ALL=C
 
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
 [[ $arg == *:* ]] && URI=${arg#:*}: || URI=:
-[[ $arg == *.* ]] && EXT=.${arg##*.} || EXT=.
+[[ $arg == *.* ]] && EXT=.${arg##*.} && EXT=${EXT,,} || EXT=.
 
 run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do

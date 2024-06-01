@@ -8,6 +8,7 @@ function _G.exists(f)
 	if f then f:close() end
 	return f ~= nil
 end
+
 function _G.withMod(mod, cb)
 	if package.loaded[mod] then return cb(package.loaded[mod]) end
 	local old = package.preload[mod]
@@ -19,7 +20,7 @@ function _G.withMod(mod, cb)
 			package.loaded[mod] = nil
 			package.loaded[mod] = package.loaders[2](mod)()
 		end
-		cb(package.loaded[mod])
+		vim.schedule(function() cb(package.loaded[mod]) end)
 	end
 end
 

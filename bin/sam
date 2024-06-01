@@ -33,7 +33,7 @@ screen() {
 declare -A pkgConf=(
 	[filter]=''
 	[preview]='adb shell dumpsys package {} | grep ^Packages -A999 | grep ^Queries -B999')
-actionInfo pkgConf C 'pkg[C]onf' 'set options for package picker'
+actionInfo pkgConf 'set options for package picker'
 pkgConfParams=(
 	filter 'f?' '(-[edsu]( -[edsu])*)?' 'Default app picker filter (""/+f/-f for no filter)'
 	preview 'p?' '.+' 'Command for fzf previewing')
@@ -135,6 +135,26 @@ reinstall() {
 	for pkg in "${packages[@]}"; do
 		exec adb shell pm install-existing --user 0 $pkg
 	done
+}
+
+actionInfo files 'download files from common directories'
+filesParams=(
+	cwd 'c?' '[hrs]' 'Where to set the path root (home=default, root, sdcard)'
+	src '$?' '.+' 'Device path to download'
+	camera 'C?' '' 'Download camera files (DCIM/Camera)'
+	dst '$?' '.+' 'Local destination path'
+)
+files() {
+	local src=${src:-${camera:+DCIM/Camera}} dst=${dst:-./}
+	[[ -z $src ]] && log Warn 'No src to download' && return 1
+
+	if [[ $src != /* ]]; then
+		local cwd=${cwd:-h}
+		declare -A cwdMap=([h]=/storage/emulated/0 [s]=/sdcard [r]='')
+		src=${cwdMap[${cwd:-h}]}/${src#/}
+	fi
+
+	adb pull "$src" "$dst"
 }
 
 main "$@"

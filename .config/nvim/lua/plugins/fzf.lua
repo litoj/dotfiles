@@ -1,22 +1,22 @@
 local M = { 'ibhagwan/fzf-lua', event = 'VeryLazy' }
 function M.config()
 	local fzf = require 'fzf-lua'
+	local colors = {
+		header = { 'fg', 'Fg3' },
+		hl = { 'fg', 'LightBlue' },
+		gutter = { 'bg', 'Bg1' },
+		prompt = { 'fg', 'FloatTitle', 'bold' },
+		info = { 'fg', 'Number' },
+		pointer = { 'fg', 'Red' },
+		marker = { 'fg', 'Operator', 'bold' },
+		separator = { 'bg', 'Normal' },
+		['hl+'] = { 'fg', 'Search' },
+		['fg+'] = { 'fg', 'Fg1' },
+		['bg+'] = { 'bg', 'Bg2' },
+	}
 	fzf.setup {
 		'skim',
-		fzf_colors = {
-			current_match_bg = '#0000', -- skim specific
-			header = { 'fg', 'Fg3' },
-			hl = { 'fg', 'LightBlue' },
-			gutter = { 'bg', 'Bg1' },
-			prompt = { 'fg', 'FloatTitle', 'bold' },
-			info = { 'fg', 'Number' },
-			pointer = { 'fg', 'Red' },
-			marker = { 'fg', 'Operator', 'bold' },
-			separator = { 'bg', 'Normal' },
-			['hl+'] = { 'fg', 'Search' },
-			['fg+'] = { 'fg', 'Fg1' },
-			['bg+'] = { 'bg', 'Bg2' },
-		},
+		fzf_colors = vim.tbl_extend('force', colors, { current_match_bg = '#0000' }), -- for skim
 		files = {
 			prompt = 'Files> ',
 			git_icons = false,
@@ -29,7 +29,7 @@ function M.config()
 				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
 		lsp = { jump_to_single_result = true, ignore_current_line = true },
-		oldfiles = { stat_file = exists },
+		oldfiles = { fzf_colors = colors, fzf_bin = 'fzf', stat_file = exists },
 	}
 
 	vim.lsp.handlers['textDocument/declaration'] = fzf.lsp_declarations
@@ -37,14 +37,12 @@ function M.config()
 	vim.lsp.handlers['textDocument/references'] = fzf.lsp_references
 	vim.lsp.handlers['textDocument/implementation'] = fzf.lsp_implementation
 
-	map('n', 'gd', vim.lsp.buf.definition)
-	map('n', 'gr', vim.lsp.buf.references)
 	map('n', ' pf', fzf.files)
-	map('n', ' bd', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
 	map('n', ' pg', fzf.live_grep_native)
+	map('n', ' bf', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
+	map('n', ' bl', fzf.buffers)
 	map('n', ' of', fzf.oldfiles)
 	map('n', ' ql', fzf.quickfix)
-	map('n', ' bl', fzf.buffers)
 	map({ '', 'i' }, '<C-/>', fzf.blines)
 	map({ '', 'i' }, '<C-f>', fzf.blines)
 	map('n', ' dl', fzf.diagnostics_workspace) -- list diagnostics

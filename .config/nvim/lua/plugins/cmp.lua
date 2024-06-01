@@ -206,7 +206,7 @@ function M.config()
 	})
 	cmp.setup.filetype(
 		{ 'lua' },
-		{ sources = { src.calc, src.path, src.lsp, src.snip, src.font, src.copilot, src.tabnine } }
+		{ sources = { src.calc, src.path, src.lsp, src.font, src.copilot, src.tabnine } }
 	)
 
 	cmp.setup.cmdline(

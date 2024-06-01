@@ -82,8 +82,6 @@ map({ '!', 't' }, '<A-h>', '<Left>')
 map({ '!', 't' }, '<A-j>', '<Down>')
 map({ '!', 't' }, '<A-k>', '<Up>')
 map({ '!', 't' }, '<A-l>', '<Right>')
-map({ '!', 't' }, '<C-A-h>', '<C-o>^')
-map({ '!', 't' }, '<C-A-l>', '<C-o>$')
 -- gui-like remap
 map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
 map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')

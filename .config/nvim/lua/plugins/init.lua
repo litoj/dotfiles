@@ -35,6 +35,12 @@ return {
 		end,
 	},
 	{
+		'pmizio/typescript-tools.nvim',
+		ft = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact', 'vue' },
+		dependencies = { 'nvim-lua/plenary.nvim', 'nvim-lspconfig', 'mxsdev/nvim-dap-vscode-js' },
+		config = function() require('typescript-tools').setup(require('mylsp').setup(nil, 'tsserver')) end,
+	},
+	{
 		'JosefLitos/colorizer.nvim',
 		cmd = 'ColorizerToggle',
 		config = function()

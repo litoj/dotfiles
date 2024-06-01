@@ -33,9 +33,6 @@ lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(opts)
 		if client.server_capabilities.documentFormattingProvider then
 			client.server_capabilities.documentFormattingProvider = opts.format ~= false
 		end
-		if client.server_capabilities.inlayHintProvider and opts.inlay then
-			vim.lsp.inlay_hint.enable(bufnr, true)
-		end
 		if opts.setCwd ~= false then
 			local bname = vim.api.nvim_buf_get_name(bufnr)
 			for _, ws in ipairs(client.config.workspace_folders or {}) do
@@ -52,12 +49,12 @@ end)
 
 local function setup(server, opts)
 	if server and lsc[server].autostart ~= nil then return end
-	opts = opts or require('mylsp.' .. server)
+	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
 	return server and lsc[server].setup(opts) or opts
 end
 M.setup = setup
 
-setup('bashls', { root_dir = function(fname) return fname:match '.+/' end })
+setup('bashls', { format = false, root_dir = function(fname) return fname:match '.+/' end })
 setup('pyright', {})
 setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
@@ -71,6 +68,8 @@ map('n', '[d', vim.diagnostic.goto_prev)
 map('n', ']d', vim.diagnostic.goto_next)
 -- Lsp code helpers
 map('n', 'gD', vim.lsp.buf.declaration)
+map('n', 'gd', vim.lsp.buf.definition)
+map('n', 'gr', vim.lsp.buf.references)
 map('n', 'gt', vim.lsp.buf.type_definition)
 -- gd,gr in ../plugins/fzf.lua
 map('n', 'gI', vim.lsp.buf.implementation)

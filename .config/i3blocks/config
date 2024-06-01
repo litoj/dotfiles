@@ -19,6 +19,7 @@ interval=60
 signal=14
 
 [updates]
+interval=once
 
 [kb]
 interval=once

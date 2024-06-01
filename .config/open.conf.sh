@@ -3,6 +3,7 @@ BROWSER=@$BROWSER
 TERM_BLOCKING=1
 try @'mpv --no-terminal' +video
 try 'mpv --no-audio-display' +audio .m3u
+try @geeqie .raf
 try @imv-dir +image
 try @zathura .pdf
 try @transmission-gtk magnet:

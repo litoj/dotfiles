@@ -5,12 +5,23 @@
 SSS_OPTS[about]='MOM - Media Operation/Manipulation
 A collection of media operation/manipulation scripts.'
 
+SCRIPT_OPTS[ffmpegSetLogLevel]=-2
+defineParams=(
+	ffmpegSetLogLevel 'f?' '' 'Change ffmpeg log level to current script value'
+	"${defineParams[@]}")
+
+ffmpegCmd() {
+	((SCRIPT_OPTS[ffmpegSetLogLevel] > 0)) &&
+		echo ffmpeg -v ${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning} ||
+		echo ffmpeg -v ${LOG_NAMES[$((-SCRIPT_OPTS[ffmpegSetLogLevel]))]/warn/warning}
+}
+
 actionInfo download 'download audio/video from given url with `yt-dlp`'
 downloadParams=(
-	metadata 'm?' '' 'keep metadata' # NOTE: pipeline candidate - output as nometa src
-	format 'f?' '.+' 'yt-dl download format (default=ba[ext=webm])'
-	src '$!' 'http.+' 'url to download'
-	dst '$?' '$E\.opus' 'output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
+	metadata 'm?' '' 'Keep metadata' # NOTE: pipeline candidate - output as nometa src
+	format 'f?' '.+' 'Yt-dl download format (default=ba[ext=webm])'
+	src '$!' 'http.+' 'Url to download'
+	dst '$?' '$E\.opus' 'Output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
 	local dst=${dst:-.}
@@ -21,7 +32,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 
 	((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
 	exec "${cmd[@]}" && {
-		((metadata > 0)) && cmd=(exec mv) || cmd=(call nometa +k)
+		((metadata > 0)) && cmd=(exec mv) || cmd=(call noMeta +k)
 		cmd+=("$prefix"*)
 		[[ -d $dst ]] && cmd+=("${dst%/}/$(
 			sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
@@ -30,70 +41,193 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	}
 }
 
-actionInfo nometa M 'no[M]eta' 'remove metadata from audio files'
-nometaParams=(
-	keep 'k?' '' 'keep original (default=remove original)'
+actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'
+noMetaParams=(
+	keep 'k?' '' 'Keep original (default=remove $src)'
 	src '$!' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
-	dst '$?' '$E' 'Put results into (default=replace original)')
-nometa() {
+	dst '$?' '$E' 'Put results into (default=replace $src)')
+noMeta() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
 		cd "$src"
 		for f in *; do
 			[[ -d $f || $f =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
 			local src=$f
-			nometa
+			noMeta
 		done
 		cd "$CWD"
 	else
-		[[ ${dst:-$src} == $src ]] && local dst=/tmp/ defaultDst=true
+		[[ ${dst:-$src} == "$src" ]] && local dst=/tmp replaceSrc=$((1 - keep))
 
-		[[ -d $dst ]] && local dst=${dst%/}/${src##*/}
-		local cmd=(ffmpeg -i "$src" -map_metadata -1 -map a -c copy "$dst" -v)
-		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
+		[[ -d $dst ]] && local dst=$(getFreePath "${dst%/}/${src##*/}")
+		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy "$dst")
 		exec "${cmd[@]}" && {
-			[[ $defaultDst ]] && exec mv "$dst" "$src" || { ((keep > 0)) || exec rm "$src"; }
+			((replaceSrc > 0)) && exec mv "$dst" "$src" || ((keep > 0)) || exec rm "$src"
 		}
 	fi
 }
 
-# TODO: make as option before conversion / make a cmd pipeline, not a separate command → compose
-# scripts to generate options
-# Do as batch operations - option for loading input/output
-# option for additional options / envvars
-# Ideally: -from -to - arg opts with picker opening mpv but parsing piped user input
-# figure out how to get back the mpv current time
-# cut() {
+pickTime() {
+	if [[ ! -f $src ]]; then
+		log Error ".$1 <pickTime>: \$src file must be set before picking a time"
+		return 1
+	fi
 
-# }
+	local name=pickTime pick
+	local pickFile="/tmp/$name.pick" pickerFile="/tmp/$name.lua"
+	cat >> "$pickerFile" << lua
+		require 'mp'
 
-actionInfo convert 'convert audio files to opus'
-convertParams=( # TODO: opt for ignoring low qual mp3
-	NO_RM 'R?' '' 'Prevent source file removal'
-	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96)'
-	src '$+' '$f\.(flac|mp3|m4a|wma)' 'File to convert'
+		local function divmod(a, b)
+			return a / b, a % b
+		end
+
+		local function pickTime()
+			local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
+			local h, m = divmod(m, 60)
+			local s = math.floor(remainder)
+			local ms = math.floor((remainder - s) * 1000)
+			local time = string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
+			local f = io.open('/tmp/pickTime.pick', 'w')
+			f:write(time)
+			f:close()
+			mp.commandv 'quit'
+		end
+
+		mp.add_key_binding("Enter", "pickTime", pickTime)
+lua
+
+	declare -n arr=$1
+	local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
+		--term-playing-msg="$(print "<Enter> to pick --$1") time for $(
+			((SCRIPT_OPTS[color] > 0)) && ansi italic '${media-title}' reset || echo '${media-title}'
+		)" --script="$pickerFile")
+	local msg=
+	for f in "${src[@]:${#arr[@]}}"; do
+		echo > "$pickFile"
+		mpv "${_opts[@]}" "$f" || return 1
+		read -r pick < "$pickFile"
+		arr+=("${pick:-0}")
+	done
+	declare +n arr
+
+	rm "$pickerFile" "$pickFile"
+}
+timeToSeconds() {
+	local str=${1#0}
+	declare -i s=0
+	while [[ $str == *:* ]]; do
+		((s = s * 60 + ${str/:*/}))
+		str=${str#*:}
+		str=${str#0}
+	done
+	((s = s * 60 + ${str%.*}))
+	[[ $str == *.* ]] && echo "$s.${str#*.}" || echo $s
+}
+secondsToTime() {
+	[[ $1 == *.* ]] && local str=.${1#*.} || local str
+	declare -i s=${1%.*}
+	str=$((s % 60))$str
+	while ((0 < (s = s / 60))); do
+		str=$((s % 60)):$str
+	done
+	echo "$str"
+}
+
+getFreePath() {
+	[[ ! -e $1 ]] && echo "$1" && return
+	[[ $1 =~ ([0-9]*)(\.[^.]+)$ ]]
+	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]}
+	declare -i n=${BASH_REMATCH[1]:-0}+1
+	[[ ${BASH_REMATCH[1]} ]] || name+=_
+	while [[ -e $name$n$ext ]]; do
+		((n++))
+	done
+	echo "$name$n$ext"
+}
+
+actionInfo edit 'cut, strip metadata and/or convert media; time picker works only after `src`'
+declare -A editBuilder=([fadeout]=pickTime [start]=pickTime [end]=pickTime)
+editParams=(
+	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf, default=false)'
+	metadata 'm?' '' 'Keep metadata (default=false)'
+	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
+	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
+	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
+	src '$+' '$f\.(flac|mp3|m4a|wma|opus)' 'File to cut/convert'
+	start 's*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Start time (default=0)'
+	end 'e*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'End time, or seconds from the end (default=0)'
+	fadeout 'f*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Fadeout start time, or seconds from the end'
+	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
 	dst '$?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
-convert() {
-	argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]] &&
-		log Warn ': cannot specify multiple src and a file dst'
+edit() {
+	if argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]]; then
+		log Warn ': cannot specify multiple $src and a file $dst'
+		return 1
+	fi
 
-	[[ -z $dst ]] || local NO_RM=1 dst=${dst%/}
 	local f out
-	declare -i i
-	for ((i = ${#src[@]} - 1; i >= 0; i--)); do
-		local f=${src[i]} b=${bitrate[i]:-$bitrate}
-		if [[ -z $b ]]; then
-			[[ $src =~ \.(flac|wav)$ || $(
-				ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p'
-			) > 192 ]] && b=128 || b=96
-			log Info "['${src/*\/.../}'].bitrate = $b"
+	local baseCmd=($(ffmpegCmd) -i '' -map a)
+	declare -i i=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#baseCmd[@]}-3
+	((metadata <= 0)) && baseCmd+=(-map_metadata -1)
+	((copy > 0)) && local volume=() fadeout=() baseCmd+=(-c copy)
+
+	while ((--i >= 0)); do
+		local f=${src[i]}
+		local cmd=("${baseCmd[@]}")
+		cmd[$fileArgPos]=$f
+
+		((copy > 0)) || {
+			local b=${bitrate[i]:-$bitrate}
+			if [[ -z $b ]]; then
+				local fileBitrate=$(ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
+				[[ $f == *.opus ]] && b=$fileBitrate || {
+					[[ $src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
+				}
+				log Verbose "['${f/*\//…/}'].bitrate = $b"
+			fi
+			local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
+		}
+
+		local v=${volume[i]:-${volume:-1}}
+		[[ $v != 1 ]] && cmd+=(-filter:a volume=$v)
+
+		local s=${start[i]:-0}
+		[[ $s != 0 ]] && cmd+=(-ss $s)
+
+		local e=${end[i]:-0} endSeconds
+		local fade=${fadeout[i]:-${fadeout:-0}}
+		if [[ $e != 0 || $fade != 0 ]]; then
+			if [[ $e != *:* ]]; then
+				endSeconds=$(bc <<< "$(timeToSeconds $(
+					ffprobe "$f" |& sed -n 's/.*Duration: \([^,]*\),.*/\1/p'
+				))-$e")
+				e=$(secondsToTime $endSeconds)
+			else
+				endSeconds=$(timeToSeconds $e)
+			fi
+			cmd+=(-to $e)
+
+			if [[ $fade != 0 ]]; then
+				if [[ $fade != *:* ]]; then
+					cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$(bc <<< "$fade-$fP"))
+				else
+					fade=$(timeToSeconds $fade)
+					cmd+=(-af afade=out:st=$fade:d=$(bc <<< "$endSeconds-$fade-$fP"))
+				fi
+			fi
 		fi
 
 		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
-		[[ $dst && ! -d $dst ]] || log Info "['${src/*\/.../}'].dst = '$out'"
-		local cmd=(ffmpeg -i "$f" -map_metadata -1 -map a -b:a ${b}k "${out%.*}.opus" -v)
-		cmd+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
-		exec "${cmd[@]}" && { ((NO_RM > 0)) || exec rm "$f"; }
+		if [[ -d ${dst:-.} ]]; then
+			((copy > 0)) || {
+				[[ $out == *.opus && $v == 1 && $f == 0 ]] && cmd=("${cmd[@]::cmdBrTo-2} ${cmd[@]:cmdBrTo}")
+				out=${out%.*}.opus
+			}
+			out=$(getFreePath "$out")
+			log Verbose "['${src/*\//…/}'].dst = '$out'"
+		fi
+		exec "${cmd[@]}" "$out" && { ((keepOriginal > 0)) || exec rm "$f"; }
 	done
 }
 
@@ -119,7 +253,10 @@ subtitles() {
 				[[ ${f@L} == "$match" ]] && local subs=$f && break
 			done
 		fi
-		[[ -z $subs ]] && log Warn " - no match for '$match'" && return
+		if [[ -z $subs ]]; then
+			log Warn " - no match for '$match'"
+			return 1
+		fi
 	fi
 
 	[[ $vid == *.mkv && ! -f $vid && -z $dst ]] && local dst=$vid && vid=
@@ -133,22 +270,24 @@ subtitles() {
 				[[ ${f@L} == "$match"* ]] && local vid=$f && break
 			done
 		fi
-		[[ -z $vid ]] && log Warn " - no match for '$match'" && return
+		if [[ -z $vid ]]; then
+			log Warn " - no match for '$match'"
+			return 1
+		fi
 	fi
 
 	# [[ $encoding ]] || local encoding=UTF-8
-	local opts=(-v)
-	opts+=(${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning})
+	local cmd=($(ffmpegCmd))
 
 	local sub i len=${#subs[@]}
 	for sub in "${subs[@]}"; do
 		# if [[ $(file "$sub" -b) =~ ([^ ]+)\ text && ${BASH_REMATCH[1]} != $encoding ]]; then
 		# enca "$sub" -x "$encoding"
 		# fi
-		opts+=(-i "$sub")
+		cmd+=(-i "$sub")
 	done
-	opts+=(-i "$vid" -map $len:a -map $len:v -c copy)
-	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && opts+=(-map $len:s)
+	cmd+=(-i "$vid" -map $len:a -map $len:v -c copy)
+	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && cmd+=(-map $len:s)
 
 	[[ $lang ]] || local lang=()
 	for ((i = 0; i < len; i++)); do
@@ -157,19 +296,19 @@ subtitles() {
 			[[ $sub == [a-z][a-z][a-z].srt ]] && lang[i]=${sub%.srt} || lang[i]=eng
 			log Info "['${subs[i]/*\/.../}'].lang = ${lang[i]}"
 		fi
-		opts+=(-metadata:s:s:$i language=${lang[i]} -map $i)
+		cmd+=(-metadata:s:s:$i language=${lang[i]} -map $i)
 	done
 
-	((updateDefault >= 0)) && opts+=(-disposition:s:0 default)
+	((updateDefault >= 0)) && cmd+=(-disposition:s:0 default)
 	if [[ -z $dst ]]; then
 		local dst=${vid%.*}.mkv
 		[[ -f $dst ]] && dst="${vid%.*} $lang-sub.mkv"
 	fi
 	local tmp="/tmp/mom-${dst##*/}"
-	opts+=("$tmp")
+	cmd+=("$tmp")
 
 	[[ ${vid} == *.mkv ]] && local keepSrc=1
-	exec ffmpeg "${opts[@]}" && exec mv "$tmp" "$dst" && if ((keepSrc <= 0)); then
+	exec "${cmd[@]}" && exec mv "$tmp" "$dst" && if ((keepSrc <= 0)); then
 		exec rm "${subs[@]}" "$vid"
 	fi
 }
@@ -289,7 +428,7 @@ compare() {
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
 linkFixParams=(
 	dst 'd?' '$d' 'Dir with broken links (default=./)'
-	resources '$!' '$d' 'Dir with referrence files')
+	resources '$!' '$d' 'Dir with reference files')
 linkFix() {
 	[[ $dst ]] && dst=${dst%/}/ || local dst=${dst:-./}
 	local CWD=$PWD

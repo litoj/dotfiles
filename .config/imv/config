@@ -18,3 +18,5 @@ u = upscaling linear
 <Meta+e> = exec sleep 0.1 && xterm ranger --selectfile="$imv_current_file" &
 <Meta+r> = exec sleep 0.1 && xterm ranger --selectfile="$imv_current_file" &
 <Ctrl+e> = exec gimp "$imv_current_file" &
+<comma> = prev
+<period> = next

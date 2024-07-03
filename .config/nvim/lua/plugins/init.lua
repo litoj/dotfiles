@@ -26,11 +26,11 @@ return {
 		end,
 	},
 	{
-		'folke/neodev.nvim',
+		'folke/lazydev.nvim',
 		dependencies = 'nvim-lspconfig',
 		ft = 'lua',
 		config = function()
-			require('neodev').setup { setup_jsonls = false }
+			require('lazydev').setup {}
 			require('mylsp').setup 'lua_ls'
 		end,
 	},

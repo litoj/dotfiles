@@ -14,8 +14,11 @@ run() {
 	local cmd=$1
 	[[ $cmd == @* || ${BLOCKING:-$TERM_BLOCKING} == 1 && -t 0 && -t 1 && -t 2 ]] ||
 		cmd="${TERMINAL:-xterm} $cmd"
-	[[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]] &&
-		${cmd#@} "${arg[@]}" || { ${cmd#@} "${arg[@]}" & }
+	if [[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]]; then
+		${cmd#@} "${arg[@]}"
+	else
+		${cmd#@} "${arg[@]}" &
+	fi
 	exit 0
 }
 

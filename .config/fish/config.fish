@@ -103,7 +103,6 @@ abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
 abbr pir    "paru -Qq | $pp | paru -Rscn -" # installed remove - only dependencies
 abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
-abbr paru   "exit" # block myself from constantly checking for updates manually
 
 # navigation
 abbr ...    "cd ../.."
@@ -119,10 +118,10 @@ abbr gp     "git pull"
 abbr gb     "git checkout -b"
 abbr gg     "git checkout"
 abbr gs     "git status"
-abbr gu     "git add -u && git commit"
 abbr ga     "git add -A && git commit"
-abbr gC     "git commit"
 abbr gap    "git add -p"
+abbr gA     "git add (git ls-files -m | fzf -m)"
+abbr gC     "git commit"
 abbr gd     "git branch -d (git branch | fzf | sed 's/.* //')"
 abbr gc     "git checkout"
 abbr gs     "git switch"

@@ -29,6 +29,12 @@ function M.config()
 			nls.builtins.formatting.prettier.with {
 				filetypes = { 'markdown', 'json', 'json5', 'jsonc', 'yaml', 'javascript', 'vue' },
 				extra_args = function()
+					if
+						vim.bo.ft == 'javascript'
+						and #(vim.lsp.get_clients { bufnr = 0, name = 'eslint' }) > 0
+					then
+						return false
+					end
 					return {
 						'--print-width',
 						vim.bo.textwidth,

@@ -19,7 +19,7 @@ font cursive 15
 for_window [app_id="dragon-drop"] floating enable, sticky enable, move position mouse
 for_window [app_id="com.github.hluk.copyq"] floating enable, sticky enable
 for_window [app_id="firefox" title="Picture-in-Picture|Obraz v obraze"] \
-	floating enable, sticky enable, border pixel $border
+	floating enable, sticky enable, border pixel $border, inhibit_idle fullscreen
 for_window [title=".*Android Emulator.*"] floating enable, border none
 for_window [title="win0"] floating enable
 for_window [app_id="cpupower-gui"] floating enable, border pixel $border

@@ -8,7 +8,7 @@ if [[ -z $1 ]]; then
 		sed -i '1d' /tmp/my/nextbg
 	else
 		bg=(*)
-		printf '%s\n' "${bg[@]:1}" | shuf > /tmp/my/nextbg
+		printf '%s\n' "${bg[@]:1}"  > /tmp/my/nextbg # | shuf
 	fi
 elif [[ $1 == save ]]; then
 	hr=$(date +%H)

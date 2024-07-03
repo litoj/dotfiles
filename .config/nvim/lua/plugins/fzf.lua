@@ -1,22 +1,22 @@
 local M = { 'ibhagwan/fzf-lua', event = 'VeryLazy' }
 function M.config()
 	local fzf = require 'fzf-lua'
-	local colors = {
-		header = { 'fg', 'Fg3' },
-		hl = { 'fg', 'LightBlue' },
-		gutter = { 'bg', 'Bg1' },
-		prompt = { 'fg', 'FloatTitle', 'bold' },
-		info = { 'fg', 'Number' },
-		pointer = { 'fg', 'Red' },
-		marker = { 'fg', 'Operator', 'bold' },
-		separator = { 'bg', 'Normal' },
-		['hl+'] = { 'fg', 'Search' },
-		['fg+'] = { 'fg', 'Fg1' },
-		['bg+'] = { 'bg', 'Bg2' },
-	}
 	fzf.setup {
 		'skim',
-		fzf_colors = vim.tbl_extend('force', colors, { current_match_bg = '#0000' }), -- for skim
+		fzf_colors = {
+			header = { 'fg', 'Fg3' },
+			hl = { 'fg', 'LightBlue' },
+			gutter = { 'bg', 'Bg1' },
+			prompt = { 'fg', 'FloatTitle', 'bold' },
+			info = { 'fg', 'Number' },
+			pointer = { 'fg', 'Red' },
+			marker = { 'fg', 'Operator', 'bold' },
+			separator = { 'bg', 'Normal' },
+			['hl+'] = { 'fg', 'Search' },
+			['fg+'] = { 'fg', 'Fg1' },
+			['bg+'] = { 'bg', 'Bg2' },
+			current_match_bg = '#0000',
+		}, -- for skim
 		files = {
 			prompt = 'Files> ',
 			git_icons = false,
@@ -29,7 +29,7 @@ function M.config()
 				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
 		lsp = { jump_to_single_result = true, ignore_current_line = true },
-		oldfiles = { fzf_colors = colors, fzf_bin = 'fzf', stat_file = exists },
+		oldfiles = { fzf_colors = { current_match_bg = false }, fzf_bin = 'fzf', stat_file = exists },
 	}
 
 	vim.lsp.handlers['textDocument/declaration'] = fzf.lsp_declarations

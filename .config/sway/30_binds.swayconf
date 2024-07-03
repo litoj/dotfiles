@@ -30,7 +30,7 @@ set $lof ~/.config/sway/lof
 bindsym --to-code {
 	$Mod+1 exec W=$wBrowser $lof firefox "firefox"
 	$Mod+2 exec xterm nvim
-	$Mod+$Alt+2 exec work xterm nvim -i ~/Documents/work/session.shada
+	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
 	$Mod+3 exec xterm
 	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE

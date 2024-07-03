@@ -59,11 +59,12 @@ setup('pyright', {})
 setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
-setup 'jsonls'
+-- setup 'jsonls'
 -- setup("yamlls", {})
 
 -- Lsp diagnostic
-map({ 'n', 'i' }, '<A-d>', vim.diagnostic.open_float)
+map('n', '<A-d>', vim.diagnostic.open_float)
+map('i', '<A-d>s', vim.diagnostic.open_float)
 map('n', '[d', vim.diagnostic.goto_prev)
 map('n', ']d', vim.diagnostic.goto_next)
 -- Lsp code helpers
@@ -74,11 +75,7 @@ map('n', 'gt', vim.lsp.buf.type_definition)
 -- gd,gr in ../plugins/fzf.lua
 map('n', 'gI', vim.lsp.buf.implementation)
 map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
-map(
-	{ 'n', 'i' },
-	'<A-I>',
-	function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end
-)
+map('i', '<A-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)
 map({ 'n', 'i' }, '<A-c>', vim.lsp.buf.code_action)

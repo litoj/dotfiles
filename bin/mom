@@ -100,7 +100,7 @@ lua
 	declare -n arr=$1
 	local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
 		--term-playing-msg="$(print "<Enter> to pick --$1") time for $(
-			((SCRIPT_OPTS[color] > 0)) && ansi italic '${media-title}' reset || echo '${media-title}'
+			((SCRIPT_OPTS[color] > 0)) && ansi italic "'\${media-title}'" reset || echo '${media-title}'
 		)" --script="$pickerFile")
 	local msg=
 	for f in "${src[@]:${#arr[@]}}"; do
@@ -134,6 +134,7 @@ secondsToTime() {
 	echo "$str"
 }
 
+# $2= name of the param for which we are creating the path
 getFreePath() {
 	[[ ! -e $1 ]] && echo "$1" && return
 	[[ $1 =~ ([0-9]*)(\.[^.]+)$ ]]
@@ -143,7 +144,27 @@ getFreePath() {
 	while [[ -e $name$n$ext ]]; do
 		((n++))
 	done
-	echo "$name$n$ext"
+	local text="$name$n$ext"
+	log $([[ $1 == $text ]] && echo Verbose || echo Info) ".$2 = '$text'"
+	echo "$text"
+}
+
+# expects $dst, $1=src
+genDstFromSrc() {
+	local src=$1 out=${dst:-$src}
+	[[ -d $dst ]] && out="$dst/${src##*/}"
+	# default path included to not override source file, but override if file dst was given
+	[[ -d ${dst:-.} ]] && out=$(ACTION="$ACTION['${src/*\//…/}']" getFreePath "$out" dst)
+	echo "$out"
+}
+
+# expects $cmd, $keepOriginal, $dst, $1=src, $2=out
+runCmdWithCleanup() {
+	local src=$1 out=$2
+	exec "${cmd[@]}" "$out" && if ((keepOriginal <= 0)); then
+		exec rm "$src"
+		[[ $dst ]] || exec mv "$out" "$src"
+	fi
 }
 
 actionInfo edit 'cut, strip metadata and/or convert media; time picker works only after `src`'
@@ -161,12 +182,12 @@ editParams=(
 	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
 	dst '$?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
-	if argMatch "$dst" '$F\.opus' && [[ ${#src[@]} -gt 1 ]]; then
+	if argMatch "$dst" '$F\.opus' && ((${#src[@]} > 1)); then
 		log Warn ': cannot specify multiple $src and a file $dst'
 		return 1
 	fi
 
-	local f out
+	local out
 	local baseCmd=($(ffmpegCmd) -i '' -map a)
 	declare -i i=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#baseCmd[@]}-3
 	((metadata <= 0)) && baseCmd+=(-map_metadata -1)
@@ -181,9 +202,8 @@ edit() {
 			local b=${bitrate[i]:-$bitrate}
 			if [[ -z $b ]]; then
 				local fileBitrate=$(ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
-				[[ $f == *.opus ]] && b=$fileBitrate || {
-					[[ $src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
-				}
+				[[ ($f == *.opus && $fileBitrate -ge 128) ||
+					$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
 				log Verbose "['${f/*\//…/}'].bitrate = $b"
 			fi
 			local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
@@ -209,12 +229,17 @@ edit() {
 			cmd+=(-to $e)
 
 			if [[ $fade != 0 ]]; then
+				local fadeDuration
 				if [[ $fade != *:* ]]; then
-					cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$(bc <<< "$fade-$fP"))
+					fadeDuration=$(bc <<< "$fade-$fP")
+					cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$fadeDuration)
 				else
 					fade=$(timeToSeconds $fade)
-					cmd+=(-af afade=out:st=$fade:d=$(bc <<< "$endSeconds-$fade-$fP"))
+					fadeDuration=$(bc <<< "$endSeconds-$fade-$fP")
+					cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
 				fi
+
+				[[ $fadeDuration == .* ]] && log Error ".fade interval < 1s"
 			fi
 		fi
 
@@ -224,10 +249,9 @@ edit() {
 				[[ $out == *.opus && $v == 1 && $f == 0 ]] && cmd=("${cmd[@]::cmdBrTo-2} ${cmd[@]:cmdBrTo}")
 				out=${out%.*}.opus
 			}
-			out=$(getFreePath "$out")
-			log Verbose "['${src/*\//…/}'].dst = '$out'"
+			out=$(ACTION="$ACTION['${src/*\//…/}']" getFreePath "$out" dst)
 		fi
-		exec "${cmd[@]}" "$out" && { ((keepOriginal > 0)) || exec rm "$f"; }
+		runCmdWithCleanup "$f" "$out"
 	done
 }
 
@@ -327,6 +351,7 @@ pickSong() {
 		find ~/Music/* -type d
 		find ~/Music/Songs -type f
 	} | rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')"
+	[[ $_choice ]] || unset _choice
 }
 play() {
 	local playlistFile=/tmp/my/song
@@ -392,39 +417,6 @@ play() {
 	return 0
 }
 
-actionInfo compare C "play randomized files and reveal user's pick"
-compareParams=(files '$+' '$f' 'Files to compare')
-compare() {
-	declare -i c=${#files[@]}*${#files[@]}+1 i j
-	for i in ${!files[@]}; do # absolute path for `ln -s`
-		[[ ${files[$i]} == /* ]] || files[$i]="$PWD/${files[$i]}"
-	done
-	while ((c-- > 0)); do
-		i=$RANDOM%${#files[@]}
-		j=$RANDOM%${#files[@]}
-		if ((i != j)); then
-			x=${files[$i]}
-			files[i]=${files[$j]}
-			files[j]=$x
-		fi
-	done
-
-	for i in ${!files[@]}; do
-		exec ln -sf "${files[$i]}" /tmp/mediacmp$((i + 1))
-		exec ${TERMINAL:-xterm} echo $((i + 1))\; mpv --no-audio-display /tmp/mediacmp$((i + 1)) &
-		sleep 1
-	done
-	read -p "pick [1-${#files[@]}]: " best
-	declare -i best=($best)
-	for i in ${best[@]}; do
-		echo "${files[$((i - 1))]#$PWD/}"
-	done
-	declare -i i=${#files[@]}
-	while ((--i)); do
-		exec rm /tmp/mediacmp$i
-	done
-}
-
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
 linkFixParams=(
 	dst 'd?' '$d' 'Dir with broken links (default=./)'
@@ -454,6 +446,87 @@ linkFix() {
 		fi
 	done < <(fd -t l)
 	cd "$CWD"
+}
+
+actionInfo resize 'resize images'
+resizeParams=(
+	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
+	src '$+' '$f\.(jpg|JPG|png)' 'File to resize'
+	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
+	only 'o?' '[>a<]' 'Modify only if the image has larger/any/smaller size (default=>)'
+	sizeGap 'g?' '[0-9]+[p%]' 'Minimum size difference, pixels or % from the target size' # TODO
+	size 's+' 'x?[0-9]+[x^]?' 'Longest side, *`^` for shortest, `x` for fixating on height/width'
+	dst '$?' '$E.(jpg|JPG|png)' 'Output file/dir (default=$src)')
+resize() {
+	if argMatch "$dst" '$F\.opus' && ((${#src[@]} > 1)); then
+		log Warn ': cannot specify multiple $src and a file $dst'
+		return 1
+	fi
+	if [[ ! -d ${dst:-.} ]]; then
+		local ext=${dst##*.} srcExt=${src[0]##*.}
+		if [[ ${ext,,} != ${srcExt,,} ]]; then
+			log Warn ".\$dst: extension mismatch '$ext' != '$srcExt'"
+		fi
+	fi
+
+	declare -i i=${#src[@]}
+	local only=${only:->}
+	while ((--i >= 0)); do
+		local file=${src[i]} newSize=${size[i]:-$size}
+		declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$file"))
+		# magick would understand, but it's easier to reuse our shortest side checker
+		[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
+		[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
+
+		if [[ $only != a ]]; then
+			((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
+			declare -i nS=${newSize%^} gap=${sizeGap::-1}
+			if [[ $sizeGap == *% ]]; then
+				gap=gap*nS/100
+				log Info "['${file/*\//…/}'].sizeGap = $gap"
+			fi
+			# select compared dimension - `^` for shortest side
+			[[ ($only == \> && $newSize != *^) || ($only == \< && $newSize == *^) ]] && dim=${dim[1]}
+			# require distance to target size greater than gap
+			[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
+			# decide whether to resize
+			[[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]] || {
+				((keepOriginal > 0)) && local cmd=cp || local cmd=mv
+				[[ "$dst" ]] && exec $cmd "$file" "$(genDstFromSrc "$file")"
+				continue
+			}
+		fi
+		local cmd=(magick "$file" -resize "$newSize")
+		((quality)) && cmd+=(-quality $quality)
+
+		runCmdWithCleanup "$file" "$(genDstFromSrc "$file")"
+	done
+}
+
+actionInfo rename R 'rename video/image files'
+renameParams=(
+	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv)' 'File to rename'
+)
+rename() {
+	if [[ -d $src ]]; then
+		for src in "$src"/*; do
+			argMatch "$src" "${renameParams[2]}" && rename
+		done
+	elif ((${#src[@]}>1)); then
+		local args=("${src[@]}")
+		local src
+		for src in "${args[@]}"; do
+			rename
+		done
+	else
+		if [[ $src == *.mp4 || $src == *.mkv ]]; then
+			local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
+		else
+			local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
+			[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
+		fi
+		[[ $src == $dst ]] || exec mv "$src" "$(getFreePath "$dst" dst)"
+	fi
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

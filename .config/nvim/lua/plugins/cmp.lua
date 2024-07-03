@@ -226,14 +226,14 @@ local f = io.open '/sys/class/power_supply/BAT0/status'
 local ok = f and f:read '*l' ~= 'Discharging'
 if f then f:close() end
 if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 'root' then
-	src.tabnine = { name = 'cmp_tabnine', group_index = 3 }
+	--[[ src.tabnine = { name = 'cmp_tabnine', group_index = 3 }
 	M[#M + 1] = {
 		'tzachar/cmp-tabnine',
 		build = './install.sh',
 		config = function() require('cmp_tabnine.config'):setup { max_num_results = 2 } end,
 		dependencies = 'nvim-cmp',
 		event = 'InsertEnter',
-	}
+	} ]]
 
 	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
 	M[#M + 1] = {

@@ -46,7 +46,7 @@ pkgConf() {
 
 pickPackage() {
 	local _opts=(--prompt "$4: " --preview "${pkgConf[preview]}")
-	[[ $2 == [+*] ]] && _opts+=(-m)
+	[[ $2 == ?[+*] ]] && _opts+=(-m)
 	local _filter=${pkgConf[$ACTION]:-${pkgConf[filter]}}
 	declare -n _choice=$1
 	if [[ $_filter == *-u* ]]; then # filter only uninstalled pkgs
@@ -103,7 +103,7 @@ launch() {
 # only disabled apps by default, -e for direct uninstallation (of active/enabled apps)
 actionInfo uninstall 'uninstall disabled apps'
 uninstallParams=(
-	keep 'k?' 'Keep app data/cache'
+	keep 'k?' '' 'Keep app data/cache'
 	packages '$+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A uninstallBuilder=([packages]=pickPackage)
 pkgConf[uninstall]=-d
@@ -117,7 +117,7 @@ uninstall() {
 
 actionInfo remove 'uninstall enabled apps'
 removeParams=(
-	keep 'k?' 'Keep app data/cache'
+	keep 'k?' '' 'Keep app data/cache'
 	packages '$+' "${REGEX[domain]}" 'Domain name to uninstall')
 declare -A removeBuilder=([packages]=pickPackage)
 pkgConf[remove]=-e

@@ -13,7 +13,7 @@ function M.config()
 		sync_root_with_cwd = true,
 		filters = {
 			dotfiles = true,
-			custom = { '.git$', 'node_modules', '.cache' },
+			custom = { '^.git$', '^node_modules$', '^\\.cache$' },
 			exclude = { '.config', '.scripts' },
 		},
 		renderer = {

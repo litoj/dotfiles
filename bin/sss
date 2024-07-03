@@ -146,7 +146,7 @@ ansi() {
 	echo "$ret"
 }
 print() {
-	if ((SCRIPT_OPTS[color] < 0)); then
+	if ((SCRIPT_OPTS[color] <= 0)); then
 		echo "$@"
 		return
 	fi
@@ -307,7 +307,7 @@ parseAction() {
 		if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})(no-)?([^- ][^= ]+)(=.+)?$ && -z $actionArg ]]; then
 			i=${opts["$(argToCase ${BASH_REMATCH[3]})"]} # full option name
 			[[ $i ]] && arg=${BASH_REMATCH[4]:1}
-			[[ ${BASH_REMATCH[2]} ]] && optCnt=-
+			[[ ${BASH_REMATCH[2]} ]] && optCnt=- #TODO: in x?<> !argMatch, taking ''/int?, on script_opt
 		fi
 		if [[ !$i && $1 =~ ^[+-]([^-+])(.+)?$ ]]; then # short option -o(Val)?
 			[[ $1 == +* ]] && optCnt=-                    # +o means toggle off → -=

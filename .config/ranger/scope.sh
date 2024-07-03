@@ -120,9 +120,11 @@ handle_extension() {
 			mediainfo "${FILE_PATH}" && exit 5
 			exiftool "${FILE_PATH}" && exit 5
 			;; # Continue with next handler on failure
-		config | conf | cfg)
+		config | conf | cfg | sln)
 			bat --color=always --tabs 2 -l cfg --style="plain" -- "${FILE_PATH}" && exit 5
 			;;
+		csproj)
+			bat --color=always --tabs 2 -l xml --style="plain" -- "${FILE_PATH}" && exit 5;
 	esac
 }
 

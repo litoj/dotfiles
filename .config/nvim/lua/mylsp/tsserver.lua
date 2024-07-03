@@ -67,21 +67,18 @@ withMod('dap', function(dap)
 end)
 
 require('mylsp').setup('eslint', {
-	format = true,
 	settings = {
 		rulesCustomizations = {
 			{ rule = '*', severity = 'info' },
 			{ rule = '*/no-unused-vars-experimental', severity = 'off' },
 		},
 	},
-	single_file_support = false, -- runs but gives no useful information
-	inlay = false,
+	single_file_support = false,
 	setCwd = false,
 })
 
 return {
 	format = false,
-	inlay = true,
 	folding = true,
 	root_dir = require('lspconfig.util').root_pattern(
 		'src',

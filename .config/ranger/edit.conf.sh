@@ -11,7 +11,7 @@ BLOCKING=1
 try 'tar -xvf' .bz2 .gz .tgz .xz .zst
 try '7z x' .7z .tar .rar .zip
 edit() {
-	mom -e "$1" -e -f
+	mom -e "$1" -b96 -e -f
 }
 try edit .flac
 try 'mom -e' .m4a .mp3 .wav .wma

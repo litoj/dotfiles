@@ -4,7 +4,7 @@ return {
 			completion = { autoRequire = false, showParams = false, callSnippet = 'Replace' },
 			diagnostics = { globals = { 'vim' } },
 			format = {
-				enable = false,
+				enable = false, -- TODO: try to switch
 				defaultConfig = {
 					-- https://github.com/CppCXY/EmmyLuaCodeStyle/blob/master/lua.template.editorconfig
 					quote_style = 'single',

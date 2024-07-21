@@ -22,25 +22,32 @@ actionInfo download 'download audio/video from given url with `yt-dlp`'
 downloadParams=(
 	metadata 'm?' '' 'Keep metadata' # NOTE: pipeline candidate - output as nometa src
 	format 'f?' '.+' 'Yt-dl download format (default=ba[ext=webm])'
-	src '$!' 'http.+' 'Url to download'
-	dst '$?' '$E\.opus' 'Output filename in yt-dlp format or dir (default=./Artist - Song.opus)')
+	src '$+' 'http.+' 'Urls to download'
+	dst '$*' '$E\.opus' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
-	local dst=${dst:-.}
+	[[ $dst ]] || local dst=.
 	[[ -d $dst ]] && local tmp="%(creator)s - %(title)s.opus" || local tmp=${dst##*/}
-	local prefix=/tmp/mom-download-
-	cmd+=(-o "$prefix$tmp")
-	cmd+=("${src%%&*}")
+	local prefix=/tmp/mom-download
+	declare -i i=-1 srcN=${#src[@]}
 
-	((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
-	exec "${cmd[@]}" && {
-		((metadata > 0)) && cmd=(exec mv) || cmd=(call noMeta +k)
-		cmd+=("$prefix"*)
-		[[ -d $dst ]] && cmd+=("${dst%/}/$(
-			sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
-		)") || cmd+=("$dst")
-		"${cmd[@]}"
-	}
+	while ((++i < srcN)); do
+		src=${src[i]%%&*}
+		function isolated() {
+			local prefix=$prefix-${src#*=}-
+			local cmd=("${cmd[@]}" -o "$prefix$tmp" "$src") dst=${dst[i]:-$dst}
+			((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
+			exec "${cmd[@]}" && {
+				((metadata > 0)) && cmd=(exec mv) || cmd=(call noMeta +k)
+				cmd+=("$prefix"*)
+				[[ -d $dst ]] && cmd+=("${dst%/}/$(
+					sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
+				)") || cmd+=("$dst")
+				"${cmd[@]}"
+			}
+		}
+		ACTION+="['$src']" isolated
+	done
 }
 
 actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'

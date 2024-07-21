@@ -92,6 +92,7 @@ abbr s      "sensors"
 abbr cp     "cp -i"
 abbr mv     "mv -i"
 abbr gparted "xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root"
+abbr dl     "mom -d"
 
 # get error messages from journalctl
 abbr jctl   "journalctl -p 3 -b"

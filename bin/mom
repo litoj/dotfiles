@@ -143,12 +143,12 @@ getFreePath() {
 	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]} numLen=${#BASH_REMATCH[1]}
 	declare -i n=${BASH_REMATCH[1]##0}+1
 	declare -i added=$((numLen - ${#n})) i=added
-	while ((i--)); do
+	while ((i-- > 0)); do
 		name+=0
 	done
 	[[ ${BASH_REMATCH[1]} ]] || name+=_
 	while [[ -e $name$n$ext ]]; do
-		((++n && added && ${#n} >= numLen)) && name=${name::-$added} && unset added
+		((++n && added > 0 && ${#n} >= numLen)) && name=${name::-$added} && unset added
 	done
 	local text="$name$n$ext"
 	[[ $1 == $text || $1 == $src && $keepOriginal -lt 1 ]] &&
@@ -221,7 +221,7 @@ edit() {
 					local fileBitrate=$(ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
 					[[ ($src == *.opus && $fileBitrate -ge 128) ||
 						$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
-					log Verbose "['${src/*\//…/}'].bitrate = $b"
+					log Verbose ".bitrate = $b"
 				fi
 				local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
 			}
@@ -262,9 +262,11 @@ edit() {
 
 			[[ -d $dst ]] && out="$dst/${src##*/}" || { [[ $dst ]] && out=$dst || out=$src; }
 			if [[ -d ${dst:-.} ]]; then
-				((copy > 0)) || {
-					[[ $out == *.opus && $v == 1 && $src == 0 ]] &&
-						cmd=("${cmd[@]::cmdBrTo-2} ${cmd[@]:cmdBrTo}")
+				((copy > 0)) || { # if codec is not being copied already, try to copy if possible
+					[[ $src == *.opus && $v == 1 && $fade == 0 ]] && {
+						log Info '.copy = true (no reencoding required)'
+						cmd=("${cmd[@]::cmdBrTo-2}" -c copy "${cmd[@]:cmdBrTo}")
+					}
 					out=${out%.*}.opus
 				}
 				out=$(getFreePath "$out" dst)
@@ -273,6 +275,7 @@ edit() {
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
+	wait
 }
 
 actionInfo subtitles 'convert mp4 with srt to mkv'

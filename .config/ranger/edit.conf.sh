@@ -13,10 +13,8 @@ try '7z x' .7z .tar .rar .zip
 edit() {
 	mom -e "$1" -b96 -e -f
 }
-try edit .flac
-try 'mom -e' .m4a .mp3 .wav .wma
+try edit .flac .opus .m4a .mp3 .wav .wma
 try 'mom --subtitles' .srt .mp4
-try 'mom -M' .opus
 # try @"kdenlive & dragon-drop -x -a" .mkv
 editDir() {
 	# doesn't work if directories are inside the given one

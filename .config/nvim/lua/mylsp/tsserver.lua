@@ -14,7 +14,9 @@ withMod('dap', function(dap)
 			type = 'pwa-node',
 			request = 'attach',
 			name = 'Attach to "npx --inspect" cmds',
-			processId = require('dap.utils').pick_process,
+			processId = function()
+				return require('dap.utils').pick_process { filter = '^%S*node' }
+			end,
 			cwd = vim.loop.cwd(),
 			sourceMaps = true,
 		},

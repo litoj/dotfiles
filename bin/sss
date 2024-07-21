@@ -81,10 +81,10 @@ defineParams=( # TODO: consider a builtin action [c]onfig loader (bash script)
 	picker 'p?' '' 'Enable arg/opt param picker (default=1 for TUI, 0 for CLI)'
 	guiPicker 'g?' '' 'Use GUI pickers'
 	optArgPicker 'o?' '' 'Enable picker for optional arguments'
-	exitLogLvl 'e?' '([0-9]+|[A-Za-z]+)?'
+	exitLogLvl 'e?' '([0-9]+|[A-Za-km-z]+)?'
 	"At which level to abort execution and exit (default=${LOG_NAMES[${SCRIPT_OPTS[exitLogLvl]}]}=${SCRIPT_OPTS[exitLogLvl]})"
-	logLvl 'l?' '([0-9]+|[A-Za-z]+)?'
-	"Depth of logging, '-lll'='-l3'→3 (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
+	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
+	"Depth of logging, '-lll'='-l3'… (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
 define() {

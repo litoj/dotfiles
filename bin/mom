@@ -5,8 +5,10 @@
 SSS_OPTS[about]='MOM - Media Operation/Manipulation
 A collection of media operation/manipulation scripts.'
 
+((SCRIPT_OPTS[jobs] = (1 + $(nproc --all)) / 2))
 SCRIPT_OPTS[ffmpegSetLogLevel]=-2
 defineParams=(
+	jobs 'j?' '[0-9]*' 'Number of jobs to run in parallel (default=cpus/2)'
 	ffmpegSetLogLevel 'f?' '' 'Change ffmpeg log level to current script value'
 	"${defineParams[@]}")
 
@@ -50,9 +52,9 @@ noMeta() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
 		cd "$src"
-		for f in *; do
-			[[ -d $f || $f =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
-			local src=$f
+		for src in *; do
+			[[ -d $src || $src =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
+			local src=$src
 			noMeta
 		done
 		cd "$CWD"
@@ -103,9 +105,9 @@ lua
 			((SCRIPT_OPTS[color] > 0)) && ansi italic "'\${media-title}'" reset || echo '${media-title}'
 		)" --script="$pickerFile")
 	local msg=
-	for f in "${src[@]:${#arr[@]}}"; do
+	for src in "${src[@]:${#arr[@]}}"; do
 		echo > "$pickFile"
-		mpv "${_opts[@]}" "$f" || return 1
+		mpv "${_opts[@]}" "$src" || return 1
 		read -r pick < "$pickFile"
 		arr+=("${pick:-0}")
 	done
@@ -134,28 +136,42 @@ secondsToTime() {
 	echo "$str"
 }
 
-# $2= name of the param for which we are creating the path
+# $src, $2= name of the param for which we are creating the path
 getFreePath() {
 	[[ ! -e $1 ]] && echo "$1" && return
 	[[ $1 =~ ([0-9]*)(\.[^.]+)$ ]]
-	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]}
-	declare -i n=${BASH_REMATCH[1]:-0}+1
+	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]} numLen=${#BASH_REMATCH[1]}
+	declare -i n=${BASH_REMATCH[1]##0}+1
+	declare -i added=$((numLen - ${#n})) i=added
+	while ((i--)); do
+		name+=0
+	done
 	[[ ${BASH_REMATCH[1]} ]] || name+=_
 	while [[ -e $name$n$ext ]]; do
-		((n++))
+		((++n && added && ${#n} >= numLen)) && name=${name::-$added} && unset added
 	done
 	local text="$name$n$ext"
-	log $([[ $1 == $text ]] && echo Verbose || echo Info) ".$2 = '$text'"
+	[[ $1 == $text || $1 == $src && $keepOriginal -lt 1 ]] &&
+		log Verbose ".$2 = '$text'" || log Info ".$2 = '$text'"
 	echo "$text"
 }
 
 # expects $dst, $1=src
 genDstFromSrc() {
-	local src=$1 out=${dst:-$src}
+	local src=$1
+	local out=${dst:-$src}
 	[[ -d $dst ]] && out="$dst/${src##*/}"
 	# default path included to not override source file, but override if file dst was given
-	[[ -d ${dst:-.} ]] && out=$(ACTION="$ACTION['${src/*\//…/}']" getFreePath "$out" dst)
+	[[ -d ${dst:-.} ]] && out=$(getFreePath "$out" dst)
 	echo "$out"
+}
+
+runJob() {
+	if ((SCRIPT_OPTS[jobs] > $(jobs | wc -l))); then
+		"$@" &
+	else
+		"$@"
+	fi
 }
 
 # expects $cmd, $keepOriginal, $dst, $1=src, $2=out
@@ -189,69 +205,73 @@ edit() {
 
 	local out
 	local baseCmd=($(ffmpegCmd) -i '' -map a)
-	declare -i i=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#baseCmd[@]}-3
+	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#baseCmd[@]}-3
 	((metadata <= 0)) && baseCmd+=(-map_metadata -1)
 	((copy > 0)) && local volume=() fadeout=() baseCmd+=(-c copy)
 
-	while ((--i >= 0)); do
-		local f=${src[i]}
-		local cmd=("${baseCmd[@]}")
-		cmd[$fileArgPos]=$f
+	while ((++i < srcN)); do
+		src=${src[i]}
+		function isolated() {
+			local cmd=("${baseCmd[@]}")
+			cmd[$fileArgPos]=$src
 
-		((copy > 0)) || {
-			local b=${bitrate[i]:-$bitrate}
-			if [[ -z $b ]]; then
-				local fileBitrate=$(ffprobe "$f" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
-				[[ ($f == *.opus && $fileBitrate -ge 128) ||
-					$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
-				log Verbose "['${f/*\//…/}'].bitrate = $b"
-			fi
-			local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
-		}
-
-		local v=${volume[i]:-${volume:-1}}
-		[[ $v != 1 ]] && cmd+=(-filter:a volume=$v)
-
-		local s=${start[i]:-0}
-		[[ $s != 0 ]] && cmd+=(-ss $s)
-
-		local e=${end[i]:-0} endSeconds
-		local fade=${fadeout[i]:-${fadeout:-0}}
-		if [[ $e != 0 || $fade != 0 ]]; then
-			if [[ $e != *:* ]]; then
-				endSeconds=$(bc <<< "$(timeToSeconds $(
-					ffprobe "$f" |& sed -n 's/.*Duration: \([^,]*\),.*/\1/p'
-				))-$e")
-				e=$(secondsToTime $endSeconds)
-			else
-				endSeconds=$(timeToSeconds $e)
-			fi
-			cmd+=(-to $e)
-
-			if [[ $fade != 0 ]]; then
-				local fadeDuration
-				if [[ $fade != *:* ]]; then
-					fadeDuration=$(bc <<< "$fade-$fP")
-					cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$fadeDuration)
-				else
-					fade=$(timeToSeconds $fade)
-					fadeDuration=$(bc <<< "$endSeconds-$fade-$fP")
-					cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
-				fi
-
-				[[ $fadeDuration == .* ]] && log Error ".fade interval < 1s"
-			fi
-		fi
-
-		[[ -d $dst ]] && out="$dst/${f##*/}" || { [[ $dst ]] && out=$dst || out=$f; }
-		if [[ -d ${dst:-.} ]]; then
 			((copy > 0)) || {
-				[[ $out == *.opus && $v == 1 && $f == 0 ]] && cmd=("${cmd[@]::cmdBrTo-2} ${cmd[@]:cmdBrTo}")
-				out=${out%.*}.opus
+				local b=${bitrate[i]:-$bitrate}
+				if [[ -z $b ]]; then
+					local fileBitrate=$(ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
+					[[ ($src == *.opus && $fileBitrate -ge 128) ||
+						$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
+					log Verbose "['${src/*\//…/}'].bitrate = $b"
+				fi
+				local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
 			}
-			out=$(ACTION="$ACTION['${src/*\//…/}']" getFreePath "$out" dst)
-		fi
-		runCmdWithCleanup "$f" "$out"
+
+			local v=${volume[i]:-${volume:-1}}
+			[[ $v != 1 ]] && cmd+=(-filter:a volume=$v)
+
+			local s=${start[i]:-0}
+			[[ $s != 0 ]] && cmd+=(-ss $s)
+
+			local e=${end[i]:-0} endSeconds
+			local fade=${fadeout[i]:-${fadeout:-0}}
+			if [[ $e != 0 || $fade != 0 ]]; then
+				if [[ $e != *:* ]]; then
+					endSeconds=$(bc <<< "$(timeToSeconds $(
+						ffprobe "$src" |& sed -n 's/.*Duration: \([^,]*\),.*/\1/p'
+					))-$e")
+					e=$(secondsToTime $endSeconds)
+				else
+					endSeconds=$(timeToSeconds $e)
+				fi
+				cmd+=(-to $e)
+
+				if [[ $fade != 0 ]]; then
+					local fadeDuration
+					if [[ $fade != *:* ]]; then
+						fadeDuration=$(bc <<< "$fade-$fP")
+						cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$fadeDuration)
+					else
+						fade=$(timeToSeconds $fade)
+						fadeDuration=$(bc <<< "$endSeconds-$fade-$fP")
+						cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
+					fi
+
+					[[ $fadeDuration == .* ]] && log Error ".fade interval < 1s"
+				fi
+			fi
+
+			[[ -d $dst ]] && out="$dst/${src##*/}" || { [[ $dst ]] && out=$dst || out=$src; }
+			if [[ -d ${dst:-.} ]]; then
+				((copy > 0)) || {
+					[[ $out == *.opus && $v == 1 && $src == 0 ]] &&
+						cmd=("${cmd[@]::cmdBrTo-2} ${cmd[@]:cmdBrTo}")
+					out=${out%.*}.opus
+				}
+				out=$(getFreePath "$out" dst)
+			fi
+			runCmdWithCleanup "$src" "$out"
+		}
+		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
 }
 
@@ -273,8 +293,8 @@ subtitles() {
 			local match=${vid@L}
 			match=${match%.*}.srt
 			subs=()
-			for f in *.srt; do
-				[[ ${f@L} == "$match" ]] && local subs=$f && break
+			for src in *.srt; do
+				[[ ${src@L} == "$match" ]] && local subs=$src && break
 			done
 		fi
 		if [[ -z $subs ]]; then
@@ -290,8 +310,8 @@ subtitles() {
 			local match=${subs@L}
 			match=${match%.*}.
 			vid=()
-			for f in *.mp4 *.mkv; do
-				[[ ${f@L} == "$match"* ]] && local vid=$f && break
+			for src in *.mp4 *.mkv; do
+				[[ ${src@L} == "$match"* ]] && local vid=$src && break
 			done
 		fi
 		if [[ -z $vid ]]; then
@@ -454,7 +474,7 @@ resizeParams=(
 	src '$+' '$f\.(jpg|JPG|png)' 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	only 'o?' '[>a<]' 'Modify only if the image has larger/any/smaller size (default=>)'
-	sizeGap 'g?' '[0-9]+[p%]' 'Minimum size difference, pixels or % from the target size' # TODO
+	sizeGap 'g?' '[0-9]+[p%]' 'Minimum size difference, pixels or % from the target size'
 	size 's+' 'x?[0-9]+[x^]?' 'Longest side, *`^` for shortest, `x` for fixating on height/width'
 	dst '$?' '$E.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {
@@ -469,38 +489,43 @@ resize() {
 		fi
 	fi
 
-	declare -i i=${#src[@]}
+	declare -i i=-1 srcN=${#src[@]}
 	local only=${only:->}
-	while ((--i >= 0)); do
-		local file=${src[i]} newSize=${size[i]:-$size}
-		declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$file"))
-		# magick would understand, but it's easier to reuse our shortest side checker
-		[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
-		[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
+	while ((++i < srcN)); do
+		src=${src[i]}
+		local newSize=${size[i]:-$size}
+		function isolated() {
+			declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
+			# magick would understand, but it's easier to reuse our shortest side checker
+			[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
+			[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
 
-		if [[ $only != a ]]; then
-			((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
-			declare -i nS=${newSize%^} gap=${sizeGap::-1}
-			if [[ $sizeGap == *% ]]; then
-				gap=gap*nS/100
-				log Info "['${file/*\//…/}'].sizeGap = $gap"
+			if [[ $only != a ]]; then
+				((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
+				declare -i nS=${newSize%^} gap=${sizeGap::-1}
+				if [[ $sizeGap == *% ]]; then
+					gap=gap*nS/100
+					log Info ".sizeGap = $gap"
+				fi
+				# select compared dimension - `^` for shortest side
+				[[ ($only == \> && $newSize != *^) || ($only == \< && $newSize == *^) ]] && dim=${dim[1]}
+				# require distance to target size greater than gap
+				[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
+				# decide whether to resize
+				[[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]] || {
+					((keepOriginal > 0)) && local cmd=cp || local cmd=mv
+					[[ "$dst" ]] && exec $cmd "$src" "$(genDstFromSrc "$src")"
+					continue
+				}
 			fi
-			# select compared dimension - `^` for shortest side
-			[[ ($only == \> && $newSize != *^) || ($only == \< && $newSize == *^) ]] && dim=${dim[1]}
-			# require distance to target size greater than gap
-			[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
-			# decide whether to resize
-			[[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]] || {
-				((keepOriginal > 0)) && local cmd=cp || local cmd=mv
-				[[ "$dst" ]] && exec $cmd "$file" "$(genDstFromSrc "$file")"
-				continue
-			}
-		fi
-		local cmd=(magick "$file" -resize "$newSize")
-		((quality)) && cmd+=(-quality $quality)
+			local cmd=(magick "$src" -resize "$newSize")
+			((quality)) && cmd+=(-quality $quality)
 
-		runCmdWithCleanup "$file" "$(genDstFromSrc "$file")"
+			runCmdWithCleanup "$src" "$(genDstFromSrc "$src")"
+		}
+		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
+	wait
 }
 
 actionInfo rename R 'rename video/image files'
@@ -512,20 +537,23 @@ rename() {
 		for src in "$src"/*; do
 			argMatch "$src" "${renameParams[2]}" && rename
 		done
-	elif ((${#src[@]}>1)); then
+	elif ((${#src[@]} > 1)); then
 		local args=("${src[@]}")
 		local src
 		for src in "${args[@]}"; do
 			rename
 		done
 	else
-		if [[ $src == *.mp4 || $src == *.mkv ]]; then
-			local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
-		else
-			local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
-			[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
-		fi
-		[[ $src == $dst ]] || exec mv "$src" "$(getFreePath "$dst" dst)"
+		function isolated() {
+			if [[ $src == *.mp4 || $src == *.mkv ]]; then
+				local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
+			else
+				local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
+				[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
+			fi
+			[[ $src == $dst ]] || exec mv "$src" "$(getFreePath "$dst" dst)"
+		}
+		ACTION+="['${src/*\//…/}']" runJob isolated
 	fi
 }
 

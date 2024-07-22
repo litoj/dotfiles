@@ -134,7 +134,7 @@ declare -A COLORS=(
 	# log level colors
 	[quiet]=0 [error]=31 [warn]=33 [info]=32 [verbose]=35 [debug]=37
 	# theme colors
-	[oper]=31 [punct]=91 [bool]=34 [var]=32 [param]=96 [str]=33 [num]=95 [def]=3
+	[oper]=31 [delim]=91 [bool]=34 [var]=32 [param]=96 [str]=33 [num]=95 [def]=3 # def=define
 )
 ansi() {
 	local ret code
@@ -159,7 +159,7 @@ print() {
 				ret+="$(ansi bool "$hlStr" fg)" str=${str:${#hlStr}}
 				;;
 			[A-Za-z]*) hlStr=${str/[^0-9A-Za-z]*/} ret+=$hlStr str=${str:${#hlStr}} ;;
-			[.:[\]{}]*) ret+=$(ansi punct "${str::1}" fg) str=${str:1} ;;
+			[.:[\]{}]*) ret+=$(ansi delim "${str::1}" fg) str=${str:1} ;;
 			\(default*) ret+=\($(ansi def default reset) str=${str:8} ;;
 			[*+?!=\<\>^\|/%]*) ret+=$(ansi oper "${str::1}" fg) str=${str:1} ;;
 			-*)
@@ -186,7 +186,7 @@ print() {
 				local delim=${str::1}
 				str=${str:1}
 				hlStr=${str/[^0-9A-Za-z_\-]*/}
-				ret+=$(ansi punct $delim var "$hlStr" fg)
+				ret+=$(ansi delim $delim var "$hlStr" fg)
 				str=${str:${#hlStr}}
 				;;
 			*) ret+=${str::1} str=${str:1} ;;
@@ -244,9 +244,9 @@ main() {
 	local _esc
 	while :; do
 		if ((SCRIPT_OPTS[optArgPicker])); then
-			read -rp 'Choose action (+opts): ' line
+			read -rp "Choose $(ansi def action reset delim \( oper + param opts delim \): reset) " line
 		else
-			read -rp 'Choose action: ' -n 1 line
+			read -rp "Choose $(ansi def action reset delim : reset) " -n 1 line
 			echo
 		fi
 		if [[ $line == $'\004' ]]; then
@@ -609,8 +609,8 @@ pickValue() {
 			if ((${SCRIPT_OPTS[guiPicker]} > 0)); then
 				_pick=$(rofi -dmenu -p "${_pick:+Argument has to match /$3/! }$4")
 			else
-				[[ $_pick ]] && echo "Argument has to match /$3/"
-				read -rp "$4: " _pick
+				[[ $_pick ]] && print "Argument has to match /$3/"
+				read -rp "$(print "$4: ")" _pick
 			fi
 			[[ $_pick ]] || break
 		done

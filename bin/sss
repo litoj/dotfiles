@@ -54,8 +54,8 @@ actionInfo() {
 	ACTION_ORDER+=($name)
 }
 
-declare -A LOG_LEVELS=([quiet]=0 [error]=1 [warn]=2 [warning]=2 [info]=3 [verbose]=4 [debug]=5)
-LOG_NAMES=(quiet error warn info verbose debug)
+declare -A LOG_LEVELS=([quiet]=0 [fatal]=1 [error]=2 [warn]=3 [warning]=3 [info]=4 [verbose]=5 [debug]=6)
+LOG_NAMES=(quiet fatal error warn info verbose debug)
 
 [[ $# == 0 && -t 0 && -t 1 ]]
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
@@ -241,6 +241,7 @@ main() {
 	fi
 
 	SCRIPT_OPTS[picker]=1
+	local _esc
 	while :; do
 		if ((SCRIPT_OPTS[optArgPicker])); then
 			read -rp 'Choose action (+opts): ' line
@@ -248,6 +249,15 @@ main() {
 			read -rp 'Choose action: ' -n 1 line
 			echo
 		fi
+		if [[ $line == $'\004' ]]; then
+			line=q
+		elif [[ $line == $'\E' ]]; then
+			_esc=1 && continue
+		elif [[ $_esc && $line == O ]]; then # arrow movement
+			read -n 1 && continue
+		fi
+		_esc=
+
 		if [[ ${line%% *} == ? ]]; then
 			parseAction -$line
 		else
@@ -282,7 +292,7 @@ parseAction() {
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
 	if ((sigN % 4)); then
-		log Error "Params definition is missing $((4 - sigN % 4)) fields"
+		log Fatal "Params definition is missing $((4 - sigN % 4)) fields"
 		return 1
 	fi
 	local i=-4 posArg firstArg # not `declare -i` to keep unset values as ""
@@ -431,7 +441,7 @@ $(paramHelp $ACTION $((i / 4)))" && return
 
 call() { # for script usage - calling actions like itself with cli, without external process
 	parseAction "$@"
-	(($? == $# && LAST_LOG_LVL > 2))
+	(($? == $# && LAST_LOG_LVL > 3))
 }
 
 declare -A REGEX=(

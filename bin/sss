@@ -67,17 +67,17 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[guiPicker]=0
 	[optArgPicker]=0
 	[exitLogLvl]=$((1 + $?))
-	[logLvl]=3
+	[logLvl]=${DEBUG:-3}
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1 SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1
 
-# TODO: config as toml (action as sections) or bash map <action>ParamDefaults
 actionInfo define D 'set script-processing options'
-defineParams=( # TODO: consider a builtin action [c]onfig loader (bash script)
+defineParams=(
 	tui 't?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'd?' '' 'Disable actual commands execution'
-	color 'c?' '' 'Colorize output (default=1 when not redirected)'
+	color 'C?' '' 'Colorize output (default=1 when not redirected)'
+	config 'c*' '$f' 'Config file as arrays of cli options like `helpConfig=(-p)`'
 	picker 'p?' '' 'Enable arg/opt param picker (default=1 for TUI, 0 for CLI)'
 	guiPicker 'g?' '' 'Use GUI pickers'
 	optArgPicker 'o?' '' 'Enable picker for optional arguments'
@@ -90,14 +90,20 @@ defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
 define() {
 	declare -i i=0
 	local opt
-	while [[ -z ${defineParams[i + 2]} ]]; do
-		opt=${defineParams[i]} # test for param value presence and set it when present
-		((${!opt})) && SCRIPT_OPTS[$opt]=${!opt}
-		i+=4
-	done
 	while [[ ${defineParams[i]} ]]; do # opts with an arg value
 		opt=${defineParams[i]}
-		if [[ ${!opt} ]]; then
+		if [[ -z ${!opt} ]]; then
+			:
+		elif [[ -z ${defineParams[i + 2]} ]]; then
+			SCRIPT_OPTS[$opt]=${!opt}
+		elif [[ $opt == config ]]; then
+			declare -n opt
+			local x
+			for x in "${opt[@]}"; do
+				source "$x" || log Error ".config - invalid syntax in '$x'"
+			done
+			declare +n opt
+		elif [[ ${!opt} ]]; then
 			if [[ ${!opt} == [A-Za-z]* && -z ${LOG_LEVELS[${!opt,,}]} ]]; then
 				[[ $opt == logLvl ]] && SCRIPT_OPTS[$opt]=${LOG_LEVELS[info]} ||
 					SCRIPT_OPTS[$opt]=${LOG_LEVELS[warn]}
@@ -278,16 +284,18 @@ parseAction() {
 	local ACTION=''
 	if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})([^-][^=]+)(=.*)?$ ]]; then
 		local ACTION=$(argToCase "${BASH_REMATCH[2]}") actionArg=${BASH_REMATCH[3]:1}
-		[[ ${ACTION_INFO["$ACTION"]} ]] || ACTION='' actionArg=''
+		[[ ${ACTION_INFO["$ACTION"]} ]] || ACTION= actionArg=
 	fi
 	if [[ -z $ACTION && $1 =~ ^-([^-])(.*)$ ]]; then
 		local ACTION=${ACTION_INFO[${1:1:1}]} actionArg=${BASH_REMATCH[2]:+-${BASH_REMATCH[2]}}
+		declare -i actionArgFromEnd=$#
 	fi
 	if [[ $ACTION ]]; then
-		[[ $actionArg ]] && set -- "$actionArg" || shift
+		[[ $actionArg ]] && set -- "$actionArg" "${@:2}" || shift
 	else
-		ACTION=${SSS_OPTS[defAction]} actionArg=
+		ACTION=${SSS_OPTS[defAction]}
 	fi
+	unset actionArg
 
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
@@ -302,22 +310,29 @@ parseAction() {
 	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
 		[[ $sign != \$? || ${SSS_OPTS[argAsLongOpt]} ]] && opts["${sigs[$i]}"]=$i
-		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i
+		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # '_'=no short, '$'=arg
 		[[ $sign == ?[+!] || $sign == \$? ]] && posArg=${posArg:-$i}
 	done
 	[[ -z $posArg ]] && posArg=$sigN
 	firstArg=$posArg
 
 	declare -n builder=${ACTION}Builder
-	[[ ${builder[@]} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
-	while [[ $1 ]]; do                                 # get options and args
+	[[ ${builder[@]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
+
+	declare -n cfg=${ACTION}Config # load config for this action
+	set -- "${cfg[@]}" "$@"
+	argc+=${#cfg[@]}
+	declare +n cfg
+	unset cfg
+
+	while [[ $1 ]]; do # get options and args
 		# parse option prefix
 		[[ $1 == -- && ${#opts[@]} -gt 0 ]] && shift && opts=() && continue # only args will be found
 		local i= arg= optCnt=+
 		if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})(no-)?([^- ][^= ]+)(=.+)?$ && -z $actionArg ]]; then
 			i=${opts["$(argToCase ${BASH_REMATCH[3]})"]} # full option name
 			[[ $i ]] && arg=${BASH_REMATCH[4]:1}
-			[[ ${BASH_REMATCH[2]} ]] && optCnt=- #TODO: in x?<> !argMatch, taking ''/int?, on script_opt
+			[[ ${BASH_REMATCH[2]} ]] && optCnt=-
 		fi
 		if [[ !$i && $1 =~ ^[+-]([^-+])(.+)?$ ]]; then # short option -o(Val)?
 			[[ $1 == +* ]] && optCnt=-                    # +o means toggle off → -=
@@ -326,14 +341,14 @@ parseAction() {
 			if [[ $i ]]; then
 				while [[ $i && $arg ]]; do # -oooo toggle opts in succession
 					local reg=${sigs[i + 2]}
-					if [[ $reg ]]; then # opt arg (last) or no arg required
+					if [[ $reg ]]; then # opt arg (last in chain or next arg) or no arg required
 						[[ '' =~ ^$reg$ ]] && ! argMatch "${arg:-$2}" || break
 					fi
 					declare -i ${sigs[$i]//-/_}+=${optCnt}1 # preserve amount of that no-arg option's use
 					i=${opts[${arg::1}]}
 					[[ $i ]] && arg=${arg:1}
 				done
-				[[ -z $i && -z $arg ]] && shift && continue
+				[[ -z $i$arg ]] && shift && continue
 				if [[ -z $i ]]; then
 					log Error " - Unknown option '${arg::1}' in chunk '$1'"
 					return 1
@@ -378,7 +393,7 @@ $(paramHelp $ACTION $((i / 4)))" && return
 			fi
 		else # set arg
 			((posArg < sigN)) || break
-			[[ $actionArg && $1 ]] && set -- "${1#-}"
+			[[ $# -eq $actionArgFromEnd && $1 ]] && set -- "${1#-}" "${@:2}"
 			while ((posArg < sigN)); do
 				local varName=${sigs[$posArg]} sign=${sigs[posArg + 1]} reg=${sigs[posArg + 2]}
 				if [[ $sign == \$? && $# -gt 0 ]] && argMatch "$1"; then
@@ -425,18 +440,14 @@ $(paramHelp $ACTION $((i / 4)))" && return
 	# ensure valid state
 	if [[ $ACTION == "${SSS_OPTS[defAction]}" &&
 		$# -gt 0 && ! ${SSS_OPTS[defActionRep]} ]]; then
-		log Error " - Default action must be used last, but was followed by: $*"
-	fi
-	if [[ $actionArg && $# -eq 1 ]]; then
-		log Error " - Unexpected argument '$actionArg'"
-		return 1
+		log Error " - Default action must use all args, but some were left: $*"
 	fi
 
 	# cleanup and action call
 	declare +n sigs
 	unset sigs i sigN
 	$ACTION || log Warn ' failed!'
-	[[ $actionArg ]] && return 1 || return $((argc - $#))
+	return $((argc - $#))
 }
 
 call() { # for script usage - calling actions like itself with cli, without external process
@@ -459,12 +470,12 @@ declare -A REGEX=(
 argMatch() {
 	local reg=${reg:-$2}
 	if [[ $reg == '$'* ]]; then
-		if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
-			[[ -d $1 ]] && return 0
-			[[ ${reg:1:1} == e ]] && reg="\$f${reg:2}" || reg="\$F${reg:2}"
-		fi
-		[[ $1 =~ ^[^-][^=]*${reg:2}$ ]] && {
-			if [[ ${reg:1:1} == F ]]; then
+		[[ $1 =~ ^[^-][^=]*$ ]] && {
+			if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
+				[[ -d $1 ]] && return 0
+				[[ ${reg:1:1} == e ]] && reg="\$f${reg:2}" || reg="\$F${reg:2}"
+			fi
+			[[ $1 =~ ${reg:2}$ ]] && if [[ ${reg:1:1} == F ]]; then
 				[[ ! -d $1 ]]
 			else
 				eval [[ -${reg:1:1} \$1 ]]

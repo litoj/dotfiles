@@ -186,7 +186,7 @@ runCmdWithCleanup() {
 	local src=$1 out=$2
 	exec "${cmd[@]}" "$out" && if ((keepOriginal <= 0)); then
 		exec rm "$src"
-		[[ $dst ]] || exec mv "$out" "$src"
+		[[ $dst || $out == ${src%.*}.* ]] || exec mv "$out" "${src%.*}.${out##*.}"
 	fi
 }
 
@@ -377,10 +377,15 @@ playParams=(
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
+	if ((SCRIPT_OPTS[guiPicker] > 0)); then
+		local cmd=(rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')
+	else
+		local cmd=(fzf --prompt "$4: ")
+	fi
 	_choice="$({
 		find ~/Music/* -type d
 		find ~/Music/Songs -type f
-	} | rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')"
+	} | "${cmd[@]}")"
 	[[ $_choice ]] || unset _choice
 }
 play() {

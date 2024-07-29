@@ -1,6 +1,6 @@
 #!/usr/bin/bash
-bat=(/sys/class/power_supply/BAT*)
-eval "$(sed 's/^.\{13\}//' ${bat[${BAT:-0}]}/uevent)"
+bat=(/sys/class/power_supply/BAT*/uevent)
+eval "$(sed 's/^.\{13\}//' "${bat[${BAT:-0}]}")"
 if [[ -z $STATUS || $POWER_NOW == 0 ]]; then
 	echo " $CAPACITY%"
 else

@@ -40,9 +40,6 @@ textype() {
 }
 
 case "$file" in
-	*\.ms) refer -PS -e "$file" | groff -me -ms -kept -T pdf > "$base".pdf ;;
-	*\.mom) refer -PS -e "$file" | groff -mom -kept -T pdf > "$base".pdf ;;
-	*\.[0-9]) refer -PS -e "$file" | groff -mandoc -T pdf > "$base".pdf ;;
 	*\.[rR]md) Rscript -e "rmarkdown::render('$file', quiet=TRUE)" ;;
 	*\.tex | *\.bib) textype ;;
 	# *\.md) pandoc -s -f markdown "$file" -t pdf -o "$base".pdf ;;
@@ -64,8 +61,6 @@ case "$file" in
 		;;
 	*\.py) python "$file" ;;
 	*\.m) octave "$file" ;;
-	*\.scad) openscad -o "$base".stl "$file" ;;
 	*\.go) go run "$file" ;;
-	*\.sent) setsid sent "$file" 2> /dev/null & ;;
-	*) sed 1q "$file" | grep "^#!/" | sed "s/^#!//" | xargs -r -I % "$file" ;;
+	*) exit 1 ;;
 esac

@@ -122,17 +122,11 @@ bindsym {
 	$Mod+Shift+Down exec $floatpos d focusable
 	$Mod+Shift+Up exec $floatpos u focusable
 	$Mod+Shift+Right exec $floatpos r focusable
-# resize
-	$Mod+$Alt+Left resize shrink width 4
-	$Mod+$Alt+Down resize grow height 4
-	$Mod+$Alt+Up resize shrink height 4
-	$Mod+$Alt+Right resize grow width 4
 # focus workspace
 	$Mod+Ctrl+Left workspace prev
 	$Mod+Ctrl+Right workspace next
-# move container to workspace
-	$Mod+Ctrl+Down move workspace prev, workspace prev
-	$Mod+Ctrl+Up move workspace back_and_forth, workspace back_and_forth
+	$Mod+Ctrl+Down focus output left
+	$Mod+Ctrl+Up focus output right
 
 #--------+
 # Keypad |
@@ -156,8 +150,6 @@ bindsym {
 	KP_Add workspace back_and_forth
 	KP_Home workspace next
 	KP_End workspace prev
-	$Alt+KP_Begin focus output next
-	$Alt+Shift+KP_Begin move workspace output right
 
 #-----------+
 # Left Hand |
@@ -184,30 +176,14 @@ bindsym {
 	$Mod+$Alt+Tab workspace next
 	$Mod+Shift+Tab workspace prev
 	$Mod+Tab workspace back_and_forth
-	$Mod+Ctrl+Tab focus output next
-	$Mod+Ctrl+Shift+Tab move workspace output right
 # move container to workspace
 	$Mod+Ctrl+a move workspace prev, workspace prev
 	$Mod+Ctrl+d move workspace next, workspace next
 	$Mod+Ctrl+f move workspace back_and_forth, workspace back_and_forth
 
-#------------+
-# Right Hand |
-#------------+
-# snap to side or focus in tiling mode
-	$Mod+h focus left
-	$Mod+j focus down
-	$Mod+k focus up
-	$Mod+l focus right
-# move
-	$Mod+Shift+h exec $floatpos l
-	$Mod+Shift+j exec $floatpos d
-	$Mod+Shift+k exec $floatpos u
-	$Mod+Shift+l exec $floatpos r
-
 # both hands
-	$Mod+period workspace next
 	$Mod+comma workspace prev
+	$Mod+period workspace next
 }
 # quick mark
 bindsym --to-code {

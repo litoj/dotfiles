@@ -34,4 +34,4 @@ set $wCode $w5
 # Outputs
 set $d1 eDP-1
 set $d2 DP-1
-set $dMedia "Philips Consumer Electronics Company PHL 559M1RYV Unknown"
+set $dMedia "Philips Consumer Electronics Company PHL 559M1RYV 0x000F69B5"

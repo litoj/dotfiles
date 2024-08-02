@@ -6,9 +6,9 @@ SSS_OPTS[about]='MOM - Media Operation/Manipulation
 A collection of media operation/manipulation scripts.'
 
 ((SCRIPT_OPTS[jobs] = (1 + $(nproc --all)) / 2))
-SCRIPT_OPTS[ffmpegSetLogLevel]=-2
+SCRIPT_OPTS[ffmpegSetLogLevel]=2
 defineParams=(
-	jobs 'j?' '[0-9]*' 'Number of jobs to run in parallel (default=cpus/2)'
+	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS[jobs]})"
 	ffmpegSetLogLevel 'f?' '' 'Change ffmpeg log level to current script value'
 	"${defineParams[@]}")
 
@@ -23,11 +23,12 @@ downloadParams=(
 	metadata 'm?' '' 'Keep metadata' # NOTE: pipeline candidate - output as nometa src
 	format 'f?' '.+' 'Yt-dl download format (default=ba[ext=webm])'
 	src '$+' 'http.+' 'Urls to download'
-	dst '$*' '$E\.opus' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
+	dst '$*' '$E\.(opus|m4a)' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
-	local cmd=(yt-dlp -N 8 -f "${format:-ba[ext=webm]}")
+	[[ $dst && ! -d $dst ]] && local ext=${dst/*./} || local ext=opus
+	local cmd=(yt-dlp -q -N 8 -f "${format:-ba[ext=${ext/opus/webm}]/ba}")
 	[[ $dst ]] || local dst=.
-	[[ -d $dst ]] && local tmp="%(creator)s - %(title)s.opus" || local tmp=${dst##*/}
+	[[ -d $dst ]] && local tmp="%(creator)s - %(title)s" || local tmp=${dst##*/}
 	local prefix=/tmp/mom-download
 	declare -i i=-1 srcN=${#src[@]}
 
@@ -35,15 +36,21 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 		src=${src[i]%%&*}
 		function isolated() {
 			local prefix=$prefix-${src#*=}-
-			local cmd=("${cmd[@]}" -o "$prefix$tmp" "$src") dst=${dst[i]:-$dst}
+			local cmd=("${cmd[@]}" "$src" -o "$prefix$tmp") dst=${dst[i]:-$dst}
 			((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
 			exec "${cmd[@]}" && {
-				((metadata > 0)) && cmd=(exec mv) || cmd=(call noMeta +k)
+				cmd=("$prefix"*)
+				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
+				exec mv "$cmd" "$cmd.$ext"
+
+				((metadata > 0)) && cmd=(mv) || cmd=(call noMeta +k)
 				cmd+=("$prefix"*)
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
-					sed 's/\(.* -\) \1/\1/;s/^NA - //;s/ [([].*[])]//g' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
-				)") || cmd+=("$dst")
-				"${cmd[@]}"
+					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
+						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
+				)") || cmd+=("${dst%.*}.$ext")
+
+				exec "${cmd[@]}"
 			}
 		}
 		ACTION+="['$src']" isolated
@@ -68,7 +75,7 @@ noMeta() {
 	else
 		[[ ${dst:-$src} == "$src" ]] && local dst=/tmp replaceSrc=$((1 - keep))
 
-		[[ -d $dst ]] && local dst=$(getFreePath "${dst%/}/${src##*/}")
+		[[ -d $dst ]] && local dst=$(getFreePath "${dst%/}/${src##*/}" dst)
 		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy "$dst")
 		exec "${cmd[@]}" && {
 			((replaceSrc > 0)) && exec mv "$dst" "$src" || ((keep > 0)) || exec rm "$src"
@@ -382,11 +389,10 @@ pickSong() {
 	else
 		local cmd=(fzf --prompt "$4: ")
 	fi
-	_choice="$({
+	_choice+=("$({
 		find ~/Music/* -type d
 		find ~/Music/Songs -type f
-	} | "${cmd[@]}")"
-	[[ $_choice ]] || unset _choice
+	} | "${cmd[@]}")")
 }
 play() {
 	local playlistFile=/tmp/my/song
@@ -447,7 +453,7 @@ play() {
 		((randomizer >= 0)) && cmd+=(--shuffle)
 	fi
 
-	exec "${cmd[@]}" \&
+	exec "${cmd[@]}" &
 	sleep 1 && exec rm "$playlistFile"
 	return 0
 }

@@ -12,6 +12,14 @@ local function au(ev, cb, extra)
 	vau(ev, opts)
 end
 
+local function withFile(dir, name)
+	while not exists(dir .. name) do
+		dir = dir:gsub('[^/]+/$', '')
+		if dir == '/' then return end
+	end
+	return dir
+end
+
 local fakeUpdate = false
 local cwdEnabled = true -- TODO: create harpoon/qf for directories
 local function setCWD(s)
@@ -33,12 +41,13 @@ local function setCWD(s)
 	dir = path:match '.*/src/' or path:match '.*/lua/'
 
 	if not dir then
-		local git = path
-		while #git > 1 and not exists(git .. '.git/') do
-			git = git:gsub('[^/]+/$', '')
+		for _, key in ipairs { 'README.md', 'package.json', '.git/' } do
+			dir = withFile(path, key)
+			if dir then break end
 		end
-		dir = git ~= '/' and git or path -- repo root or filedir ← no repo
 	end
+
+	dir = dir or path
 	vim.b[s.buf].cwd = dir
 	vim.api.nvim_set_current_dir(dir)
 end

@@ -54,7 +54,7 @@ local function setup(server, opts)
 end
 M.setup = setup
 
-setup('bashls', { format = false, root_dir = function(fname) return fname:match '.+/' end })
+setup 'bashls'
 setup('pyright', {})
 setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})

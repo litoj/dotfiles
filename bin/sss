@@ -6,7 +6,10 @@ declare -a ACTION_ORDER=()
 ALIGNER=8
 
 argToCase() {
-	[[ $1 == *-* ]] || { echo "$1" && return 0; }
+	[[ $1 != *-* ]] && {
+		echo "$1"
+		return
+	}
 
 	local str=${1#*-}
 	local ret=${1%%-*}
@@ -19,7 +22,10 @@ argToCase() {
 	echo "$ret${str^}"
 }
 caseToArg() {
-	[[ $1 == *[A-Z]* ]] || { echo "${1//_/-}" && return; }
+	[[ $1 != *[A-Z]* ]] && {
+		echo "${1//_/-}"
+		return
+	}
 
 	local str=$1
 	local ret=''
@@ -29,6 +35,19 @@ caseToArg() {
 		str=${BASH_REMATCH[3]}
 	done
 	echo "$ret$str"
+}
+# run testFn=$2 until the correct case of arg=$1 is found
+detectCase() {
+	local arg=$1 test=$2 ret=$1
+	"$test" "$ret" || { # test unprocessed
+		ret=$(argToCase "$arg")
+		"$test" "$ret" # camelCase test
+	} || {
+		ret=${arg//-/_}
+		"$test" "$ret" # snake_case test
+	} || return 1
+
+	echo "$ret"
 }
 
 #######################################
@@ -51,7 +70,7 @@ actionInfo() {
 	[[ $key ]] && ACTION_INFO[$key]="$name"
 	((ALIGNER < ${#helpsig})) && ALIGNER=${#helpsig}
 	ACTION_INFO[$name]="$helpsig $help"
-	ACTION_ORDER+=($name)
+	ACTION_ORDER+=("$name")
 }
 
 declare -A LOG_LEVELS=([quiet]=0 [fatal]=1 [error]=2 [warn]=3
@@ -77,12 +96,12 @@ defineParams=(
 	tui 't?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'd?' '' 'Disable actual commands execution'
 	color 'C?' '' 'Colorize output (default=1 when not redirected)'
-	config 'c*' '$f' 'Config file as arrays of cli options like `helpConfig=(-p)`'
+	config 'c*' '$f.conf.sh' 'Config file as arrays of cli options like `defineConfig+=(-l3)`'
 	picker 'p?' '' 'Enable arg/opt param picker (default=1 for TUI, 0 for CLI)'
 	guiPicker 'g?' '' 'Use GUI pickers'
 	optArgPicker 'o?' '' 'Enable picker for optional arguments'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
-	"Depth of logging, '-lll'='-l3'… (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
+	"Depth of logging, -lll=-l3… (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
 define() {
@@ -103,15 +122,19 @@ define() {
 			declare +n opt
 		elif [[ ${!opt} ]]; then
 			if [[ ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS[${!opt,,}]} ]]; then
-				[[ $opt == logLvl ]] && SCRIPT_OPTS[$opt]=${LOG_LEVELS[info]} ||
+				[[ $opt == logLvl ]] &&
+					SCRIPT_OPTS[$opt]=${LOG_LEVELS[info]} ||
 					SCRIPT_OPTS[$opt]=${LOG_LEVELS[warn]}
 				log Warn ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS[$opt]}]}'
   Available are: ${LOG_NAMES[*]}"
 			else
-				[[ ${!opt} == -* ]] && ((SCRIPT_OPTS[$opt] += ${!opt})) ||
+				if [[ ${!opt} == -* ]]; then
+					((SCRIPT_OPTS[$opt] += ${!opt}))
+				else
 					SCRIPT_OPTS[$opt]=${LOG_LEVELS[${!opt,}]:-${!opt}}
+				fi
 			fi
-			unset $opt # to not parse logLvl twice (as opt and as arg)
+			unset "$opt" # to not parse logLvl twice (as opt and as arg)
 		fi
 		i+=4
 	done
@@ -120,7 +143,7 @@ define() {
 
 SCRIPT_OPTS[logLvl]=${DEBUG:-${SCRIPT_OPTS[logLvl]}}
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
-	[about]=                               # script description
+	[about]=''                             # script description
 	[exitFn]=exit                          # on error / on successful exit - shouldn't return
 	[exitLogLvl]=$((1 + SCRIPT_OPTS[cli])) # at which level to abort execution
 	# set to main registered action if script is a single command - actions act as builders
@@ -158,7 +181,7 @@ print() {
 		return
 	fi
 
-	local ret str=$1 hlStr
+	local ret str="$1" hlStr
 	while [[ $str ]]; do
 		case "$str" in
 			false* | true*)
@@ -177,14 +200,18 @@ print() {
 					ret+=-
 					str=${str:1}
 				else
-					hlStr=${str/[^0-9a-z\-]*/} ret+=$(ansi param "$hlStr" fg) str=${str:${#hlStr}}
+					hlStr=${str/[^0-9A-Za-z\-]*/} ret+=$(ansi param "$hlStr" fg) str=${str:${#hlStr}}
 				fi
 				;;
 			[\'\"\`]*)
-				local delim=${str::1}
-				str=${str:1}
-				hlStr=${str/${delim}*/$delim}
-				[[ ${hlStr:0-1} != $delim ]] && hlStr= ret+=$delim || ret+=$(ansi str "$delim$hlStr" fg)
+				local delim=${str::1} _str=${str:1} str=${str:1}
+				hlStr=
+				while [[ -z $hlStr || ${str:${#hlStr}:1} == [a-zA-Z] ]]; do
+					hlStr+=${_str/${delim}*/$delim}
+					[[ ${hlStr:0-1} == "$delim" ]] && _str=${str:${#hlStr}}
+				done
+				unset _str
+				[[ ${hlStr:0-1} != "$delim" ]] && hlStr='' ret+=$delim || ret+=$(ansi str "$delim$hlStr" fg)
 				str=${str:${#hlStr}}
 				;;
 			[0-9]*) hlStr=${str/[^0-9_]*/} ret+=$(ansi num "$hlStr" fg) str=${str:${#hlStr}} ;;
@@ -193,7 +220,7 @@ print() {
 				local delim=${str::1}
 				str=${str:1}
 				hlStr=${str/[^0-9A-Za-z_\-]*/}
-				ret+=$(ansi delim $delim var "$hlStr" fg)
+				ret+=$(ansi delim "$delim" var "$hlStr" fg)
 				str=${str:${#hlStr}}
 				;;
 			*) ret+=${str::1} str=${str:1} ;;
@@ -215,21 +242,21 @@ log() {
 	LAST_LOG_LVL=${LOG_LEVELS[${1,}]:-$1}
 	if ((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
-		((${SCRIPT_OPTS[color]} > 0)) && type=$(ansi $type ${type^^} fg) || type=${type^^}
+		((SCRIPT_OPTS[color] > 0)) && type=$(ansi "$type" "${type^^}" fg) || type=${type^^}
 		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
-	((SSS_OPTS[exitLogLvl] < LAST_LOG_LVL)) || ${SSS_OPTS[exitFn]} 1
+	((SSS_OPTS[exitLogLvl] < LAST_LOG_LVL)) || "${SSS_OPTS[exitFn]}" 1
 }
 
 # Supports simple redirection ... '>'/'>>' 'path'
 exec() {
 	((SCRIPT_OPTS[logLvl] > 3)) && log Verbose " \$> $*"
-	((SCRIPT_OPTS[dryRun] > 0)) && return 0
-	if [[ ${@:0-2:1} == \>* ]]; then
-		if [[ ${@:0-2:1} == \>\> ]]; then
-			"${@:1:$#-2}" >> "${!#}"
+	((SCRIPT_OPTS[dryRun] > 0)) && return
+	if [[ ${*:0-2:1} == \>* ]]; then
+		if [[ ${*:0-2:1} == \>\> ]]; then
+			"${@:1:$#-2}" >>"${!#}"
 		else
-			"${@:1:$#-2}" > "${!#}"
+			"${@:1:$#-2}" >"${!#}"
 		fi
 	else
 		"$@"
@@ -258,13 +285,17 @@ main() {
 		if [[ $line == $'\004' ]]; then
 			line=q
 		elif [[ $line == $'\E' ]]; then
-			_esc=1 && continue
+			_esc=1
+			continue
 		elif [[ $_esc && $line == O ]]; then # arrow movement
-			read -n 1 && continue
+			read -rn 1
+			continue
 		fi
 		_esc=
 
-		if [[ ${line%% *} == ? ]]; then
+		if [[ $line == [-+]* ]]; then
+			parseAction $line
+		elif [[ ${line%% *} == ? ]]; then
 			parseAction -$line
 		else
 			local _prefix=
@@ -281,27 +312,32 @@ main() {
 parseAction() {
 	declare -i argc=$#
 
-	ACTION= log Trace "< $1"
-	local ACTION=''
-	if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})([^-][^=]+)(=.*)?$ ]]; then
-		local _act=${BASH_REMATCH[2]} actionArg=${BASH_REMATCH[3]:1}
-		local ACTION=$(argToCase "$_act") && [[ ${ACTION_INFO["$ACTION"]} ]] || {
-			ACTION=${_act//-/_} && [[ ${ACTION_INFO["$ACTION"]} ]]
-		} || ACTION= actionArg=
-	fi
-	if [[ ! $ACTION && $1 =~ ^-([^-])(.*)$ ]]; then
-		local ACTION=${ACTION_INFO[${1:1:1}]} actionArg=${BASH_REMATCH[2]:+-${BASH_REMATCH[2]}}
-	fi
-	if [[ $ACTION ]]; then
-		[[ $actionArg ]] && declare -i actionArgFromEnd=$# && set -- "$actionArg" "${@:2}" || shift
+	local ACTION actionArg
+	log Trace "parsing $1"
+	if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})([^-][^=]+)(=.*)?$ ]] && { # full action name
+		actionArg=${BASH_REMATCH[3]:1}
+		ACTION=$(
+			isAction() { [[ ${ACTION_INFO["$1"]} ]]; }
+			detectCase "${BASH_REMATCH[2]}" isAction
+		)
+	} || {
+		[[ $1 =~ ^-([^-])(.*)$ ]] && # short action
+			ACTION=${ACTION_INFO[${1:1:1}]} actionArg=${BASH_REMATCH[2]:+-${BASH_REMATCH[2]}}
+	}; then # action recognized
+		if [[ $actionArg ]]; then
+			declare -i actionArgFromEnd=$#
+			set -- "$actionArg" "${@:2}"
+		else
+			shift
+		fi
 	else
 		ACTION=${SSS_OPTS[defAction]}
 	fi
-	unset actionArg _act
+	unset actionArg
 
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
-	((sigN % 4)) && log Fatal "${ACTION}Params definition is missing $((4 - sigN % 4)) fields!"
+	((sigN % 4)) && log Fatal "Params definition is missing $((4 - sigN % 4)) fields!"
 	local i=-4 posArg # not `declare -i` to keep unset values as ""
 
 	# distinguish options and args
@@ -309,14 +345,16 @@ parseAction() {
 	declare -Ai args=() # idx → usage cnt
 	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
-		[[ $sign != \$? || ${SSS_OPTS[argAsLongOpt]} -gt 0 ]] && opts["${sigs[$i]}"]=$i
+		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
+		[[ $sign != \$? || ${SSS_OPTS[argAsLongOpt]} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
 		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # '_'=no short, '$'=arg
 		[[ $sign == ?[+!] || $sign == \$? ]] && posArg=${posArg:-$i} args[$i]=0
 	done
-	declare -i posArg=${posArg:-$sigN} firstArg=${posArg:-$sigN}
+	declare -i posArg="${posArg:-$sigN}"
+	declare -i firstArg=posArg
 
 	declare -n builder=${ACTION}Builder
-	[[ ${builder[@]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
+	[[ ${builder[*]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
 
 	declare -n cfg=${ACTION}Config # load config for this action
 	set -- "${cfg[@]}" "$@"
@@ -324,29 +362,44 @@ parseAction() {
 	unset cfg
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
-		log Trace " < ${optChain:+$optChain['${arg::1}'] }'$1'"
+		log Trace " parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
 		if [[ $optChain ]]; then # processing previously found shortopt chain
 			i=${opts["${arg::1}"]}
-			[[ ! $i ]] && log Error " - Invalid option '${arg::1}' in chunk '$optChain'" && return
-			((${#arg} > 1)) && arg=${arg:1} || unset arg optChain
-		else # try to parse cli arg as an option
-			[[ $1 == -- && ${#opts[@]} -gt 0 && $ACTION != unknown ]] &&
-				shift && opts=() && continue # only args will be found
+			if [[ -z $i ]]; then
+				log Error " - Invalid option '${arg::1}' in chunk '$optChain'"
+				return
+			fi
 
-			local i= optCnt=+ tmpArr=
-			{ # full option name
-				[[ $1 =~ ^(${SSS_OPTS[optPrefix]})(no-)?([^- ][^= ]+)(=.*)?$ && ! $actionArgFromEnd ]] &&
-					tmpArr=("${BASH_REMATCH[@]}") && i=${opts["$(argToCase "${tmpArr[3]}")"]} &&
-					{ [[ $i ]] || i=${opts["${tmpArr[3]//-/_}"]}; } && [[ $i ]] && {
+			if ((${#arg} > 1)); then
+				arg=${arg:1}
+			else # reached last option in chain
+				unset arg optChain
+			fi
+		else # try to parse cli arg as an option
+			if [[ $1 == -- && ${#opts[@]} -gt 0 && $ACTION != unknown ]]; then
+				shift
+				opts=() # only args will be found
+				continue
+			fi
+
+			local i='' optCnt=+ tmpArr=
+			if [[ $# -ne $actionArgFromEnd && $1 =~ ^(${SSS_OPTS[optPrefix]})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
+				tmpArr=("${BASH_REMATCH[@]}")
+				i=$( # index for full option name
+					isOpt() { [[ ${opts["$1"]} ]]; }
+					detectCase "${tmpArr[3]}" isOpt
+				) && {
 					[[ ${tmpArr[2]} ]] && optCnt=- # `no-` means toggle off
 					[[ ! ${tmpArr[4]} ]] || local arg=${tmpArr[4]:1}
 				}
 			} || { # short option -o(Val)?
-				[[ $1 =~ ^[+-]([^-+])(.+)?$ ]] && i=${opts["${BASH_REMATCH[1]}"]} && [[ $i ]] && {
+				[[ $1 =~ ^[+-]([^-])(.+)?$ ]] && i=${opts["${BASH_REMATCH[1]}"]} && [[ $i ]] && {
 					[[ $1 == +* ]] && optCnt=- # `+o` means toggle off
 					[[ ! ${BASH_REMATCH[2]} ]] || local arg=${BASH_REMATCH[2]} optChain=$1
 				}
-			} && shift
+			}; then # option recognized
+				shift
+			fi
 		fi
 
 		if [[ $i ]]; then # set option / named parameter
@@ -354,36 +407,46 @@ parseAction() {
 			if [[ $reg ]]; then # requires arg
 				if [[ ${arg+y} || $1 ]] && argMatch "${arg-$1}"; then
 					if [[ ${sigs[i + 1]} == ?[?!] ]]; then
-						declare $varName="${arg-$1}"
+						declare "$varName=${arg-$1}"
 						log Debug ".$varName = '${!varName}'"
 					else
 						declare _varName=$varName
-						declare -a $varName # necessary to override values declared higher in the stack
+						declare -a "$varName" # necessary to override values declared higher in the stack
 						declare -n varName
-						log Debug ".$_varName[${#varName[@]}] = '${arg-$1}'"
+						log Debug ".${_varName}[${#varName[@]}] = '${arg-$1}'"
 						varName+=("${arg-$1}")
 						declare +n varName
 					fi
 
-					[[ ${arg+y} ]] && unset arg optChain || shift
-				elif [[ ! ${arg+y} && ${SSS_OPTS[onNoArg]} == 0 && '' =~ ^$reg$ && 3 =~ ^$reg$ ]]; then
-					declare -i $varName+=${optCnt}1
+					if [[ ${arg+y} ]]; then
+						unset arg optChain # arg is last in optChain → optChain has been fully parsed
+					else
+						shift
+					fi
+				elif [[ (! ${arg+y} || $optChain) &&
+					${SSS_OPTS[onNoArg]} == 0 && '' =~ ^$reg$ && 3 =~ ^$reg$ ]]; then
+					declare -i "$varName+=${optCnt}1"
 					log Debug ".$varName = ${!varName}"
 				elif [[ ! ${arg+y} && ${SCRIPT_OPTS[picker]} -gt 0 &&
 					(${SSS_OPTS[onNoArg]} -gt 0 || $optChain) ]] && {
-					declare -a $varName && ${builder[$varName]:=$(determinePicker "$reg")} "${sigs[@]:i:4}"
+
+					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
+
+					"${builder[$varName]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"
 				}; then # picker picked a value successfully
 					log Debug ".$varName <${builder[$varName]}>= '${!varName}'"
-				else # bad arg, or picker wasn't enabled, or didn't pick a value
-					[[ $optChain ]] &&
-						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/ at chunk '$optChain'" ||
-						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/" && return
+				else # bad arg, or picker failed
+					[[ ! $optChain ]] &&
+						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/" ||
+						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/ at chunk '$optChain'"
+					return
 				fi
 			elif [[ $optChain || ! ${arg+y} ]]; then
-				declare -i $varName+=${optCnt}1
+				declare -i "$varName+=${optCnt}"1
 				log Debug ".$varName = ${!varName}"
 			else
-				log Error ".$varName - Unexpected argument '$arg'" && return
+				log Error ".$varName - Unexpected argument '$arg'"
+				return
 			fi
 
 			[[ ${args[$i]} ]] && args[$i]+=1
@@ -402,52 +465,60 @@ parseAction() {
 				if [[ $sign == \$? && $# -gt 0 ]] && argMatch "$1"; then
 					if [[ $sign == ?[+*] ]]; then # param is a list
 						declare _varName=$varName
-						declare -a $varName
+						declare -a "$varName"
 						declare -n varName
-						log Debug "\$$_varName[${#varName[@]}] = '$1'"
+						log Debug "\$${_varName}[${#varName[@]}] = '$1'"
 						varName+=("$1")
 						declare +n varName
 					else # single argument expected
-						declare $varName="$1"
+						declare "$varName=$1"
 						posArg+=4
 						log Debug "\$$varName = '${!varName}'"
 					fi
-					args[$posArg]+=1 && shift && break # continue in parsing cli
+					args[$posArg]+=1
+					shift
+					break # continue in parsing cli
 				else
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done
 		fi
 
-		(($# <= actionArgFromEnd)) && break # stop after action arg chain
+		(($# <= actionArgFromEnd)) && break # stop after chain started by action (not option)
 	done
 
-	i=firstArg-4
+	i=$firstArg-4
 	unset actionArgFromEnd posArg firstArg opts tmpArr _varName
 
 	while (((i += 4) < sigN)); do
 		local varName=${sigs[i]} sign=${sigs[i + 1]} reg=${sigs[i + 2]}
-		[[ $sign == [^$][?*] ]] || ((args[$i])) && continue # opt between params || arg is set
+		[[ ${args[$i]} != 0 ]] && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
-		[[ ${SCRIPT_OPTS[picker]} -gt 0 && (${SCRIPT_OPTS[optArgPicker]} -gt 0 || $sign == ?[+!]) ]] &&
-			declare -a $varName && ${builder[$varName]:=$(determinePicker "$reg")} "${sigs[@]:i:4}" &&
-			args[$i]+=1 && log Debug "\$$varName <${builder[$varName]}>= '${!varName}'"
+		if [[ ${SCRIPT_OPTS[picker]} -gt 0 &&
+			(${SCRIPT_OPTS[optArgPicker]} -gt 0 || $sign == ?[+!]) ]]; then
+			declare -a "$varName"
+			if "${builder[$varName]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
+				args[$i]+=1
+				log Debug "\$$varName <${builder[$varName]}>= '${!varName}'"
+			fi
+		fi
 
-		[[ ${args[$i]} == 0 && $sign == ?[+!] ]] &&
-			log Error " - Missing argument for '$varName'" && return
+		if [[ ${args[$i]} == 0 && $sign == ?[+!] ]]; then
+			log Error " - Missing argument for '$varName'"
+			return
+		fi
 	done
 
 	declare +n builder sigs
 	unset sigs i sigN args builder varName sign reg
 
 	# ensure valid state
-	if [[ $ACTION == "${SSS_OPTS[defAction]}" &&
-		$# -gt 0 && ${SSS_OPTS[defActionLast]} ]]; then
+	if [[ $ACTION == "${SSS_OPTS[defAction]}" && $# -gt 0 && ${SSS_OPTS[defActionLast]} ]]; then
 		log Error " - Default action must use all args, but some were left: $*"
 	fi
 
-	log Trace " <<" && $ACTION && log Trace ' >>' || log Warn ' failed!'
+	log Trace ' >>' && "$ACTION" && log Trace ' finished!' || log Warn ' failed!'
 	return $((argc - $#))
 }
 
@@ -469,17 +540,18 @@ declare -A REGEX=(
 #   reg: required format of the argument
 #######################################
 argMatch() {
-	local reg=${reg:-$2}
+	local toTest=$1 reg=${reg:-$2}
 	if [[ $reg == '$'* ]]; then
 		[[ $1 =~ ^[^-][^=]*$ ]] && {
 			if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
-				[[ -d $1 ]] && return 0
+				[[ -d $1 ]] && return
 				[[ ${reg:1:1} == e ]] && reg="\$f${reg:2}" || reg="\$F${reg:2}"
 			fi
+
 			[[ $1 =~ ${reg:2}$ ]] && if [[ ${reg:1:1} == F ]]; then
-				[[ ! -d $1 ]]
+				[[ ! -d $toTest ]]
 			else
-				eval [[ -${reg:1:1} \$1 ]]
+				eval [[ -${reg:1:1} \$toTest ]]
 			fi
 		}
 	else
@@ -489,27 +561,28 @@ argMatch() {
 
 #######################################
 # Print help about specified parameter from given action.
-# Globals:
-#   matcher: boolean show regex used for matching args
 # Arguments:
 #   action: string
+#   matcher: boolean show regex used for matching args
 #   paramIdx?: integer
 #######################################
 paramHelp() {
-	local action=$1 fmt
+	local action=$1 matcher=$2 fmt
 	declare -n name=${action}Params
-	[[ $2 ]] && declare -i i=$2*4 end=i+4 || declare -i i=0 end=${#name[@]}
+	[[ $3 ]] && declare -i i="$3*4" end=i+4 || declare -i i=0 end=${#name[@]}
 	declare -a sig desc
-	declare -i maxLen=$ALIGNER
+	declare -i maxLen="$ALIGNER"
 	i+=-4
 	while (((i += 4) < end)); do
-		local varName=$(caseToArg ${name[$i]})
+		local varName=$(caseToArg "${name[$i]}")
 		local sign=${name[i + 1]} regex=${name[i + 2]} help=${name[i + 3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
-			[[ $sign == _? ]] && varName=[]$varName || {
+			if [[ $sign == _? ]]; then
+				varName=[]$varName
+			else
 				local _s=${sign::1} _v=${varName::1}
 				[[ $_s == "${_v,}" ]] && varName="[$_s]${varName:1}" || varName="[$_s]$varName"
-			}
+			fi
 			sign=${sign:1}
 			[[ $regex ]] && sign+='<>' # no regex → toggle option
 		else
@@ -523,10 +596,10 @@ paramHelp() {
 		[[ $matcher -gt 0 && $regex ]] && help="/$regex/ $help"
 		desc+=("$help")
 	done
-	((${SCRIPT_OPTS[color]} > 0)) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
+	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
 	i=-1
 	while ((++i < ${#sig[@]})); do
-		print "     $(printf "$fmt" $maxLen "${sig[$i]}" "${desc[$i]}")"
+		print "     $(printf "$fmt" "$maxLen" "${sig[$i]}" "${desc[$i]}")"
 	done
 }
 
@@ -539,8 +612,8 @@ helpParams=(
 	actions '$*' '.+' 'Display help for (default=all)')
 declare -A helpBuilder=([actions]=pickHelpAction)
 pickHelpAction() {
-	declare -n arr=$1
-	arr=($(printf '%s\n' "${ACTION_ORDER[@]}" | fzf -m --prompt="$4: "))
+	declare -n arr="$1"
+	arr=("$(printf '%s\n' "${ACTION_ORDER[@]}" | fzf -m --prompt="$4: ")")
 }
 help() {
 	if [[ ! $actions ]]; then
@@ -572,26 +645,25 @@ help() {
     - use `--` to separate opts from args (no opts will be accepted after that)'
 
 	[[ $default && ${#actions[@]} -gt 9 ]]
-	declare -i params=${params:-$?}
+	declare -i params="${params:-$?}"
 
 	print 'Actions: (more info available per action)'
 	local act fmt
-	((${SCRIPT_OPTS[color]} > 0)) && fmt='\033[1;4m%-*s   \033[0;4m%s\033[m' || fmt='%-*s   %s'
+	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1;4m%-*s   \033[0;4m%s\033[m' || fmt='%-*s   %s'
 	for act in "${actions[@]}"; do
 		if [[ ${act#-} == ? ]]; then
 			act=${ACTION_INFO[${act#-}]:-$act} # keep the original to have valid `desc` index
 		elif [[ $act =~ ^-*([^-][^=]*)$ ]]; then
-			local _act=${BASH_REMATCH[1]}
-			[[ ${ACTION_INFO[$_act]} ]] && act=$_act || {
-				act=$(argToCase "${BASH_REMATCH[1]}")
-				[[ ${ACTION_INFO[$act]} ]]
-			} || act=${_act//-/_}
+			act=$(
+				isAction() { [[ ${ACTION_INFO["$1"]} ]]; }
+				detectCase "$act" isAction || echo "$act"
+			)
 		fi
 
 		local desc=${ACTION_INFO["$act"]}
 		if [[ $desc ]]; then
-			printf "  $fmt\n" $ALIGNER "${desc%% *}" "$(print "${desc#* }")"
-			((params <= 0)) || paramHelp $act
+			printf "  $fmt\n" "$ALIGNER" "${desc%% *}" "$(print "${desc#* }")"
+			((params <= 0)) || paramHelp "$act" "$matcher"
 		else
 			print "  No help for unknown action '${_act:-$act}'"
 		fi
@@ -600,7 +672,7 @@ help() {
 
 actionInfo quit 'exit the tui' # also called when exiting the cli
 quit() {
-	${SSS_OPTS[exitFn]} 0 # override this for commit-before-exit
+	"${SSS_OPTS[exitFn]}" 0 # override this for commit-before-exit
 }
 
 unknownParams=(argument '$+' '.*' 'consumes all remaining args to end execution')
@@ -619,11 +691,11 @@ determinePicker() {
 }
 
 pickValue() {
-	declare -n _dst=$1
+	declare -n _dst="$1"
 	while :; do
 		local _pick=
 		while [[ ! $_pick =~ ^$3$ ]]; do
-			if ((${SCRIPT_OPTS[guiPicker]} > 0)); then
+			if ((SCRIPT_OPTS[guiPicker] > 0)); then
 				_pick=$(rofi -dmenu -p "${_pick:+Argument has to match /$3/! }$4")
 			else
 				[[ $_pick ]] && print "Argument has to match /$3/"
@@ -632,8 +704,12 @@ pickValue() {
 			[[ $_pick ]] || break
 		done
 
-		[[ $_pick ]] && _dst+=("$_pick")
-		[[ $_pick && $2 == ?[+*] ]] || break
+		if [[ $_pick && $2 == ?[+*] ]]; then
+			_dst+=("$_pick")
+		else
+			_dst=$_pick
+			break
+		fi
 	done
 	[[ $_dst ]]
 }
@@ -642,7 +718,7 @@ pickDir() {
 	local tmp=$(mktemp)
 	ranger --choosedir="$tmp"
 	if [[ -e $tmp ]]; then
-		declare -n _choice=$1
+		declare -n _choice="$1"
 		_choice="$(cat "$tmp")"
 	fi
 	rm "$tmp"
@@ -651,21 +727,22 @@ pickDir() {
 
 pickFile() {
 	local tmp=$(mktemp)
-	ranger --choosefile$([[ $2 == ?[+*] ]] && echo s)="$tmp"
+	ranger --choosefile"$([[ $2 == ?[+*] ]] && echo s)=$tmp"
 	if [[ -e $tmp ]]; then
-		mapfile -t $1 < "$tmp"
+		mapfile -t "$1" <"$tmp"
 	fi
 	rm "$tmp"
 	[[ -f ${!1} ]]
 }
 
 pickFilesOrDir() {
-	((SCRIPT_OPTS[guiPicker] > 0)) && local _cmd=(rofi -dmenu) ||
+	((SCRIPT_OPTS[guiPicker] > 0)) &&
+		local _cmd=(rofi -dmenu) ||
 		local _cmd=(fzf --prompt "$4: " --preview 'ls {}')
 	if [[ $2 == ?[+*] ]]; then
 		((SCRIPT_OPTS[guiPicker] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
 	fi
-	declare -n selected=$1
+	declare -n selected="$1"
 	local toView=(.) _ng=$(shopt -p nullglob)
 	shopt -s nullglob
 	while :; do
@@ -692,7 +769,7 @@ pickFilesOrDir() {
 		done
 		[[ ($selected && $2 != ?[+*]) || -z $toView ]] && break
 	done
-	$_ng
+	"$_ng"
 	[[ -e ${!1} ]]
 }
 

@@ -10,7 +10,7 @@ function M.config()
 		single_file_support = true,
 		sources = {
 			nls.builtins.formatting.stylua.with {
-				extra_args = function(client)
+				extra_args = function()
 					local cwd = vim.loop.cwd():gsub('/lua$', '')
 					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
 						f = cwd .. f
@@ -50,7 +50,7 @@ function M.config()
 			},
 			nls.builtins.formatting.shfmt.with {
 				extra_args = function()
-					return { '-ci', '-s', '-sr', '-i', (vim.bo.expandtab and vim.bo.tabstop or 0) }
+					return { '-ci', '-s', '-i', (vim.bo.expandtab and vim.bo.tabstop or 0) }
 				end,
 			},
 			nls.builtins.formatting.clang_format.with {

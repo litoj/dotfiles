@@ -11,6 +11,7 @@ defineParams=(
 	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS[jobs]})"
 	ffmpegSetLogLevel 'f?' '' 'Change ffmpeg log level to current script value'
 	"${defineParams[@]}")
+SSS_OPTS[onNoArg]=1
 
 ffmpegCmd() {
 	((SCRIPT_OPTS[ffmpegSetLogLevel] > 0)) &&
@@ -47,7 +48,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 				cmd+=("$prefix"*)
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
-						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<< "${cmd[${#cmd[@]} - 1]#$prefix}"
+						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<<"${cmd[${#cmd[@]} - 1]#$prefix}"
 				)") || cmd+=("${dst%.*}.$ext")
 
 				exec "${cmd[@]}"
@@ -67,7 +68,7 @@ noMeta() {
 		local CWD=$PWD
 		cd "$src"
 		for src in *; do
-			[[ -d $src || $src =~ \.(flac|wma|m4a|mp3|opus)$ ]] || continue
+			argMatch "$src" "${noMetaParams[6]}" || continue
 			local src=$src
 			noMeta
 		done
@@ -77,9 +78,11 @@ noMeta() {
 
 		[[ -d $dst ]] && local dst=$(getFreePath "${dst%/}/${src##*/}" dst)
 		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy "$dst")
-		exec "${cmd[@]}" && {
-			((replaceSrc > 0)) && exec mv "$dst" "$src" || ((keep > 0)) || exec rm "$src"
-		}
+		exec "${cmd[@]}" && if ((replaceSrc > 0)); then
+			exec mv "$dst" "$src"
+		else
+			((keep > 0)) || exec rm "$src"
+		fi
 	fi
 }
 
@@ -91,7 +94,7 @@ pickTime() {
 
 	local name=pickTime pick
 	local pickFile="/tmp/$name.pick" pickerFile="/tmp/$name.lua"
-	cat >> "$pickerFile" << lua
+	cat >>"$pickerFile" <<lua
 		require 'mp'
 
 		local function divmod(a, b)
@@ -120,9 +123,9 @@ lua
 		)" --script="$pickerFile")
 	local msg=
 	for src in "${src[@]:${#arr[@]}}"; do
-		echo > "$pickFile"
+		echo >"$pickFile"
 		mpv "${_opts[@]}" "$src" || return 1
-		read -r pick < "$pickFile"
+		read -r pick <"$pickFile"
 		arr+=("${pick:-0}")
 	done
 	declare +n arr
@@ -138,7 +141,11 @@ timeToSeconds() {
 		str=${str#0}
 	done
 	((s = s * 60 + ${str%.*}))
-	[[ $str == *.* ]] && echo "$s.${str#*.}" || echo $s
+	if [[ $str == *.* ]]; then
+		echo "$s.${str#*.}"
+	else
+		echo $s
+	fi
 }
 secondsToTime() {
 	[[ $1 == *.* ]] && local str=.${1#*.} || local str
@@ -152,7 +159,10 @@ secondsToTime() {
 
 # $src, $2= name of the param for which we are creating the path
 getFreePath() {
-	[[ ! -e $1 ]] && echo "$1" && return
+	if [[ ! -e $1 ]]; then
+		echo "$1"
+		return
+	fi
 	[[ $1 =~ ([0-9]*)(\.[^.]+)$ ]]
 	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]} numLen=${#BASH_REMATCH[1]}
 	declare -i n=${BASH_REMATCH[1]##0}+1
@@ -162,11 +172,15 @@ getFreePath() {
 	done
 	[[ ${BASH_REMATCH[1]} ]] || name+=_
 	while [[ -e $name$n$ext ]]; do
-		((++n && added > 0 && ${#n} >= numLen)) && name=${name::-$added} && unset added
+		if ((++n && added > 0 && ${#n} >= numLen)); then
+			name=${name::-$added}
+			unset added
+		fi
 	done
 	local text="$name$n$ext"
-	[[ $1 == $text || $1 == $src && $keepOriginal -lt 1 ]] &&
-		log Info ".$2 = '$text'" || log Warn ".$2 = '$text'"
+	[[ $1 == "$text" || $1 == "$src" && $keepOriginal -lt 1 ]] &&
+		log Info ".$2 = '$text'" ||
+		log Warn ".$2 = '$text'"
 	echo "$text"
 }
 
@@ -193,7 +207,9 @@ runCmdWithCleanup() {
 	local src=$1 out=$2
 	exec "${cmd[@]}" "$out" && if ((keepOriginal <= 0)); then
 		exec rm "$src"
-		[[ $dst || $out == ${src%.*}.* ]] || exec mv "$out" "${src%.*}.${out##*.}"
+		if [[ -z $dst && $out != "${src%.*}".* ]]; then
+			exec mv "$out" "${src%.*}.${out##*.}"
+		fi
 	fi
 }
 
@@ -250,7 +266,7 @@ edit() {
 			local fade=${fadeout[i]:-${fadeout:-0}}
 			if [[ $e != 0 || $fade != 0 ]]; then
 				if [[ $e != *:* ]]; then
-					endSeconds=$(bc <<< "$(timeToSeconds $(
+					endSeconds=$(bc <<<"$(timeToSeconds $(
 						ffprobe "$src" |& sed -n 's/.*Duration: \([^,]*\),.*/\1/p'
 					))-$e")
 					e=$(secondsToTime $endSeconds)
@@ -262,11 +278,11 @@ edit() {
 				if [[ $fade != 0 ]]; then
 					local fadeDuration
 					if [[ $fade != *:* ]]; then
-						fadeDuration=$(bc <<< "$fade-$fP")
-						cmd+=(-af afade=out:st=$(bc <<< "$endSeconds-$fade"):d=$fadeDuration)
+						fadeDuration=$(bc <<<"$fade-$fP")
+						cmd+=(-af afade=out:st=$(bc <<<"$endSeconds-$fade"):d=$fadeDuration)
 					else
 						fade=$(timeToSeconds $fade)
-						fadeDuration=$(bc <<< "$endSeconds-$fade-$fP")
+						fadeDuration=$(bc <<<"$endSeconds-$fade-$fP")
 						cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
 					fi
 
@@ -274,15 +290,16 @@ edit() {
 				fi
 			fi
 
-			[[ -d $dst ]] && out="$dst/${src##*/}" || { [[ $dst ]] && out=$dst || out=$src; }
+			[[ -d $dst ]] && out="$dst/${src##*/}" ||
+				{ [[ $dst ]] && out=$dst || out=$src; }
 			if [[ -d ${dst:-.} ]]; then
-				((copy > 0)) || { # if codec is not being copied already, try to copy if possible
-					[[ $src == *.opus && $v == 1 && $fade == 0 ]] && {
+				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
+					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && $fade == 0 ]]; then
 						log Info '.copy = true (no reencoding required)'
 						cmd=("${cmd[@]::cmdBrTo-2}" -c copy "${cmd[@]:cmdBrTo}")
-					}
+					fi
 					out=${out%.*}.opus
-				}
+				fi
 				out=$(getFreePath "$out" dst)
 			fi
 			runCmdWithCleanup "$src" "$out"
@@ -311,9 +328,13 @@ subtitles() {
 			match=${match%.*}.srt
 			subs=()
 			for src in *.srt; do
-				[[ ${src@L} == "$match" ]] && local subs=$src && break
+				if [[ ${src@L} == "$match" ]]; then
+					local subs=$src
+					break
+				fi
 			done
 		fi
+
 		if [[ -z $subs ]]; then
 			log Error " - no match for '$match'"
 			return 1
@@ -328,9 +349,13 @@ subtitles() {
 			match=${match%.*}.
 			vid=()
 			for src in *.mp4 *.mkv; do
-				[[ ${src@L} == "$match"* ]] && local vid=$src && break
+				if [[ ${src@L} == "$match"* ]]; then
+					local vid=$src
+					break
+				fi
 			done
 		fi
+
 		if [[ -z $vid ]]; then
 			log Error " - no match for '$match'"
 			return 1
@@ -348,7 +373,7 @@ subtitles() {
 		cmd+=(-i "$sub")
 	done
 	cmd+=(-i "$vid" -map $len:a -map $len:v -c copy)
-	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &> /dev/null && cmd+=(-map $len:s)
+	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &>/dev/null && cmd+=(-map $len:s)
 
 	[[ $lang ]] || local lang=()
 	for ((i = 0; i < len; i++)); do
@@ -396,7 +421,7 @@ pickSong() {
 }
 play() {
 	local playlistFile=/tmp/my/song
-	local cmd=(mpv --no-audio-display --no-terminal --playlist=$playlistFile)
+	local cmd=(mpv --no-audio-display --no-terminal --playlist="$playlistFile")
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 	exec pkill -f "${cmd[*]::2}"
 
@@ -414,13 +439,19 @@ play() {
 		for d in "${allDirs[@]}"; do # filter out dirs with no files
 			local contents=("$d"/*)
 			for f in "${contents[@]}"; do
-				[[ -f $f ]] && artistDirs+=("$d") && break
+				if [[ -f $f ]]; then
+					artistDirs+=("$d")
+					break
+				fi
 			done
 		done
 		unset allDirs
 
-		pickFromDir() {
-			((perDir >= $#)) && echo "$@" | exec sort -R \>\> "$playlistFile" && return
+		function pickFromDir() {
+			if ((perDir >= $#)); then
+				echo "$@" | exec sort -R \>\> "$playlistFile"
+				return
+			fi
 			declare -i cnt=$perDir pick
 			while ((cnt--)); do
 				((pick = RANDOM % $#))
@@ -454,8 +485,8 @@ play() {
 	fi
 
 	exec "${cmd[@]}" &
-	sleep 1 && exec rm "$playlistFile"
-	return 0
+	sleep 1
+	exec rm "$playlistFile"
 }
 
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
@@ -505,7 +536,7 @@ resize() {
 	fi
 	if [[ ! -d ${dst:-.} ]]; then
 		local ext=${dst##*.} srcExt=${src[0]##*.}
-		if [[ ${ext,,} != ${srcExt,,} ]]; then
+		if [[ ${ext,,} != "${srcExt,,}" ]]; then
 			log Warn ".\$dst: extension mismatch '$ext' != '$srcExt'"
 		fi
 	fi
@@ -533,11 +564,13 @@ resize() {
 				# require distance to target size greater than gap
 				[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
 				# decide whether to resize
-				[[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]] || {
+				if ! [[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]]; then
 					((keepOriginal > 0)) && local cmd=cp || local cmd=mv
-					[[ "$dst" ]] && exec $cmd "$src" "$(genDstFromSrc "$src")"
+					if [[ "$dst" ]]; then
+						exec $cmd "$src" "$(genDstFromSrc "$src")"
+					fi
 					continue
-				}
+				fi
 			fi
 			local cmd=(magick "$src" -resize "$newSize")
 			((quality)) && cmd+=(-quality $quality)
@@ -546,7 +579,6 @@ resize() {
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
-	wait
 }
 
 actionInfo rename R 'rename video/image files'
@@ -572,7 +604,9 @@ rename() {
 				local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
 				[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
 			fi
-			[[ $src == $dst ]] || exec mv "$src" "$(getFreePath "$dst" dst)"
+			if [[ $src != "$dst" ]]; then
+				exec mv "$src" "$(getFreePath "$dst" dst)"
+			fi
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	fi

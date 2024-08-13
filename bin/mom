@@ -68,7 +68,7 @@ noMeta() {
 		local CWD=$PWD
 		cd "$src"
 		for src in *; do
-			argMatch "$src" "${noMetaParams[6]}" || continue
+			reg=${noMetaParams[6]} argMatch "$src" || continue
 			local src=$src
 			noMeta
 		done
@@ -228,7 +228,7 @@ editParams=(
 	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
 	dst '$?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
-	if argMatch "$dst" '$F\.opus' && ((${#src[@]} > 1)); then
+	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
@@ -255,9 +255,6 @@ edit() {
 				fi
 				local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
 			}
-
-			local v=${volume[i]:-${volume:-1}}
-			[[ $v != 1 ]] && cmd+=(-filter:a volume=$v)
 
 			local s=${start[i]:-0}
 			[[ $s != 0 ]] && cmd+=(-ss $s)
@@ -287,6 +284,15 @@ edit() {
 					fi
 
 					[[ $fadeDuration == .* ]] && log Error ".fade interval < 1s"
+				fi
+			fi
+
+			local v=${volume[i]:-${volume:-1}}
+			if [[ $v != 1 ]]; then
+				if [[ $fadeDuration ]]; then
+					cmd=("${cmd[@]::${#cmd[@]}-1}" "${cmd[@]:0-1},volume=$v")
+				else
+					cmd+=(-af volume=$v)
 				fi
 			fi
 
@@ -530,7 +536,7 @@ resizeParams=(
 	size 's+' 'x?[0-9]+[x^]?' 'Longest side, *`^` for shortest, `x` for fixating on height/width'
 	dst '$?' '$E.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {
-	if argMatch "$dst" '$F\.opus' && ((${#src[@]} > 1)); then
+	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
@@ -579,36 +585,34 @@ resize() {
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
+	wait
 }
 
 actionInfo rename R 'rename video/image files'
 renameParams=(
-	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv)' 'File to rename'
+	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv|flac|opus|mp3)' 'File to rename'
 )
 rename() {
 	if [[ -d $src ]]; then
 		for src in "$src"/*; do
-			argMatch "$src" "${renameParams[2]}" && rename
+			reg=${renameParams[2]} argMatch "$src" && rename
 		done
 	elif ((${#src[@]} > 1)); then
-		local args=("${src[@]}")
-		local src
-		for src in "${args[@]}"; do
-			rename
+		for src in "${src[@]}"; do
+			src=$src rename
 		done
 	else
-		function isolated() {
-			if [[ $src == *.mp4 || $src == *.mkv ]]; then
-				local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
-			else
-				local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
-				[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
-			fi
-			if [[ $src != "$dst" ]]; then
-				exec mv "$src" "$(getFreePath "$dst" dst)"
-			fi
-		}
-		ACTION+="['${src/*\//…/}']" runJob isolated
+		if [[ $src == *.mp4 || $src == *.mkv ]]; then
+			local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
+		elif [[ $src == *.flac || $src == *.opus || $src == *.mp3 ]]; then
+			local dst=$(echo "$src" | sed 's/^[0-9][0-9] - //')
+		else
+			local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
+			[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
+		fi
+		if [[ $src != "$dst" ]]; then
+			exec mv "$src" "$(getFreePath "$dst" dst)"
+		fi
 	fi
 }
 

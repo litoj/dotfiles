@@ -298,10 +298,6 @@ bindsym {
 	$Mod+n exec $signal kb
 	$Alt+Escape exec $signal kb
 
-# Disk connection management
-	$Mod+$Alt+p exec xterm bashmount
-# poweroff and eject any connected device (udisksctl power-off -b /dev/sdx0)
-
 # Change gamma, "redshift" manually - n for night
 	$Mod+$Alt+n exec wlsunset -l 50 -L 14.5 &
 	$Mod+Shift+n exec killall wlsunset

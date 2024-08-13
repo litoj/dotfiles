@@ -48,18 +48,8 @@ end
 
 # https://fishshell.com/docs/3.1/cmds/bind.html
 bind \cq exit
-bind \eh backward-char
-bind \ej down-line
-bind \ek up-line
-bind \el forward-char
-bind \ch backward-word
-bind \cl forward-word
-bind \ex backward-delete-char
-bind \eX delete-char
-bind \edb backward-kill-word
-bind \edB backward-kill-bigword
-bind \ede kill-word
-bind \edE kill-bigword
+bind \b backward-kill-word
+bind \e\[3\;5~ kill-word
 
 set fish_color_normal normal
 set fish_color_command blue

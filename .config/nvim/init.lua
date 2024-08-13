@@ -40,7 +40,7 @@ require('lazy').setup {
 	defaults = { lazy = true },
 	dev = {
 		path = '/home/kepis/Documents/personal/nvim',
-		patterns = { 'JosefLitos' },
+		patterns = { 'litoj' },
 		fallback = true,
 	},
 	lockfile = vim.fn.stdpath 'state' .. '/lazy-lock.json',

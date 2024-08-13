@@ -57,6 +57,7 @@ assign [class="[sS]team.*"] $wGame
 
 # Outputs
 output $d1 pos 0 0
+output 'BOE 0x0AC1 Unknown' mode 2560x1600@48Hz
 output $dMedia adaptive_sync on scale 2
 
 workspace $w1 output $d1

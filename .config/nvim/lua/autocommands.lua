@@ -26,7 +26,7 @@ local function setCWD(s)
 	if not (cwdEnabled and exists(s.file) and vim.bo[s.buf].modifiable) then return end
 	if fakeUpdate then
 		fakeUpdate = false
-		return
+		if vim.b[s.buf].cwd then return end
 	end
 	local dir = vim.b[s.buf].cwd -- storing determined cwd
 	if

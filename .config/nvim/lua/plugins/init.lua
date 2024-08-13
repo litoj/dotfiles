@@ -8,7 +8,7 @@ return {
 		config = function() require 'mylsp' end,
 	},
 	{
-		'JosefLitos/reform.nvim',
+		'litoj/reform.nvim',
 		event = 'VeryLazy',
 		opts = {
 			-- docmd = { debug = '/tmp/docmd.md' },
@@ -41,7 +41,7 @@ return {
 		config = function() require('typescript-tools').setup(require('mylsp').setup(nil, 'tsserver')) end,
 	},
 	{
-		'JosefLitos/colorizer.nvim',
+		'litoj/colorizer.nvim',
 		cmd = 'ColorizerToggle',
 		config = function()
 			require('colorizer').setup {
@@ -52,14 +52,14 @@ return {
 			}
 		end,
 	},
-	{ 'JosefLitos/i3config.vim', ft = 'swayconfig' },
-	{
+	{ 'litoj/i3config.vim', ft = 'swayconfig' },
+	--[[ {
 		'habamax/vim-asciidoctor',
 		ft = 'asciidoctor',
 		config = function() vim.g.asciidoctor_fenced_languages = { 'sh', 'javascript', 'python' } end,
-	},
+	}, ]]
 	{
-		'JosefLitos/vim-mcfunction',
+		'litoj/vim-mcfunction',
 		ft = 'mcfunction',
 		dependencies = 'reform.nvim',
 		config = function()

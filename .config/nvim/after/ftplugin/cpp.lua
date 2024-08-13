@@ -33,7 +33,7 @@ withMod('dap', function(dap)
 			program = function()
 				if exists 'main.out' then return 'main.out' end
 				local name = vim.api.nvim_buf_get_name(0)
-				return name:gsub('%.c$', '.out')
+				return name:gsub('%.cpp$', '.out')
 				-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 			end,
 		},

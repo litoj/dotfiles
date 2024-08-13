@@ -47,16 +47,18 @@ pkgConf() {
 pickPackage() {
 	local _opts=(--prompt "$4: " --preview "${pkgConf[preview]}")
 	[[ $2 == ?[+*] ]] && _opts+=(-m)
-	local _filter=${pkgConf[$ACTION]:-${pkgConf[filter]}}
+	local _filter=${pkgConf["$ACTION"]:-${pkgConf[filter]}}
 	declare -n _choice=$1
 	if [[ $_filter == *-u* ]]; then # filter only uninstalled pkgs
 		local arr=()
 		declare -A installed
 		local pkg
-		for pkg in $(adb shell pm list packages ${_filter/-u/} | sed 's/package://'); do installed[$pkg]=1; done
+		for pkg in $(adb shell pm list packages ${_filter/-u/} | sed 's/package://'); do
+			installed["$pkg"]=1;
+		done
 
 		for pkg in $(adb shell pm list packages $_filter | sed 's/package://'); do
-			[[ ${installed[$pkg]} ]] || arr+=("$pkg")
+			[[ ${installed["$pkg"]} ]] || arr+=("$pkg")
 		done
 		readarray -t _choice < <(
 			printf '%s\n' "${arr[@]}" | sort -r | fzf "${_opts[@]}"
@@ -151,7 +153,7 @@ files() {
 	if [[ $src != /* ]]; then
 		local cwd=${cwd:-h}
 		declare -A cwdMap=([h]=/storage/emulated/0 [s]=/sdcard [r]='')
-		src=${cwdMap[${cwd:-h}]}/${src#/}
+		src=${cwdMap["${cwd:-h}"]}/${src#/}
 	fi
 
 	adb pull "$src" "$dst"

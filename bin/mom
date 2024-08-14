@@ -534,7 +534,7 @@ resizeParams=(
 	only 'o?' '[>a<]' 'Modify only if the image has larger/any/smaller size (default=>)'
 	sizeGap 'g?' '[0-9]+[p%]' 'Minimum size difference, pixels or % from the target size'
 	size 's+' 'x?[0-9]+[x^]?' 'Longest side, *`^` for shortest, `x` for fixating on height/width'
-	dst '$?' '$E.(jpg|JPG|png)' 'Output file/dir (default=$src)')
+	dst '$?' '$E\.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'

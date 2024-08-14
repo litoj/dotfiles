@@ -1,4 +1,4 @@
-local M = { 'JosefLitos/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
+local M = { 'litoj/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
 	local sts = require 'syntax-tree-surfer'
 	sts.setup {

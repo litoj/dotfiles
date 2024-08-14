@@ -2,17 +2,17 @@
 
 setTheme() {
 	gsettings set org.gnome.desktop.interface gtk-theme ${1^}
-	sed "s/Dark/${1^}/" ~/.config/gtk-3.0/theme.ini > /tmp/my/gtk3rc
-	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc > /tmp/my/gtk2rc
+	sed "s/Dark/${1^}/" ~/.config/gtk-3.0/theme.ini >/tmp/my/gtk3rc
+	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc >/tmp/my/gtk2rc
 	ln -sf ~/.config/qt6ct/colors/$1.conf /tmp/my/qt
 	ln -sf ~/.config/rofi/$1.rasi /tmp/my/rofi
 
 	shopt -s nullglob
 	local todo=(/dev/pts/*)
 	if [[ $todo ]]; then # use nerdcontrast to generate terminal colors
-		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2> /tmp/term > /dev/null
+		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2>/tmp/term >/dev/null
 		for f in "${todo[@]}"; do
-			[[ -O $f ]] && cat /tmp/term > "$f"
+			[[ -O $f ]] && cat /tmp/term >"$f"
 		done
 		rm /tmp/term
 	fi
@@ -20,7 +20,7 @@ setTheme() {
 	local msgpack="\x94\x0\x1\xafnvim_set_option\x92\xaabackground\xa${#1}$1"
 	for f in /run/user/$(id -u)/nvim.*.0; do
 		local pid=${f#*.}
-		ps -p ${pid%.*} > /dev/null && printf "$msgpack" | ncat -U "$f"
+		ps -p ${pid%.*} >/dev/null && printf "$msgpack" | ncat -U "$f"
 	done
 }
 

@@ -182,7 +182,10 @@ declare -A COLORS=(
 	[black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [brgray]=37
 	[gray]=90 [brred]=91 [brgreen]=92 [bryellow]=93 [brblue]=94
 	[brmagenta]=95 [brcyan]=96 [white]=97
-	[bg]=30 [fg]=97 [reset]=0 [bold]=1 [italic]=3 [underline]=4 [reverse]=7 [strike]=9
+	# effects
+	[bg]=30 [fg]=97 [reset]=0
+	[bold]=1 [italic]=3 [underline]=4 [reverse]=7 [strike]=9
+	[nobold]=22 [noitalic]=23 [nounderline]=24 [noreverse]=27 [nostrike]=29
 	# log level colors
 	[quiet]=0 [error]=31 [warn]=33 [info]=32 [verbose]=35 [debug]=37 [trace]=90
 	# theme colors
@@ -205,14 +208,14 @@ print() {
 
 	local ret str="$1" hlStr
 	while [[ $str ]]; do
-		case "$str" in
+		case "$str" in # 25% speed increase over regex matches
 			false* | true*)
 				[[ $str == t* ]] && hlStr=true || hlStr=false
 				ret+="$(ansi bool "$hlStr" fg)" str=${str:${#hlStr}}
 				;;
+			'default='*) ret+=$(ansi def 'default' noitalic) str=${str:7} ;;
 			[A-Za-z]*) hlStr=${str/[^0-9A-Za-z]*/} ret+=$hlStr str=${str:${#hlStr}} ;;
 			[.:[\]{}]*) ret+=$(ansi delim "${str::1}" fg) str=${str:1} ;;
-			\(default*) ret+=\($(ansi def default reset) str=${str:8} ;;
 			[*+?!=\<\>^\|/%]*) ret+=$(ansi oper "${str::1}" fg) str=${str:1} ;;
 			-*)
 				if [[ ${str:1:1} == [0-9\ ] ]]; then
@@ -570,10 +573,11 @@ call() { # for script usage - calling actions like itself with cli, without exte
 }
 
 declare -A REGEX=(
-	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_\-]*'
+	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'
 )
 REGEX[email]="${REGEX[var]}@${REGEX[domain]}"
+REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 #######################################
 # Test if $reg matches $1, or the rest after parsing $reg == \$o.*; o = bash condexpr operator

@@ -34,23 +34,12 @@ return {
 			require('mylsp').setup 'lua_ls'
 		end,
 	},
+	{ 'tpope/vim-abolish', event = 'VeryLazy' },
 	{
 		'pmizio/typescript-tools.nvim',
 		ft = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact', 'vue' },
 		dependencies = { 'nvim-lua/plenary.nvim', 'nvim-lspconfig', 'mxsdev/nvim-dap-vscode-js' },
 		config = function() require('typescript-tools').setup(require('mylsp').setup(nil, 'tsserver')) end,
-	},
-	{
-		'litoj/colorizer.nvim',
-		cmd = 'ColorizerToggle',
-		config = function()
-			require('colorizer').setup {
-				user_default_options = {
-					names = function() return require('nerdcontrast').palette end,
-					mode = 'foreground',
-				},
-			}
-		end,
 	},
 	{ 'litoj/i3config.vim', ft = 'swayconfig' },
 	--[[ {
@@ -79,4 +68,16 @@ return {
 		end,
 	},
 	-- { 'mpas/marp-nvim', cmd = 'MarpToggle', opts = { port = 8080 } },
+	{
+		'litoj/colorizer.nvim',
+		cmd = 'ColorizerToggle',
+		config = function()
+			require('colorizer').setup {
+				user_default_options = {
+					names = function() return require('nerdcontrast').palette end,
+					mode = 'foreground',
+				},
+			}
+		end,
+	},
 }

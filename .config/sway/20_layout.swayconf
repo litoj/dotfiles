@@ -35,7 +35,7 @@ xwayland enable
 focus_on_window_activation smart
 focus_follows_mouse no
 focus_wrapping workspace
-mouse_warping none
+mouse_warping output
 force_display_urgency_hint 0 ms
 
 ## Workspaces
@@ -57,6 +57,7 @@ assign [class="[sS]team.*"] $wGame
 
 # Outputs
 output $d1 pos 0 0
+output $d2 pos 0 -1200
 output 'BOE 0x0AC1 Unknown' mode 2560x1600@48Hz
 output $dMedia adaptive_sync on scale 2
 

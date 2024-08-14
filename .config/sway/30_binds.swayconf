@@ -107,11 +107,11 @@ bindsym --to-code {
 	$Mod+minus scratchpad show
 }
 
+set $floatpos ~/.config/sway/floatpos
+bindsym {
 #--------+
 # Arrows |
 #--------+
-set $floatpos ~/.config/sway/floatpos
-bindsym {
 # floating mode, with tilling mode compatibility
 	$Mod+Left exec $floatpos l
 	$Mod+Down exec $floatpos d
@@ -125,8 +125,11 @@ bindsym {
 # focus workspace
 	$Mod+Ctrl+Left workspace prev
 	$Mod+Ctrl+Right workspace next
-	$Mod+Ctrl+Down focus output left
-	$Mod+Ctrl+Up focus output right
+# focus output
+	$Mod+$Alt+Left focus output left
+	$Mod+$Alt+Down focus output down
+	$Mod+$Alt+Up focus output up
+	$Mod+$Alt+Right focus output right
 
 #--------+
 # Keypad |
@@ -166,10 +169,10 @@ bindsym {
 	$Mod+Shift+d move right
 	$Mod+Shift+c exec $floatpos c
 # resize
-	$Mod+$Alt+a resize shrink width 4
-	$Mod+$Alt+s resize grow height 4
-	$Mod+$Alt+w resize shrink height 4
-	$Mod+$Alt+d resize grow width 4
+	$Mod+$Alt+a resize shrink right 4
+	$Mod+$Alt+s resize grow down 4
+	$Mod+$Alt+w resize shrink down 4
+	$Mod+$Alt+d resize grow right 4
 # focus workspace
 	$Mod+Ctrl+s workspace prev
 	$Mod+Ctrl+w workspace next

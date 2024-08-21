@@ -21,18 +21,20 @@ local function withFile(dir, name)
 end
 
 local fakeUpdate = false
-local cwdEnabled = true -- TODO: create harpoon/qf for directories
+local function validUpdate(s)
+	return exists(s.file) and vim.bo[s.buf].modifiable or vim.startswith(s.file, 'term://')
+end
+local cwdEnabled = true
 local function setCWD(s)
-	if not (cwdEnabled and exists(s.file) and vim.bo[s.buf].modifiable) then return end
+	if not (cwdEnabled and validUpdate(s)) then return end
 	if fakeUpdate then
 		fakeUpdate = false
 		if vim.b[s.buf].cwd then return end
 	end
-	local dir = vim.b[s.buf].cwd -- storing determined cwd
-	if
-		dir --[[ and exists(dir) ]]
-	then
-		if vim.loop.cwd() ~= dir then vim.api.nvim_set_current_dir(dir) end
+	local dir = vim.b[s.buf].cwd or s.file:match 'term://(.+)//[0-9]+:'
+	if dir then
+		dir = dir:gsub('^~', os.getenv 'HOME')
+		 vim.api.nvim_set_current_dir(dir)
 		return
 	end
 
@@ -52,7 +54,7 @@ local function setCWD(s)
 	vim.api.nvim_set_current_dir(dir)
 end
 au('BufEnter', setCWD, '*') -- to execute on every focus change
-au('BufLeave', function(s) fakeUpdate = not exists(s.file) or not vim.bo[s.buf].modifiable end)
+au('BufLeave', function(s) fakeUpdate = not validUpdate(s) end)
 map('n', ' md', function() cwdEnabled = not cwdEnabled end) -- toggle cwd changing
 
 local function setIndentMarks(state)

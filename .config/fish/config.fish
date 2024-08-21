@@ -88,7 +88,7 @@ abbr dl     "mom -d"
 abbr jctl   "journalctl -p 3 -b"
 
 # pacman
-set pp "fzf -m --preview 'paru --color=always -Sii {1}' --preview-window=wrap" # package preview
+set pp "fzf -m --preview-window=wrap --preview 'paru --color=always -Sii {1}'" # package preview
 abbr psi    "paru -Slq | $pp | paru -S -" # search install
 abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
 abbr pir    "paru -Qq | $pp | paru -Rscn -" # installed remove - only dependencies
@@ -104,10 +104,7 @@ abbr cdn    "cd ~/Documents/personal/nvim/"
 abbr dup    "cd ~/dotfiles; git pull"
 # git
 abbr gp     "git pull"
-abbr gg     "git checkout"
-abbr gs     "git switch"
 abbr gA     "git add -A && git commit"
-abbr gap    "git add -p"
 abbr ga     "git add -v (git lf | fzf -m | sed 's/..//')"
 abbr gC     "git commit"
 abbr gP     "git push"

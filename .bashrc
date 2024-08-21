@@ -3,7 +3,7 @@
 [[ $- != *i* ]] && return
 
 . /usr/share/bash-completion/bash_completion
-if command -v bat &> /dev/null; then
+if command -v bat &>/dev/null; then
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
@@ -18,7 +18,7 @@ bind '"\e[1;2D": backward-word'
 bind '"\e[1;2C": forward-word'
 
 # setup editor
-if command -v nvim &> /dev/null; then
+if command -v nvim &>/dev/null; then
 	export EDITOR="nvim"
 	alias edit="nvim"
 	alias v="nvim"
@@ -29,7 +29,7 @@ else
 fi
 
 # ls -> exa
-if command -v exa &> /dev/null; then
+if command -v exa &>/dev/null; then
 	alias ls='eza -al --color=always --group-directories-first' # my preferred listing
 	alias la='eza -a --color=always --group-directories-first'  # all files and dirs
 	alias ll='eza -l --color=always --group-directories-first'  # long format
@@ -49,41 +49,25 @@ else
 fi
 
 # package manager
-case $(cat /etc/*-release 2> /dev/null | grep "^ID=" | awk -F '=' '{print $2}' 2> /dev/null) in
+case $(cat /etc/*-release 2>/dev/null | grep "^ID=" | awk -F '=' '{print $2}' 2>/dev/null) in
 	arch)
-		alias p="paru"
-		alias pr="paru -Rscn"
-		alias pu="paru -Syu"
-		alias po="paru -Qqtd"
-		alias pc="paru -Sc"
-		alias pss="paru -S \$(paru -Slq | fzf -m --preview 'paru -Si {1}'  --preview-window=wrap)"
-		alias psr="paru -Rscn \$(paru -Qeq | fzf -m --preview 'paru -Si {1}'  --preview-window=wrap)"
+		pp="fzf -m --preview-window=wrap --preview 'paru --color=always -Sii {1}'"
+		alias psi="paru -Slq | $pp | paru -S -"     # search install
+		alias pif="paru -Qq | $pp | paru -Ql -"     # installed files
+		alias pir="paru -Qq | $pp | paru -Rscn -"   # installed remove - only dependencies
+		alias piu="paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
+		alias pou='paru -Qtqd | paru -Rscn -'       # orphans remove
 		;;
-	debian | raspbian)
-		alias p="sudo apt"
-		alias pr="sudo apt autoremove"
-		alias pu="sudo apt update && sudo apt upgrade"
-		alias pss="sudo apt install \$(apt list | awk -F \"/\" '{print \$1}' | tail -n +2 | fzf -m --preview 'apt show {1}' --preview-window=wrap)"
-		alias psr="sudo apt autoremove \$(apt list --installed | awk -F \"/\" '{print \$1}' | tail -n +2 | fzf -m --preview 'apt show {1}' --preview-window=wrap"
+	debian | raspbian | ubuntu)
+		pp="sed -n 's,/.*,,p' | fzf -m --preview-window=wrap --preview 'apt show -a {1}'"
+		alias psi="apt list | $pp | xargs -d '\n' -- apt install"
+		alias piu="apt list --installed | $pp | xargs -d '\n' -- apt autoremove"
 		;;
 esac
-
-alias pipu="pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip install -U"
-alias spipu="sudo pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 sudo pip install -U"
 
 # navigation
 alias ..="cd .."
 alias ...="cd ../.."
-alias .3="cd ../../.."
-alias .4="cd ../../.."
-alias .5="cd ../../../..'"
-alias .6="cd ../../../../.."
 
-alias se="sudo \$EDITOR"
-alias sr="sudo ranger"
-alias s="sensors"
-alias smci="sudo make clean install"
-alias of='$EDITOR $(fzf -e)'
-alias cdd="cd ~/dotfiles"
-alias fup="cd ~/dotfiles; git pull"
-alias gd="git add -A && git commit && git push origin master"
+alias se='sudo $EDITOR'
+alias sr='sudo ranger'

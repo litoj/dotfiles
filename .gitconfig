@@ -24,6 +24,7 @@
 [alias]
 	l = log --oneline --graph --decorate
 	la = log --oneline --graph --decorate --all
+	lf = ls-files --exclude-standard -mdof --deduplicate
 [core]
 	editor = nvim --cmd 'let g:unception_block_while_host_edits=1'
 [commit]

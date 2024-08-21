@@ -571,11 +571,10 @@ resize() {
 				[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
 				# decide whether to resize
 				if ! [[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]]; then
-					((keepOriginal > 0)) && local cmd=cp || local cmd=mv
 					if [[ "$dst" ]]; then
-						exec $cmd "$src" "$(genDstFromSrc "$src")"
+						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc "$src")"
 					fi
-					continue
+					return
 				fi
 			fi
 			local cmd=(magick "$src" -resize "$newSize")
@@ -590,6 +589,9 @@ resize() {
 
 actionInfo rename R 'rename video/image files'
 renameParams=(
+	videoFormat 'v?' '.+' 'Set `sed` expression for video (default=move year to the front)'
+	audioFormat 'a?' '.+' 'Set `sed` expression for audio (default=strip track number)'
+	imageFormat 'i?' '.+' 'Set timestamp format for images, without extension (default=%Y_%m_%d_%H%M%S)'
 	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv|flac|opus|mp3)' 'File to rename'
 )
 rename() {
@@ -603,11 +605,17 @@ rename() {
 		done
 	else
 		if [[ $src == *.mp4 || $src == *.mkv ]]; then
-			local dst=$(echo "$src" | sed 's/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/')
+			local dst=$(echo "$src" | sed \
+				"${videoFormat:-'s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'}")
 		elif [[ $src == *.flac || $src == *.opus || $src == *.mp3 ]]; then
-			local dst=$(echo "$src" | sed 's/^[0-9][0-9] - //')
+			local dst=$(echo "$src" | sed "${audioFormat:-'s/^[0-9][0-9] - //'}")
 		else
-			local dst="$(exiftool -d '%Y_%m_%d_%H%M%S' -p '$DateTimeOriginal' "$src").${src##*.}"
+			local dst="$(exiftool -d "${imageFormat:-%Y_%m_%d_%H%M%S}" \
+				-p '$DateTimeOriginal' "$src" 2>&1).${src##*.}"
+			if [[ $dst == Warning* ]]; then
+				log Warn "['$src'] - Missing DateTime info, skipping"
+				return
+			fi
 			[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
 		fi
 		if [[ $src != "$dst" ]]; then

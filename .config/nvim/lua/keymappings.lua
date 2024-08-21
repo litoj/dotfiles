@@ -41,11 +41,7 @@ map('n', '<C-d>', '"ddd')
 map('i', '<A-d>', '<C-o>"dd') -- overrides lsp diagnostic
 map('i', '<A-d>b', '<Esc>"ddbi<Del>')
 map('i', '<A-d>B', '<Esc>"ddBi<Del>')
-map('i', '<A-x>', '<BS>')
-map('i', '<A-X>', '<Del>')
 -- gui-like remap
-map('', '<Del>', '"_x')
-map('', '<BS>', '"_X')
 map('c', '<C-BS>', '<C-w>')
 map('i', '<C-BS>', '<C-w>')
 map('i', '<C-S-BS>', '<Esc>"ddBi<Del>')
@@ -177,7 +173,8 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 		end
 	elseif vim.startswith(path, 'reform') then
 		if not path:find 'util' then
-			res.setup(path == 'reform' and old.config or require('reform').config[path:sub(8)])
+			local reform = require 'reform'
+			reform.setup(path == 'reform' and old.config or reform.config)
 		else
 			res.debug = old.debug
 		end

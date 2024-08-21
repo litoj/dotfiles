@@ -308,9 +308,9 @@ main() {
 	local _esc
 	while :; do
 		if ((SCRIPT_OPTS[optArgPicker])); then
-			read -rp "Choose $(ansi def action reset delim \( oper + param opts delim \): reset) " line
+			read -rp "Choose $(ansi italic action noitalic delim \( oper + param opts delim \): fg) " line
 		else
-			read -rp "Choose $(ansi def action reset delim : reset) " -n 1 line
+			read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line
 			echo
 		fi
 		if [[ $line == $'\004' ]]; then
@@ -467,9 +467,9 @@ parseAction() {
 					"${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}" || {
 						((${SCRIPT_OPTS[ignoreFailedPicker]} > 0)) && i=-1
 					}
-				}; then # picker picked a value successfully
+				}; then
 					if ((i < 0)); then
-						log Debug ".$varName - unchanged"
+						log Debug ".$varName - ${builder["$varName"]} failed, skipping option"
 					else
 						log Debug ".$varName <${builder["$varName"]}>= '${!varName}'"
 					fi

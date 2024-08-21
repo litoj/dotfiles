@@ -6,17 +6,20 @@ SSS_OPTS[about]='MOM - Media Operation/Manipulation
 A collection of media operation/manipulation scripts.'
 
 ((SCRIPT_OPTS[jobs] = (1 + $(nproc --all)) / 2))
+SCRIPT_OPTS[freePathNumberReuse]=0
 SCRIPT_OPTS[ffmpegSetLogLevel]=2
 defineParams=(
-	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS[jobs]})"
-	ffmpegSetLogLevel 'f?' '' 'Change ffmpeg log level to current script value'
+	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS['jobs']})"
+	freePathNumberReuse 'n?' '' 'Increment numbers in paths without appending (default=0)'
+	ffmpegSetLogLevel 'f?' '-?[0-9]*' "Change ffmpeg log level to current script value\
+ (<0 for setting a specific level)"
 	"${defineParams[@]}")
 SSS_OPTS[onNoArg]=1
 
 ffmpegCmd() {
-	((SCRIPT_OPTS[ffmpegSetLogLevel] > 0)) &&
-		echo ffmpeg -v ${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]/warn/warning} ||
-		echo ffmpeg -v ${LOG_NAMES[$((-SCRIPT_OPTS[ffmpegSetLogLevel]))]/warn/warning}
+	((SCRIPT_OPTS['ffmpegSetLogLevel'] > 0)) &&
+		echo ffmpeg -v ${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]/warn/warning} ||
+		echo ffmpeg -v ${LOG_NAMES[$((-SCRIPT_OPTS['ffmpegSetLogLevel']))]/warn/warning}
 }
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
@@ -38,7 +41,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 		function isolated() {
 			local prefix=$prefix-${src#*=}-
 			local cmd=("${cmd[@]}" "$src" -o "$prefix$tmp") dst=${dst[i]:-$dst}
-			((SCRIPT_OPTS[logLvl] < 3)) && cmd+=(-q)
+			((SCRIPT_OPTS['logLvl'] < 3)) && cmd+=(-q)
 			exec "${cmd[@]}" && {
 				cmd=("$prefix"*)
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
@@ -76,7 +79,7 @@ noMeta() {
 	else
 		[[ ${dst:-$src} == "$src" ]] && local dst=/tmp replaceSrc=$((1 - keep))
 
-		[[ -d $dst ]] && local dst=$(getFreePath "${dst%/}/${src##*/}" dst)
+		[[ -d $dst ]] && local dst=$(ACTION+=.dst getFreePath "${dst%/}/${src##*/}")
 		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy "$dst")
 		exec "${cmd[@]}" && if ((replaceSrc > 0)); then
 			exec mv "$dst" "$src"
@@ -119,7 +122,7 @@ lua
 	declare -n arr=$1
 	local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
 		--term-playing-msg="$(print "<Enter> to pick --$1") time for $(
-			((SCRIPT_OPTS[color] > 0)) && ansi italic "'\${media-title}'" reset || echo '${media-title}'
+			((SCRIPT_OPTS['color'] > 0)) && ansi italic "'\${media-title}'" reset || echo '${media-title}'
 		)" --script="$pickerFile")
 	local msg=
 	for src in "${src[@]:${#arr[@]}}"; do
@@ -158,29 +161,42 @@ secondsToTime() {
 }
 
 # $src, $2= name of the param for which we are creating the path
+#######################################
+# Globals:
+#   keepOriginal if the original will not be replaced by this path
+#   src source filename (if dst should move into it, log path as verbose only)
+# Arguments:
+#   filename base path name to get a free name for
+#######################################
 getFreePath() {
 	if [[ ! -e $1 ]]; then
 		echo "$1"
 		return
 	fi
-	[[ $1 =~ ([0-9]*)(\.[^.]+)$ ]]
-	local name=${1::-${#BASH_REMATCH[0]}} ext=${BASH_REMATCH[2]} numLen=${#BASH_REMATCH[1]}
-	declare -i n=${BASH_REMATCH[1]##0}+1
-	declare -i added=$((numLen - ${#n})) i=added
-	while ((i-- > 0)); do
-		name+=0
-	done
-	[[ ${BASH_REMATCH[1]} ]] || name+=_
-	while [[ -e $name$n$ext ]]; do
-		if ((++n && added > 0 && ${#n} >= numLen)); then
-			name=${name::-$added}
-			unset added
-		fi
-	done
-	local text="$name$n$ext"
-	[[ $1 == "$text" || $1 == "$src" && $keepOriginal -lt 1 ]] &&
-		log Info ".$2 = '$text'" ||
-		log Warn ".$2 = '$text'"
+	local filename=$1 text=$1
+	[[ $filename =~ (0*([1-9][0-9]*)?)(\.[^.]+)$ ]]
+	local ext=${BASH_REMATCH[3]} numLen=${#BASH_REMATCH[1]}
+	if ((${SCRIPT_OPTS['freePathNumberReuse']} > 0 && numLen)); then # num reuse allowed and possible
+		local prefix=${filename::-${#BASH_REMATCH[0]}}
+		declare -i i=${BASH_REMATCH[2]}
+
+		while [[ -e $text ]]; do
+			text=$(printf '%s%0*d%s' "$prefix" $numLen $((++i)) "$ext")
+		done
+	else
+		local prefix=${filename::-${#ext}}_
+		declare -i i=0
+		while [[ -e $text ]]; do
+			text="$prefix$((++i))$ext"
+		done
+	fi
+
+	if [[ $src =~ ^"$prefix"(0*([1-9][0-9]*)?)"$ext"$ &&
+		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -lt $i ]]; then
+		text=$src # index of src was the lowest number already
+	else
+		log Warn " = '$text'"
+	fi
 	echo "$text"
 }
 
@@ -190,12 +206,12 @@ genDstFromSrc() {
 	local out=${dst:-$src}
 	[[ -d $dst ]] && out="$dst/${src##*/}"
 	# default path included to not override source file, but override if file dst was given
-	[[ -d ${dst:-.} ]] && out=$(getFreePath "$out" dst)
+	[[ -d ${dst:-.} ]] && out=$(ACTION+=.dst getFreePath "$out")
 	echo "$out"
 }
 
 runJob() {
-	if ((SCRIPT_OPTS[jobs] > $(jobs | wc -l))); then
+	if ((SCRIPT_OPTS['jobs'] > $(jobs | wc -l))); then
 		"$@" &
 	else
 		"$@"
@@ -306,7 +322,7 @@ edit() {
 					fi
 					out=${out%.*}.opus
 				fi
-				out=$(getFreePath "$out" dst)
+				out=$(ACTION+=.dst getFreePath "$out")
 			fi
 			runCmdWithCleanup "$src" "$out"
 		}
@@ -415,7 +431,7 @@ playParams=(
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
-	if ((SCRIPT_OPTS[guiPicker] > 0)); then
+	if ((SCRIPT_OPTS['guiPicker'] > 0)); then
 		local cmd=(rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')
 	else
 		local cmd=(fzf --prompt "$4: ")
@@ -589,11 +605,17 @@ resize() {
 
 actionInfo rename R 'rename video/image files'
 renameParams=(
-	videoFormat 'v?' '.+' 'Set `sed` expression for video (default=move year to the front)'
-	audioFormat 'a?' '.+' 'Set `sed` expression for audio (default=strip track number)'
-	imageFormat 'i?' '.+' 'Set timestamp format for images, without extension (default=%Y_%m_%d_%H%M%S)'
+	videoFormat 'v!' '.+' 'Set `sed` expression for video (default=move year to the front)'
+	audioFormat 'a!' '.+' 'Set `sed` expression for audio (default=strip track number)'
+	imageFormat 'i!' '.+' 'Set timestamp format for images, without extension (default=%Y_%m_%d_%H%M%S)'
 	dateFallback 'F?' '[yan]|yes|no|ask' 'Use file mod time for image timestamp fallback (default=a/ask)'
 	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv|flac|opus|mp3)' 'File to rename'
+)
+renameConfig=(
+	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
+	audioFormat='s/^[0-9][0-9] - //'
+	imageFormat='%Y_%m_%d_%H%M%S'
+	dateFallback=ask
 )
 rename() {
 	if [[ -d $src ]]; then
@@ -605,41 +627,45 @@ rename() {
 			src=$src rename
 		done
 	else
-		if [[ $src == *.mp4 || $src == *.mkv ]]; then
-			[[ $videoFormat ]] ||
-				local videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
-			local dst=$(echo "$src" | sed "$videoFormat")
-		elif [[ $src == *.flac || $src == *.opus || $src == *.mp3 ]]; then
-			local dst=$(echo "$src" | sed "${audioFormat:-s/^[0-9][0-9] - //}")
-		else
-			local dst="$(exiftool "$src" -d "${imageFormat:-%Y_%m_%d_%H%M%S}" \
-				-p '$DateTimeOriginal' 2>/dev/null).${src##*.}"
+		function isolated() {
+			if [[ $src == *.mp4 || $src == *.mkv ]]; then
+				local dst=$(echo "$src" | sed "$videoFormat")
+			elif [[ $src == *.flac || $src == *.opus || $src == *.mp3 ]]; then
+				local dst=$(echo "$src" | sed "$audioFormat")
+			else
+				local dst="$(exiftool "$src" -d "$imageFormat" \
+					-p '$DateTimeOriginal' 2>/dev/null).${src##*.}"
 
-			if [[ $dst == .* ]]; then # no name, just extension
-				dst="$(date -r "$src" +"${imageFormat:-%Y_%m_%d_%H%M%S}")$dst"
-				[[ $dst == "$src" ]] && return
+				if [[ $dst == .* ]]; then # no name, just extension
+					dst="$(date -r "$src" +"$imageFormat")$dst"
+					[[ $dst == "$src" ]] && return
 
-				if [[ ${dateFallback:-a} == a* ]]; then
-					local dateFallback
-					read -p "$(print "rename '$src' to file mod date ('$dst')? [y/N]: ")" -n1 dateFallback
-					[[ $dateFallback ]] && echo # fix missing newline after input
-				else
-					log Warn "['$src'] - Missing DateTime"
+					if [[ $dateFallback == a* ]]; then
+						local dateFallback
+						read -p "$(print "rename '$src' to file mod date ('$dst')? [y/N]: ")" -n1 dateFallback
+						[[ $dateFallback ]] && echo # fix missing newline after input
+					else
+						log Warn " - Missing DateTime exif data"
+					fi
+
+					if [[ $dateFallback != [yY]* ]]; then
+						log Info " - skipping"
+						return
+					else
+						log Info " - using file modification date"
+					fi
 				fi
 
-				if [[ $dateFallback != [yY]* ]]; then
-					log Info "['$src'] - skipping"
-					return
-				else
-					log Info "['$src'] - using file modification date"
+				[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
+			fi
+			if [[ $src != "$dst" ]]; then
+				dst=$(ACTION+=.dst getFreePath "$dst")
+				if [[ $src != "$dst" ]]; then
+					exec mv "$src" "$dst"
 				fi
 			fi
-
-			[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
-		fi
-		if [[ $src != "$dst" ]]; then
-			exec mv "$src" "$(getFreePath "$dst" dst)"
-		fi
+		}
+		ACTION+="['${src/*\//…/}']" isolated
 	fi
 }
 

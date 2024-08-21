@@ -87,7 +87,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[guiPicker]=0
 	[optArgPicker]=0
 	[ignoreFailedPicker]=0
-	[logLvl]=${LOG_LEVELS[info]}
+	[logLvl]=${LOG_LEVELS['info']}
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1 SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1
@@ -106,10 +106,10 @@ defineParams=(
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
- (default=${LOG_NAMES[${SCRIPT_OPTS[logLvl]}]}=${SCRIPT_OPTS[logLvl]})"
+ (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
-SCRIPT_OPTS[logLvl]=${DEBUG:-${SCRIPT_OPTS[logLvl]}}
+SCRIPT_OPTS[logLvl]=${DEBUG:-${SCRIPT_OPTS['logLvl']}}
 define() {
 	declare -i i=0
 	local opt
@@ -146,8 +146,8 @@ define() {
 		elif [[ ${!opt} ]]; then
 			if [[ ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS["${!opt,,}"]} ]]; then
 				[[ $opt == logLvl ]] &&
-					SCRIPT_OPTS["$opt"]=${LOG_LEVELS[info]} ||
-					SCRIPT_OPTS["$opt"]=${LOG_LEVELS[warn]}
+					SCRIPT_OPTS["$opt"]=${LOG_LEVELS['info']} ||
+					SCRIPT_OPTS["$opt"]=${LOG_LEVELS['warn']}
 				log Warn ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS["$opt"]}]}'
   Available are: ${LOG_NAMES[*]}"
 			else
@@ -165,9 +165,9 @@ define() {
 }
 
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
-	[about]=''                             # script description
-	[exitFn]=exit                          # on error / on successful exit - shouldn't return
-	[exitLogLvl]=$((1 + SCRIPT_OPTS[cli])) # at which level to abort (cli:Error, tui:Fatal)
+	[about]=''                               # script description
+	[exitFn]=exit                            # on error / on successful exit - shouldn't return
+	[exitLogLvl]=$((1 + SCRIPT_OPTS['cli'])) # at which level to abort (cli:Error, tui:Fatal)
 	# set to main registered action if script is a single command - actions act as builders
 	# you can also change other actions' params at runtime → dynamic configuration
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
@@ -201,7 +201,7 @@ ansi() {
 	echo "$ret"
 }
 print() {
-	if ((SCRIPT_OPTS[color] <= 0)); then
+	if ((SCRIPT_OPTS['color'] <= 0)); then
 		echo "$@"
 		return
 	fi
@@ -269,20 +269,20 @@ print() {
 #######################################
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS["${1,,}"]:-$1}
-	if ((SCRIPT_OPTS[logLvl] >= LAST_LOG_LVL)); then
+	if ((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
-		((SCRIPT_OPTS[color] > 0)) && type=$(ansi "$type" "${type^^}" fg) || type=${type^^}
+		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" fg) || type=${type^^}
 		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
-	if ((SSS_OPTS[exitLogLvl] >= LAST_LOG_LVL)); then
-		[[ $ACTION == ${SSS_OPTS[exitFn]} ]] && exit -1 || "${SSS_OPTS[exitFn]}" $LAST_LOG_LVL
+	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
+		[[ $ACTION == ${SSS_OPTS['exitFn']} ]] && exit -1 || "${SSS_OPTS['exitFn']}" $LAST_LOG_LVL
 	fi
 }
 
 # Supports simple redirection ... '>'/'>>' 'path'
 exec() {
-	((SCRIPT_OPTS[logLvl] > 3)) && log Verbose " \$> $*"
-	((SCRIPT_OPTS[dryRun] > 0)) && return
+	((SCRIPT_OPTS['logLvl'] > 3)) && log Verbose " \$> $*"
+	((SCRIPT_OPTS['dryRun'] > 0)) && return
 	if [[ ${*:0-2:1} == \>* ]]; then
 		if [[ ${*:0-2:1} == \>\> ]]; then
 			"${@:1:$#-2}" >>"${!#}"
@@ -295,19 +295,19 @@ exec() {
 }
 
 main() {
-	if ((SCRIPT_OPTS[cli] > 0)); then
+	if ((SCRIPT_OPTS['cli'] > 0)); then
 		while (($#)); do
 			parseAction "$@"
 			shift $?
 		done
-		((SCRIPT_OPTS[tui] > 0)) || quit
+		((SCRIPT_OPTS['tui'] > 0)) || quit
 		SCRIPT_OPTS[cli]=0
 	fi
 
 	SCRIPT_OPTS[picker]=1
 	local _esc
 	while :; do
-		if ((SCRIPT_OPTS[optArgPicker])); then
+		if ((SCRIPT_OPTS['optArgPicker'])); then
 			read -rp "Choose $(ansi italic action noitalic delim \( oper + param opts delim \): fg) " line
 		else
 			read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line
@@ -330,7 +330,7 @@ main() {
 			parseAction -$line
 		else
 			local _prefix=
-			while [[ ! $_prefix =~ ^${SSS_OPTS[optPrefix]}$ ]]; do
+			while [[ ! $_prefix =~ ^${SSS_OPTS['optPrefix']}$ ]]; do
 				_prefix+=-
 			done
 			parseAction $_prefix$line
@@ -345,7 +345,7 @@ parseAction() {
 
 	local ACTION actionArg
 	log Trace "parsing $1"
-	if [[ $1 =~ ^(${SSS_OPTS[optPrefix]})([^-][^=]+)(=.*)?$ ]] && { # full action name
+	if [[ $1 =~ ^(${SSS_OPTS['optPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
 		actionArg=${BASH_REMATCH[3]:1}
 		ACTION=$(
 			isAction() { [[ ${ACTION_INFO["$1"]} ]]; }
@@ -363,7 +363,7 @@ parseAction() {
 			shift
 		fi
 	else
-		ACTION=${SSS_OPTS[defAction]}
+		ACTION=${SSS_OPTS['defAction']}
 	fi
 	unset actionArg
 
@@ -378,7 +378,7 @@ parseAction() {
 	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
 		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
-		[[ $sign != \$? || ${SSS_OPTS[argAsLongOpt]} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
+		[[ $sign != \$? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
 		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # '_'=no short, '$'=arg
 		[[ $sign == ?[+!] || $sign == \$? ]] && posArg=${posArg:-$i} args[$i]=0
 	done
@@ -415,7 +415,8 @@ parseAction() {
 			fi
 
 			local i='' optCnt=+ tmpArr=
-			if [[ $# -ne $actionArgFromEnd && $1 =~ ^(${SSS_OPTS[optPrefix]})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
+			if [[ $# -ne $actionArgFromEnd &&
+				$1 =~ ^(${SSS_OPTS['optPrefix']})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
 				tmpArr=("${BASH_REMATCH[@]}")
 				i=$( # index for full option name
 					isOpt() { [[ ${opts["$1"]} ]]; }
@@ -456,16 +457,16 @@ parseAction() {
 					else
 						shift
 					fi
-				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS[onNoArg]} -ge 0 ]] && argMatch; then
+				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch; then
 					declare -i "$varName+=${optCnt}1"
 					log Debug ".$varName = ${!varName}"
-				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS[onNoArg]} -gt 0 &&
-					${SCRIPT_OPTS[picker]} -gt 0 ]] && {
+				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -gt 0 &&
+					${SCRIPT_OPTS['picker']} -gt 0 ]] && {
 
 					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
 					"${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}" || {
-						((${SCRIPT_OPTS[ignoreFailedPicker]} > 0)) && i=-1
+						((${SCRIPT_OPTS['ignoreFailedPicker']} > 0)) && i=-1
 					}
 				}; then
 					if ((i < 0)); then
@@ -540,8 +541,8 @@ parseAction() {
 		[[ ${args[$i]} != 0 ]] && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
-		if [[ ${SCRIPT_OPTS[picker]} -gt 0 &&
-			(${SCRIPT_OPTS[optArgPicker]} -gt 0 || $sign == ?[+!]) ]]; then
+		if [[ ${SCRIPT_OPTS['picker']} -gt 0 &&
+			(${SCRIPT_OPTS['optArgPicker']} -gt 0 || $sign == ?[+!]) ]]; then
 			declare -a "$varName"
 			if "${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
@@ -559,7 +560,7 @@ parseAction() {
 	unset sigs i sigN args builder varName sign reg
 
 	# ensure valid state
-	if [[ $ACTION == "${SSS_OPTS[defAction]}" && $# -gt 0 && ${SSS_OPTS[defActionLast]} ]]; then
+	if [[ $ACTION == "${SSS_OPTS['defAction']}" && $# -gt 0 && ${SSS_OPTS['defActionLast']} ]]; then
 		log Error " - Default action must use all args, but some were left: $*"
 	fi
 
@@ -576,7 +577,7 @@ declare -A REGEX=(
 	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'
 )
-REGEX[email]="${REGEX[var]}@${REGEX[domain]}"
+REGEX[email]="${REGEX['var']}@${REGEX['domain']}"
 REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 #######################################

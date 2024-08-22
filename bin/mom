@@ -10,7 +10,7 @@ SCRIPT_OPTS[freePathNumberReuse]=0
 SCRIPT_OPTS[ffmpegSetLogLevel]=2
 defineParams=(
 	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS['jobs']})"
-	freePathNumberReuse 'n?' '' 'Increment numbers in paths without appending (default=0)'
+	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
 	ffmpegSetLogLevel 'f?' '-?[0-9]*' "Change ffmpeg log level to current script value\
  (<0 for setting a specific level)"
 	"${defineParams[@]}")

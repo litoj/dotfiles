@@ -347,8 +347,8 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -Dgp -p
-	$Mod+$Alt+m exec mom -Dgp -pLrd10:2
+	$Mod+m exec mom -DGA -p
+	$Mod+$Alt+m exec mom -DGA -pLrd10:2
 	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"

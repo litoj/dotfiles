@@ -83,14 +83,14 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[tui]=$((1 - $?))
 	[dryRun]=0
 	[color]=0
-	[picker]=0
 	[guiPicker]=0
+	[argPicker]=0
 	[optArgPicker]=0
 	[ignoreFailedPicker]=0
 	[logLvl]=${LOG_LEVELS['info']}
 )
-[[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[picker]=1 SCRIPT_OPTS[color]=1
-[[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1
+[[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
+[[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1 SCRIPT_OPTS[argPicker]=1
 
 actionInfo define D 'set script-processing options'
 defineParams=(
@@ -100,9 +100,9 @@ defineParams=(
 	config 'c*' '$f\.conf\.sh$|-?'
 	"Config file as arrays of cli options like \`defineConfig+=(-l3)\`,\
  or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
-	picker 'p?' '' 'Enable arg/opt param picker (default=1 when stdin is available)'
-	guiPicker 'g?' '' 'Use GUI pickers (default=1 when stdin is missing)'
-	optArgPicker 'o?' '' 'Enable picker for optional arguments (options and `$?`/`$*` args)'
+	guiPicker 'G?' '' 'Use GUI pickers (default=1 when stdin is missing)'
+	argPicker 'A?' '' 'Enable arg picker (default=1 when stdin is missing)'
+	optArgPicker 'O?' '' 'Enable picker for optional arguments (options and `$?`/`$*` args)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
@@ -175,7 +175,7 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 	[defActionLast]=1   # default action can't be followed by other actions (must consume all args)
 	[optPrefix]='-{,2}' # regex for required cli long name format
 	[argAsLongOpt]=1    # allow arguments to be also parsed as long options
-	[onNoArg]=0         # >0: pick also chained opts; 0: try num arg (+=1); <0: pick only normal opts
+	[onNoArg]=0         # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
 )
 
 declare -A COLORS=(
@@ -304,7 +304,7 @@ main() {
 		SCRIPT_OPTS[cli]=0
 	fi
 
-	SCRIPT_OPTS[picker]=1
+	SCRIPT_OPTS[argPicker]=1
 	local _esc
 	while :; do
 		if ((SCRIPT_OPTS['optArgPicker'])); then
@@ -461,7 +461,7 @@ parseAction() {
 					declare -i "$varName+=${optCnt}1"
 					log Debug ".$varName = ${!varName}"
 				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -gt 0 &&
-					${SCRIPT_OPTS['picker']} -gt 0 ]] && {
+					${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
 
 					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
@@ -541,8 +541,13 @@ parseAction() {
 		[[ ${args[$i]} != 0 ]] && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
-		if [[ ${SCRIPT_OPTS['picker']} -gt 0 &&
-			(${SCRIPT_OPTS['optArgPicker']} -gt 0 || $sign == ?[+!]) ]]; then
+		if {
+			if [[ $sign == ?[!+] ]]; then
+				((SCRIPT_OPTS['argPicker'] > 0))
+			else
+				((SCRIPT_OPTS['optArgPicker'] > 0))
+			fi
+		}; then
 			declare -a "$varName"
 			if "${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
@@ -758,7 +763,7 @@ pickValue() {
 	while :; do
 		local _pick=
 		while [[ ! $_pick =~ ^$3$ ]]; do
-			if ((SCRIPT_OPTS[guiPicker] > 0)); then
+			if ((SCRIPT_OPTS['guiPicker'] > 0)); then
 				_pick=$(rofi -dmenu -p "${_pick:+Argument has to match /$3/! }$4")
 			else
 				[[ $_pick ]] && print "Argument has to match /$3/"
@@ -778,9 +783,11 @@ pickValue() {
 	[[ $_dst ]]
 }
 
+RANGER_CMD=(ranger --cmd='set viewmode multipane')
+
 pickDir() {
 	local tmp="$(mktemp)"
-	ranger --choosedir="$tmp"
+	"${RANGER_CMD[@]}" --choosedir="$tmp"
 	if [[ -e $tmp ]]; then
 		declare -n _choice="$1"
 		_choice="$(cat "$tmp")"
@@ -791,7 +798,7 @@ pickDir() {
 
 pickFile() {
 	local tmp="$(mktemp)"
-	ranger --choosefile"$([[ $2 == ?[+*] ]] && echo s)=$tmp"
+	"${RANGER_CMD[@]}" --choosefile"$([[ $2 == ?[+*] ]] && echo s)=$tmp"
 	if [[ -e $tmp ]]; then
 		mapfile -t "$1" <"$tmp"
 	fi
@@ -800,11 +807,11 @@ pickFile() {
 }
 
 pickFilesOrDir() {
-	((SCRIPT_OPTS[guiPicker] > 0)) &&
+	((SCRIPT_OPTS['guiPicker'] > 0)) &&
 		local _cmd=(rofi -dmenu) ||
 		local _cmd=(fzf --prompt "$4: " --preview 'ls {}')
 	if [[ $2 == ?[+*] ]]; then
-		((SCRIPT_OPTS[guiPicker] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
+		((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
 	fi
 	declare -n selected="$1"
 	local toView=(.) _ng=("$(shopt -p nullglob)")

@@ -85,7 +85,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[color]=0
 	[guiPicker]=0
 	[argPicker]=0
-	[optArgPicker]=0
+	[optArgPicker]=1
 	[ignoreFailedPicker]=0
 	[logLvl]=${LOG_LEVELS['info']}
 )
@@ -102,7 +102,7 @@ defineParams=(
  or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
 	guiPicker 'G?' '' 'Use GUI pickers (default=1 when stdin is missing)'
 	argPicker 'A?' '' 'Enable arg picker (default=1 when stdin is missing)'
-	optArgPicker 'O?' '' 'Enable picker for optional arguments (options and `$?`/`$*` args)'
+	optArgPicker 'O?' '' 'Enable picker for option arguments (default=1)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
@@ -221,11 +221,14 @@ print() {
 				if [[ ${str:1:1} == [0-9\ ] ]]; then
 					ret+=$(ansi oper - fg)
 					str=${str:1}
-				elif [[ ${ret:0-1} == [a-z] ]]; then
-					ret+=-
-					str=${str:1}
+				elif [[ ${ret:0-2} == [A-Za-z][a-z] ]]; then
+					hlStr=${str/[^A-Za-z\-]*/}
+					ret+=$hlStr
+					str=${str:${#hlStr}}
 				else
-					hlStr=${str/[^0-9A-Za-z\-]*/} ret+=$(ansi param "$hlStr" fg) str=${str:${#hlStr}}
+					hlStr=${str/[^0-9A-Z[\]_a-z\-]*/}
+					ret+=$(ansi param "$hlStr" fg)
+					str=${str:${#hlStr}}
 				fi
 				;;
 			[\'\"\`]*)
@@ -541,13 +544,7 @@ parseAction() {
 		[[ ${args[$i]} != 0 ]] && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
-		if {
-			if [[ $sign == ?[!+] ]]; then
-				((SCRIPT_OPTS['argPicker'] > 0))
-			else
-				((SCRIPT_OPTS['optArgPicker'] > 0))
-			fi
-		}; then
+		if [[ ${SCRIPT_OPTS['argPicker']} -gt 0 && $sign == ?[!+] ]]; then
 			declare -a "$varName"
 			if "${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
@@ -646,10 +643,16 @@ paramHelp() {
 		local sign=${name[i + 1]} regex=${name[i + 2]} help=${name[i + 3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
 			if [[ $sign == _? ]]; then
-				varName=[]$varName
+				varName=--$varName
 			else
-				local _s=${sign::1} _v=${varName::1}
-				[[ $_s == "${_v,}" ]] && varName="[$_s]${varName:1}" || varName="[$_s]$varName"
+				# varName="-${sign::1}, --$varName"
+				local _s=${sign::1}
+				[[ $varName == [A-Z]* ]] && _s=${_s^} || _s=${_s,}
+				if [[ $varName =~ ^(.*[_-])?$_s ]]; then
+					varName="--${BASH_REMATCH[1]}[${sign::1}]${varName:${#BASH_REMATCH[0]}}"
+				else
+					varName="--[${sign::1}]$varName"
+				fi
 			fi
 			sign=${sign:1}
 			[[ $regex ]] && sign+='<>' # no regex → toggle option
@@ -664,10 +667,10 @@ paramHelp() {
 		[[ $matcher -gt 0 && $regex ]] && help="/$regex/ $help"
 		desc+=("$help")
 	done
-	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m   %s' || fmt='%-*s   %s'
+	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m  %s' || fmt='%-*s  %s'
 	i=-1
 	while ((++i < ${#sig[@]})); do
-		print "     $(printf "$fmt" "$maxLen" "${sig[$i]}" "${desc[$i]}")"
+		print "    $(printf "$fmt" "$maxLen" "${sig[$i]}" "${desc[$i]}")"
 	done
 }
 
@@ -687,7 +690,7 @@ help() {
 	if [[ ! $actions ]]; then
 		declare -n actions=ACTION_ORDER
 		local default=true
-		((SCRIPT_OPTS[cli] > 0)) && echo "${SSS_OPTS[about]}"
+		((SCRIPT_OPTS[cli] > 0)) && print "${SSS_OPTS[about]}"
 	fi
 	((legend > 0)) && print 'Legend:
   action: [a]ction
@@ -717,7 +720,7 @@ help() {
 
 	print 'Actions: (more info available per action)'
 	local act fmt
-	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1;4m%-*s   \033[0;4m%s\033[m' || fmt='%-*s   %s'
+	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1;4m%-*s  \033[0;4m%s\033[m' || fmt='%-*s  %s'
 	for act in "${actions[@]}"; do
 		if [[ ${act#-} == ? ]]; then
 			act=${ACTION_INFO["${act#-}"]:-$act} # keep the original to have valid `desc` index
@@ -850,14 +853,14 @@ if [[ $0 == *sss ]]; then
 	SSS_OPTS[about]='SSS - A script simplifying scripting
 Provides automatized param handling, arg/opt parsing+autodoc.
 Usage:
-  1. Change SSS_OPTS to suit your script.
+  1. Change $SSS_OPTS to suit your script.
   2. Source this script: `. sss`
   3. Register your actions
-    `actionInfo <fName> <shortName>? <shortHighlight>? <fDescription>`
+     actionInfo <fName> <shortName>? <nameHelpFormat>? <fDescription>
   4. Declare action opts/args, see `help` for meanings
-    `<fName>Params=(<varName> <shortOpt/argSuffix> <argRegex> <description>)`
-  5. Declare a mapping of arg names to picker functions for user arg selection (TUI use)
-    `declare -A <fName>Builder=([<argName>]=<picker/selector fName>)`
+     <fName>Params=(<varName> <shortOpt+countSuffix> <argMatch> <description>)
+	5. Declare a mapping of picker functions for args if defaults are insufficient
+     declare -A <fName>Builder=([<argName>]=<picker/selector fName>)
   6. Picker gets full arg quaternion, saves selection to $1/argName
   7. Write your function.
   8?. for execution after configuration overwrite SSS_OPTS[exitFn]

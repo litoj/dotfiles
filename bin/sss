@@ -164,9 +164,17 @@ define() {
 	return 0
 }
 
+exitFn() {
+	if [[ $ACTION ]]; then
+		unset optChain arg
+		call help -p "$ACTION"
+	fi
+	exit $1
+}
+
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
 	[about]=''                               # script description
-	[exitFn]=exit                            # on error / on successful exit - shouldn't return
+	[exitFn]=exitFn                          # on error / on successful exit - shouldn't return
 	[exitLogLvl]=$((1 + SCRIPT_OPTS['cli'])) # at which level to abort (cli:Error, tui:Fatal)
 	# set to main registered action if script is a single command - actions act as builders
 	# you can also change other actions' params at runtime → dynamic configuration
@@ -221,7 +229,7 @@ print() {
 				if [[ ${str:1:1} == [0-9\ ] ]]; then
 					ret+=$(ansi oper - fg)
 					str=${str:1}
-				elif [[ ${ret:0-2} == [A-Za-z][a-z] ]]; then
+				elif [[ ${ret:0-2} == [A-Za-z][A-Za-z] || ${ret:0-1} == [A-Za-ln-z] ]]; then
 					hlStr=${str/[^A-Za-z\-]*/}
 					ret+=$hlStr
 					str=${str:${#hlStr}}
@@ -463,8 +471,8 @@ parseAction() {
 				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch; then
 					declare -i "$varName+=${optCnt}1"
 					log Debug ".$varName = ${!varName}"
-				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -gt 0 &&
-					${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
+				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
+					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
 
 					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
@@ -494,7 +502,8 @@ parseAction() {
 			[[ ${args[$i]} ]] && args[$i]+=1
 			[[ $optChain ]] && continue
 			if [[ ${sigs[i + 1]} == \$? ]]; then
-				((i < posArg)) && log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
+				((i < posArg)) &&
+					log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
 				posArg=$i
 			fi
 		else # set arg
@@ -525,15 +534,22 @@ parseAction() {
 						posArg+=4
 						log Debug "\$$varName = '${!varName}'"
 					fi
+					local argUsed=1
 					shift
 					break # continue in parsing cli
 				else
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done
+
+			if (($# == actionArgFromEnd && !argUsed)); then
+				log Error " - Invalid argument '$1'"
+				return 1
+			fi
+			unset argUsed
 		fi
 
-		(($# <= actionArgFromEnd)) && break # stop after chain started by action (not option)
+		(($# < actionArgFromEnd)) && break # stop after chain started by action (not option)
 	done
 
 	i=$firstArg-4
@@ -718,7 +734,11 @@ help() {
 	[[ $default && ${#actions[@]} -gt 9 ]]
 	declare -i params="${params:-$?}"
 
-	print 'Actions: (more info available per action)'
+	if [[ $default ]]; then
+		print 'Actions: (more info available per action)'
+	else
+		((${#actions[@]} > 1)) && print 'Actions:' || print 'Action:'
+	fi
 	local act fmt
 	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1;4m%-*s  \033[0;4m%s\033[m' || fmt='%-*s  %s'
 	for act in "${actions[@]}"; do

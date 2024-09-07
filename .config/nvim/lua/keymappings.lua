@@ -106,7 +106,6 @@ map('n', 'n', 'nzz')
 map('n', 'N', 'Nzz')
 
 -- Extra
-map('n', '\\', '.')
 map('n', '|', '&')
 map('n', ' /', '<Cmd>noh<CR>') -- clears all highlights/searches
 map('n', '<A-C>', '<Cmd>Inspect<CR>')

@@ -267,6 +267,7 @@ mode $Exit {
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
+		$Alt+d mode default, output eDP-1 mode 2560x1600@60Hz, output eDP-1 mode 2560x1600@48Hz
 		q exit
 		s mode default, exec systemctl suspend
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\

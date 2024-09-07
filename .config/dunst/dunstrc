@@ -3,6 +3,7 @@
 	width=(0, 500)
 	height=600
 	origin=top-center
+	monitor=eDP-1
 	offset=0x5
 	padding=5
 	horizontal_padding=5

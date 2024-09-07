@@ -57,8 +57,8 @@ assign [class="[sS]team.*"] $wGame
 
 # Outputs
 output $d1 pos 0 0
-output $d2 pos 0 -1200
-output 'BOE 0x0AC1 Unknown' mode 2560x1600@60Hz
+output 'Dell Inc. DELL U2412M 0FFXD4BO2T3S' pos 0 -1200
+output eDP-1 mode 2560x1600@60Hz
 output $dMedia adaptive_sync on scale 2
 
 workspace $w1 output $d1

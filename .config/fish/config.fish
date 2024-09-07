@@ -47,7 +47,9 @@ function fish_prompt
 end
 
 # https://fishshell.com/docs/3.1/cmds/bind.html
+# fish_key_reader
 bind \cq exit
+bind \e\[1\;5C clear # nvim leonerd vtty encoding
 bind \b backward-kill-word
 bind \e\[3\;5~ kill-word
 
@@ -70,22 +72,22 @@ set fish_color_search_match --bold --background=222222
 set fish_color_valid_path
 set fish_color_error brred
 
-alias ls='eza --icons --colour=always'
+abbr ls     'eza --icons --colour=always'
 alias lt='eza --icons --colour=always -T -L'
 alias ll='eza --icons --colour=always -l'
 alias la='eza --icons --colour=always -l -a'
 
 abbr man    batman
-abbr se     "sudo nvim"
-abbr sr     "sudo ranger"
-abbr s      "sensors"
-abbr cp     "cp -i"
-abbr mv     "mv -i"
-abbr gparted "xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root"
-abbr dl     "mom -d"
+abbr se     'sudo nvim'
+abbr sr     'sudo ranger'
+abbr s      'sensors'
+abbr cp     'cp -i'
+abbr mv     'mv -i'
+abbr gparted 'xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root'
+abbr dl     'mom -d'
 
 # get error messages from journalctl
-abbr jctl   "journalctl -p 3 -b"
+abbr jctl   'journalctl -p 3 -b'
 
 # pacman
 set pp "fzf -m --preview-window=wrap --preview 'paru --color=always -Sii {1}'" # package preview
@@ -96,20 +98,18 @@ abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only depen
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
 
 # navigation
-abbr ...    "cd ../.."
-abbr cdd    "cd ~/dotfiles"
-abbr cds    "cd ~/Documents/school/"
-abbr cdw    "cd ~/Documents/work/"
-abbr cdn    "cd ~/Documents/personal/nvim/"
-abbr dup    "cd ~/dotfiles; git pull"
+abbr ...    'cd ../..'
+abbr cdd    'cd ~/dotfiles'
+alias cdr='ranger --choosedir=/tmp/cwd && cd (cat /tmp/cwd) && rm /tmp/cwd'
+abbr dup    'cd ~/dotfiles; git pull'
 # git
-abbr gp     "git pull"
-abbr gA     "git add -A && git commit"
-abbr ga     "git add -v (git lf | fzf -m | sed 's/..//')"
-abbr gC     "git commit"
-abbr gP     "git push"
-abbr gPt    "git push origin --tags"
-abbr gd     "git branch -d (git branch | fzf | sed 's/.* //')"
+abbr gp     'git pull'
+abbr gA     'git add -A && git commit'
+abbr ga     'git add -v (git lf | fzf -m | sed "s/..//")'
+abbr gC     'git commit'
+abbr gP     'git push'
+abbr gPt    'git push origin --tags'
+abbr gd     'git branch -d (git branch | fzf | sed "s/.* //")'
 
 # internet related shortcuts
 abbr scan   "nmap -T4 -p22 (ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p')"
@@ -118,11 +118,11 @@ abbr npa    "netstat -tn"
 abbr npo    "netstat -lutnp &| tail -n +4"
 abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7 | sort -k4n -k2n | column -t -R 2"
 # shows connected devices
-abbr con    "arp -a"
+abbr con    'arp -a'
 # enable disabled wifi
-abbr iwre   "rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up"
+abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up'
 
-abbr fit    "ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz"
+abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
 
 # system checks
 abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | bat -l yaml'

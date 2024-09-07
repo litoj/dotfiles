@@ -267,7 +267,7 @@ edit() {
 					local fileBitrate=$(ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
 					[[ ($src == *.opus && $fileBitrate -ge 128) ||
 						$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
-					log Verbose ".bitrate = $b"
+					log Info ".bitrate = $b"
 				fi
 				local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
 			}
@@ -299,7 +299,10 @@ edit() {
 						cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
 					fi
 
-					[[ $fadeDuration == .* ]] && log Error ".fade interval < 1s"
+					if [[ $fadeDuration == .* ]]; then
+						log Error ".fade interval < 1s"
+						return 1
+					fi
 				fi
 			fi
 
@@ -547,9 +550,9 @@ resizeParams=(
 	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
 	src '$+' '$f\.(jpg|JPG|png)' 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
-	only 'o?' '[>a<]' 'Modify only if the image has larger/any/smaller size (default=>)'
-	sizeGap 'g?' '[0-9]+[p%]' 'Minimum size difference, pixels or % from the target size'
-	size 's+' 'x?[0-9]+[x^]?' 'Longest side, *`^` for shortest, `x` for fixating on height/width'
+	only 'o?' '[>?<]' 'Modify only if the image has larger/any/smaller size (default=>)'
+	sizeGap 'g?' '[0-9]+%?' 'Minimum size difference, pixels or % from the target size'
+	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`=percentage'
 	dst '$?' '$E\.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
@@ -571,22 +574,26 @@ resize() {
 		function isolated() {
 			declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
 			# magick would understand, but it's easier to reuse our shortest side checker
+			local _nS=$newSize
 			[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
 			[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
+			[[ $newSize == *'%' ]] && ((newSize = dim[0] * ${newSize::-1} / 100)) &&
+				((dim[0] < dim[1])) && newSize+=^
+			[[ $_nS != $newSize ]] && log Info ".size: $_nS → $newSize"
 
-			if [[ $only != a ]]; then
+			if [[ $only != '?' ]]; then
 				((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
-				declare -i nS=${newSize%^} gap=${sizeGap::-1}
+				declare -i nS=${newSize%^} gap=${sizeGap%\%}
 				if [[ $sizeGap == *% ]]; then
 					gap=gap*nS/100
-					log Info ".sizeGap = $gap"
+					log Info ".sizeGap: $sizeGap → $gap"
 				fi
 				# select compared dimension - `^` for shortest side
 				[[ ($only == \> && $newSize != *^) || ($only == \< && $newSize == *^) ]] && dim=${dim[1]}
-				# require distance to target size greater than gap
+				# require distance to target size greater/lower or equal to $gap
 				[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
 				# decide whether to resize
-				if ! [[ ($only == \> && $dim -gt $nS) || ($only == \< && $dim -lt $nS) ]]; then
+				if ! [[ ($only == \> && $dim -ge $nS) || ($only == \< && $dim -le $nS) ]]; then
 					if [[ "$dst" ]]; then
 						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc "$src")"
 					fi
@@ -613,7 +620,7 @@ renameParams=(
 )
 renameConfig=(
 	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
-	audioFormat='s/^[0-9][0-9] - //'
+	audioFormat='s/^.*- \?//'
 	imageFormat='%Y_%m_%d_%H%M%S'
 	dateFallback=ask
 )

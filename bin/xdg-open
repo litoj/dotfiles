@@ -30,7 +30,7 @@ try() {
 		if [[ $1 == .* ]]; then
 			[[ $EXT == $1 ]] && run "$app"
 		elif [[ $1 == +* ]]; then
-			[[ ${MIME:=$(file -b --mime-type "$arg")} == ${1#+}* ]] && run "$app"
+			[[ ${MIME:=$(file -Lb --mime-type "$arg")} == ${1#+}* ]] && run "$app"
 		elif [[ $1 == *: ]]; then
 			[[ $URI == $1 ]] && run "$app"
 		elif [[ $arg =~ $1 ]]; then

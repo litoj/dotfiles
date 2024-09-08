@@ -169,10 +169,10 @@ bindsym {
 	$Mod+Shift+d move right
 	$Mod+Shift+c exec $floatpos c
 # resize
-	$Mod+$Alt+a resize shrink right 4
+	$Mod+$Alt+a resize shrink width 4
 	$Mod+$Alt+s resize grow height 4
 	$Mod+$Alt+w resize shrink height 4
-	$Mod+$Alt+d resize grow right 4
+	$Mod+$Alt+d resize grow width 4
 # focus workspace
 	$Mod+Ctrl+s workspace prev
 	$Mod+Ctrl+w workspace next

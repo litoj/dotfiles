@@ -17,9 +17,10 @@ defineParams=(
 SSS_OPTS[onNoArg]=1
 
 ffmpegCmd() {
+	local cmd=(ffmpeg -hide_banner -v)
 	((SCRIPT_OPTS['ffmpegSetLogLevel'] > 0)) &&
-		echo ffmpeg -v ${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]/warn/warning} ||
-		echo ffmpeg -v ${LOG_NAMES[$((-SCRIPT_OPTS['ffmpegSetLogLevel']))]/warn/warning}
+		echo "${cmd[@]}" ${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]/warn/warning} ||
+		echo "${cmd[@]}" ${LOG_NAMES[$((-SCRIPT_OPTS['ffmpegSetLogLevel']))]/warn/warning}
 }
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
@@ -191,8 +192,8 @@ getFreePath() {
 		done
 	fi
 
-	if [[ $src =~ ^"$prefix"(0*([1-9][0-9]*)?)"$ext"$ &&
-		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -lt $i ]]; then
+	if [[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
+		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -le $i ]]; then
 		text=$src # index of src was the lowest number already
 	else
 		log Warn " = '$text'"
@@ -200,9 +201,8 @@ getFreePath() {
 	echo "$text"
 }
 
-# expects $dst, $1=src
+# expects $dst, $src
 genDstFromSrc() {
-	local src=$1
 	local out=${dst:-$src}
 	[[ -d $dst ]] && out="$dst/${src##*/}"
 	# default path included to not override source file, but override if file dst was given
@@ -428,7 +428,7 @@ actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
 	randomizer 'r?' '(a([0-9]*)s?|d([0-9]*)(:[0-9]+)?s?)?'
-	'(default=1=mpv --shuffle); a<f>= <f> picks per artist/final dir;
+	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
 	      d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
@@ -551,8 +551,9 @@ resizeParams=(
 	src '$+' '$f\.(jpg|JPG|png)' 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	only 'o?' '[>?<]' 'Modify only if the image has larger/any/smaller size (default=>)'
-	sizeGap 'g?' '[0-9]+%?' 'Minimum size difference, pixels or % from the target size'
-	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`=percentage'
+	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
+    (comparing to dimension selected by --size)'
+	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
 	dst '$?' '$E\.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
@@ -573,37 +574,39 @@ resize() {
 		local newSize=${size[i]:-$size}
 		function isolated() {
 			declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
-			# magick would understand, but it's easier to reuse our shortest side checker
-			local _nS=$newSize
+			# imagemagick would understand, but it's easier to reuse our shortest side checker
+			local nS=$newSize
 			[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
 			[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
 			[[ $newSize == *'%' ]] && ((newSize = dim[0] * ${newSize::-1} / 100)) &&
 				((dim[0] < dim[1])) && newSize+=^
-			[[ $_nS != $newSize ]] && log Info ".size: $_nS → $newSize"
+			[[ $nS != $newSize ]] && log Verbose ".size: $nS → $newSize"
 
-			if [[ $only != '?' ]]; then
+			if [[ $predicate ]]; then
 				((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
-				declare -i nS=${newSize%^} gap=${sizeGap%\%}
-				if [[ $sizeGap == *% ]]; then
-					gap=gap*nS/100
-					log Info ".sizeGap: $sizeGap → $gap"
+				local gap=${predicate::-1} only=${predicate:0-1}
+				if [[ $gap == *% ]]; then
+					((gap = ${gap%\%} * ${newSize%^} / 100))
+					log Verbose ".predicate: $predicate → $gap$only"
 				fi
 				# select compared dimension - `^` for shortest side
-				[[ ($only == \> && $newSize != *^) || ($only == \< && $newSize == *^) ]] && dim=${dim[1]}
+				[[ ($only == + && $newSize != *^) || ($only == - && $newSize == *^) ]] && dim=${dim[1]}
 				# require distance to target size greater/lower or equal to $gap
-				[[ $only == \> ]] && dim[0]+=-gap || dim[0]+=gap
+				[[ $only == + ]] && dim[0]+=-gap || dim[0]+=gap
 				# decide whether to resize
-				if ! [[ ($only == \> && $dim -ge $nS) || ($only == \< && $dim -le $nS) ]]; then
+				if ! [[ ($only == + && $dim -ge 0) || ($only == - && $dim -le 0) ]]; then
 					if [[ "$dst" ]]; then
-						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc "$src")"
+						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
 					fi
+					log Info " - skipping"
 					return
 				fi
 			fi
+
 			local cmd=(magick "$src" -resize "$newSize")
 			((quality)) && cmd+=(-quality $quality)
 
-			runCmdWithCleanup "$src" "$(genDstFromSrc "$src")"
+			runCmdWithCleanup "$src" "$(genDstFromSrc)"
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
@@ -614,14 +617,14 @@ actionInfo rename R 'rename video/image files'
 renameParams=(
 	videoFormat 'v!' '.+' 'Set `sed` expression for video (default=move year to the front)'
 	audioFormat 'a!' '.+' 'Set `sed` expression for audio (default=strip track number)'
-	imageFormat 'i!' '.+' 'Set timestamp format for images, without extension (default=%Y_%m_%d_%H%M%S)'
+	imageFormat 'i!' '.+' 'Set timestamp format for images, without extension (default=%Y-%m-%d_%H%M%S)'
 	dateFallback 'F?' '[yan]|yes|no|ask' 'Use file mod time for image timestamp fallback (default=a/ask)'
 	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv|flac|opus|mp3)' 'File to rename'
 )
 renameConfig=(
 	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
 	audioFormat='s/^.*- \?//'
-	imageFormat='%Y_%m_%d_%H%M%S'
+	imageFormat='%Y-%m-%d_%H%M%S'
 	dateFallback=ask
 )
 rename() {

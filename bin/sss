@@ -450,7 +450,10 @@ parseAction() {
 		if [[ $i ]]; then # set option / named parameter
 			local varName=${sigs[$i]//-/_} reg=${sigs[i + 2]}
 			if [[ $reg ]]; then # requires arg
-				if [[ ${arg+y} || $1 ]] && argMatch "${arg-$1}"; then
+				if [[ $optCnt == - ]]; then
+					unset "$varName" # `+o` resets the option value - for config override
+					[[ ${args[$i]} ]] && args[$i]=-1
+				elif [[ ${arg+y} || $1 ]] && argMatch "${arg-$1}"; then
 					if [[ ${sigs[i + 1]} == ?[?!] ]]; then
 						declare "$varName=${arg-$1}"
 						log Debug ".$varName = '${!varName}'"
@@ -468,8 +471,13 @@ parseAction() {
 					else
 						shift
 					fi
-				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch; then
-					declare -i "$varName+=${optCnt}1"
+				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch ''; then
+					if argMatch 3; then
+						declare -i "$varName+=${optCnt}1" # counter
+						argMatch ${!varName} || unset "$varName"
+					else
+						declare -i "$varName=${optCnt}1" # boolean
+					fi
 					log Debug ".$varName = ${!varName}"
 				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
 					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
@@ -499,13 +507,13 @@ parseAction() {
 				return
 			fi
 
-			[[ ${args[$i]} ]] && args[$i]+=1
-			[[ $optChain ]] && continue
-			if [[ ${sigs[i + 1]} == \$? ]]; then
+			if [[ ${args[$i]} ]]; then
+				args[$i]+=1
 				((i < posArg)) &&
 					log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
 				posArg=$i
 			fi
+			[[ $optChain ]] && continue
 		else # set arg
 			if ((posArg >= sigN)); then
 				if ((USE_ALL_ARGS)); then
@@ -557,7 +565,7 @@ parseAction() {
 
 	while (((i += 4) < sigN)); do
 		local varName=${sigs[i]} sign=${sigs[i + 1]} reg=${sigs[i + 2]}
-		[[ ${args[$i]} != 0 ]] && continue # opts don't have an entry, filled args > 0
+		((${args[$i]:-1} > 0)) && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
 		if [[ ${SCRIPT_OPTS['argPicker']} -gt 0 && $sign == ?[!+] ]]; then
@@ -608,15 +616,8 @@ REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 #######################################
 argMatch() {
 	local tested=$1
-	if (($# == 0)); then # if reg notation allows for parsing option as arg-less toggle
-		if [[ $reg == '$'* ]]; then
-			local reg=${reg:2}
-			reg=${reg#*\$|}
-			[[ ${#reg} -gt 0 && '' =~ ^$reg$ ]] # toggle (probably to tgl the file/opt use)
-		else
-			[[ '' =~ ^$reg$ ]] # toggle or counter
-		fi
-	elif [[ $reg == '$'* ]]; then # file requirements
+	if [[ $reg == '$'* ]]; then                 # file requirements
+		[[ $tested =~ ^${reg#*\$|}$ ]] && return 0 # one of special values after '$|'
 		[[ $tested =~ ^[^+-][^=]*$ ]] && {
 			if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
 				[[ -d $tested ]] && return
@@ -624,10 +625,7 @@ argMatch() {
 			fi
 
 			local ptn=${reg:2}
-			if [[ $ptn == *'$|'* ]]; then
-				[[ $tested =~ ^${ptn#*\$|}$ ]] && return # one of special values after '$|'
-				ptn=${ptn%\$|*}
-			fi
+			ptn=${ptn%\$|*}
 
 			[[ $tested =~ $ptn$ ]] && if [[ ${reg:1:1} == F ]]; then
 				[[ ! -d $tested ]]
@@ -754,7 +752,8 @@ help() {
 		local desc=${ACTION_INFO["$act"]}
 		if [[ $desc ]]; then
 			printf "  $fmt\n" "$ALIGNER" "${desc%% *}" "$(print "${desc#* }")"
-			((params <= 0)) || paramHelp "$act" "$matcher"
+			# enabled params or always write complete info about help options
+			[[ $params -le 0 && $act != help ]] || paramHelp "$act" "$matcher"
 		else
 			print "  No help for unknown action '${_act:-$act}'"
 		fi

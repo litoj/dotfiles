@@ -1,4 +1,4 @@
 resizeConfig=(
-	size-gap=50%
+	predicate=150%+
 	quality=92
 )

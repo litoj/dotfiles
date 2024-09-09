@@ -137,7 +137,12 @@ define() {
 				fi
 
 				if [[ -f $x ]]; then
-					source "$x" || log Error ".config['$x'] - invalid syntax"
+					log Debug ".config['$x'] - loading"
+					if config= source "$x"; then
+						log Verbose ".config['$x'] - successfully loaded"
+					else
+						log Error ".config['$x'] - invalid syntax"
+					fi
 				elif [[ $ACTION == define ]]; then # called by user
 					log Warn ".config['$x'] doesn't exist"
 				fi
@@ -306,6 +311,8 @@ exec() {
 }
 
 main() {
+	call define --config
+
 	if ((SCRIPT_OPTS['cli'] > 0)); then
 		while (($#)); do
 			parseAction "$@"
@@ -865,8 +872,6 @@ pickFilesOrDir() {
 	[[ ${_ng[1]} == -s ]] || shopt -u nullglob
 	[[ -e ${!1} ]]
 }
-
-config=1 define
 
 if [[ $0 == *sss ]]; then
 	SSS_OPTS[about]='SSS - A script simplifying scripting

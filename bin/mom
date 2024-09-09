@@ -192,12 +192,8 @@ getFreePath() {
 		done
 	fi
 
-	if [[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
-		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -le $i ]]; then
-		text=$src # index of src was the lowest number already
-	else
-		log Warn " = '$text'"
-	fi
+	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
+		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Warn " = '$text'"
 	echo "$text"
 }
 
@@ -222,7 +218,7 @@ runJob() {
 runCmdWithCleanup() {
 	local src=$1 out=$2
 	exec "${cmd[@]}" "$out" && if ((keepOriginal <= 0)); then
-		exec rm "$src"
+		[[ $src == $out ]] || exec rm "$src"
 		if [[ -z $dst && $out != "${src%.*}".* ]]; then
 			exec mv "$out" "${src%.*}.${out##*.}"
 		fi
@@ -595,10 +591,10 @@ resize() {
 				[[ $only == + ]] && dim[0]+=-gap || dim[0]+=gap
 				# decide whether to resize
 				if ! [[ ($only == + && $dim -ge 0) || ($only == - && $dim -le 0) ]]; then
-					if [[ "$dst" ]]; then
+					if [[ $dst ]]; then
 						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
 					fi
-					log Info " - skipping"
+					log Info " = $((dim $only gap))p != <${gap}p${only}> → skipping"
 					return
 				fi
 			fi

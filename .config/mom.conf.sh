@@ -1,4 +1,4 @@
 resizeConfig=(
-	predicate=150%+
+	predicate=200%+
 	quality=92
 )

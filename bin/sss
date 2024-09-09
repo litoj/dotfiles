@@ -109,7 +109,7 @@ defineParams=(
  (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
-SCRIPT_OPTS[logLvl]=${DEBUG:-${SCRIPT_OPTS['logLvl']}}
+SCRIPT_OPTS[logLvl]=${LOG_LEVELS["$DEBUG"]:-${DEBUG:-${SCRIPT_OPTS['logLvl']}}}
 define() {
 	declare -i i=0
 	local opt
@@ -170,10 +170,7 @@ define() {
 }
 
 exitFn() {
-	if [[ $ACTION ]]; then
-		unset optChain arg
-		call help -pm "$ACTION"
-	fi
+	[[ $ACTION ]] && call help -pm "$ACTION"
 	exit $1
 }
 
@@ -361,8 +358,8 @@ main() {
 parseAction() {
 	declare -i argc=$#
 
-	local ACTION actionArg
-	log Trace "parsing $1"
+	local ACTION= actionArg= actionArgFromEnd=
+	log Trace "parsing $*"
 	if [[ $1 =~ ^(${SSS_OPTS['optPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
 		actionArg=${BASH_REMATCH[3]:1}
 		ACTION=$(
@@ -388,7 +385,7 @@ parseAction() {
 	declare -n sigs=${ACTION}Params
 	declare -i sigN=${#sigs[@]}
 	((sigN % 4)) && log Fatal "Params definition is missing $((4 - sigN % 4)) fields!"
-	local i=-4 posArg # not `declare -i` to keep unset values as ""
+	local i=-4 posArg= # not `declare -i` to keep unset values as ""
 
 	# distinguish options and args
 	declare -A opts=()  # opt names → param map idx
@@ -409,7 +406,7 @@ parseAction() {
 	declare -n cfg=${ACTION}Config # load config for this action
 	set -- "${cfg[@]}" "$@"
 	declare +n cfg
-	unset cfg
+	unset cfg optChain arg
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
 		log Trace " parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
@@ -560,6 +557,7 @@ parseAction() {
 			unset argUsed
 		fi
 
+		[[ $1 ]] || break
 		(($# < actionArgFromEnd)) && break # stop after chain started by action (not option)
 	done
 
@@ -610,34 +608,54 @@ REGEX[email]="${REGEX['var']}@${REGEX['domain']}"
 REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 #######################################
-# Test if $reg matches $1, or the rest after parsing $reg == \$o.*; o = bash condexpr operator
-# example: reg='$f\.txt' → matches any existing file with 'txt' extension, '$F' for just filename
+# Test ^(RE)$ or custom pattern like $<k><RE> - <k>: test kind, <RE> tests the input text
+# $<b>: <b>: bash condexpr operator, match against RE$
+# $F: ensure a file can be created at given path, RE$
+# $^: mime type ^RE, follows symlinks
+# $|: fallback ^(RE)$, must be last in the pattern
 # Globals:
-#   reg: required format of the argument
+#   reg: required format of the argument - described custom pattern
 # Arguments:
-#   tested: input argument to be tested against the pattern (no arg to test for arg-less opt)
+#   tested: input argument to be tested against the pattern
 #######################################
 argMatch() {
 	local tested=$1
-	if [[ $reg == '$'* ]]; then                 # file requirements
-		[[ $tested =~ ^${reg#*'$|'}$ ]] && return 0 # one of special values after '$|'
-		[[ $tested =~ ^[^+-][^=]*$ ]] && {
-			if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
-				[[ -d $tested ]] && return
-				[[ ${reg:1:1} == e ]] && reg="\$f${reg:2}" || reg="\$F${reg:2}"
-			fi
+	if [[ $reg == '$'* ]]; then # file requirements
+		local ptn reg=$reg kind
 
-			local ptn=${reg:2}
-			ptn=${ptn%'$|'*}
+		if [[ $reg == *'$|'* ]]; then
+			ptn=${reg#*'$|'}
+			log Trace " '$tested' =? $ptn"
+			[[ $tested =~ ^($ptn)$ ]] && return 0 # one of special values after '$|'
+			reg=${reg::-2-${#ptn}}
+		fi
 
-			[[ $tested =~ $ptn$ ]] && if [[ ${reg:1:1} == F ]]; then
-				[[ ! -d $tested ]]
+		if ! [[ $tested =~ ^[^+-][^=]*$ ]]; then
+			log Debug ": rejected '$tested' as a filename"
+			return 1
+		fi
+
+		while [[ $reg ]]; do
+			ptn=${reg:2} kind=${reg:1:1}
+			ptn=${ptn%%'$'*}
+			log Trace " '$tested' =? \$$kind$ptn"
+
+			if [[ $kind == '^' ]]; then
+				[[ $(file -Lb --mime-type "$tested") =~ ^$ptn ]] && return 0
 			else
-				eval [[ -${reg:1:1} '$tested' ]]
+				[[ ${tested,,} =~ $ptn$ ]] && if [[ $kind == F ]]; then
+					[[ ! -d $tested ]] && return 0
+				else
+					eval [[ -$kind '$tested' ]] && return 0
+				fi
 			fi
-		}
+
+			reg=${reg:2+${#ptn}}
+		done
+
+		return 1
 	else # normal regex
-		[[ $tested =~ ^$reg$ ]]
+		[[ $tested =~ ^($reg)$ ]]
 	fi
 }
 
@@ -681,7 +699,9 @@ paramHelp() {
 		sig+=("$sign")
 		((maxLen < ${#sign})) && maxLen=${#sign}
 
-		[[ $regex && $matcher -gt 0 ]] && help="/$regex/
+		if [[ $regex && $matcher -gt 0 ]]; then
+			[[ $regex == '$'* ]] && help="$regex
+       $help" || help="/$regex/
        $help"
 		desc+=("$help")
 	done
@@ -731,7 +751,14 @@ help() {
   positional params/arguments: name + suffix
     - order matters, next param is set when current arg does not match the previous one
     - suffix: `?`,`!`: single arg; `*`,`+`: list of values
-    - use `--` to separate opts from args (no opts will be accepted after that)'
+    - use `--` to separate opts from args (no opts will be accepted after that)
+	arg matcher notation:
+    - /regex/ - simple input regex
+    - $k<RE> - <RE> tests the input text, $k/kind:
+      - $<b>: bash condexpr operator, ends with RE
+      - $F: ensure file can exist at user input, ends with RE
+      - $^: existing input file mime type starts with RE
+      - $|: fallback simple input regex'
 
 	[[ $default && ${#actions[@]} -gt 9 ]]
 	declare -i params="${params:-$?}"
@@ -776,10 +803,10 @@ unknown() {
 
 # Chooses the fallback picker based on $1=regex/argMatch pattern
 determinePicker() {
-	case "${1::2}" in
-		'$e') echo pickFilesOrDir ;;
-		'$d') echo pickDir ;;
-		'$f') echo pickFile ;;
+	case "$1" in
+		'$d'*'$f'*) echo pickFilesOrDir ;;
+		'$d'*) echo pickDir ;;
+		'$f'*) echo pickFile ;;
 		*) echo pickValue ;;
 	esac
 }

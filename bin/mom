@@ -28,7 +28,7 @@ downloadParams=(
 	metadata 'm?' '' 'Keep metadata' # NOTE: pipeline candidate - output as nometa src
 	format 'f?' '.+' 'Yt-dl download format (default=ba[ext=webm])'
 	src '$+' 'http.+' 'Urls to download'
-	dst '$*' '$E\.(opus|m4a)' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
+	dst '$*' '$d$F\.(opus|m4a)' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
 download() { # TODO: allow video; allow qual/fmt selection through a picker
 	[[ $dst && ! -d $dst ]] && local ext=${dst/*./} || local ext=opus
 	local cmd=(yt-dlp -q -N 8 -f "${format:-ba[ext=${ext/opus/webm}]/ba}")
@@ -65,8 +65,8 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'
 noMetaParams=(
 	keep 'k?' '' 'Keep original (default=remove $src)'
-	src '$!' '$e\.(flac|wma|m4a|mp3|opus)' 'Audio file/dir to strip metadata from'
-	dst '$?' '$E' 'Put results into (default=replace $src)')
+	src '$!' '$d$^audio' 'Audio file/dir to strip metadata from'
+	dst '$?' '$d$F\.(flac|wma|m4a|mp3|opus)' 'Put results into (default=replace $src)')
 noMeta() {
 	if [[ -d $src ]]; then
 		local CWD=$PWD
@@ -233,12 +233,12 @@ editParams=(
 	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
-	src '$+' '$f\.(flac|mp3|m4a|wma|opus)' 'File to cut/convert'
+	src '$+' '$^audio' 'File to cut/convert'
 	start 's*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Start time (default=0)'
 	end 'e*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'End time, or seconds from the end (default=0)'
 	fadeout 'f*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Fadeout start time, or seconds from the end'
 	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
-	dst '$?' '$E\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
+	dst '$?' '$d$F\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
@@ -338,7 +338,7 @@ subtitlesParams=(
 	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
-	vid '$?' '$f\.(mp4|mkv)' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
+	vid '$?' '$^video' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
 	dst '$?' '$F\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
@@ -544,13 +544,12 @@ linkFix() {
 actionInfo resize 'resize images'
 resizeParams=(
 	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
-	src '$+' '$f\.(jpg|JPG|png)' 'File to resize'
+	src '$+' '$^image' 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
-	only 'o?' '[>?<]' 'Modify only if the image has larger/any/smaller size (default=>)'
 	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
        (comparing to dimension selected by --size)'
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
-	dst '$?' '$E\.(jpg|JPG|png)' 'Output file/dir (default=$src)')
+	dst '$?' '$d$F\.(jpe?g|png)' 'Output file/dir (default=$src)')
 resize() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
@@ -614,7 +613,7 @@ renameParams=(
 	audioFormat 'a!' '.+' 'Set `sed` expression for audio (default=strip track number)'
 	imageFormat 'i!' '.+' 'Set timestamp format for images, without extension (default=%Y-%m-%d_%H%M%S)'
 	dateFallback 'F?' '[yan]|yes|no|ask' 'Use file mod time for image timestamp fallback (default=a/ask)'
-	src '$+' '$e\.(jpg|JPG|RAF|png|mp4|mkv|flac|opus|mp3)' 'File to rename'
+	src '$+' '$d$^(audio|video|image)' 'File to rename'
 )
 renameConfig=(
 	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
@@ -633,9 +632,9 @@ rename() {
 		done
 	else
 		function isolated() {
-			if [[ $src == *.mp4 || $src == *.mkv ]]; then
+			if reg="$^video" argMatch "$src"; then
 				local dst=$(echo "$src" | sed "$videoFormat")
-			elif [[ $src == *.flac || $src == *.opus || $src == *.mp3 ]]; then
+			elif reg="$^audio" argMatch "$src"; then
 				local dst=$(echo "$src" | sed "$audioFormat")
 			else
 				local dst="$(exiftool "$src" -d "$imageFormat" \

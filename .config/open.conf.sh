@@ -1,7 +1,7 @@
 #config for ../bin/xdg-open
 BROWSER=@$BROWSER
 TERM_BLOCKING=1
-try 'mpv --no-audio-display' +audio .m3u .m4a
+try 'mpv --no-audio-display' +audio .m3u .m4a .mp3
 try @'mpv --no-terminal' +video
 try @geeqie .raf
 try @imv-dir +image

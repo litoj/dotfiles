@@ -567,39 +567,38 @@ resize() {
 	local only=${only:->}
 	while ((++i < srcN)); do
 		src=${src[i]}
-		local newSize=${size[i]:-$size}
 		function isolated() {
 			declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
 			# imagemagick would understand, but it's easier to reuse our shortest side checker
-			local nS=$newSize
-			[[ $newSize == x* ]] && newSize=${newSize:1} && ((dim[0] > dim[1])) && newSize+=^
-			[[ $newSize == *x ]] && newSize=${newSize::-1} && ((dim[0] < dim[1])) && newSize+=^
-			[[ $newSize == *'%' ]] && ((newSize = dim[0] * ${newSize::-1} / 100)) &&
-				((dim[0] < dim[1])) && newSize+=^
-			[[ $nS != $newSize ]] && log Verbose ".size: $nS → $newSize"
+			local nS=$size
+			[[ $size == x* ]] && size=${size:1} && ((dim[0] > dim[1])) && size+=^
+			[[ $size == *x ]] && size=${size::-1} && ((dim[0] < dim[1])) && size+=^
+			if [[ $size == *'%' ]]; then
+				((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]}) # scale by the longer side
+				((size = dim * ${size::-1} / 100))
+			fi
+			[[ $nS != $size ]] && log Verbose ".size: $nS → $size"
 
 			if [[ $predicate ]]; then
-				((dim[0] > dim[1])) && dim=(${dim[1]} ${dim[0]})
+				((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]})
 				local gap=${predicate::-1} only=${predicate:0-1}
 				if [[ $gap == *% ]]; then
-					((gap = ${gap%\%} * ${newSize%^} / 100))
+					((gap = ${gap%\%} * ${size%^} / 100))
 					log Verbose ".predicate: $predicate → $gap$only"
 				fi
 				# select compared dimension - `^` for shortest side
-				[[ ($only == + && $newSize != *^) || ($only == - && $newSize == *^) ]] && dim=${dim[1]}
+				[[ $size == *^ ]] && dim=${dim[1]}
 				# require distance to target size greater/lower or equal to $gap
-				[[ $only == + ]] && dim[0]+=-gap || dim[0]+=gap
-				# decide whether to resize
-				if ! [[ ($only == + && $dim -ge 0) || ($only == - && $dim -le 0) ]]; then
+				if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
 					if [[ $dst ]]; then
 						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
 					fi
-					log Info " = $((dim $only gap))p != <${gap}p${only}> → skipping"
+					log Info ": ${dim}px != <${gap}px${only}> → skipping"
 					return
 				fi
 			fi
 
-			local cmd=(magick "$src" -resize "$newSize")
+			local cmd=(magick "$src" -resize "$size")
 			((quality)) && cmd+=(-quality $quality)
 
 			runCmdWithCleanup "$src" "$(genDstFromSrc)"

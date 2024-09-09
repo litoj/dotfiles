@@ -460,7 +460,7 @@ parseAction() {
 				if [[ $optCnt == - ]]; then
 					unset "$varName" # `+o` resets the option value - for config override
 					[[ ${args[$i]} ]] && args[$i]=-1
-				elif [[ ${arg+y} || $1 ]] && argMatch "${arg-$1}"; then
+				elif [[ ${arg+y} || ${1+y} ]] && argMatch "${arg-$1}"; then
 					if [[ ${sigs[i + 1]} == ?[?!] ]]; then
 						declare "$varName=${arg-$1}"
 						log Debug ".$varName = '${!varName}'"

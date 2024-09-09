@@ -200,7 +200,7 @@ getFreePath() {
 # expects $dst, $src
 genDstFromSrc() {
 	local out=${dst:-$src}
-	[[ -d $dst ]] && out="$dst/${src##*/}"
+	[[ -d $dst ]] && out="${dst%/}/${src##*/}"
 	# default path included to not override source file, but override if file dst was given
 	[[ -d ${dst:-.} ]] && out=$(ACTION+=.dst getFreePath "$out")
 	echo "$out"

@@ -396,9 +396,9 @@ parseAction() {
 	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
 		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
-		[[ $sign != \$? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
+		[[ $sign != '$'? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
 		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # '_'=no short, '$'=arg
-		[[ $sign == ?[+!] || $sign == \$? ]] && posArg=${posArg:-$i} args[$i]=0
+		[[ $sign == ?[+!] || $sign == '$'? ]] && posArg=${posArg:-$i} args[$i]=0
 	done
 	declare -i posArg="${posArg:-$sigN}"
 	declare -i firstArg=posArg
@@ -514,14 +514,7 @@ parseAction() {
 				return
 			fi
 
-			if [[ ${args[$i]} ]]; then
-				args[$i]+=1 # required option
-				if [[ ${sigs[i + 1]} == \$? ]]; then
-					((i < posArg)) &&
-						log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
-					posArg=$i # positional argument passed by its name
-				fi
-			fi
+			[[ ${args[$i]} ]] && args[$i]+=1 # required option
 			[[ $optChain ]] && continue
 		else # set arg
 			if ((posArg >= sigN)); then
@@ -533,11 +526,11 @@ parseAction() {
 				fi
 			fi
 			# remove '-' from arg incorrectly perceived as an option in a shortopt chain
-			[[ $# -eq $actionArgFromEnd && $1 ]] && set -- "${1#-}" "${@:2}"
+			[[ $# -eq $actionArgFromEnd ]] && set -- "${1#-}" "${@:2}"
 
 			while ((posArg < sigN)); do
 				local varName=${sigs[$posArg]//-/_} sign=${sigs[posArg + 1]} reg=${sigs[posArg + 2]}
-				if [[ $sign == \$? && $# -gt 0 ]] && argMatch "$1"; then
+				if [[ $sign == '$'? ]] && argMatch "$1"; then
 					args[$posArg]+=1              # update before posArg changes
 					if [[ $sign == ?[+*] ]]; then # param is a list
 						declare _varName=$varName
@@ -555,7 +548,7 @@ parseAction() {
 					shift
 					break # continue in parsing cli
 				else
-					log Trace ".$varName != '$1'"
+					[[ $sign == '$'? ]] && log Trace ".$varName != '$1'"
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done
@@ -627,7 +620,7 @@ REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 argMatch() {
 	local tested=$1
 	if [[ $reg == '$'* ]]; then                 # file requirements
-		[[ $tested =~ ^${reg#*\$|}$ ]] && return 0 # one of special values after '$|'
+		[[ $tested =~ ^${reg#*'$|'}$ ]] && return 0 # one of special values after '$|'
 		[[ $tested =~ ^[^+-][^=]*$ ]] && {
 			if [[ ${reg:1:1} == [Ee] ]]; then # any dir or file with given pattern
 				[[ -d $tested ]] && return
@@ -635,12 +628,12 @@ argMatch() {
 			fi
 
 			local ptn=${reg:2}
-			ptn=${ptn%\$|*}
+			ptn=${ptn%'$|'*}
 
 			[[ $tested =~ $ptn$ ]] && if [[ ${reg:1:1} == F ]]; then
 				[[ ! -d $tested ]]
 			else
-				eval [[ -${reg:1:1} \$tested ]]
+				eval [[ -${reg:1:1} '$tested' ]]
 			fi
 		}
 	else # normal regex
@@ -784,9 +777,9 @@ unknown() {
 # Chooses the fallback picker based on $1=regex/argMatch pattern
 determinePicker() {
 	case "${1::2}" in
-		\$e) echo pickFilesOrDir ;;
-		\$d) echo pickDir ;;
-		\$f) echo pickFile ;;
+		'$e') echo pickFilesOrDir ;;
+		'$d') echo pickDir ;;
+		'$f') echo pickFile ;;
 		*) echo pickValue ;;
 	esac
 }

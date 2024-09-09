@@ -172,7 +172,7 @@ define() {
 exitFn() {
 	if [[ $ACTION ]]; then
 		unset optChain arg
-		call help -p "$ACTION"
+		call help -pm "$ACTION"
 	fi
 	exit $1
 }
@@ -515,10 +515,12 @@ parseAction() {
 			fi
 
 			if [[ ${args[$i]} ]]; then
-				args[$i]+=1
-				((i < posArg)) &&
-					log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
-				posArg=$i
+				args[$i]+=1 # required option
+				if [[ ${sigs[i + 1]} == \$? ]]; then
+					((i < posArg)) &&
+						log Warn " - Breaking order of arguments: \$${sigs[$i]} < \$${sigs[$posArg]}"
+					posArg=$i # positional argument passed by its name
+				fi
 			fi
 			[[ $optChain ]] && continue
 		else # set arg
@@ -553,6 +555,7 @@ parseAction() {
 					shift
 					break # continue in parsing cli
 				else
+					log Trace ".$varName != '$1'"
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done
@@ -676,7 +679,7 @@ paramHelp() {
 				fi
 			fi
 			sign=${sign:1}
-			[[ $regex ]] && sign+='<>' # no regex → toggle option
+			[[ $regex && $matcher -le 0 ]] && sign+=' <>'
 		else
 			varName=\$$varName
 			sign=${sign:1} # positional param
@@ -685,7 +688,8 @@ paramHelp() {
 		sig+=("$sign")
 		((maxLen < ${#sign})) && maxLen=${#sign}
 
-		[[ $matcher -gt 0 && $regex ]] && help="/$regex/ $help"
+		[[ $regex && $matcher -gt 0 ]] && help="/$regex/
+       $help"
 		desc+=("$help")
 	done
 	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m  %s' || fmt='%-*s  %s'

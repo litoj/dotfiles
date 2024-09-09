@@ -425,7 +425,7 @@ playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
 	randomizer 'r?' '(a([0-9]*)s?|d([0-9]*)(:[0-9]+)?s?)?'
 	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
-	      d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
+       d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$!' '$e' 'Play file/dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
@@ -548,7 +548,7 @@ resizeParams=(
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	only 'o?' '[>?<]' 'Modify only if the image has larger/any/smaller size (default=>)'
 	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
-    (comparing to dimension selected by --size)'
+       (comparing to dimension selected by --size)'
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
 	dst '$?' '$E\.(jpg|JPG|png)' 'Output file/dir (default=$src)')
 resize() {

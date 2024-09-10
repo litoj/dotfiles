@@ -97,9 +97,8 @@ defineParams=(
 	tui 'T?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'D?' '' 'Disable actual commands execution'
 	color 'C?' '' 'Colorize output (default=1 when not redirected)'
-	config 'c*' '$f\.conf\.sh$|-?'
-	"Config file as arrays of cli options like \`defineConfig+=(-l3)\`,\
- or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
+	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
+       or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
 	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
@@ -170,7 +169,13 @@ define() {
 }
 
 exitFn() {
-	[[ $ACTION ]] && call help -pm "$ACTION"
+	if [[ $ACTION ]]; then
+		if [[ $i ]]; then
+			paramHelp "$ACTION" 1 $((i / 4))
+		else
+			call help -pm "$ACTION"
+		fi
+	fi
 	exit $1
 }
 
@@ -354,6 +359,7 @@ main() {
 	done
 }
 
+true=1 false=-1
 # set all required variables and call action
 parseAction() {
 	declare -i argc=$#
@@ -499,15 +505,14 @@ parseAction() {
 					fi
 				else # bad arg, or picker failed
 					[[ ! $optChain ]] &&
-						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/" ||
-						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/ at chunk '$optChain'"
+						log Error ".$varName - Invalid argument '${arg-$1}'" ||
+						log Error ".$varName - Invalid argument '${arg-$1}' at chunk '$optChain'"
 					return
 				fi
 			elif [[ ! $optChain && ($arg == false || $arg == true) ]]; then
-				local true=1 false=-1
 				declare -i "$varName=$arg"
 				log Debug ".$varName = $arg"
-				unset true false arg
+				unset arg
 			elif [[ $optChain || ! ${arg+y} ]]; then
 				declare -i "$varName+=${optCnt}1"
 				log Debug ".$varName = ${!varName}"
@@ -695,23 +700,23 @@ paramHelp() {
 				fi
 			fi
 			sign=${sign:1}
-			[[ $regex && $matcher -le 0 ]] && sign+=' <>'
 		else
 			varName=\$$varName
 			sign=${sign:1} # positional param
 		fi
+
+		((SCRIPT_OPTS[color] > 0)) && sign+=$(ansi nobold)
+		if [[ $regex ]]; then
+			((matcher <= 0)) && sign+=' <>' || sign+=" <$regex>"
+		fi
+
 		sign="$varName$sign"
 		sig+=("$sign")
 		((maxLen < ${#sign})) && maxLen=${#sign}
 
-		if [[ $regex && $matcher -gt 0 ]]; then
-			[[ $regex == '$'* ]] && help="$regex
-       $help" || help="/$regex/
-       $help"
-		fi
 		desc+=("$help")
 	done
-	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m  %s' || fmt='%-*s  %s'
+	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s  %s' || fmt='%-*s  %s'
 	i=-1
 	while ((++i < ${#sig[@]})); do
 		print "    $(printf "$fmt" "$maxLen" "${sig[$i]}" "${desc[$i]}")"
@@ -914,7 +919,7 @@ Usage:
      actionInfo <fName> <shortName>? <nameHelpFormat>? <fDescription>
   4. Declare action opts/args, see `help` for meanings
      <fName>Params=(<varName> <shortOpt+countSuffix> <argMatch> <description>)
-     toggles (and toggleable arg opts) should be always default=false
+     toggleable arg opts should be always default=false
 	5. Declare a mapping of picker functions for args if defaults are insufficient
      declare -A <fName>Builder=([<argName>]=<picker/selector fName>)
   6. Picker gets full arg quaternion, saves selection to $1/argName

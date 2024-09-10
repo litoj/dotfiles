@@ -223,6 +223,7 @@ actionInfo edit 'cut, strip metadata and/or convert media; time picker works onl
 editParams=(
 	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
+	rename 'r?' '.*' 'Rename to given `exiftool` format (default=false, file $dst has priority)'
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
@@ -303,8 +304,21 @@ edit() {
 				fi
 			fi
 
-			local out=${dst:-$src}
-			[[ -d $dst ]] && out="$dst/${src##*/}"
+			local out
+			if [[ -f $dst ]]; then
+				out=$dst # file $dst has priority
+			else
+				if [[ $rename ]]; then
+					out=$(exiftool "$src" -p "$rename" 2>/dev/null)
+					if [[ $out ]]; then
+						((copy > 0)) || out="${out%.*}.opus"
+						[[ -d ${dst:-${src%/*}} ]] && local dst=${dst:-${src%/*}}/$out || local dst=.
+					fi
+				fi
+				[[ ! $out ]] && out=${src/*\//}
+				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
+			fi
+
 			if [[ -d ${dst:-.} ]]; then
 				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
 					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && $fade == 0 ]]; then
@@ -602,21 +616,24 @@ resize() {
 actionInfo rename R 'rename video/image files'
 renameParams=(
 	videoFormat 'v!' '.+' 'Set `sed` expression for video (default=move year to the front)'
-	audioFormat 'a!' '.+' 'Set `sed` expression for audio (default=strip track number)'
-	imageFormat 'i!' '.+' 'Set timestamp format for images, without extension (default=%Y-%m-%d_%H%M%S)'
+	audioExifFormat 'a!' '.+' 'Set `exiftool` format (default=$Artist - $Title.$FileTypeExtension)'
+	audioSedFormat 'A?' '.+' 'Set `sed` fallback expression for audio (default=s/^.*- \?//)'
+	imageFormat 'i!' '.+' 'Set timestamp format (default=%Y-%m-%d_%H%M%S)'
 	dateFallback 'F?' '[yan]|yes|no|ask' 'Use file mod time for image timestamp fallback (default=a/ask)'
 	src '$+' '$d$^(audio|video|image)' 'File to rename'
+	dst '$?' '$d' 'Destination to move the renamed files into'
 )
 renameConfig=(
 	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
-	audioFormat='s/^.*- \?//'
+	audioExifFormat='$Artist - $Title.$FileTypeExtension'
+	audioSedFormat='s/^.*- \?//'
 	imageFormat='%Y-%m-%d_%H%M%S'
 	dateFallback=ask
 )
 rename() {
 	if [[ -d $src ]]; then
 		for src in "$src"/*; do
-			reg=${renameParams[2]} argMatch "$src" && rename
+			reg=${renameParams[-2]} argMatch "$src" && rename
 		done
 	elif ((${#src[@]} > 1)); then
 		for src in "${src[@]}"; do
@@ -625,39 +642,48 @@ rename() {
 	else
 		function isolated() {
 			if reg="$^video" argMatch "$src"; then
-				local dst=$(echo "$src" | sed "$videoFormat")
+				local out=$(echo "$src" | sed "$videoFormat")
 			elif reg="$^audio" argMatch "$src"; then
-				local dst=$(echo "$src" | sed "$audioFormat")
+				local out=$(exiftool "$src" -p "$audioExifFormat" 2>/dev/null)
+				if [[ $out ]]; then
+					log Warn " - Missing '$audioExifFormat' exif data"
+					if [[ $audioSedFormat ]]; then
+						out=$(echo "$src" | sed "$audioSedFormat")
+					else
+						log Info " - skipping"
+						return
+					fi
+				fi
 			else
-				local dst="$(exiftool "$src" -d "$imageFormat" \
+				local out="$(exiftool "$src" -d "$imageFormat" \
 					-p '$DateTimeOriginal' 2>/dev/null).${src##*.}"
 
-				if [[ $dst == .* ]]; then # no name, just extension
-					dst="$(date -r "$src" +"$imageFormat")$dst"
-					[[ $dst == "$src" ]] && return
+				if [[ $out == .* ]]; then # no name, just extension
+					out="$(date -r "$src" +"$imageFormat")$out"
+					[[ $out == "$src" ]] && return
 
 					if [[ $dateFallback == a* ]]; then
 						local dateFallback
-						read -p "$(print "rename '$src' to file mod date ('$dst')? [y/N]: ")" -n1 dateFallback
+						read -p "$(print "rename '$src' to file mod date ('$out')? [y/N]: ")" -n1 dateFallback
 						[[ $dateFallback ]] && echo # fix missing newline after input
 					else
-						log Warn " - Missing DateTime exif data"
+						log Warn " - Missing '\$DateTimeOriginal' exif data"
 					fi
 
-					if [[ $dateFallback != [yY]* ]]; then
+					if [[ $dateFallback == [yY]* ]]; then
+						log Info " - using last mod date: '${out%.*}'"
+					else
 						log Info " - skipping"
 						return
-					else
-						log Info " - using file modification date"
 					fi
 				fi
-
-				[[ $src == "${src%/*}" ]] || dst="${src%/*}/$dst"
 			fi
-			if [[ $src != "$dst" ]]; then
-				dst=$(ACTION+=.dst getFreePath "$dst")
-				if [[ $src != "$dst" ]]; then
-					exec mv "$src" "$dst"
+
+			[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
+			if [[ $src != "$out" ]]; then
+				out=$(ACTION+=.dst getFreePath "$out")
+				if [[ $src != "$out" ]]; then
+					exec mv "$src" "$out"
 				fi
 			fi
 		}

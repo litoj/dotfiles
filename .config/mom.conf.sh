@@ -4,4 +4,8 @@ resizeConfig=(
 )
 
 downloadConfig=(metadata=false)
-editConfig=(no-metadata)
+editConfig=(
+	rename='$Artist - $Title.$FileTypeExtension'
+	no-metadata
+	-b96
+)

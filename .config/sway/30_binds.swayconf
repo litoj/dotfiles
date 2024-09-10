@@ -24,37 +24,39 @@ bindsym {
 # quick app starter
 	$Mod+Return exec xterm
 }
-set $Chat "[T]hunderbird [D]iscord [S]lack"
-set $IDE "[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider"
+set $Chat '[T]hunderbird [D]iscord [S]lack'
+set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
-	$Mod+1 exec W=$wBrowser $lof firefox "firefox"
+	$Mod+1 exec $lof firefox '[app_id=firefox]'
 	$Mod+2 exec xterm nvim
-	$Mod+$Alt+2 exec xterm nvim -i ~/Documents/work/session.shada
+	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada \
+		&& sleep 1 && swaymsg mark work' '[con_mark=work]'
 	$Mod+3 exec xterm
 	$Mod+4 mode $Chat
 	$Mod+5 mode $IDE
-	$Mod+7 exec W=$wMedia $lof gimp "Gimp|mpv"
-	$Mod+$Alt+7 exec W=$wMedia $lof darktable darktable
-	$Mod+$Alt+9 exec W=$wGame $lof prismlauncher null "^(Minecraft|Prism Launcher).*"
-	$Mod+9 exec W=$wGame $lof "prismlauncher --launch Vanilla" null "^(Minecraft|Prism Launcher).*"
+	$Mod+7 exec $lof gimp '[app_id=Gimp|mpv]'
+	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title=^(Minecraft|Prism Launcher).*]'
+	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title=^(Minecraft|Prism Launcher).*]'
 }
 mode $Chat {
 	bindsym {
-		t mode default, exec W=$wMsg $lof thunderbird thunderbird
-		d mode default, exec W=$wMsg $lof ripcord Ripcord
-		s mode default, exec W=$wMsg $lof 'slack --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' Slack
+		t mode default, exec $lof thunderbird '[app_id=thunderbird]'
+		d mode default, exec $lof ripcord '[class=Ripcord]'
+		s mode default, exec $lof 'slack --ozone-platform=wayland \
+			--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' '[class=Slack]'
 		Escape mode default
 	}
 }
 mode $IDE {
 	bindsym {
-		i mode default, exec W=$wCode $lof idea jetbrains-idea-ce
-		d mode default, exec W=$wCode $lof datagrip jetbrains-datagrip
-		r mode default, exec W=$wCode $lof rider jetbrains-rider
-		n mode default, exec W=$wCode $lof netbeans NetBeans
-		a mode default, exec W=$wCode $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' jetbrains-studio
-		e mode default, exec W=$wCode $lof 'gtk-launch ea' 'ea.exe'
+		i mode default, exec $lof idea '[class=jetbrains-idea-ce]'
+		d mode default, exec $lof datagrip '[class=jetbrains-datagrip]'
+		r mode default, exec $lof rider '[class=jetbrains-rider]'
+		n mode default, exec $lof netbeans '[class=NetBeans]'
+		a mode default, exec $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' \
+			'[class=jetbrains-studio]'
+		e mode default, exec $lof 'gtk-launch ea' '[class=ea.exe]'
 		q mode default
 		Escape mode default
 	}
@@ -190,15 +192,15 @@ bindsym {
 }
 # quick mark
 bindsym --to-code {
-	$Mod+Ctrl+1 mark 1
-	$Mod+Ctrl+2 mark 2
-	$Mod+Ctrl+3 mark 3
-	$Mod+Ctrl+4 mark 4
-	$Mod+Ctrl+5 mark 5
-	$Mod+Ctrl+6 mark 6
-	$Mod+Ctrl+7 mark 7
-	$Mod+Ctrl+8 mark 8
-	$Mod+Ctrl+9 mark 9
+	$Mod+Ctrl+1 [con_mark=1] focus; mark 1
+	$Mod+Ctrl+2 [con_mark=2] focus; mark 2
+	$Mod+Ctrl+3 [con_mark=3] focus; mark 3
+	$Mod+Ctrl+4 [con_mark=4] focus; mark 4
+	$Mod+Ctrl+5 [con_mark=5] focus; mark 5
+	$Mod+Ctrl+6 [con_mark=6] focus; mark 6
+	$Mod+Ctrl+7 [con_mark=7] focus; mark 7
+	$Mod+Ctrl+8 [con_mark=8] focus; mark 8
+	$Mod+Ctrl+9 [con_mark=9] focus; mark 9
 	$Mod+Ctrl+0 [con_id=__focused__] unmark
 }
 # remove marks

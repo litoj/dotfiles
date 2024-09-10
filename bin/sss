@@ -507,7 +507,7 @@ parseAction() {
 				local true=1 false=-1
 				declare -i "$varName=$arg"
 				log Debug ".$varName = $arg"
-				unset true false
+				unset true false arg
 			elif [[ $optChain || ! ${arg+y} ]]; then
 				declare -i "$varName+=${optCnt}1"
 				log Debug ".$varName = ${!varName}"

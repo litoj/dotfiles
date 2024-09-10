@@ -1,38 +1,5 @@
 #!/usr/bin/bash
-# launch or focus
-# $1=launch_cmd; $2=displayed class/app_id; $3=optional - window name
-
-DATA=$(swaymsg -t get_tree | awk '
-$1 == "\"focused\":" && $2 == "true," { len=length(gensub(/".*/, "", "g")) }
-len && $1 == "\"pid\":" { pid=gensub(",", "", "g", $2) }
-len && $1 == "\"name\":" { name=gensub(/.*"name": "(.*)",?/, "\\1", "g") }
-len && $1 == "\"app_id\":" { app=gensub(",", "", "g", $2) }
-len && $1 == "\"class\":" { app=gensub(",", "", "g", $2) }
-len && $1 ~ /\},?/ && len >= length($0) {
-	print(pid, gensub("\"", "", "g", app), name)
-	exit
-}')
-PID=${DATA/ */}
-DATA=${DATA#* }
-APP=${DATA/ */}
-TITLE=${DATA#* }
-
-if [[ $3 ]]; then
-	if [[ $TITLE =~ $3 && $APP =~ $2 ]]; then
-		launch=1
-	elif [[ $2 != null ]]; then
-		swaymsg "[app_id=\"$2\" title=\"$3\"]" focus > /dev/null ||
-			swaymsg "[class=\"$2\" title=\"$3\"]" focus > /dev/null || launch=1
-	else
-		swaymsg "[title=\"$3\"]" focus > /dev/null || launch=1
-	fi
-else
-	[[ $APP =~ $2 ]] && launch=1 ||
-		swaymsg "[app_id=\"$2\"]" focus > /dev/null ||
-		swaymsg "[class=\"$2\"]" focus > /dev/null || launch=1
-fi
-
-if ((launch)); then
-	swaymsg exec "$1"
-	[[ $W ]] && swaymsg workspace "$W"
-fi
+# launch or focus based on $2=sway condition string
+if swaymsg "${2::-1} title=__focused__ workspace=__focused__]" focus || ! swaymsg "$2" focus; then
+	swaymsg exec "$1" && swaymsg "$2" focus
+fi >/dev/null

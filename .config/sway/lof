@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 # launch or focus based on $2=sway condition string
-if swaymsg "${2::-1} title=__focused__ workspace=__focused__]" focus || ! swaymsg "$2" focus; then
+[[ $2 == *title* ]] || verify=" title=__focused__"
+[[ $2 == *workspace* ]] || verify+=" workspace=__focused__"
+if swaymsg "${2::-1} $verify]" focus || ! swaymsg "$2" focus; then
 	swaymsg exec "$1" && swaymsg "$2" focus
-fi >/dev/null
+fi

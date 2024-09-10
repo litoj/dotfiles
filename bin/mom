@@ -25,7 +25,7 @@ ffmpegCmd() {
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
 downloadParams=(
-	metadata 'm?' '' 'Keep metadata' # NOTE: pipeline candidate - output as nometa src
+	metadata 'm?' '' 'Keep metadata (default=true)' # NOTE: pipeline candidate - output as nometa src
 	format 'f?' '.+' 'Yt-dl download format (default=ba[ext=webm])'
 	src '$+' 'http.+' 'Urls to download'
 	dst '$*' '$d$F\.(opus|m4a)' 'Output in yt-dlp format or dir (default=./%(creator)s - %(title)s.opus)')
@@ -48,7 +48,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
 				exec mv "$cmd" "$cmd.$ext"
 
-				((metadata > 0)) && cmd=(mv) || cmd=(call noMeta +k)
+				((metadata >= 0)) && cmd=(mv) || cmd=(call noMeta +k)
 				cmd+=("$prefix"*)
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
@@ -64,7 +64,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 
 actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'
 noMetaParams=(
-	keep 'k?' '' 'Keep original (default=remove $src)'
+	keepSrc 'k?' '' 'Keep source'
 	src '$!' '$d$^audio' 'Audio file/dir to strip metadata from'
 	dst '$?' '$d$F\.(flac|wma|m4a|mp3|opus)' 'Put results into (default=replace $src)')
 noMeta() {
@@ -78,15 +78,8 @@ noMeta() {
 		done
 		cd "$CWD"
 	else
-		[[ ${dst:-$src} == "$src" ]] && local dst=/tmp replaceSrc=$((1 - keep))
-
-		[[ -d $dst ]] && local dst=$(ACTION+=.dst getFreePath "${dst%/}/${src##*/}")
-		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy "$dst")
-		exec "${cmd[@]}" && if ((replaceSrc > 0)); then
-			exec mv "$dst" "$src"
-		else
-			((keep > 0)) || exec rm "$src"
-		fi
+		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy)
+		out="$(genDstFromSrc)" runCmdWithCleanup
 	fi
 }
 
@@ -164,7 +157,7 @@ secondsToTime() {
 # $src, $2= name of the param for which we are creating the path
 #######################################
 # Globals:
-#   keepOriginal if the original will not be replaced by this path
+#   keepSrc if the original will not be replaced by this path
 #   src source filename (if dst should move into it, log path as verbose only)
 # Arguments:
 #   filename base path name to get a free name for
@@ -193,7 +186,7 @@ getFreePath() {
 	fi
 
 	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
-		$keepOriginal -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Warn " = '$text'"
+		$keepSrc -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Warn " = '$text'"
 	echo "$text"
 }
 
@@ -214,47 +207,46 @@ runJob() {
 	fi
 }
 
-# expects $cmd, $keepOriginal, $dst, $1=src, $2=out
+# expects $cmd, $keepSrc, $src, $dst, $out
 runCmdWithCleanup() {
-	local src=$1 out=$2
-	exec "${cmd[@]}" "$out" && if ((keepOriginal <= 0)); then
+	exec "${cmd[@]}" "$out" && if ((keepSrc <= 0)); then
 		[[ $src == $out ]] || exec rm "$src"
-		if [[ -z $dst && $out != "${src%.*}".* ]]; then
+		if [[ -z $dst && $out != "${src%.*}".* ]]; then # used default $dst and output needs renaming
 			exec mv "$out" "${src%.*}.${out##*.}"
 		fi
 	fi
 }
 
+REGEX[timestamp]='[0-9]+(:[0-9]+)*(\.[0-9]+)?'
+PICKER_FOR_REGEX[${REGEX['timestamp']}]=pickTime
 actionInfo edit 'cut, strip metadata and/or convert media; time picker works only after `src`'
-declare -A editBuilder=([fadeout]=pickTime [start]=pickTime [end]=pickTime)
 editParams=(
-	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf, default=false)'
-	metadata 'm?' '' 'Keep metadata (default=false)'
-	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
+	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf)'
+	metadata 'm?' '' 'Keep metadata (default=true)'
+	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
 	src '$+' '$^audio' 'File to cut/convert'
-	start 's*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Start time (default=0)'
-	end 'e*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'End time, or seconds from the end (default=0)'
-	fadeout 'f*' '[0-9]+(:[0-9]+)*(\.[0-9]+)?' 'Fadeout start time, or seconds from the end'
+	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
+	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
+	fadeout 'f*' "${REGEX['timestamp']}" 'Fadeout start time, or seconds from the end'
 	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
-	dst '$?' '$d$F\.opus' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
+	dst '$?' '$d$F\.(opus|mp3|m4a|flac|wma)' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
 	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
 
-	local out
-	local baseCmd=($(ffmpegCmd) -i '' -map a)
-	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#baseCmd[@]}-3
-	((metadata <= 0)) && baseCmd+=(-map_metadata -1)
-	((copy > 0)) && local volume=() fadeout=() baseCmd+=(-c copy)
+	local cmd=($(ffmpegCmd) -i '' -map a)
+	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#cmd[@]}-3
+	((metadata < 0)) && cmd+=(-map_metadata -1)
+	((copy > 0)) && local volume=() fadeout=() cmd+=(-c copy)
 
 	while ((++i < srcN)); do
 		src=${src[i]}
 		function isolated() {
-			local cmd=("${baseCmd[@]}")
+			local cmd=("${cmd[@]}")
 			cmd[$fileArgPos]=$src
 
 			((copy > 0)) || {
@@ -265,7 +257,7 @@ edit() {
 						$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
 					log Info ".bitrate = $b"
 				fi
-				local cmd+=(-b:a ${b}k) cmdBrTo=${#cmd[@]}
+				local cmd+=(-b:a ${b}k) cmdBitratePos=${#cmd[@]}
 			}
 
 			local s=${start[i]:-0}
@@ -311,19 +303,19 @@ edit() {
 				fi
 			fi
 
-			[[ -d $dst ]] && out="$dst/${src##*/}" ||
-				{ [[ $dst ]] && out=$dst || out=$src; }
+			local out=${dst:-$src}
+			[[ -d $dst ]] && out="$dst/${src##*/}"
 			if [[ -d ${dst:-.} ]]; then
 				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
 					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && $fade == 0 ]]; then
 						log Info '.copy = true (no reencoding required)'
-						cmd=("${cmd[@]::cmdBrTo-2}" -c copy "${cmd[@]:cmdBrTo}")
+						cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
 					fi
 					out=${out%.*}.opus
 				fi
 				out=$(ACTION+=.dst getFreePath "$out")
 			fi
-			runCmdWithCleanup "$src" "$out"
+			runCmdWithCleanup
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
@@ -333,8 +325,8 @@ edit() {
 actionInfo subtitles 'convert mp4 with srt to mkv'
 subtitlesParams=(
 	keepSrc 'k?' '' 'Keep used files (default=false, true for mkv for potential subtitle fail)'
-	clearSrcSubs 'c?' '' 'Purge original video subtitles - enable if added are not visible'
-	updateDefault 'd?' '' 'Change default subs to the first ones added (default=true)'
+	keepSrcSubs 's?' '' 'Keep original video subtitles - use if added subs are not visible'
+	keepDefaults 'd?' '' 'Keep default sub selection, or set to the first added'
 	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
@@ -394,7 +386,7 @@ subtitles() {
 		cmd+=(-i "$sub")
 	done
 	cmd+=(-i "$vid" -map $len:a -map $len:v -c copy)
-	((clearSrcSubs < 0)) && ffprobe "$vid" |& grep Subtitle &>/dev/null && cmd+=(-map $len:s)
+	((keepSrcSubs > 0)) && ffprobe "$vid" |& grep Subtitle &>/dev/null && cmd+=(-map $len:s)
 
 	[[ $lang ]] || local lang=()
 	for ((i = 0; i < len; i++)); do
@@ -406,7 +398,7 @@ subtitles() {
 		cmd+=(-metadata:s:s:$i language=${lang[i]} -map $i)
 	done
 
-	((updateDefault >= 0)) && cmd+=(-disposition:s:0 default)
+	((keepDefaults > 0)) || cmd+=(-disposition:s:0 default)
 	if [[ -z $dst ]]; then
 		local dst=${vid%.*}.mkv
 		[[ -f $dst ]] && dst="${vid%.*} $lang-sub.mkv"
@@ -543,7 +535,7 @@ linkFix() {
 
 actionInfo resize 'resize images'
 resizeParams=(
-	keepOriginal 'k?' '' 'Keep $src file (removes by default)'
+	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	src '$+' '$^image' 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
@@ -590,7 +582,7 @@ resize() {
 				# require distance to target size greater/lower or equal to $gap
 				if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
 					if [[ $dst ]]; then
-						exec $( ((keepOriginal > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
+						exec $( ((keepSrc > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
 					fi
 					log Info ": ${dim}px != <${gap}px${only}> → skipping"
 					return
@@ -600,7 +592,7 @@ resize() {
 			local cmd=(magick "$src" -resize "$size")
 			((quality)) && cmd+=(-quality $quality)
 
-			runCmdWithCleanup "$src" "$(genDstFromSrc)"
+			out="$(genDstFromSrc)" runCmdWithCleanup
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done

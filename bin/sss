@@ -100,16 +100,16 @@ defineParams=(
 	config 'c*' '$f\.conf\.sh$|-?'
 	"Config file as arrays of cli options like \`defineConfig+=(-l3)\`,\
  or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
-	guiPicker 'G?' '' 'Use GUI pickers (default=1 when stdin is missing)'
-	argPicker 'A?' '' 'Enable arg picker (default=1 when stdin is missing)'
-	optArgPicker 'O?' '' 'Enable picker for option arguments (default=1)'
+	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
+	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
+	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
  (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
-SCRIPT_OPTS[logLvl]=${LOG_LEVELS["$DEBUG"]:-${DEBUG:-${SCRIPT_OPTS['logLvl']}}}
+SCRIPT_OPTS[logLvl]=${LOG_LEVELS["${DEBUG:-x}"]:-${DEBUG:-${SCRIPT_OPTS['logLvl']}}}
 define() {
 	declare -i i=0
 	local opt
@@ -477,12 +477,12 @@ parseAction() {
 					fi
 				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch ''; then
 					if argMatch 3; then
-						declare -i "$varName+=${optCnt}1" # counter
-						argMatch ${!varName} || unset "$varName"
+						declare -i "$varName+=1" # counter
+						log Debug ".$varName = ${!varName}"
 					else
-						declare -i "$varName=${optCnt}1" # boolean
+						declare -i "$varName=1" # boolean
+						log Debug ".$varName = true"
 					fi
-					log Debug ".$varName = ${!varName}"
 				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
 					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
 
@@ -503,8 +503,13 @@ parseAction() {
 						log Error ".$varName - Invalid argument '${arg-$1}' != /$reg/ at chunk '$optChain'"
 					return
 				fi
+			elif [[ ! $optChain && ($arg == false || $arg == true) ]]; then
+				local true=1 false=-1
+				declare -i "$varName=$arg"
+				log Debug ".$varName = $arg"
+				unset true false
 			elif [[ $optChain || ! ${arg+y} ]]; then
-				declare -i "$varName+=${optCnt}"1
+				declare -i "$varName+=${optCnt}1"
 				log Debug ".$varName = ${!varName}"
 			else
 				log Error ".$varName - Unexpected argument '$arg'"
@@ -703,6 +708,7 @@ paramHelp() {
 			[[ $regex == '$'* ]] && help="$regex
        $help" || help="/$regex/
        $help"
+		fi
 		desc+=("$help")
 	done
 	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1m%-*s\033[0m  %s' || fmt='%-*s  %s'
@@ -741,7 +747,7 @@ help() {
     - orderless (aside of repeated uses)
   options/named params: [o]ption + suffix + type suffix (or [a]option or []option)
     - short names can be chained with argument as last: `-aoOarg` (also `+aoOarg`)
-    - `+` sets option to false / adds negative value (`+lll` → logLvl+=-3) 
+		- `+` sets option to false / adds negative value (`+lll` → logLvl+=-3)
     - suffix:
       - `!`,`+`: required × `?`,`*`: optional
       - `?`,`!`: single use × `*`,`+`: multiple uses/values accepted
@@ -793,7 +799,7 @@ help() {
 
 actionInfo quit 'exit the tui' # also called when exiting the cli
 quit() {
-	"${SSS_OPTS[exitFn]}" 0 # override this for commit-before-exit
+	"${SSS_OPTS['exitFn']}" 0 # override this for commit-before-exit
 }
 
 unknownParams=(argument '$+' '.*' 'consumes all remaining args to end execution')
@@ -802,12 +808,13 @@ unknown() {
 }
 
 # Chooses the fallback picker based on $1=regex/argMatch pattern
+declare -A PICKER_FOR_REGEX
 determinePicker() {
 	case "$1" in
 		'$d'*'$f'*) echo pickFilesOrDir ;;
 		'$d'*) echo pickDir ;;
 		'$f'*) echo pickFile ;;
-		*) echo pickValue ;;
+		*) echo ${PICKER_FOR_REGEX["${1:-'$'}"]:-pickValue} ;;
 	esac
 }
 
@@ -907,6 +914,7 @@ Usage:
      actionInfo <fName> <shortName>? <nameHelpFormat>? <fDescription>
   4. Declare action opts/args, see `help` for meanings
      <fName>Params=(<varName> <shortOpt+countSuffix> <argMatch> <description>)
+     toggles (and toggleable arg opts) should be always default=false
 	5. Declare a mapping of picker functions for args if defaults are insufficient
      declare -A <fName>Builder=([<argName>]=<picker/selector fName>)
   6. Picker gets full arg quaternion, saves selection to $1/argName

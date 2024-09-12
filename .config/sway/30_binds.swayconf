@@ -62,7 +62,7 @@ mode $IDE {
 	}
 }
 bindsym {
-	$Mod+e exec $lof 'xterm ranger && sleep 1 && swaymsg mark ranger' '[con_mark=ranger]'
+	$Mod+e exec xterm ranger
 	$Mod+$Alt+e exec pcmanfm
 # managing/control
 	Ctrl+Shift+Escape exec xterm htop

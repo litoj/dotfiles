@@ -555,7 +555,13 @@ parseAction() {
 					shift
 					break # continue in parsing cli
 				else
-					[[ $sign == '$'? ]] && log Trace ".$varName != '$1'"
+					if [[ $sign == '$'? ]]; then
+						if [[ $sign == ?[?*] || ${args[$posArg]} -gt 0 ]]; then
+							log Trace ".$varName != '$1'"
+						else
+							log Error ".$varName != '$1', but is next in order"
+						fi
+					fi
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done

@@ -227,7 +227,7 @@ editParams=(
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
-	src '$+' '$^audio' 'File to cut/convert'
+	src '$+' '$^audio$f\.mp3' 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
 	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
 	fadeout 'f*' "${REGEX['timestamp']}" 'Fadeout start time, or seconds from the end'
@@ -645,7 +645,7 @@ rename() {
 				local out=$(echo "$src" | sed "$videoFormat")
 			elif reg="$^audio" argMatch "$src"; then
 				local out=$(exiftool "$src" -p "$audioExifFormat" 2>/dev/null)
-				if [[ $out ]]; then
+				if [[ -z $out ]]; then
 					log Warn " - Missing '$audioExifFormat' exif data"
 					if [[ $audioSedFormat ]]; then
 						out=$(echo "$src" | sed "$audioSedFormat")
@@ -658,7 +658,7 @@ rename() {
 				local out="$(exiftool "$src" -d "$imageFormat" \
 					-p '$DateTimeOriginal' 2>/dev/null).${src##*.}"
 
-				if [[ $out == .* ]]; then # no name, just extension
+				if [[ -z $out || $out == .* ]]; then # no name, just extension
 					out="$(date -r "$src" +"$imageFormat")$out"
 					[[ $out == "$src" ]] && return
 

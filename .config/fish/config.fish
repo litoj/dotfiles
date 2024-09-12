@@ -69,13 +69,13 @@ set fish_pager_color_prefix brcyan --bold
 set fish_pager_color_completion grey
 set fish_pager_color_progress green --bold
 set fish_color_search_match --bold --background=222222
-set fish_color_valid_path
+set fish_color_redirection brmagenta
 set fish_color_error brred
 
-abbr ls     'eza --icons --colour=always'
-alias lt='eza --icons --colour=always -T -L'
-alias ll='eza --icons --colour=always -l'
-alias la='eza --icons --colour=always -l -a'
+alias ls='eza --icons'
+alias lt='eza --icons -T -L'
+alias ll='eza --icons -l'
+alias la='eza --icons -l -a'
 
 abbr man    batman
 abbr se     'sudo nvim'

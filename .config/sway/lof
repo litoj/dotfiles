@@ -3,5 +3,5 @@
 [[ $2 == *title* ]] || verify=" title=__focused__"
 [[ $2 == *workspace* ]] || verify+=" workspace=__focused__"
 if swaymsg "${2::-1} $verify]" focus || ! swaymsg "$2" focus; then
-	swaymsg exec "$1" && while ! swaymsg "$2" focus; do sleep 0.2; done
-fi
+	swaymsg exec "$1" && while ! swaymsg "$2" focus && ((++i < 15)); do sleep 0.3; done
+fi >/dev/null

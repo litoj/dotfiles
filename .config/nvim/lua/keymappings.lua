@@ -34,6 +34,7 @@ map('i', '<A-V>', '<C-r>"')
 map('i', '<C-S-V>', '<C-o>gP')
 map('n', '<C-v>', 'p')
 map('v', '<C-v>', '"ddP')
+map('v', '<C-S-V>', '"ddp')
 map('', 'c', '"dc')
 -- Deleting text
 map('i', '<C-d>', '<C-o>"ddd')

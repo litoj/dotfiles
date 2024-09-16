@@ -4,25 +4,25 @@ export LC_ALL=C LANG=C
 wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
 	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
-	local CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.toml"
+
+	declare token -i expiry
+	declare -Ai streamerIds
+	local CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.cache.sh"
 	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")
+
+	[[ -f $CACHE_FILE ]] && source "$CACHE_FILE"
 
 	if [[ -z $token || $token == null ]] ||
 		(($(date +%s) >= expiry)); then
 		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
 		[[ -z $newToken || $newToken == null ]] && exit 1
 		token=$newToken
-		sed -i "s/^\(token=\).*/\1$newToken/;s/^\(expiry=\).*/\1$(date -d tomorrow +%s)/" "$CONFIG_FILE"
+		expiry=$(date -d tomorrow +%s)
+		declare -p token expiry streamerIds >"$CACHE_FILE"
 	fi
 
 	# Search for streamer ID in cache
-	local ID
-	[[ -f $CACHE_FILE ]] && while read line; do
-		if [[ ${line%=*} == $1 ]]; then
-			ID=${line#*=}
-			break
-		fi
-	done < "$CACHE_FILE"
+	local ID=${streamerIds["$1"]}
 
 	# If user login not cached, fetch from Twitch API
 	if [[ -z $ID ]]; then
@@ -31,7 +31,9 @@ wtwitch() {
 				"${T[0]}/users?login=$1" | jq -r ".data[0].id"
 		)
 		[[ -z $ID || $ID == null ]] && exit 1
-		echo "$1=$ID" >> "$CACHE_FILE"
+
+		streamerIds["$1"]=$ID
+		declare -p token expiry streamerIds >"$CACHE_FILE"
 	fi
 
 	# Get list of VODs
@@ -41,28 +43,24 @@ wtwitch() {
 	)
 	declare -i i=0
 	while true; do
-		mapfile -t vodData < <(jq -r ".data[$i] | .title, .created_at, .duration, .url" <<< "$JSON")
+		mapfile -t vodData < <(jq -r ".data[$i] | .title, .created_at, .duration, .url" <<<"$JSON")
 		[[ ${vodData} != null ]] && ((i < 20)) || break
 		printf "%d %s\t%s  \t%s %s\n" $((i += 1)) "$(date -d "${vodData[1]}" "+%d.%m.")" "${vodData[2]%m*}" "$(echo ${vodData[0]} | sed 's/ *[!|].*$//')" "${vodData[3]}"
 	done
 }
 
-CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.toml"
-[[ -f $CONFIG_FILE ]] && while read line; do
-	case ${line%=*} in
-		token) token=${line#*=} ;;
-		expiry) expiry=${line#*=} ;;
-		streamers) streamerList=(${line#*=}) ;;
-	esac
-done < "$CONFIG_FILE"
-streamer=$(printf '%s\n' ${streamerList[@]} | rofi -dmenu -p Streamer)
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.conf.sh"
+declare -a streamers
+[[ -f $CONFIG_FILE ]] && source "$CONFIG_FILE"
+
+streamer=$(printf '%s\n' ${streamers[@]} | rofi -dmenu -p Streamer)
 (($?)) && exit 0
 case "$streamer" in
-	[0-9]) streamer=${streamerList[$streamer]} ;;
+	[0-9]) streamer=${streamers[$streamer]} ;;
 	https://*) url=$streamer ;;
 	[a-z]*)
 		add=1
-		for s in ${streamerList[@]}; do
+		for s in ${streamers[@]}; do
 			if [[ $s == "$streamer"* ]]; then
 				streamer=$s
 				unset add
@@ -99,12 +97,26 @@ if [[ -z $quality ]]; then
 	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
 		quality=${presets[$quality]:-bv*[height=$quality]+ba}
 fi
-[[ $add ]] && sed -i "/^streamers=/s/\$/ $streamer/" "$CONFIG_FILE"
 
 mpv --ytdl-format="$quality" --no-terminal "$url" &
 params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
 declare -i max=10 i=0
-while ! swaymsg $params &> /dev/null && ((++i < max)); do
+while ! swaymsg $params &>/dev/null && ((++i < max)); do
 	sleep $i
 done
-((i < max)) || pkill -P $$
+
+if ((i < max)); then
+	[[ $streamers == $streamer ]] && exit 0
+
+	i=1
+	len=${#streamers[@]}
+	while [[ ${streamers[$i]} != $streamer ]] && ((++i < len)); do
+		:
+	done
+
+	# set the watched streamer to the front
+	streamers=($streamer ${streamers[@]:0:i} ${streamers[@]:i+1})
+	echo "streamers=(${streamers[*]})" >"$CONFIG_FILE"
+else
+	pkill -P $$
+fi

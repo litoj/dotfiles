@@ -603,7 +603,7 @@ resize() {
 				fi
 			fi
 
-			local cmd=(magick "$src" -resize "$size")
+			local cmd=(magick "$src" -auto-orient -resize "$size")
 			((quality)) && cmd+=(-quality $quality)
 
 			out="$(genDstFromSrc)" runCmdWithCleanup

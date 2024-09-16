@@ -21,8 +21,9 @@ else
 					notify-send -t 0 -u low -h int:value:$CAPACITY \
 						-h string:synchronous:battery "Battery   $CAPACITY%" 'Plug the system in.'
 				else
-					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && systemctl \
-						hibernate && sleep 60 && sudo swapoff /swapfile
+					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && 
+						systemctl hibernate && sleep 60 &&
+						sudo swapoff /swapfile && swaymsg output eDP-1 power on
 				fi
 				bad=1
 			fi

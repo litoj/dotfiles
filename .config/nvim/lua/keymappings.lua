@@ -22,6 +22,7 @@ map('i', '<C-Enter>', '<C-o>O')
 map('i', '<A-Enter>', '<C-o>md<C-o>O<C-o>`d')
 map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
 map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg('/', 1), 'n', false) end)
+map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg('+', 1), 'n', false) end)
 -- Clipboard management
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')

@@ -78,9 +78,9 @@ declare -A LOG_LEVELS=([quiet]=0 [fatal]=1 [error]=2 [warn]=3
 LOG_NAMES=(quiet fatal error warn info verbose debug trace)
 
 [[ $# == 0 && -t 0 && -t 1 ]]
+CLI_MODE=$? # if the actions are specified via the cli (not tui)
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
-	[cli]=$? # user currently runs in CLI
-	[tui]=$((1 - $?))
+	[tui]=$((1 - CLI_MODE))
 	[dryRun]=0
 	[color]=0
 	[guiPicker]=0
@@ -96,7 +96,7 @@ actionInfo define D 'set script-processing options'
 defineParams=(
 	tui 'T?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'D?' '' 'Disable actual commands execution'
-	color 'C?' '' 'Colorize output (default=1 when not redirected)'
+	color 'C?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
        or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
 	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
@@ -180,17 +180,18 @@ exitFn() {
 }
 
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
-	[about]=''                               # script description
-	[exitFn]=exitFn                          # on error / on successful exit - shouldn't return
-	[exitLogLvl]=$((1 + SCRIPT_OPTS['cli'])) # at which level to abort (cli:Error, tui:Fatal)
+	[about]=''                     # script description
+	[exitFn]=exitFn                # on error / on successful exit - shouldn't return
+	[exitLogLvl]=$((1 + CLI_MODE)) # at which level to abort (cli:Error, tui:Fatal)
 	# set to main registered action if script is a single command - actions act as builders
 	# you can also change other actions' params at runtime → dynamic configuration
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
-	[defAction]=unknown # when no other action matches args, actionInfo register optional
-	[defActionLast]=1   # default action can't be followed by other actions (must consume all args)
-	[optPrefix]='-{,2}' # regex for required cli long name format
-	[argAsLongOpt]=1    # allow arguments to be also parsed as long options
-	[onNoArg]=0         # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
+	[defAction]=unknown  # when no other action matches args, actionInfo register optional
+	[defActionLast]=1    # default action can't be followed by other actions (must consume all args)
+	[actionPrefix]='-?'  # regex for cli action long name format, used in a group
+	[optionPrefix]='--|' # regex for cli option long name format, used in a group
+	[argAsLongOpt]=1     # allow arguments to be also parsed as long options
+	[onNoArg]=0          # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
 )
 
 declare -A COLORS=(
@@ -315,13 +316,13 @@ exec() {
 main() {
 	call define --config
 
-	if ((SCRIPT_OPTS['cli'] > 0)); then
+	if ((CLI_MODE > 0)); then
 		while (($#)); do
 			parseAction "$@"
 			shift $?
 		done
 		((SCRIPT_OPTS['tui'] > 0)) || quit
-		SCRIPT_OPTS[cli]=0
+		unset CLI_MODE
 	fi
 
 	SCRIPT_OPTS[argPicker]=1
@@ -350,7 +351,7 @@ main() {
 			parseAction -$line
 		else
 			local _prefix=
-			while [[ ! $_prefix =~ ^${SSS_OPTS['optPrefix']}$ ]]; do
+			while [[ ! $_prefix =~ ^${SSS_OPTS['optionPrefix']}$ ]]; do
 				_prefix+=-
 			done
 			parseAction $_prefix$line
@@ -366,7 +367,7 @@ parseAction() {
 
 	local ACTION= actionArg= actionArgFromEnd=
 	log Trace "parsing $*"
-	if [[ $1 =~ ^(${SSS_OPTS['optPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
+	if [[ $1 =~ ^(${SSS_OPTS['actionPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
 		actionArg=${BASH_REMATCH[3]:1}
 		ACTION=$(
 			isAction() { [[ ${ACTION_INFO["$1"]} ]]; }
@@ -437,7 +438,7 @@ parseAction() {
 
 			local i='' optCnt=+ tmpArr=
 			if [[ $# -ne $actionArgFromEnd &&
-				$1 =~ ^(${SSS_OPTS['optPrefix']})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
+				$1 =~ ^(${SSS_OPTS['optionPrefix']})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
 				tmpArr=("${BASH_REMATCH[@]}")
 				i=$( # index for full option name
 					isOpt() { [[ ${opts["$1"]} ]]; }
@@ -753,7 +754,7 @@ help() {
       - in CLI prefix with `-`, not necessary in TUI
       - value immediately after or as the next arg (-aVal / -a val)
     - full name usage: better option separation from next action
-      - prefix must match /'"${SSS_OPTS[optPrefix]}"'/
+      - prefix must match /'"${SSS_OPTS[optionPrefix]}"'/
       - value given with `=` or as the next arg (--act=val / --act val)
     - orderless (aside of repeated uses)
   options/named params: [o]ption + suffix + type suffix (or [a]option or []option)
@@ -791,6 +792,7 @@ help() {
 		if [[ ${act#-} == ? ]]; then
 			act=${ACTION_INFO["${act#-}"]:-$act} # keep the original to have valid `desc` index
 		elif [[ $act =~ ^-*([^-][^=]*)$ ]]; then
+			act=${BASH_REMATCH[1]}
 			act=$(
 				isAction() { [[ ${ACTION_INFO["$1"]} ]]; }
 				detectCase "$act" isAction || echo "$act"

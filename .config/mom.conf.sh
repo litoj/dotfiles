@@ -8,3 +8,5 @@ editConfig=(
 	rename='$Artist - $Title.$FileTypeExtension'
 	no-metadata
 )
+
+linkFixConfig=(resources ~/Music/Songs/)

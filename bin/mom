@@ -515,35 +515,37 @@ play() {
 	sleep 1
 	exec rm "$playlistFile"
 }
-
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
 linkFixParams=(
-	dst 'd?' '$d' 'Dir with broken links (default=./)'
+	target 't?' '$d' 'Dir with broken links (default=./)'
 	resources '$!' '$d' 'Dir with reference files')
 linkFix() {
-	[[ $dst ]] && dst=${dst%/}/ || local dst=${dst:-./}
+	[[ $target ]] && target=${target%/}/ || local target=${target:-./}
 	local CWD=$PWD
-	cd "$dst"
+	cd "$target"
 	local f
 	while read f; do
-		if [[ ! -f $f ]]; then
-			local name=${f##*[-/]}
+		if [[ ! -e $f ]]; then
+			local song=${f##* [-/] } fileName=${f##*/}
+			song=${song%%' ('*}
+			song=${song%%.*}
 			local all="" found=
 			while read found; do
 				if ((${#all} && ${#all} < ${#found})); then
-					log Warn ": unused match '$found' to '$f'"
+					log Info ": unused match '$found' to '$f'"
 				else
 					all=$found
 				fi
-			done < <(fd -t f "${name%.*}" "$dir")
+			done < <(exec fd -t f -p "${fileName%% -*}[^/]*/[^/]*$song" "$resources")
+
 			if [[ $all ]]; then
-				exec rm "$f"
-				exec ln -s "$all" "${f%.*}.${all##*.}"
-			else
+				exec rm "$f" # remove in case the extension has changed
+				exec ln -sf "$(realpath -s --relative-to="${f%/*}" "$all")" "${f%.*}.${all##*.}"
+			else # TODO: use fzf to find the file manually
 				log Warn ": unmatched $f"
 			fi
 		fi
-	done < <(fd -t l)
+	done < <(fd -t l .)
 	cd "$CWD"
 }
 

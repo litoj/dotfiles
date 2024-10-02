@@ -1,1 +1,1 @@
-root=UUID=... rw logleve=2 resume=UUID=... resume_offset=... acpi_osi=Linux mitigations=off amd_psate.shared_mem=1 amd_pstate=passive quiet initrd=\booster-linux.img
+vmlinuz-linux-lts root=UUID=7a3dbe65-df81-4c67-bdfc-23d440d23044 rw resume=UUID=7a3dbe65-df81-4c67-bdfc-23d440d23044 resume_offset=442368 acpi_osi=Linux mitigations=off nowatchdog amd_pstate.shared_mem=1 amd_pstate=passive initrd=\amd-ucode.img initrd=\booster-linux-lts.img usbcore.autosuspend=5 loglevel=2 quiet

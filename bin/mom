@@ -429,7 +429,7 @@ subtitles() {
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	NO_LOOP 'L?' '' 'Do not loop playlist'
-	randomizer 'r?' '(a([0-9]*)s?|d([0-9]*)(:[0-9]+)?s?)?'
+	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
 	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$!' '$e' 'Play file/dir')
@@ -442,15 +442,15 @@ pickSong() {
 		local cmd=(fzf --prompt "$4: ")
 	fi
 	_choice+=("$({
-		find ~/Music/* -type d
-		find ~/Music/Songs -type f
+		find ~/Music/* -type d 2>/dev/null
+		find "${MUSIC_SOURCES[@]:-$HOME/Music/Songs}" -type f 2>/dev/null
 	} | "${cmd[@]}")")
 }
 play() {
 	local playlistFile=/tmp/my/song
 	local cmd=(mpv --no-audio-display --no-terminal --playlist="$playlistFile")
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
-	exec pkill -f "${cmd[*]::2}"
+	exec pkill -f "${cmd[*]::2}" \>/dev/null
 
 	if [[ -f $src ]]; then
 		exec echo "$src" \> "$playlistFile"
@@ -496,7 +496,7 @@ play() {
 			[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
 			declare -i fileCnt=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
 			while ((n-- > 0)); do
-				pickFromDir "${artistDirs[RANDOM % len]%/}"/*
+				pickFromDir "${artistDirs[RANDOM % fileCnt]%/}"/*
 			done
 		else # randomizer == a*
 			[[ $randomizer =~ ^a([0-9]*)s?$ ]]
@@ -511,7 +511,11 @@ play() {
 		((randomizer >= 0)) && cmd+=(--shuffle)
 	fi
 
-	exec "${cmd[@]}" &
+	if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
+		exec "${cmd[@]}" && "$0" $ACTION -L --randomizer=$randomizer "$src" &
+	else
+		exec "${cmd[@]}" &
+	fi
 	sleep 1
 	exec rm "$playlistFile"
 }

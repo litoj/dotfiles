@@ -438,14 +438,14 @@ parseAction() {
 
 			local i='' optCnt=+ tmpArr=
 			if [[ $# -ne $actionArgFromEnd &&
-				$1 =~ ^(${SSS_OPTS['optionPrefix']})(no-)?([^- ][^= ]+)(=.*)?$ ]] && {
+				$1 =~ ^(${SSS_OPTS['optionPrefix']})(no-|disable-|enable-)?([^- ][^= ]+)(=.*)?$ ]] && {
 				tmpArr=("${BASH_REMATCH[@]}")
 				i=$( # index for full option name
 					isOpt() { [[ ${opts["$1"]} ]]; }
 					detectCase "${tmpArr[3]}" isOpt
 				) && {
 					i=${opts["$i"]}
-					[[ ${tmpArr[2]} ]] && optCnt=- # `no-` means toggle off
+					[[ ${tmpArr[2]:-enable} == enable ]] || optCnt=- # `no-`/`disable-` means toggle off
 					[[ ! ${tmpArr[4]} ]] || local arg=${tmpArr[4]:1}
 				}
 			} || { # short option -o(Val)?

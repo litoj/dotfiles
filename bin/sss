@@ -142,7 +142,7 @@ define() {
 					else
 						log Error ".config['$x'] - invalid syntax"
 					fi
-				elif [[ $ACTION == define ]]; then # called by user
+				elif [[ -z $USE_ALL_ARGS ]]; then # called by user
 					log Warn ".config['$x'] doesn't exist"
 				fi
 			done
@@ -171,7 +171,7 @@ define() {
 exitFn() {
 	if [[ $ACTION ]]; then
 		if [[ $i ]]; then
-			paramHelp "$ACTION" 1 $((i / 4))
+			printActionParams "$ACTION" 1 $((i / 4))
 		else
 			call help -pm "$ACTION"
 		fi
@@ -188,7 +188,7 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
 	[defAction]=unknown  # when no other action matches args, actionInfo register optional
 	[defActionLast]=1    # default action can't be followed by other actions (must consume all args)
-	[actionPrefix]='-?'  # regex for cli action long name format, used in a group
+	[actionPrefix]='-{0,2}'  # regex for cli action long name format, used in a group
 	[optionPrefix]='--|' # regex for cli option long name format, used in a group
 	[argAsLongOpt]=1     # allow arguments to be also parsed as long options
 	[onNoArg]=0          # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
@@ -314,7 +314,11 @@ exec() {
 }
 
 main() {
+	local realOpt=${SCRIPT_OPTS['optArgPicker']}
+	SCRIPT_OPTS[optArgPicker]=0
 	call define --config
+	SCRIPT_OPTS[optArgPicker]=$realOpt
+	unset realOpt
 
 	if ((CLI_MODE > 0)); then
 		while (($#)); do
@@ -586,7 +590,7 @@ parseAction() {
 		((${args[$i]:-1} > 0)) && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
-		if [[ ${SCRIPT_OPTS['argPicker']} -gt 0 && $sign == ?[!+] ]]; then
+		if [[ ${SCRIPT_OPTS['argPicker']} -gt 0 && $sign == ?[+!] ]]; then
 			declare -a "$varName"
 			if "${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
@@ -624,6 +628,13 @@ declare -A REGEX=(
 REGEX[email]="${REGEX['var']}@${REGEX['domain']}"
 REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
+# string for argMatch capturing file of given type
+declare -A MIME_TYPES=(
+	[audio]='$^audio$f\.(opus|m4a|mp3|flac|wav|wma|ogg)'
+	[video]='$^video$f\.(mov|mkv|mp4|avi|webm)'
+	[image]='$^image$f\.(jpe?g|heif|png|webp)'
+)
+
 #######################################
 # Test ^(RE)$ or custom pattern like $<k><RE> - <k>: test kind, <RE> tests the input text
 # $<b>: <b>: bash condexpr operator, match against RE$
@@ -638,7 +649,8 @@ REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 argMatch() {
 	local tested=$1
 	if [[ $reg == '$'* ]]; then # file requirements
-		local ptn reg=$reg kind
+		local ptn=${tested/*./} reg=$reg kind
+		((${#ptn} != ${#tested})) && tested=${tested%.*}.${ptn,,} # lowercase file extension
 
 		if [[ $reg == *'$|'* ]]; then
 			ptn=${reg#*'$|'}
@@ -660,7 +672,7 @@ argMatch() {
 			if [[ $kind == '^' ]]; then
 				[[ $(file -Lb --mime-type "$tested") =~ ^$ptn ]] && return 0
 			else
-				[[ ${tested,,} =~ $ptn$ ]] && if [[ $kind == F ]]; then
+				[[ $tested =~ $ptn$ ]] && if [[ $kind == F ]]; then
 					[[ ! -d $tested ]] && return 0
 				else
 					eval [[ -$kind '$tested' ]] && return 0
@@ -683,7 +695,7 @@ argMatch() {
 #   matcher: boolean show regex used for matching args
 #   paramIdx?: integer
 #######################################
-paramHelp() {
+printActionParams() {
 	local action=$1 matcher=$2 fmt
 	declare -n name=${action}Params
 	[[ $3 ]] && declare -i i="$3*4" end=i+4 || declare -i i=0 end=${#name[@]}
@@ -730,12 +742,26 @@ paramHelp() {
 	done
 }
 
+printActionConfig() {
+	declare -n cfg=${1}Config
+	[[ $cfg ]] || return 0
+	ansi '  ' bold "${1}Config" delim : reset
+	for line in "${cfg[@]}"; do
+		if [[ $line == -* || $line != *=* ]]; then
+			print "    $line"
+		else
+			ansi '    ' bold param "${line/=*/}" reset "$(print "=${line#*=}")"
+		fi
+	done
+}
+
 actionInfo help 'display this help'
 ACTION_INFO['?']=help
 helpParams=(
-	legend 'l?' '' 'Enable legend for param notation'
-	matcher 'm?' '' 'Enable regex matching argument'
-	params 'p?' '' 'Toggle params=opt+arg display (default=true for lower action count)'
+	legend 'l?' '' 'Show legend for param notation'
+	matcher 'm?' '' 'Show argument matcher expression'
+	params 'p?' '' 'Show params=opts+args (default=true for lower action count)'
+	config 'c?' '' 'Show action configs'
 	actions '$*' '.+' 'Display help for (default=all)')
 declare -A helpBuilder=([actions]=pickHelpAction)
 pickHelpAction() {
@@ -782,7 +808,7 @@ help() {
 	declare -i params="${params:-$?}"
 
 	if [[ $default ]]; then
-		print 'Actions: (more info available per action)'
+		print 'Actions: (use `-p`, `-m`, `-c` for more info)'
 	else
 		((${#actions[@]} > 1)) && print 'Actions:' || print 'Action:'
 	fi
@@ -802,8 +828,15 @@ help() {
 		local desc=${ACTION_INFO["$act"]}
 		if [[ $desc ]]; then
 			printf "  $fmt\n" "$ALIGNER" "${desc%% *}" "$(print "${desc#* }")"
+
 			# enabled params or always write complete info about help options
-			[[ $params -le 0 && $act != help ]] || paramHelp "$act" "$matcher"
+			if [[ $params -gt 0 || $act == help ]]; then
+				printActionParams "$act" "$matcher"
+			fi
+
+			if ((config > 0)); then
+				printActionConfig "$act"
+			fi
 		else
 			print "  No help for unknown action '${_act:-$act}'"
 		fi

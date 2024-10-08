@@ -5,8 +5,8 @@ resizeConfig=(
 
 downloadConfig=(metadata=false)
 editConfig=(
-	rename='$Artist - $Title.$FileTypeExtension'
+	rename='$Artist - $Title'
 	no-metadata
 )
 
-linkFixConfig=(resources ~/Music/Songs/)
+linkFixConfig=(--resources ~/Music/Songs/)

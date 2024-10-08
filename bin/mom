@@ -48,7 +48,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
 				exec mv "$cmd" "$cmd.$ext"
 
-				((metadata >= 0)) && cmd=(mv) || cmd=(call noMeta +k)
+				((metadata >= 0)) && cmd=(mv) || cmd=(call noMeta +k +o)
 				cmd+=("$prefix"*)
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
@@ -65,7 +65,8 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'
 noMetaParams=(
 	keepSrc 'k?' '' 'Keep source'
-	src '$!' '$d$^audio' 'Audio file/dir to strip metadata from'
+	overwrite 'o?' '' 'Overwrite destination (default=true)'
+	src '$!' "$d${MIME_TYPES['audio']}" 'Audio file/dir to strip metadata from'
 	dst '$?' '$d$F\.(flac|wma|m4a|mp3|opus)' 'Put results into (default=replace $src)')
 noMeta() {
 	if [[ -d $src ]]; then
@@ -195,7 +196,7 @@ genDstFromSrc() {
 	local out=${dst:-$src}
 	[[ -d $dst ]] && out="${dst%/}/${src##*/}"
 	# default path included to not override source file, but override if file dst was given
-	[[ -d ${dst:-.} ]] && out=$(ACTION+=.dst getFreePath "$out")
+	[[ -d ${dst:-.} || $override -lt 0 ]] && out=$(ACTION+=.dst getFreePath "$out")
 	echo "$out"
 }
 
@@ -227,7 +228,7 @@ editParams=(
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
-	src '$+' '$^audio$f\.mp3' 'File to cut/convert'
+	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
 	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
 	fadeout 'f*' "${REGEX['timestamp']}" 'Fadeout start time, or seconds from the end'
@@ -309,7 +310,7 @@ edit() {
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
-					out=$(exiftool "$src" -p "$rename" 2>/dev/null)
+					out=$(exiftool "$src" -p "$rename" 2>/dev/null).${src##*.}
 					if [[ $out ]]; then
 						((copy > 0)) || out="${out%.*}.opus"
 						[[ -d ${dst:-${src%/*}} ]] && local dst=${dst:-${src%/*}}/$out || local dst=.
@@ -344,7 +345,7 @@ subtitlesParams=(
 	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
-	vid '$?' '$^video' 'Source video file (default=first of `*.mp4`,`*.mkv`)'
+	vid '$?' "${MIME_TYPES['video']}" 'Source video file (default=first of `*.mp4`,`*.mkv`)'
 	dst '$?' '$F\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
@@ -556,14 +557,14 @@ linkFix() {
 actionInfo resize 'resize images'
 resizeParams=(
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
-	src '$+' '$^image' 'File to resize'
+	src '$+' "${MIME_TYPES['image']}" 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
        (comparing to dimension selected by --size)'
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
-	dst '$?' '$d$F\.(jpe?g|png)' 'Output file/dir (default=$src)')
+	dst '$?' '$d$F\.(jpe?g|png|heif)' 'Output file/dir (default=$src)')
 resize() {
-	if reg='$F\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
+	if reg='$F' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
@@ -619,78 +620,100 @@ resize() {
 	wait
 }
 
-actionInfo rename R 'rename video/image files'
+arrayToMap() {
+	declare -n map=$2 array=$1
+	local delimiter=${3:-'[:=]'}
+
+	for item in "${array[@]}"; do
+		map[${item/$delimiter*/}]=${item#*$delimiter}
+	done
+}
+
+actionInfo rename R 'rename video/image files using `exiftool` with `sed` fallback'
 renameParams=(
-	videoFormat 'v!' '.+' 'Set `sed` expression for video (default=move year to the front)'
-	audioExifFormat 'a!' '.+' 'Set `exiftool` format (default=$Artist - $Title.$FileTypeExtension)'
-	audioSedFormat 'A?' '.+' 'Set `sed` fallback expression for audio (default=s/^.*- \?//)'
-	imageFormat 'i!' '.+' 'Set timestamp format (default=%Y-%m-%d_%H%M%S)'
-	dateFallback 'F?' '[yan]|yes|no|ask' 'Use file mod time for image timestamp fallback (default=a/ask)'
-	src '$+' '$d$^(audio|video|image)' 'File to rename'
+	format 'f*' '[a-z0-9]+[:=].*' 'Exiftool format per mimetype/extension'
+	fallback 'F*' '[a-z0-9]+[:=].*' 'Sed fallback expression per mimetype/extension)'
+	dateFormat 'd!' '.+' 'Timestamp format'
+	useDateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
+	src '$+' "${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
 	dst '$?' '$d' 'Destination to move the renamed files into'
 )
 renameConfig=(
-	videoFormat='s/\./ /g;s/^\(.*\) \([0-9]\{4\}\) .* \(...\)$/\2 \1.\3/'
-	audioExifFormat='$Artist - $Title.$FileTypeExtension'
-	audioSedFormat='s/^.*- \?//'
-	imageFormat='%Y-%m-%d_%H%M%S'
-	dateFallback=ask
+	format=audio:'$Artist - $Title'
+	format=mov:'$DateTimeOriginal'
+	format=image:'$DateTimeOriginal'
+	fallback=video:'s/\./ /g;s/^(.*) ([0-9]{4}) .*$/\2 \1/'
+	fallback=audio:'s/^.*- ?//'
+	dateFormat='%Y-%m-%d_%H%M%S'
+	useDateFallback=ask
 )
 rename() {
+	declare -A exif sed
+	if ((${#exif[@]} == 0)); then
+		arrayToMap format exif
+		arrayToMap fallback sed
+	fi
+
 	if [[ -d $src ]]; then
 		for src in "$src"/*; do
 			reg=${renameParams[-2]} argMatch "$src" && rename
 		done
 	elif ((${#src[@]} > 1)); then
 		for src in "${src[@]}"; do
-			src=$src rename
+			src=$src rename # to pass a string instead of an array
 		done
 	else
 		function isolated() {
-			if reg="$^video" argMatch "$src"; then
-				local out=$(echo "$src" | sed "$videoFormat")
-			elif reg="$^audio" argMatch "$src"; then
-				local out=$(exiftool "$src" -p "$audioExifFormat" 2>/dev/null)
-				if [[ -z $out ]]; then
-					log Warn " - Missing '$audioExifFormat' exif data"
-					if [[ $audioSedFormat ]]; then
-						out=$(echo "$src" | sed "$audioSedFormat")
-					else
-						log Info " - skipping"
-						return
-					fi
-				fi
+			if reg="${MIME_TYPES['video']}" argMatch "$src"; then
+				local mime=video
+			elif reg="${MIME_TYPES['audio']}" argMatch "$src"; then
+				local mime=audio
 			else
-				local out="$(exiftool "$src" -d "$imageFormat" \
-					-p '$DateTimeOriginal' 2>/dev/null).${src##*.}"
+				local mime=image
+			fi
 
-				if [[ -z $out || $out == .* ]]; then # no name, just extension
-					out="$(date -r "$src" +"$imageFormat")$out"
-					[[ $out == "$src" ]] && return
+			local ext=${src##*.}
+			ext=${ext,,}
+			local exif=${exif["$ext"]-${exif["$mime"]}} sed=${sed["$ext"]-${sed["$mime"]}}
+
+			local name
+			if { # exiftool
+				[[ $exif ]] && name=$(exiftool "$src" -d "$dateFormat" -p "$exif") &&
+					[[ $name ]]
+			} || { # date fallback
+				[[ $exif =~ ^[^$]*\$DateTimeOriginal[^$]*$ ]] && {
+					name="${exif/'$DateTimeOriginal'*/}$(
+						date -r "$src" +"$dateFormat"
+					)${exif/*'$DateTimeOriginal'/}"
+
+					[[ $name == "${src%.*}" ]] && dateFallback=y
 
 					if [[ $dateFallback == a* ]]; then
 						local dateFallback
-						read -p "$(print "rename '$src' to file mod date ('$out')? [y/N]: ")" -n1 dateFallback
-						[[ $dateFallback ]] && echo # fix missing newline after input
-					else
-						log Warn " - Missing '\$DateTimeOriginal' exif data"
+						read -p "$(
+							print "rename '$src' to file mod date ('$name.$ext')? [y/N]: "
+						)" -n1 dateFallback
+						[[ $dateFallback ]] && echo # fix missing newline after user input
 					fi
 
-					if [[ $dateFallback == [yY]* ]]; then
-						log Info " - using last mod date: '${out%.*}'"
-					else
-						log Info " - skipping"
-						return
-					fi
-				fi
-			fi
+					[[ $dateFallback == [yY]* ]]
+				}
+			} || { # sed fallback
+				[[ $sed ]] && {
+					name=$(echo "${src%.*}" | sed -E "$sed")
+					[[ $exif ]] && log Warn " - Missing '$exif' exif data, fallback name: '$name.$ext'"
+					[[ $name ]]
+				}
+			}; then
+				local out=$name.$ext
 
-			[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
-			if [[ $src != "$out" ]]; then
-				out=$(ACTION+=.dst getFreePath "$out")
+				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 				if [[ $src != "$out" ]]; then
-					exec mv "$src" "$out"
+					out=$(ACTION+=.dst getFreePath "$out")
+					[[ $src == "$out" ]] || exec mv -i "$src" "$out"
 				fi
+			else
+				log Info " - skipping"
 			fi
 		}
 		ACTION+="['${src/*\//…/}']" isolated

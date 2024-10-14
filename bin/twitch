@@ -106,7 +106,7 @@ while ! swaymsg $params &>/dev/null && ((++i < max)); do
 done
 
 if ((i < max)); then
-	[[ $streamers == $streamer ]] && exit 0
+	[[ $streamers == $streamer || $streamer == http* ]] && exit 0
 
 	i=1
 	len=${#streamers[@]}

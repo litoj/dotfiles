@@ -450,8 +450,8 @@ pickSong() {
 play() {
 	local playlistFile=/tmp/my/song
 	local cmd=(mpv --no-audio-display --no-terminal --playlist="$playlistFile")
+	exec pkill -f "${cmd[*]}" >/dev/null
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
-	exec pkill -f "${cmd[*]::2}" \>/dev/null
 
 	if [[ -f $src ]]; then
 		exec echo "$src" \> "$playlistFile"
@@ -718,6 +718,41 @@ rename() {
 		}
 		ACTION+="['${src/*\//…/}']" isolated
 	fi
+}
+
+actionInfo exifFilter f 'exif-[f]ilter' 'filter files by exif data using fzf'
+exifFilterParams=(
+	src 's*' '$e$|-' 'Files/directories to filter recursively (default=.)'
+	sourcesCmd 'S+' '.*' 'Command for finding files from sources (default=fd "" -Lt f)'
+	filterCmd 'F*' '.*' 'Filtering command with options'
+	filterOpts 'f?' '.+' 'Filtering command flags, space-split'
+	exif '$!' '.+' 'Exiftool format to use for filtering'
+	delimiter 'd!' '.+' 'Separator between filename and exif data'
+	dateFormat 'D!' '.+' 'Timestamp format'
+)
+exifFilterConfig=(
+	-S 'fd' -S '' -S '-Lt' -S 'f'
+	filterCmd='fzf'
+	delimiter='$: '
+	dateFormat='%Y-%m-%d_%H:%M:%S'
+)
+exifFilter() {
+	local f o
+	if [[ $src == - ]]; then
+		local src=()
+		while read f; do
+			src+=("$f")
+		done
+	fi
+
+	local files=()
+	while read f; do
+		files+=("$f")
+	done < <("${sourcesCmd[@]}" "${src[@]-.}")
+
+	exiftool -d "$dateFormat" -p "$exif${delimiter//'$'/'$$'}\$FileName" "${files[@]}" 2>/dev/null |
+		"${filterCmd[@]}" ${filterOpts[*]} |
+		sed "s/$(echo "$delimiter" | sed 's/.*\([$^*.\\[\]\/]\)/\\\1/g')//"
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

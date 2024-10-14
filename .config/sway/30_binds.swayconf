@@ -105,7 +105,6 @@ bindsym --to-code {
 	$Mod+z layout toggle splith splitv tabbed
 # tiling/floating managing
 	$Mod+Shift+space floating toggle, sticky toggle, border pixel $border
-	Ctrl+KP_Begin floating toggle, sticky toggle, border pixel $border
 # scratchpad
 	$Mod+Shift+minus move scratchpad
 	$Mod+minus scratchpad show
@@ -226,15 +225,15 @@ bindsym {
 }
 # move focused container to
 bindsym --to-code {
-	$Mod+Shift+1 move workspace $w1, workspace $w1
-	$Mod+Shift+2 move workspace $w2, workspace $w2
-	$Mod+Shift+3 move workspace $w3, workspace $w3
-	$Mod+Shift+4 move workspace $w4, workspace $w4
-	$Mod+Shift+5 move workspace $w5, workspace $w5
-	$Mod+Shift+6 move workspace $w6, workspace $w6
-	$Mod+Shift+7 move workspace $w7, workspace $w7
-	$Mod+Shift+8 move workspace $w8, workspace $w8
-	$Mod+Shift+9 move workspace $w9, workspace $w9
+	$Mod+Shift+1 sticky off, move workspace $w1, workspace $w1
+	$Mod+Shift+2 sticky off, move workspace $w2, workspace $w2
+	$Mod+Shift+3 sticky off, move workspace $w3, workspace $w3
+	$Mod+Shift+4 sticky off, move workspace $w4, workspace $w4
+	$Mod+Shift+5 sticky off, move workspace $w5, workspace $w5
+	$Mod+Shift+6 sticky off, move workspace $w6, workspace $w6
+	$Mod+Shift+7 sticky off, move workspace $w7, workspace $w7
+	$Mod+Shift+8 sticky off, move workspace $w8, workspace $w8
+	$Mod+Shift+9 sticky off, move workspace $w9, workspace $w9
 }
 
 #--------------+

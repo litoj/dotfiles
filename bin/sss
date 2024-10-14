@@ -186,12 +186,12 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 	# set to main registered action if script is a single command - actions act as builders
 	# you can also change other actions' params at runtime → dynamic configuration
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
-	[defAction]=unknown  # when no other action matches args, actionInfo register optional
-	[defActionLast]=1    # default action can't be followed by other actions (must consume all args)
-	[actionPrefix]='-{0,2}'  # regex for cli action long name format, used in a group
-	[optionPrefix]='--|' # regex for cli option long name format, used in a group
-	[argAsLongOpt]=1     # allow arguments to be also parsed as long options
-	[onNoArg]=0          # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
+	[defAction]=unknown     # when no other action matches args, actionInfo register optional
+	[defActionLast]=1       # default action can't be followed by other actions (must consume all args)
+	[actionPrefix]='-{0,2}' # regex for cli action long name format, used in a group
+	[optionPrefix]='--|'    # regex for cli option long name format, used in a group
+	[argAsLongOpt]=1        # allow arguments to be also parsed as long options
+	[onNoArg]=0             # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
 )
 
 declare -A COLORS=(
@@ -650,7 +650,7 @@ argMatch() {
 	local tested=$1
 	if [[ $reg == '$'* ]]; then # file requirements
 		local ptn=${tested/*./} reg=$reg kind
-		((${#ptn} != ${#tested})) && tested=${tested%.*}.${ptn,,} # lowercase file extension
+		[[ ${#ptn} != ${#tested} && $ptn != */* ]] && tested=${tested%.*}.${ptn,,} # lowercase file extension
 
 		if [[ $reg == *'$|'* ]]; then
 			ptn=${reg#*'$|'}

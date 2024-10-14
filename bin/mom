@@ -722,19 +722,20 @@ rename() {
 
 actionInfo exifFilter f 'exif-[f]ilter' 'filter files by exif data using fzf'
 exifFilterParams=(
-	src 's*' '$e$|-' 'Files/directories to filter recursively (default=.)'
-	sourcesCmd 'S+' '.*' 'Command for finding files from sources (default=fd "" -Lt f)'
+	sourcesCmd 'S+' '.*' 'Command+args for finding files from sources'
+	dateFormat 'D!' '.+' 'Timestamp format'
+	delimiter 'd!' '.+' 'Separator between filename and exif data'
+	exifOpts 'e?' '.*' 'Exiftool options for data extraction'
+	exif '$!' '.+' 'Exiftool format to use for filtering'
+	src '$*' '$d$f$|-' 'Files/directories to filter recursively (default=.)'
 	filterCmd 'F*' '.*' 'Filtering command with options'
 	filterOpts 'f?' '.+' 'Filtering command flags, space-split'
-	exif '$!' '.+' 'Exiftool format to use for filtering'
-	delimiter 'd!' '.+' 'Separator between filename and exif data'
-	dateFormat 'D!' '.+' 'Timestamp format'
 )
 exifFilterConfig=(
-	-S 'fd' -S '' -S '-Lt' -S 'f'
-	filterCmd='fzf'
-	delimiter='$: '
+	sourcesCmd='fd' -S '' -S '-Lt' -S 'f'
 	dateFormat='%Y-%m-%d_%H:%M:%S'
+	delimiter='$: '
+	filterCmd='fzf'
 )
 exifFilter() {
 	local f o
@@ -750,9 +751,15 @@ exifFilter() {
 		files+=("$f")
 	done < <("${sourcesCmd[@]}" "${src[@]-.}")
 
-	exiftool -d "$dateFormat" -p "$exif${delimiter//'$'/'$$'}\$FileName" "${files[@]}" 2>/dev/null |
-		"${filterCmd[@]}" ${filterOpts[*]} |
-		sed "s/$(echo "$delimiter" | sed 's/.*\([$^*.\\[\]\/]\)/\\\1/g')//"
+	exiftool ${exifOpts--fast2 -p "$exif${delimiter//'$'/'$$'}\$FileName"} \
+		-d "$dateFormat" "${files[@]}" 2>/dev/null | {
+		if [[ $filterCmd || $filterOpts ]]; then
+			"${filterCmd[@]}" ${filterOpts[*]} |
+				sed "s/$(echo "$delimiter" | sed 's/.*\([$^*.\\[\]\/]\)/\\\1/g')//"
+		else
+			cat
+		fi
+	}
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

@@ -637,8 +637,7 @@ declare -A MIME_TYPES=(
 
 #######################################
 # Test ^(RE)$ or custom pattern like $<k><RE> - <k>: test kind, <RE> tests the input text
-# $<b>: <b>: bash condexpr operator, match against RE$
-# $F: ensure a file can be created at given path, RE$
+# $<b>: <b>: bash condexpr operator, UPPERCASE for negation, match against RE$
 # $^: mime type ^RE, follows symlinks
 # $|: fallback ^(RE)$, must be last in the pattern
 # Globals:
@@ -670,10 +669,11 @@ argMatch() {
 			log Trace " '$tested' =? \$$kind$ptn"
 
 			if [[ $kind == '^' ]]; then
-				[[ $(file -Lb --mime-type "$tested") =~ ^$ptn ]] && return 0
+				local mime
+				[[ ${mime:=$(file -Lb --mime-type "$tested")} =~ ^$ptn ]] && return 0
 			else
-				[[ $tested =~ $ptn$ ]] && if [[ $kind == F ]]; then
-					[[ ! -d $tested ]] && return 0
+				[[ $tested =~ $ptn$ ]] && if [[ $kind == [A-Z] ]]; then
+					eval [[ ! -${kind,} '$tested' ]] && return 0
 				else
 					eval [[ -$kind '$tested' ]] && return 0
 				fi

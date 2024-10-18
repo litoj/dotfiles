@@ -70,7 +70,7 @@ actionInfo() {
 	[[ $key ]] && ACTION_INFO["$key"]="$name"
 	((ALIGNER < ${#helpsig})) && ALIGNER=${#helpsig}
 	ACTION_INFO["$name"]="$helpsig $help"
-	ACTION_ORDER+=("$name")
+	[[ ${ACTION_ORDER[@]:0-1} == "$name" ]] || ACTION_ORDER+=("$name")
 }
 
 declare -A LOG_LEVELS=([quiet]=0 [fatal]=1 [error]=2 [warn]=3
@@ -171,7 +171,7 @@ define() {
 exitFn() {
 	if [[ $ACTION ]]; then
 		if [[ $i ]]; then
-			printActionParams "$ACTION" 1 $((i / 4))
+			printActionParams "${ACTION%%[[]*}" 1 $((i / 4))
 		else
 			call help -pm "$ACTION"
 		fi
@@ -294,7 +294,7 @@ log() {
 		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
-		[[ $ACTION == ${SSS_OPTS['exitFn']} ]] && exit -1 || "${SSS_OPTS['exitFn']}" $LAST_LOG_LVL
+		"${SSS_OPTS['exitFn']}" $LAST_LOG_LVL
 	fi
 }
 
@@ -414,10 +414,12 @@ parseAction() {
 	declare -n builder=${ACTION}Builder
 	[[ ${builder[*]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
 
-	declare -n cfg=${ACTION}Config # load config for this action
-	set -- "${cfg[@]}" "$@"
-	declare +n cfg
-	unset cfg optChain arg
+	((NO_CONFIG)) || {
+		declare -n cfg=${ACTION}Config # load config for this action
+		set -- "${cfg[@]}" "$@"
+		declare +n cfg
+	}
+	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
 		log Trace " parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
@@ -617,7 +619,7 @@ parseAction() {
 }
 
 call() { # for script usage - calling actions like itself with cli, without external process
-	USE_ALL_ARGS=1 parseAction "$@"
+	NO_CONFIG=1 USE_ALL_ARGS=1 parseAction "$@"
 	(($? == $# && LAST_LOG_LVL > 3))
 }
 
@@ -755,7 +757,8 @@ printActionConfig() {
 	done
 }
 
-actionInfo help 'display this help'
+actionInfo help '?' '' ''
+actionInfo help 'h' '[?/h]elp' 'display this help'
 ACTION_INFO['?']=help
 helpParams=(
 	legend 'l?' '' 'Show legend for param notation'

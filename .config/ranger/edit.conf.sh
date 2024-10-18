@@ -10,11 +10,8 @@ try @engrampa .jar
 BLOCKING=1
 try 'tar -xvf' .bz2 .gz .tgz .xz .zst
 try '7z x' .7z .tar .rar .zip
-edit() {
-	mom -e "$1" -ef
-}
-try edit .flac .opus .m4a .mp3 .wav .wma
-try 'mom --subtitles' .srt .mp4
+try 'mom edit' .flac .opus .m4a .mp3 .wav .wma
+try 'mom subtitles' .srt .mp4
 # try @"kdenlive & dragon-drop -x -a" .mkv
 editDir() {
 	# doesn't work if directories are inside the given one
@@ -23,10 +20,10 @@ editDir() {
 	f=(*)
 	if [[ $f =~ \.(jpg|JPG|heif|jpeg)$ ]]; then
 		# uses perl-image-exiftool package
-		exiftool -d '%Y_%m_%d_%H%M%S.%%e' '-FileName<DateTimeOriginal' .
+		mom rename .
 		cd "$CWD"
 	elif [[ $f =~ \.(mp3|m4a|flac)$ ]]; then
-		mom -e "${f[@]}"
+		mom edit "${f[@]}"
 		cd "$CWD"
 	else
 		cd "$CWD"

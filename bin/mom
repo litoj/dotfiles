@@ -7,20 +7,19 @@ A collection of media operation/manipulation scripts.'
 
 ((SCRIPT_OPTS[jobs] = (1 + $(nproc --all)) / 2))
 SCRIPT_OPTS[freePathNumberReuse]=0
-SCRIPT_OPTS[ffmpegSetLogLevel]=2
+SCRIPT_OPTS[ffmpegLogLvl]=2
 defineParams=(
 	jobs 'j?' '[0-9]*' "Number of jobs to run in parallel (default=${SCRIPT_OPTS['jobs']})"
 	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
-	ffmpegSetLogLevel 'f?' '-?[0-9]*' "Change ffmpeg log level to current script value\
- (<0 for setting a specific level)"
+	ffmpegLogLvl 'f?' '-?[0-9]*' 'Set ffmpeg log level or +f to use the script $logLvl'
 	"${defineParams[@]}")
 SSS_OPTS[onNoArg]=1
 
 ffmpegCmd() {
 	local cmd=(ffmpeg -hide_banner -v)
-	((SCRIPT_OPTS['ffmpegSetLogLevel'] > 0)) &&
-		echo "${cmd[@]}" ${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]/warn/warning} ||
-		echo "${cmd[@]}" ${LOG_NAMES[$((-SCRIPT_OPTS['ffmpegSetLogLevel']))]/warn/warning}
+	((SCRIPT_OPTS['ffmpegLogLevel'] > 0)) &&
+		echo "${cmd[@]}" ${LOG_NAMES[${SCRIPT_OPTS['ffmpegLogLvl']}]/warn/warning} ||
+		echo "${cmd[@]}" ${LOG_NAMES[$((-SCRIPT_OPTS['logLvl']))]/warn/warning}
 }
 
 actionInfo download 'download audio/video from given url with `yt-dlp`'
@@ -48,7 +47,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
 				exec mv "$cmd" "$cmd.$ext"
 
-				((metadata >= 0)) && cmd=(mv) || cmd=(call noMeta +k +o)
+				((metadata >= 0)) && cmd=(mv) || cmd=(call edit +k)
 				cmd+=("$prefix"*)
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
@@ -62,73 +61,100 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	done
 }
 
-actionInfo noMeta M 'no-[M]eta' 'remove metadata from audio files'
-noMetaParams=(
-	keepSrc 'k?' '' 'Keep source'
-	overwrite 'o?' '' 'Overwrite destination (default=true)'
-	src '$!' "$d${MIME_TYPES['audio']}" 'Audio file/dir to strip metadata from'
-	dst '$?' '$d$D\.(flac|wma|m4a|mp3|opus)' 'Put results into (default=replace $src)')
-noMeta() {
-	if [[ -d $src ]]; then
-		local CWD=$PWD
-		cd "$src"
-		for src in *; do
-			reg=${noMetaParams[6]} argMatch "$src" || continue
-			local src=$src
-			noMeta
-		done
-		cd "$CWD"
-	else
-		local cmd=($(ffmpegCmd) -i "$src" -map_metadata -1 -map a -c copy)
-		out="$(genDstFromSrc)" runCmdWithCleanup
-	fi
-}
-
-pickTime() {
+declare MPV_PICKER_MESSAGE MPV_PICKER_PICK_PATH='/tmp/mom-mpv-picker.pick'
+mpvPicker() {
 	if [[ ! -f $src ]]; then
-		log Error ".$1 <pickTime>: \$src file must be set before picking a time"
+		log Error ".$1 <mpvPicker>: \$src file must be set before picking a time"
 		return 1
 	fi
 
-	local name=pickTime pick
-	local pickFile="/tmp/$name.pick" pickerFile="/tmp/$name.lua"
-	cat >>"$pickerFile" <<lua
-		require 'mp'
-
-		local function divmod(a, b)
-			return a / b, a % b
-		end
-
-		local function pickTime()
-			local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
-			local h, m = divmod(m, 60)
-			local s = math.floor(remainder)
-			local ms = math.floor((remainder - s) * 1000)
-			local time = string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
-			local f = io.open('/tmp/pickTime.pick', 'w')
-			f:write(time)
-			f:close()
-			mp.commandv 'quit'
-		end
-
-		mp.add_key_binding("Enter", "pickTime", pickTime)
+	if [[ ! -f $MPV_PICKER_PICK_PATH ]]; then # pick values
+		local pickerFile=${MPV_PICKER_PICK_PATH%.pick}.lua
+		cat >>"$pickerFile" <<lua
+			require 'mp'
+			
+			local function divmod(a, b) return a / b, a % b end
+			
+			local function getTime()
+				local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
+				local h, m = divmod(m, 60)
+				local s = math.floor(remainder)
+				local ms = math.floor((remainder - s) * 1000)
+				return string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
+			end
+			
+			local function add(varName, value)
+				local f = io.open(_G.pick_file, 'a')
+				local src = mp.get_property 'path'
+			
+				mp.osd_message(varName .. ' = ' .. value, 2)
+			
+				f:write(varName)
+				f:write '='
+				f:write(value)
+				f:write '='
+				f:write(src)
+				f:write '\n'
+				f:close()
+			end
+			local function addVolume()
+				add('volume', mp.get_property_number 'volume' / 100)
+			end
+			
+			-- NOTE: maybe do dynamically from action regex defs?
+			mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
+			mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
+			mp.add_key_binding('f', 'pickFade', function() add('fadeout', getTime()) end)
+			mp.add_key_binding('F', 'pickFadeEnd', function() add('fadeoutEnd', getTime()) end)
+			mp.add_key_binding('v', 'pickVolume', addVolume)
+			mp.add_key_binding('Enter', 'confirm', function() mp.commandv 'quit' end)
+			mp.add_key_binding('x', 'reset', function()
+				os.remove(_G.pick_file)
+				mp.commandv 'quit'
+			end)
+	
+			_G.pick_file = '${MPV_PICKER_PICK_PATH}'
 lua
 
+		local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
+			--term-playing-msg="${MPV_PICKER_MESSAGE:="Playing $( ((SCRIPT_OPTS['color'] > 0)) &&
+				ansi italic "'\${media-title}'" reset || echo '${media-title}')
+$(print "<s> to pick --start")
+$(print "<e> to pick --end")
+$(print "<f> to pick --fadeout")
+$(print "<Shift+F> to pick --fadeoutEnd")
+$(print "<v> to pick --volume")"}" --script="$pickerFile"
+		)
+
+		while mpv "${_opts[@]}" "${src[@]}"; do
+			[[ -f $MPV_PICKER_PICK_PATH ]] && break
+			echo 'You must use the keybindings to set the values'
+		done
+
+		rm "$pickerFile"
+		[[ ! -f $MPV_PICKER_PICK_PATH ]] && return 1
+	fi
+
 	declare -n arr=$1
-	local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
-		--term-playing-msg="$(print "<Enter> to pick --$1") time for $(
-			((SCRIPT_OPTS['color'] > 0)) && ansi italic "'\${media-title}'" reset || echo '${media-title}'
-		)" --script="$pickerFile")
-	local msg=
-	for src in "${src[@]:${#arr[@]}}"; do
-		echo >"$pickFile"
-		mpv "${_opts[@]}" "$src" || return 1
-		read -r pick <"$pickFile"
-		arr+=("${pick:-0}")
+
+	local line var
+	declare -A fileMappings
+	while read -r line; do # filter values for variable in question ($1)
+		var=${line%%=*}
+		[[ $var == "$1" ]] || continue
+		line=${line#*=}
+
+		fileMappings["${line#*=}"]=${line%%=*}
+	done <"$MPV_PICKER_PICK_PATH"
+
+	arr=()
+	for line in "${src[@]}"; do
+		arr+=("${fileMappings["$line"]:-${DEFAULT_VALUE:-0}}")
 	done
 	declare +n arr
-
-	rm "$pickerFile" "$pickFile"
+}
+mpvVolumePicker() {
+	DEFAULT_VALUE=1 mpvPicker "$@"
 }
 timeToSeconds() {
 	local str=${1#0}
@@ -187,7 +213,7 @@ getFreePath() {
 	fi
 
 	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
-		$keepSrc -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Warn " = '$text'"
+		$keepSrc -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Info " = '$text'"
 	echo "$text"
 }
 
@@ -202,7 +228,7 @@ genDstFromSrc() {
 
 runJob() {
 	if ((SCRIPT_OPTS['jobs'] > $(jobs | wc -l))); then
-		"$@" &
+		IS_JOB=1 "$@" &
 	else
 		"$@"
 	fi
@@ -219,29 +245,43 @@ runCmdWithCleanup() {
 }
 
 REGEX[timestamp]='[0-9]+(:[0-9]+)*(\.[0-9]+)?'
-PICKER_FOR_REGEX[${REGEX['timestamp']}]=pickTime
+PICKER_FOR_REGEX[${REGEX['timestamp']}]=mpvPicker
 actionInfo edit 'cut, strip metadata and/or convert media; time picker works only after `src`'
+declare -A editBuilder=([volume]=mpvVolumePicker)
 editParams=(
 	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
-	rename 'r?' '.*' 'Rename to given `exiftool` format (default=false, file $dst has priority)'
+	rename 'r?' '.+' 'Rename to given `exiftool` format, file $dst has priority'
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
-	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
 	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
-	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
 	fadeout 'f*' "${REGEX['timestamp']}" 'Fadeout start time, or seconds from the end'
-	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=3)'
+	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=4)'
+	fadeoutEnd 'F*' "${REGEX['timestamp']}"
+	'End of fadeout, or fadeout duration, priority: -e > -F > -p'
+	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
+	volume 'v*' '[0-9]+(\.[0-9]+)?' 'Volume multiplier (default=1)'
+	pickAll 'a?' '' 'Use a picker for all timestamp values + volume'
 	dst '$?' '$d$D\.(opus|mp3|m4a|flac|wma)' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
 	if reg='$D\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
+	if ((pickAll > 0)); then
+		declare -a volume
+		mpvVolumePicker volume || return 1
+
+		local opt
+		for opt in start fadeout fadeoutEnd end; do
+			declare -a $opt
+			mpvPicker $opt
+		done
+	fi
 
 	local cmd=($(ffmpegCmd) -i '' -map a)
-	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-3} fileArgPos=${#cmd[@]}-3
+	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-4} fileArgPos=${#cmd[@]}-3
 	((metadata < 0)) && cmd+=(-map_metadata -1)
 	((copy > 0)) && local volume=() fadeout=() cmd+=(-c copy)
 
@@ -262,47 +302,50 @@ edit() {
 				local cmd+=(-b:a ${b}k) cmdBitratePos=${#cmd[@]}
 			}
 
-			local s=${start[i]:-0}
+			local s=${start[i]}
+			[[ -z $s && ${start:-:} != *:* ]] && s=$start || s=${s:-0}
 			[[ $s != 0 ]] && cmd+=(-ss $s)
 
-			local e=${end[i]:-0} endSeconds
-			local fade=${fadeout[i]:-${fadeout:-0}}
+			local e=${end[i]} endSeconds
+			[[ -z $e && ${end:-:} != *:* ]] && e=$end || e=${e:-0}
+			local fade=${fadeout[i]}
+			[[ -z $fade && ${fadeout:-:} != *:* ]] && fade=$fadeout || fade=${fade:-0}
+
 			if [[ $e != 0 || $fade != 0 ]]; then
-				if [[ $e != *:* ]]; then
+				if [[ $e == *:* ]]; then
+					endSeconds=$(timeToSeconds $e)
+				else
 					endSeconds=$(bc <<<"$(timeToSeconds $(
 						ffprobe "$src" |& sed -n 's/.*Duration: \([^,]*\),.*/\1/p'
 					))-$e")
 					e=$(secondsToTime $endSeconds)
-				else
-					endSeconds=$(timeToSeconds $e)
 				fi
-				cmd+=(-to $e)
 
 				if [[ $fade != 0 ]]; then
-					local fadeDuration
-					if [[ $fade != *:* ]]; then
-						fadeDuration=$(bc <<<"$fade-$fP")
-						cmd+=(-af afade=out:st=$(bc <<<"$endSeconds-$fade"):d=$fadeDuration)
+					# NOTE: fade in seconds is calculated FROM the new --end
+					[[ $fade == *:* ]] && fade=$(timeToSeconds $fade) || fade=$(bc <<<"$endSeconds-$fade")
+
+					local fE=${fadeoutEnd[i]}
+					[[ -z $fe && ${fadeoutEnd:-:} != *:* ]] && fE=$fadeoutEnd || fE=${fE:-0}
+
+					if [[ $fE == 0 ]]; then
+						fE=$(bc <<<"$endSeconds-$fade-$fP")
+						[[ $fE == .* || $fE == -* ]] && log Error '.fadeoutEnd < 1s'
 					else
-						fade=$(timeToSeconds $fade)
-						fadeDuration=$(bc <<<"$endSeconds-$fade-$fP")
-						cmd+=(-af afade=out:st=$fade:d=$fadeDuration)
+						[[ $fE == *:* ]] && fE=$(bc <<<"$(timeToSeconds $fE)-$fade")
+
+						[[ ${end[i]:-0} == 0 ]] && e=$(bc <<<"$fade+$fE+$fP")
 					fi
 
-					if [[ $fadeDuration == .* ]]; then
-						log Error ".fade interval < 1s"
-						return 1
-					fi
+					cmd+=(-af afade=out:st=$fade:d=$fE)
 				fi
+
+				cmd+=(-to $e)
 			fi
 
 			local v=${volume[i]:-${volume:-1}}
 			if [[ $v != 1 ]]; then
-				if [[ $fadeDuration ]]; then
-					cmd=("${cmd[@]::${#cmd[@]}-1}" "${cmd[@]:0-1},volume=$v")
-				else
-					cmd+=(-af volume=$v)
-				fi
+				[[ $fE ]] && cmd[-3]+=,volume=$v || cmd+=(-af volume=$v)
 			fi
 
 			local out
@@ -310,9 +353,9 @@ edit() {
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
-					out=$(exiftool "$src" -p "$rename" 2>/dev/null).${src##*.}
+					out=$(exiftool "$src" -p "$rename" 2>/dev/null)
 					if [[ $out ]]; then
-						((copy > 0)) || out="${out%.*}.opus"
+						((copy > 0)) && out+=".${src##*.}" || out+=.opus
 						[[ -d ${dst:-${src%/*}} ]] && local dst=${dst:-${src%/*}}/$out || local dst=.
 					fi
 				fi
@@ -322,7 +365,7 @@ edit() {
 
 			if [[ -d ${dst:-.} ]]; then
 				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
-					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && $fade == 0 ]]; then
+					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
 						log Info '.copy = true (no reencoding required)'
 						cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
 					fi
@@ -335,6 +378,8 @@ edit() {
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
 	wait
+
+	rm -f "$MPV_PICKER_PICK_PATH"
 }
 
 actionInfo subtitles 'convert mp4 with srt to mkv'
@@ -635,7 +680,7 @@ renameParams=(
 	fallback 'F*' '[a-z0-9]+[:=].*' 'Sed fallback expression per mimetype/extension)'
 	dateFormat 'd!' '.+' 'Timestamp format'
 	useDateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
-	src '$+' "${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
+	src '$+' "\$d${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
 	dst '$?' '$d' 'Destination to move the renamed files into'
 )
 renameConfig=(
@@ -654,13 +699,13 @@ rename() {
 		arrayToMap fallback sed
 	fi
 
-	if [[ -d $src ]]; then
-		for src in "$src"/*; do
-			reg=${renameParams[-2]} argMatch "$src" && rename
-		done
-	elif ((${#src[@]} > 1)); then
+	if ((${#src[@]} > 1)); then
 		for src in "${src[@]}"; do
 			src=$src rename # to pass a string instead of an array
+		done
+	elif [[ -d $src ]]; then
+		for src in "$src"/*; do
+			reg=${renameParams[-2]} argMatch "$src" && rename
 		done
 	else
 		function isolated() {
@@ -754,10 +799,7 @@ exifFilter() {
 		files+=("$f")
 	done < <("${sourcesCmd[@]}" ${sourcesOpts[*]} "${src[@]-.}")
 
-	if [[ ! $files ]]; then
-		log Warn ".sourcesCmd - 0 files found"
-		exit $LAST_LOG_LVL
-	fi
+	[[ $files ]] || log Error ".sourcesCmd - 0 files found"
 
 	exiftool ${exifOpts--fast2 -s2 ${exif:+-p "\$Directory/\$FileName${delimiter//'$'/'$$'}$exif"}} \
 		-d "$dateFormat" "${files[@]}" 2>/dev/null | {
@@ -777,6 +819,14 @@ exifFilter() {
 			cat
 		fi
 	}
+}
+
+SSS_OPTS[exitFn]=exitFnMom
+exitFnMom() {
+	((IS_JOB)) && exit
+
+	rm -f /tmp/mom-*
+	exitFn "$@"
 }
 
 main "$@" # TODO: default action that determines the right action to give the argument(s) to

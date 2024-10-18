@@ -13,19 +13,17 @@ else
 			USAGE=$((POWER_NOW / 100000))
 			if ((CAPACITY > 40)); then
 				((CAPACITY > 80)) && TEXT= || { ((CAPACITY > 60)) && TEXT= || TEXT=; }
-			elif ((CAPACITY > 20)); then
+			elif ((CAPACITY > 25)); then
 				TEXT=
-			else
+			elif ((CAPACITY > 20)); then
 				TEXT=
-				if [[ $CAPACITY_LEVEL != Low ]]; then
-					notify-send -t 0 -u low -h int:value:$CAPACITY \
-						-h string:synchronous:battery "Battery   $CAPACITY%" 'Plug the system in.'
-				else
-					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } && 
-						systemctl hibernate && sleep 60 &&
-						sudo swapoff /swapfile && swaymsg output eDP-1 power on
-				fi
 				bad=1
+				notify-send -u low -h int:value:$CAPACITY \
+					-h string:synchronous:battery "Battery   $CAPACITY%" 'Plug the system in.'
+			else
+				{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
+					systemctl hibernate && sleep 60 &&
+					sudo swapoff /swapfile && swaymsg output eDP-1 power on
 			fi
 			;;
 		C*) TEXT= USAGE=$((POWER_NOW / 100000)) ;;

@@ -269,6 +269,7 @@ edit() {
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
+
 	if ((pickAll > 0)); then
 		declare -a volume
 		mpvVolumePicker volume || return 1
@@ -279,6 +280,7 @@ edit() {
 			mpvPicker $opt
 		done
 	fi
+	rm -f "$MPV_PICKER_PICK_PATH"
 
 	local cmd=($(ffmpegCmd) -i '' -map a)
 	declare -i i=-1 srcN=${#src[@]} fP=${fadeoutPadding:-4} fileArgPos=${#cmd[@]}-3
@@ -291,7 +293,7 @@ edit() {
 			local cmd=("${cmd[@]}")
 			cmd[$fileArgPos]=$src
 
-			((copy > 0)) || {
+			if ((copy <= 0)); then
 				local b=${bitrate[i]:-$bitrate}
 				if [[ -z $b ]]; then
 					local fileBitrate=$(ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
@@ -300,7 +302,7 @@ edit() {
 					log Info ".bitrate = $b"
 				fi
 				local cmd+=(-b:a ${b}k) cmdBitratePos=${#cmd[@]}
-			}
+			fi
 
 			local s=${start[i]}
 			[[ -z $s && ${start:-:} != *:* ]] && s=$start || s=${s:-0}
@@ -378,8 +380,6 @@ edit() {
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
 	wait
-
-	rm -f "$MPV_PICKER_PICK_PATH"
 }
 
 actionInfo subtitles 'convert mp4 with srt to mkv'

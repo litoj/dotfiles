@@ -179,6 +179,11 @@ exitFn() {
 	exit $1
 }
 
+runExitFn() {
+	((EXITING)) && return
+	EXITING=1 ${SSS_OPTS['exitFn']} "$@"
+}
+
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
 	[about]=''                     # script description
 	[exitFn]=exitFn                # on error / on successful exit - shouldn't return
@@ -294,7 +299,7 @@ log() {
 		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
-		"${SSS_OPTS['exitFn']}" $LAST_LOG_LVL
+		runExitFn $LAST_LOG_LVL
 	fi
 }
 
@@ -314,6 +319,8 @@ exec() {
 }
 
 main() {
+	trap 'runExitFn' EXIT
+
 	local realOpt=${SCRIPT_OPTS['optArgPicker']}
 	SCRIPT_OPTS[optArgPicker]=0
 	call define --config

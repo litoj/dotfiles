@@ -1,11 +1,13 @@
 set $signal ~/.config/i3blocks/signal
 exec_always $signal load
+set $lid ~/.config/sway/lidSwitch
 
 # set background
 exec {
 	mkdir -p /tmp/my/ && $nextbg
+	$lid mode 48
 	wlsunset -l 50 -L 14.5 &>/dev/null &
-	swayidle timeout 300 'swaymsg output \* power off' resume 'swaymsg output \* power on'
+	swayidle timeout 300 "$lid idle" resume "$lid resume"
 
 	gsettings set org.gnome.desktop.interface icon-theme 'Icons'
 	gsettings set org.gnome.desktop.interface cursor-theme 'Sweet-cursors'
@@ -33,9 +35,9 @@ seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Mouse
 # }
 
 ## Sway specific
-bindswitch --locked lid:on exec \
-	[[ -f /tmp/my/nolidsleep ]] && swaymsg 'output $d1 power off' || systemctl suspend
-bindswitch --locked lid:off exec sleep 1 && swaymsg 'output $d1 power on'
+# sway has the values flipped
+bindswitch --locked lid:off exec $lid open
+bindswitch --locked lid:on exec $lid closed
 
 # Devices
 input type:keyboard {

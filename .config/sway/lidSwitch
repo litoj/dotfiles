@@ -1,0 +1,63 @@
+#!/usr/bin/bash
+
+NO_SLEEP=/tmp/my/nolidsleep
+LOW_HZ=/tmp/my/lowhz
+
+cmd=$1
+
+checkLowHZ() {
+	[[ -f $LOW_HZ ]] && swaymsg 'output eDP-1 mode 2560x1600@120Hz, output eDP-1 mode 2560x1600@48Hz'
+}
+
+main() {
+	if [[ $cmd == closed && ! -f $NO_SLEEP || $cmd == sleep ]]; then
+		swaymsg 'output $d1 power off'
+		systemctl suspend
+		if sleep 1 && [[ $(cat /proc/acpi/button/lid/LID/state) == *" closed" ]]; then
+			"$0" closed &
+			exit
+		else
+			cmd=resume
+		fi
+	fi
+
+	case "$cmd" in
+		mode)
+			mode=$2
+			if [[ -z $mode ]]; then
+				if [[ -f $LOW_HZ ]]; then
+					mode=60
+				elif swaymsg -t get_outputs -p | grep 'Current.*@ 60'; then
+					mode=120
+				else
+					mode=48
+				fi
+			fi
+
+			((mode == 48)) && touch "$LOW_HZ" || rm "$LOW_HZ"
+
+			swaymsg "output eDP-1 mode 2560x1600@${mode}Hz"
+			;;
+		closed) swaymsg 'output $d1 power off' ;;
+		open)
+			swaymsg 'output $d1 power on'
+			checkLowHZ
+			;;
+		resume)
+			swaymsg 'output * power on'
+			checkLowHZ
+			;;
+		idle) swaymsg 'output * power off' ;;
+		toggle)
+			if [[ -f $NO_SLEEP ]]; then
+				rm "$NO_SLEEP"
+				notify-send LidSleep -t 1000 -u low
+			else
+				touch "$NO_SLEEP"
+				notify-send NoLidSleep -t 1000 -u critical
+			fi
+			;;
+	esac
+}
+
+main "$@" &>/dev/null

@@ -151,7 +151,8 @@ handle_image() {
 		## Image
 		image/*)
 			if [[ $mimetype == image/x-fuji-raf ]]; then
-				exiftool "$FILE_PATH"
+				exiftool "$FILE_PATH" |
+					awk '/^(Bright|White|Satur|Shadow|Highlight|Development|Film|Sharp)/'
 				exit 5
 			fi
 
@@ -355,7 +356,8 @@ handle_mime() {
 		## Image
 		image/*)
 			## Preview as text conversion
-			exiftool "${FILE_PATH}" && exit 5
+			exiftool "$FILE_PATH" |
+				awk '/^(Bright|White|Satur|Shadow|Highlight|Development|Film|Sharp)/' && exit 5
 			exit 1
 			;;
 

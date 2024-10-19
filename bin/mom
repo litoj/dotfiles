@@ -705,7 +705,7 @@ rename() {
 		done
 	elif [[ -d $src ]]; then
 		for src in "$src"/*; do
-			reg=${renameParams[-2]} argMatch "$src" && rename
+			reg=${renameParams[-6]} argMatch "$src" && rename
 		done
 	else
 		function isolated() {

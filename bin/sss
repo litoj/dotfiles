@@ -679,7 +679,7 @@ argMatch() {
 
 			if [[ $kind == '^' ]]; then
 				local mime
-				[[ ${mime:=$(file -Lb --mime-type "$tested")} =~ ^$ptn ]] && return 0
+				[[ ${mime:=$(file -Lb --mime-type "$1")} =~ ^$ptn ]] && return 0
 			else
 				[[ $tested =~ $ptn$ ]] && if [[ $kind == [A-Z] ]]; then
 					eval [[ ! -${kind,} '$tested' ]] && return 0

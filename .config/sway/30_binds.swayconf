@@ -247,8 +247,7 @@ bindsym {
 	XF86Launch4 exec cpupower-gui
 	Shift+XF86Launch4 exec f=$(cat /sys/firmware/acpi/platform_profile) && notify-send \
 		-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
-	XF86PowerOff exec notify-send $(rm /tmp/my/nolidsleep &>/dev/null && echo LidSleep ||\
-		(touch /tmp/my/nolidsleep && echo -u critical NoLidSleep)) -t 1000
+	XF86PowerOff exec ~/.config/sway/lidSwitch toggle
 	$Mod+x mode $Exit
 	KP_Insert nop
 }
@@ -257,7 +256,6 @@ bindsym --release {
 	KP_Insert exec $dpmsOff
 	Shift+KP_Insert output $d1 toggle
 }
-# bindsym XF86PowerOff exec $lock && systemctl suspend
 mode $Exit {
 	bindsym {
 		c mode default, reload
@@ -270,9 +268,9 @@ mode $Exit {
 		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
-		$Alt+d mode default, output eDP-1 mode 2560x1600@60Hz, output eDP-1 mode 2560x1600@48Hz
+		--release $Alt+d mode default, exec $lid mode
 		q exit
-		s mode default, exec systemctl suspend
+		s mode default, exec $lid sleep
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
 		p exit, exec $nextbg save; exec systemctl poweroff

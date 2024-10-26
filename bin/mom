@@ -44,14 +44,16 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 			((SCRIPT_OPTS['logLvl'] < 3)) && cmd+=(-q)
 			exec "${cmd[@]}" && {
 				cmd=("$prefix"*)
+				local file=$cmd.$ext
+				((${#cmd[@]} > 1)) && log Warn " - File has been downloaded multiple times, using '$file'"
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
-				exec mv "$cmd" "$cmd.$ext"
+				exec mv -f "$cmd" "$file"
 
-				((metadata >= 0)) && cmd=(mv) || cmd=(call edit +k)
-				cmd+=("$prefix"*)
+				((metadata >= 0)) && cmd=(mv) || cmd=(call edit +c +k)
+				cmd+=("$file")
 				[[ -d $dst ]] && cmd+=("${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
-						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<<"${cmd[${#cmd[@]} - 1]#$prefix}"
+						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<<"${file:${#prefix}}"
 				)") || cmd+=("${dst%.*}.$ext")
 
 				exec "${cmd[@]}"
@@ -399,6 +401,7 @@ subtitles() {
 		if [[ $vid && ${#subs[@]} -gt 1 ]]; then
 			local match=${vid@L}
 			match=${match%.*}.srt
+			match=${match##*/}
 			subs=()
 			for src in *.srt; do
 				if [[ ${src@L} == "$match" ]]; then
@@ -420,6 +423,7 @@ subtitles() {
 		if [[ ${#vid[@]} -ne 1 ]]; then
 			local match=${subs@L}
 			match=${match%.*}.
+			match=${match##*/}
 			vid=()
 			for src in *.mp4 *.mkv; do
 				if [[ ${src@L} == "$match"* ]]; then
@@ -717,8 +721,7 @@ rename() {
 				local mime=image
 			fi
 
-			local ext=${src##*.}
-			ext=${ext,,}
+			local ext=$(exiftool "$src" -p '$FileTypeExtension')
 			local exif=${exif["$ext"]-${exif["$mime"]}} sed=${sed["$ext"]-${sed["$mime"]}}
 
 			local name

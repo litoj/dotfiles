@@ -232,15 +232,15 @@ print() {
 		case "$str" in # 25% speed increase over regex matches
 			false* | true*)
 				[[ $str == t* ]] && hlStr=true || hlStr=false
-				ret+="$(ansi bool "$hlStr" fg)" str=${str:${#hlStr}}
+				ret+="$(ansi bool "$hlStr" reset)" str=${str:${#hlStr}}
 				;;
 			'default='*) ret+=$(ansi def 'default' noitalic) str=${str:7} ;;
 			[A-Za-z]*) hlStr=${str/[^0-9A-Za-z]*/} ret+=$hlStr str=${str:${#hlStr}} ;;
-			[.:[\]{}]*) ret+=$(ansi delim "${str::1}" fg) str=${str:1} ;;
-			[*+?!=\<\>^\|/%]*) ret+=$(ansi oper "${str::1}" fg) str=${str:1} ;;
+			[.:[\]{}]*) ret+=$(ansi delim "${str::1}" reset) str=${str:1} ;;
+			[*+?!=\<\>^\|/%]*) ret+=$(ansi oper "${str::1}" reset) str=${str:1} ;;
 			-*)
 				if [[ ${str:1:1} == [0-9\ ] ]]; then
-					ret+=$(ansi oper - fg)
+					ret+=$(ansi oper - reset)
 					str=${str:1}
 				elif [[ ${ret:0-2} == [A-Za-z][A-Za-z] || ${ret:0-1} == [A-Za-ln-z] ]]; then
 					hlStr=${str/[^A-Za-z\-]*/}
@@ -248,7 +248,7 @@ print() {
 					str=${str:${#hlStr}}
 				else
 					hlStr=${str/[^0-9A-Z[\]_a-z\-]*/}
-					ret+=$(ansi param "$hlStr" fg)
+					ret+=$(ansi param "$hlStr" reset)
 					str=${str:${#hlStr}}
 				fi
 				;;
@@ -264,16 +264,18 @@ print() {
 					[[ ${hlStr:0-1} == "$delim" ]] && _str=${str:${#hlStr}}
 				done
 				unset _str
-				[[ ${hlStr:0-1} != "$delim" ]] && hlStr='' ret+=$delim || ret+=$(ansi str "$delim$hlStr" fg)
+				[[ ${hlStr:0-1} != "$delim" ]] && hlStr='' ret+=$delim || ret+=$(
+					ansi str "$delim$hlStr" reset
+				)
 				str=${str:${#hlStr}}
 				;;
-			[0-9]*) hlStr=${str/[^0-9_]*/} ret+=$(ansi num "$hlStr" fg) str=${str:${#hlStr}} ;;
+			[0-9]*) hlStr=${str/[^0-9_]*/} ret+=$(ansi num "$hlStr" reset) str=${str:${#hlStr}} ;;
 			'['*) hlStr=${str/m*/} ret+=$hlStr str=${str:${#hlStr}} ;;
 			[\$]*)
 				local delim=${str::1}
 				str=${str:1}
 				hlStr=${str/[^0-9A-Za-z_\-]*/}
-				ret+=$(ansi delim "$delim" var "$hlStr" fg)
+				ret+=$(ansi delim "$delim" var "$hlStr" reset)
 				str=${str:${#hlStr}}
 				;;
 			*) ret+=${str::1} str=${str:1} ;;
@@ -295,7 +297,7 @@ log() {
 	LAST_LOG_LVL=${LOG_LEVELS["${1,,}"]:-$1}
 	if ((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
-		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" fg) || type=${type^^}
+		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" reset) || type=${type^^}
 		echo "$type$(print ": $ACTION$2")" 1>&2
 	fi
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
@@ -855,7 +857,7 @@ help() {
 
 actionInfo quit 'exit the tui' # also called when exiting the cli
 quit() {
-	"${SSS_OPTS['exitFn']}" 0 # override this for commit-before-exit
+	runExitFn 0 # override this for commit-before-exit
 }
 
 unknownParams=(argument '$+' '.*' 'consumes all remaining args to end execution')

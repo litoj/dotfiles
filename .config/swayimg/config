@@ -1,0 +1,83 @@
+[viewer]
+window=#000000
+history=5
+preload=2
+
+[info]
+show=no
+info_timeout=0
+
+[gallery]
+window=#000000
+background=#101010
+border=#bb33aa
+shadow=#00000000
+size=200
+fill=no
+select=#bb33aa
+cache=0
+
+[keys.viewer]
+Shift+Space=prev_file
+p=prev_file
+n=next_file
+Left=prev_file
+Right=next_file
+comma=prev_file
+period=next_file
+Shift+h=prev_file
+Shift+l=next_file
+
+Shift+ScrollDown=zoom -1
+Shift+ScrollUp=zoom +1
+ScrollLeft=step_left 1
+ScrollDown=step_down 1
+ScrollUp=step_up 1
+ScrollRight=step_right 1
+i=zoom +10
+Up=zoom +10
+o=zoom -10
+Down=zoom -10
+a=zoom real
+Shift+a=scale real
+s=scale fill
+Shift+s=scale fit
+Alt+s=scale optimal
+Alt+a=scale
+
+h=step_left 5
+j=step_down 5
+k=step_up 5
+l=step_right 5
+
+r=rotate_right
+Shift+r=rotate_left
+
+# d=description g=gallery
+d=info
+u=antialiasing
+g=mode
+Tab=mode
+F5=reload
+
+[keys.gallery]
+# too fast -> scroll only horizontally
+ScrollLeft=none
+ScrollRight=none
+ScrollUp=step_left
+Shift+dScrollUp=step_up
+ScrollDown=step_right
+Shift+ScrollDown=step_down
+h=step_left
+j=step_down
+k=step_up
+l=step_right
+
+Tab=mode
+Space=mode
+g=mode
+
+[font]
+size=15
+color=#ffffff
+shadow=#101010ff

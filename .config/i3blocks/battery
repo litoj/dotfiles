@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 bat=(/sys/class/power_supply/BAT*/uevent)
 eval "$(sed 's/^.\{13\}//' "${bat[${BAT:-0}]}")"
-if [[ -z $STATUS || $POWER_NOW == 0 ]]; then
+if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then
 	echo " $CAPACITY%"
 else
 	((TIME = ENERGY_NOW * 60 / POWER_NOW))
@@ -26,7 +26,10 @@ else
 					sudo swapoff /swapfile && swaymsg output eDP-1 power on
 			fi
 			;;
-		C*) TEXT= USAGE=$((POWER_NOW / 100000)) ;;
+		C*)
+			TEXT= USAGE=$((POWER_NOW / 100000))
+			((CAPACITY >= 80)) && bad=1
+			;;
 		F*) TEXT= ;;
 		*) TEXT= ;;
 	esac

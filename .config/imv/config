@@ -26,5 +26,5 @@ b = exec ~/.config/sway/nextbg "$imv_current_file"
 <Meta+e> = exec sleep 0.3 && xterm ranger --selectfile="$imv_current_file" &
 <Ctrl+e> = exec gimp "$imv_current_file" &
 <Shift+B> = exec cp "$imv_current_file" ~/Pictures/screen/
-<Shift+E> = exec cp "$imv_current_file" ~/Downloads/
+<Shift+E>=exec mkdir -p /tmp/img_export/ && cp "$imv_current_file" /tmp/img_export/
 <Shift+Delete> = exec rm "$imv_current_file"; close

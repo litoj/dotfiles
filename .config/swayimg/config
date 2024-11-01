@@ -6,6 +6,7 @@ preload=2
 [info]
 show=no
 info_timeout=0
+status_timeout=1
 
 [gallery]
 window=#000000
@@ -28,12 +29,18 @@ period=next_file
 Shift+h=prev_file
 Shift+l=next_file
 
-Shift+ScrollDown=zoom -1
-Shift+ScrollUp=zoom +1
+Alt+ScrollDown=zoom -1
+Alt+ScrollUp=zoom +1
+Ctrl+ScrollDown=zoom -5
+Ctrl+ScrollUp=zoom +5
 ScrollLeft=step_left 1
 ScrollDown=step_down 1
 ScrollUp=step_up 1
 ScrollRight=step_right 1
+Shift+ScrollLeft=step_left 5
+Shift+ScrollDown=step_down 5
+Shift+ScrollUp=step_up 5
+Shift+ScrollRight=step_right 5
 i=zoom +10
 Up=zoom +10
 o=zoom -10
@@ -60,6 +67,14 @@ g=mode
 Tab=mode
 F5=reload
 
+b=exec ~/.config/sway/nextbg '%'
+Alt+Shift+s=exec adb push '%' /storage/emulated/0/Download/
+Alt+f=exec dragon-drop -x -T '%'
+Alt+e=exec xterm ranger --selectfile='%'
+Ctrl+e=exec gimp '%'
+Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
+Shift+b=exec cp '%' ~/Pictures/screen/
+
 [keys.gallery]
 # too fast -> scroll only horizontally
 ScrollLeft=none
@@ -72,6 +87,12 @@ h=step_left
 j=step_down
 k=step_up
 l=step_right
+
+
+Alt+f=exec dragon-drop -x -T '%'
+Alt+e=exec xterm ranger --selectfile='%'
+Ctrl+e=exec gimp '%'
+Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 
 Tab=mode
 Space=mode

@@ -109,7 +109,10 @@ mpvPicker() {
 			mp.add_key_binding('f', 'pickFade', function() add('fadeout', getTime()) end)
 			mp.add_key_binding('F', 'pickFadeEnd', function() add('fadeoutEnd', getTime()) end)
 			mp.add_key_binding('v', 'pickVolume', addVolume)
-			mp.add_key_binding('Enter', 'confirm', function() mp.commandv 'quit' end)
+			mp.add_key_binding('Enter', 'confirm', function()
+				addVolume()
+				mp.commandv 'quit'
+			end)
 			mp.add_key_binding('x', 'reset', function()
 				os.remove(_G.pick_file)
 				mp.commandv 'quit'
@@ -125,7 +128,8 @@ $(print "<s> to pick --start")
 $(print "<e> to pick --end")
 $(print "<f> to pick --fadeout")
 $(print "<Shift+F> to pick --fadeoutEnd")
-$(print "<v> to pick --volume")"}" --script="$pickerFile"
+$(print "<v> to pick --volume")
+$(print "<Enter> to pick --volume and quit")"}" --script="$pickerFile"
 		)
 
 		while mpv "${_opts[@]}" "${src[@]}"; do
@@ -297,10 +301,10 @@ edit() {
 
 			if ((copy <= 0)); then
 				local b=${bitrate[i]:-$bitrate}
+				local srcBr=$(ffprobe "$src" |& sed -n 's#.*Audio: .*, \([0-9]\+\) kb/s.*#\1#p')
 				if [[ -z $b ]]; then
-					local fileBitrate=$(ffprobe "$src" |& sed -n 's/.*bitrate: \([0-9]\+\) .*/\1/p')
-					[[ ($src == *.opus && $fileBitrate -ge 128) ||
-						$src =~ \.(flac|wav)$ || $fileBitrate > 192 ]] && b=128 || b=96
+					[[ ($src == *.opus && $srcBr -ge 128) ||
+						$src =~ \.(flac|wav)$ || $srcBr -ge 256 ]] && b=128 || b=96
 					log Info ".bitrate = $b"
 				fi
 				local cmd+=(-b:a ${b}k) cmdBitratePos=${#cmd[@]}
@@ -353,7 +357,7 @@ edit() {
 			fi
 
 			local out
-			if [[ -f $dst ]]; then
+			if reg='$D.(opus|mp3|m4a)' argMatch "$dst"; then
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
@@ -369,7 +373,7 @@ edit() {
 
 			if [[ -d ${dst:-.} ]]; then
 				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
-					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
+					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE && $srcBr == $b ]]; then
 						log Info '.copy = true (no reencoding required)'
 						cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
 					fi
@@ -631,24 +635,32 @@ resize() {
 		function isolated() {
 			declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
 			# imagemagick would understand, but it's easier to reuse our shortest side checker
-			local nS=$size
+			local oldSize=$size size=$size
 			[[ $size == x* ]] && size=${size:1} && ((dim[0] > dim[1])) && size+=^
 			[[ $size == *x ]] && size=${size::-1} && ((dim[0] < dim[1])) && size+=^
+
 			if [[ $size == *'%' ]]; then
 				((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]}) # scale by the longer side
 				((size = dim * ${size::-1} / 100))
 			fi
-			[[ $nS != $size ]] && log Verbose ".size: $nS → $size"
+
+			[[ $oldSize != $size ]] && log Verbose ".size: $oldSize → $size"
 
 			if [[ $predicate ]]; then
 				((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]})
 				local gap=${predicate::-1} only=${predicate:0-1}
 				if [[ $gap == *% ]]; then
-					((gap = ${gap%\%} * ${size%^} / 100))
+					((gap = ${gap%'%'} * ${size%'^'} / 100))
 					log Verbose ".predicate: $predicate → $gap$only"
 				fi
+
 				# select compared dimension - `^` for shortest side
-				[[ $size == *^ ]] && dim=${dim[1]}
+				if [[ $size == *^ ]]; then
+					dim=${dim[1]}
+				elif [[ $size != *x* ]]; then
+					size=${size}x$size # to fix portraits being resized by width instead of height
+				fi
+
 				# require distance to target size greater/lower or equal to $gap
 				if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
 					if [[ $dst ]]; then

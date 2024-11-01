@@ -119,9 +119,8 @@ define() {
 		elif [[ -z ${defineParams[i + 2]} ]]; then
 			SCRIPT_OPTS["$opt"]=${!opt}
 		elif [[ $opt == config ]]; then
-			declare -n opt
 			local x
-			for x in "${opt[@]}"; do
+			for x in "${config[@]}"; do
 				if [[ $x =~ ^-?[0-9]*$ ]]; then
 					if [[ $x == - || $x -lt 0 ]]; then
 						local _act
@@ -146,7 +145,6 @@ define() {
 					log Warn ".config['$x'] doesn't exist"
 				fi
 			done
-			declare +n opt
 		elif [[ ${!opt} ]]; then
 			if [[ ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS["${!opt,,}"]} ]]; then
 				[[ $opt == logLvl ]] &&
@@ -192,7 +190,7 @@ declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific e
 	# you can also change other actions' params at runtime → dynamic configuration
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
 	[defAction]=unknown     # when no other action matches args, actionInfo register optional
-	[defActionLast]=1       # default action can't be followed by other actions (must consume all args)
+	[defActionLast]=1       # default action can't be followed by other actions (must use all args)
 	[actionPrefix]='-{0,2}' # regex for cli action long name format, used in a group
 	[optionPrefix]='--|'    # regex for cli option long name format, used in a group
 	[argAsLongOpt]=1        # allow arguments to be also parsed as long options
@@ -325,7 +323,7 @@ main() {
 
 	local realOpt=${SCRIPT_OPTS['optArgPicker']}
 	SCRIPT_OPTS[optArgPicker]=0
-	call define --config
+	[[ $NO_CONFIG ]] || call define --config
 	SCRIPT_OPTS[optArgPicker]=$realOpt
 	unset realOpt
 
@@ -476,7 +474,7 @@ parseAction() {
 		if [[ $i ]]; then # set option / named parameter
 			local varName=${sigs[$i]//-/_} reg=${sigs[i + 2]}
 			if [[ $reg ]]; then # requires arg
-				if [[ $optCnt == - ]]; then
+				if [[ $optCnt == - && ${!varName+y} ]]; then
 					unset "$varName" # `+o` resets the option value - for config override
 					[[ ${args[$i]} ]] && args[$i]=-1
 				elif [[ ${arg+y} || ${1+y} ]] && argMatch "${arg-$1}"; then
@@ -498,12 +496,12 @@ parseAction() {
 						shift
 					fi
 				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch ''; then
-					if argMatch 3; then
-						declare -i "$varName+=1" # counter
+					if argMatch 3; then # counter
+						declare -i "$varName+=${optCnt}1"
 						log Debug ".$varName = ${!varName}"
-					else
-						declare -i "$varName=1" # boolean
-						log Debug ".$varName = true"
+					else # boolean
+						declare -i "$varName=${optCnt}1"
+						[[ $optCnt == + ]] && log Debug ".$varName = true" || log Debug ".$varName = false"
 					fi
 				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
 					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {

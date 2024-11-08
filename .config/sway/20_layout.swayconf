@@ -56,8 +56,8 @@ assign [app_id="org.prismlauncher.*"] $wGame
 assign [class="[sS]team.*"] $wGame
 
 # Outputs
-output $d1 pos 0 0
-output 'Dell Inc. DELL U2412M 0FFXD4BO2T3S' pos 0 -1200
+output $d1 pos 0 1200
+output 'Dell Inc. DELL U2412M 0FFXD4BO2T3S' pos 0 0
 output $dMedia adaptive_sync on scale 2
 
 workspace $w1 output $d1

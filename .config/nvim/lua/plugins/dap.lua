@@ -77,7 +77,7 @@ function M.config()
 				size = 0.25,
 				position = 'right',
 			},
-			{ elements = { { id = 'console', size = 1 } }, size = 0.3, position = 'bottom' },
+			{ elements = { { id = 'console', size = 1 }, --[[ {id = 'repl', size = 0.5} ]] }, size = 0.3, position = 'bottom' },
 		},
 		mappings = {
 			expand = { '<RightMouse>', 'o', '<CR>', '<Left>', 'l' },
@@ -92,7 +92,7 @@ function M.config()
 	map('n', ' db', dap.toggle_breakpoint)
 	map('n', ' dB', dap.clear_breakpoints)
 	map('n', ' dg', dap.goto_)
-	map('n', ' dl', function() dap.list_breakpoints(true) end)
+	map('n', ' dL', function() dap.list_breakpoints(true) end)
 	map('n', ' du', dapui.toggle)
 	map('n', ' dE', dapui.eval)
 	map('n', ' de', function()

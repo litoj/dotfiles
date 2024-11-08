@@ -11,7 +11,7 @@ bindsym {
 	$Mod+$Alt+Shift+t exec $signal theme toggle
 
 	$Mod+u exec $nextbg
-	$Mod+Ctrl+u exec imv -f -n "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
+	$Mod+Ctrl+u exec swayimg "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
 
 #---------------+
 # App selection |

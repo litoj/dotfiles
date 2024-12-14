@@ -27,8 +27,8 @@ main() {
 			mode=$2
 			if [[ -z $mode ]]; then
 				if [[ -f $LOW_HZ ]]; then
-					mode=120
-				elif swaymsg -t get_outputs -p | grep 'Current.*@ 60'; then
+					mode=96
+				elif ! swaymsg -t get_outputs -p | grep 'Current.*@ 120'; then
 					mode=120
 				else
 					mode=48

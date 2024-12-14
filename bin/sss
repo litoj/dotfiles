@@ -81,6 +81,7 @@ LOG_NAMES=(quiet fatal error warn info verbose debug trace)
 CLI_MODE=$? # if the actions are specified via the cli (not tui)
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
 	[tui]=$((1 - CLI_MODE))
+	[tuiWithOpts]=0
 	[dryRun]=0
 	[color]=0
 	[guiPicker]=0
@@ -95,6 +96,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 actionInfo define D 'set script-processing options'
 defineParams=(
 	tui 'T?' '' 'Enter TUI after CLI is parsed'
+	tuiWithOpts '-?' '' 'Call action also with options when in TUI mode'
 	dryRun 'D?' '' 'Disable actual commands execution'
 	color 'C?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
@@ -339,7 +341,7 @@ main() {
 	SCRIPT_OPTS[argPicker]=1
 	local _esc
 	while :; do
-		if ((SCRIPT_OPTS['optArgPicker'])); then
+		if ((SCRIPT_OPTS['tuiWithOpts'])); then
 			read -rp "Choose $(ansi italic action noitalic delim \( oper + param opts delim \): fg) " line
 		else
 			read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line

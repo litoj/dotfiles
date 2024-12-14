@@ -1,7 +1,7 @@
 [global]
 	scale=1
 	width=(0, 500)
-	height=600
+	height=(0, 600)
 	origin=top-center
 	monitor=eDP-1
 	offset=0x5

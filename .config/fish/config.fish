@@ -107,9 +107,14 @@ abbr gp     'git pull'
 abbr gA     'git add -A && git commit'
 abbr ga     'git add -v (git lf | fzf -m | sed "s/..//")'
 abbr gC     'git commit'
+abbr gr     'git rebase'
+abbr grc    'git rebase --continue'
 abbr gP     'git push'
-abbr gPt    'git push origin --tags'
+abbr gbP    'git push origin HEAD:'
+abbr gdP    'git push -d origin'
+abbr gtP    'git push origin --tags'
 abbr gd     'git branch -d (git branch | fzf | sed "s/.* //")'
+abbr gb     'git checkout -b'
 
 # internet related shortcuts
 abbr scan   "nmap -T4 -p22 (ip a | sed -nE 's,.*inet (1([^2][^.]|2[^7])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p')"

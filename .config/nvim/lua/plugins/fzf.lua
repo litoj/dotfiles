@@ -39,13 +39,13 @@ function M.config()
 
 	map('n', ' pf', fzf.files)
 	map('n', ' pg', fzf.live_grep_native)
+	map('n', ' pd', fzf.diagnostics_workspace) -- list diagnostics
 	map('n', ' bf', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
 	map('n', ' bl', fzf.buffers)
 	map('n', ' of', fzf.oldfiles)
 	map('n', ' ql', fzf.quickfix)
 	map({ '', 'i' }, '<C-/>', fzf.blines)
 	map({ '', 'i' }, '<C-f>', fzf.blines)
-	map('n', ' dl', fzf.diagnostics_workspace) -- list diagnostics
 	map('n', ' mc', fzf.highlights) -- my colors
 end
 return M

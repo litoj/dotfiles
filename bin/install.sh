@@ -2,7 +2,7 @@
 # This I use for my own use, simply put, it installs all the packages I need and puts all theme
 # files where I want them. Use only as the user on the machine who you want to affect
 
-cd "${0%bin/install.sh}" 2> /dev/null || cd ..
+cd "${0%install.sh}.." 2> /dev/null || cd ..
 
 if [[ ! $(which paru) ]]; then
 	(
@@ -82,7 +82,6 @@ gparted
 grim
 htop
 i3blocks
-imv
 inxi
 jq
 libva-mesa-driver
@@ -118,6 +117,7 @@ sunwait
 sway
 swaybg
 swayidle
+swayimg
 sweet-cursor-theme-git
 ttf-exo-2
 ttf-fira-code

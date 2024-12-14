@@ -37,7 +37,7 @@ bindsym --to-code {
 	$Mod+3 exec xterm
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
-	$Mod+7 exec $lof gimp '[class=Gimp|mpv]'
+	$Mod+7 exec $lof gimp '[app_id=gimp|mpv]'
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title=^(Minecraft|Prism Launcher).*]'
 	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title=^(Minecraft|Prism Launcher).*]'
 }

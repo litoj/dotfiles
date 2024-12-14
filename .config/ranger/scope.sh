@@ -47,6 +47,13 @@ PYGMENTIZE_STYLE="${PYGMENTIZE_STYLE:-autumn}"
 OPENSCAD_IMGSIZE="${RNGR_OPENSCAD_IMGSIZE:-1000,1000}"
 OPENSCAD_COLORSCHEME="${RNGR_OPENSCAD_COLORSCHEME:-Tomorrow Night}"
 
+imageExif() {
+	exiftool "$FILE_PATH" |
+		awk '/^(Bright|Development|Exposure Time|F Number|Film|Focal Length.*\(|Highlight|ISO|Satur|Shadow|Sharp|White)/' |
+		sort
+	exit 5
+}
+
 handle_extension() {
 	case "${FILE_EXTENSION_LOWER}" in
 		## Archive
@@ -124,7 +131,8 @@ handle_extension() {
 			bat --color=always --tabs 2 -l cfg --style="plain" -- "${FILE_PATH}" && exit 5
 			;;
 		csproj)
-			bat --color=always --tabs 2 -l xml --style="plain" -- "${FILE_PATH}" && exit 5;
+			bat --color=always --tabs 2 -l xml --style="plain" -- "${FILE_PATH}" && exit 5
+			;;
 	esac
 }
 
@@ -138,9 +146,10 @@ handle_image() {
 	local mimetype="${1}"
 	case "${mimetype}" in
 		## SVG
-		image/svg+xml|image/svg)
-		    magick -- "${FILE_PATH}" "${IMAGE_CACHE_PATH}" && exit 6
-		    exit 1;;
+		image/svg+xml | image/svg)
+			magick -- "${FILE_PATH}" "${IMAGE_CACHE_PATH}" && exit 6
+			exit 1
+			;;
 
 		## DjVu
 		# image/vnd.djvu)
@@ -151,9 +160,7 @@ handle_image() {
 		## Image
 		image/*)
 			if [[ $mimetype == image/x-fuji-raf ]]; then
-				exiftool "$FILE_PATH" |
-					awk '/^(Bright|White|Satur|Shadow|Highlight|Development|Film|Sharp)/'
-				exit 5
+				imageExif
 			fi
 
 			# local orientation
@@ -186,13 +193,14 @@ handle_image() {
 
 		# PDF
 		application/pdf)
-		    pdftoppm -f 1 -l 1 \
-		             -scale-to-x "${DEFAULT_SIZE%x*}" \
-		             -scale-to-y -1 \
-		             -singlefile \
-		             -jpeg -tiffcompression jpeg \
-		             -- "${FILE_PATH}" "${IMAGE_CACHE_PATH%.*}" \
-		        && exit 6 || exit 1;;
+			pdftoppm -f 1 -l 1 \
+				-scale-to-x "${DEFAULT_SIZE%x*}" \
+				-scale-to-y -1 \
+				-singlefile \
+				-jpeg -tiffcompression jpeg \
+				-- "${FILE_PATH}" "${IMAGE_CACHE_PATH%.*}" &&
+				exit 6 || exit 1
+			;;
 
 		## ePub, MOBI, FB2 (using Calibre)
 		# application/epub+zip|application/x-mobipocket-ebook|\
@@ -356,8 +364,7 @@ handle_mime() {
 		## Image
 		image/*)
 			## Preview as text conversion
-			exiftool "$FILE_PATH" |
-				awk '/^(Bright|White|Satur|Shadow|Highlight|Development|Film|Sharp)/' && exit 5
+			imageExif
 			exit 1
 			;;
 

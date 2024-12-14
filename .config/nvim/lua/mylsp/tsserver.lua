@@ -2,20 +2,20 @@
 
 withMod('dap', function(dap)
 	local dapcfg = {
-		{
+		--[[ {
 			type = 'pwa-node',
 			request = 'launch',
 			name = 'Launch file',
 			program = '${file}',
 			cwd = vim.fn.getcwd(),
 			sourceMaps = true,
-		},
+		}, ]]
 		{
 			type = 'pwa-node',
 			request = 'attach',
 			name = 'Attach to "npx --inspect" cmds',
 			processId = function()
-				return require('dap.utils').pick_process { filter = '^%S*node' }
+				return require('dap.utils').pick_process { filter = '^%S*node.*--inspect' }
 			end,
 			cwd = vim.loop.cwd(),
 			sourceMaps = true,
@@ -46,11 +46,11 @@ withMod('dap', function(dap)
 			userDataDir = false,
 		},
 		-- Divider for the launch.json derived configs
-		{
+		--[[ {
 			name = '----- ↓ launch.json configs ↓ -----',
 			type = '',
 			request = 'launch',
-		},
+		}, ]]
 	}
 
 	require('dap-vscode-js').setup {

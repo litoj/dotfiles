@@ -109,7 +109,7 @@ function M.config()
 				{ 'c', '~/dotfiles/.config/' },
 				{ 'n', '~/.config/nvim/lua/' },
 				{ 's', '~/.config/sway/' },
-				{ 'i', '~/.config/imv/config' },
+				{ 'i', '~/.config/swayimg/config' },
 				{ 'b', '~/.config/i3blocks/' },
 				{ 'r', '~/.config/ranger/' },
 				{ 'f', '~/.config/fish/config.fish' },

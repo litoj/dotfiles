@@ -94,7 +94,6 @@ j=step_down
 k=step_up
 l=step_right
 
-
 Alt+f=exec dragon-drop -x -T '%'
 Alt+e=exec xterm ranger --selectfile='%'
 Ctrl+e=exec gimp '%'

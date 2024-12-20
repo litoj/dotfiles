@@ -53,38 +53,42 @@ CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/twitch.conf.sh"
 declare -a streamers
 [[ -f $CONFIG_FILE ]] && source "$CONFIG_FILE"
 
-streamer=$(printf '%s\n' ${streamers[@]} | rofi -dmenu -p Streamer)
-(($?)) && exit 0
-case "$streamer" in
-	[0-9]) streamer=${streamers[$streamer]} ;;
-	https://*) url=$streamer ;;
-	[a-z]*)
-		add=1
-		for s in ${streamers[@]}; do
-			if [[ $s == "$streamer"* ]]; then
-				streamer=$s
-				unset add
-				break
-			fi
-		done
-		[[ $streamer == [a-z] ]] && exit 1
-		;;
-esac
+if [[ $1 == https://* ]]; then
+	url=$1
+else
+	streamer=$(printf '%s\n' ${streamers[@]} | rofi -dmenu -p Streamer)
+	(($?)) && exit 0
+	case "$streamer" in
+		[0-9]) streamer=${streamers[$streamer]} ;;
+		https://*) url=$streamer ;;
+		[a-z]*)
+			add=1
+			for s in ${streamers[@]}; do
+				if [[ $s == "$streamer"* ]]; then
+					streamer=$s
+					unset add
+					break
+				fi
+			done
+			[[ $streamer == [a-z] ]] && exit 1
+			;;
+	esac
 
-if [[ -z $url ]]; then
-	streams=$(wtwitch $streamer)
-	urls=($(echo "$streams" | sed 's/^.*https:/https:/'))
-	streams=$(echo "$streams" | sed 's/https:.*//')
-	video=$(echo "$streams" | rofi -dmenu -p Video -i)
+	if [[ -z $url ]]; then
+		streams=$(wtwitch $streamer)
+		urls=($(echo "$streams" | sed 's/^.*https:/https:/'))
+		streams=$(echo "$streams" | sed 's/https:.*//')
+		video=$(echo "$streams" | rofi -dmenu -p Video -i)
 
-	if [[ -z $video ]]; then
-		live=true
-		url="https://twitch.tv/$streamer"
-	elif [[ $video != [1-9] ]]; then
-		url=${urls[$(($(echo "$video" | sed 's/ .*//') - 1))]}
+		if [[ -z $video ]]; then
+			live=true
+			url="https://twitch.tv/$streamer"
+		elif [[ $video != [1-9] ]]; then
+			url=${urls[$(($(echo "$video" | sed 's/ .*//') - 1))]}
+		fi
+
+		[[ -z $url ]] && exit 1
 	fi
-
-	[[ -z $url ]] && exit 1
 fi
 
 if [[ -z $quality ]]; then

@@ -2,9 +2,14 @@
 # simpler=faster xdg-open replacement
 LC_ALL=C
 
+if [[ $1 == open-sh://* ]]; then # for YT-to-external browser redirect
+	arg=${1#open-sh://}
+	set "${arg/\/\//:\/\/}" # firefox doesn't pass through ':' in the url path
+fi
+
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
-[[ $arg == *:* ]] && URI=${arg#:*}: || URI=:
+[[ $arg == *:* ]] && URI=${arg%:*}: || URI=:
 [[ $arg == *.* ]] && EXT=.${arg##*.} && EXT=${EXT,,} || EXT=.
 
 run() {

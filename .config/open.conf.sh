@@ -3,6 +3,7 @@ BROWSER=@$BROWSER
 TERM_BLOCKING=1
 try 'mpv --no-audio-display' +audio .m3u .m4a .mp3
 try @'mpv --no-terminal' +video
+try @twitch youtube.com/watch youtu.be
 try @geeqie .raf
 if (($# > 1)); then
 	try @'swayimg -c list.all=no' +image

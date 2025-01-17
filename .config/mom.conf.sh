@@ -6,7 +6,7 @@ resizeConfig=(
 
 downloadConfig=(metadata=false)
 editConfig=(
-	rename='$Artist - $Title'
+	rename
 	no-metadata
 	pickAll=true
 )

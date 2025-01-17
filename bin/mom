@@ -257,7 +257,7 @@ declare -A editBuilder=([volume]=mpvVolumePicker)
 editParams=(
 	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
-	rename 'r?' '.+' 'Rename to given `exiftool` format, file $dst has priority'
+	rename 'r?' '' 'Rename using rename action, file $dst has priority'
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
@@ -357,11 +357,12 @@ edit() {
 			fi
 
 			local out
-			if reg='$D.(opus|mp3|m4a)' argMatch "$dst"; then
+			if reg='$D\.[^ ]+$' argMatch "$dst"; then
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
-					out=$(exiftool "$src" -p "$rename" 2>/dev/null)
+					out=$(call rename "${renameConfig[@]}" "$src" '-')
+					out=${out%.*}
 					if [[ $out ]]; then
 						((copy > 0)) && out+=".${src##*.}" || out+=.opus
 						[[ -d ${dst:-${src%/*}} ]] && local dst=${dst:-${src%/*}}/$out || local dst=.
@@ -700,14 +701,14 @@ renameParams=(
 	dateFormat 'd!' '.+' 'Timestamp format'
 	useDateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
 	src '$+' "\$d${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
-	dst '$?' '$d' 'Destination to move the renamed files into'
+	dst '$?' '$d$|-' 'Destination to rename to, or `-` to just print the final dst'
 )
 renameConfig=(
 	format=audio:'$Artist - $Title'
 	format=mov:'$DateTimeOriginal'
 	format=image:'$DateTimeOriginal'
 	fallback=video:'s/\./ /g;s/^(.*) ([0-9]{4}) .*$/\2 \1/'
-	fallback=audio:'s/^.*- ?//'
+	fallback=audio:'s,.*(/([^0-9]+( \w+)+)/).*- ?,\2 - ,'
 	dateFormat='%Y-%m-%d_%H%M%S'
 	useDateFallback=ask
 )
@@ -741,9 +742,12 @@ rename() {
 
 			local name
 			if { # exiftool
-				[[ $exif ]] && name=$(exiftool "$src" -d "$dateFormat" -p "$exif") &&
-					[[ $name ]]
-			} || { # date fallback
+				[[ $exif ]] && name=$( # regex creates cond to check all exif vars have a value
+					exiftool "$src" -d "$dateFormat" -p "$exif" -if "$(
+						echo "$exif" | sed 's/^[^$]*//;s/\(\$\w\+\)[^$]*/\1 and /g;s/ and $//'
+					)" 2>/dev/null
+				) && [[ $name ]]
+			} || { # date fallback (for images)
 				[[ $exif =~ ^[^$]*\$DateTimeOriginal[^$]*$ ]] && {
 					name="${exif/'$DateTimeOriginal'*/}$(
 						date -r "$src" +"$dateFormat"
@@ -763,6 +767,7 @@ rename() {
 				}
 			} || { # sed fallback
 				[[ $sed ]] && {
+					[[ $src == *[^.]/* ]] || src=$PWD/${src#./}
 					name=$(echo "${src%.*}" | sed -E "$sed")
 					[[ $exif ]] && log Warn " - Missing '$exif' exif data, fallback name: '$name.$ext'"
 					[[ $name ]]
@@ -773,7 +778,13 @@ rename() {
 				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 				if [[ $src != "$out" ]]; then
 					out=$(ACTION+=.dst getFreePath "$out")
-					[[ $src == "$out" ]] || exec mv -i "$src" "$out"
+					if [[ $src != "$out" ]]; then
+						if [[ $dst == '-' ]]; then
+							echo "$out"
+						else
+							exec mv -i "$src" "$out"
+						fi
+					fi
 				fi
 			else
 				log Info " - skipping"

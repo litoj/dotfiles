@@ -122,10 +122,10 @@ abbr ipa    "ip a | sed -n 's/.* \([.0-9]\+\/[0-9]\+\).*/\1/p' | tail -n 1"
 abbr npa    "netstat -tn"
 abbr npo    "netstat -lutnp &| tail -n +4"
 abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7 | sort -k4n -k2n | column -t -R 2"
+abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up'
 # shows connected devices
 abbr con    'arp -a'
-# enable disabled wifi
-abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up'
+abbr sync   'rsync -rltvuP --delete ~/'
 
 abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
 
@@ -144,8 +144,6 @@ if status is-login
 		eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
 		export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
 		export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
-		export QT_QPA_PLATFORMTHEME=qt5ct GDK_BACKEND="wayland,x11"
-		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1
 		# for '~' expansion
 		set -x XDG_CONFIG_HOME ~/.config
 		set -x XDG_CACHE_HOME ~/.cache
@@ -153,9 +151,9 @@ if status is-login
 		export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
 		export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 		export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
-		export RADV_PERFTEST=video_decode
-		set WLR_RENDERER vulkan
-		sway
+		export QT_QPA_PLATFORMTHEME=qt6ct RADV_PERFTEST=video_decode
+		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
+		WLR_RENDERER=vulkan sway < /dev/null # to disable stdin and not cause term apps to open in tty
 		killall -15 ssh-agent
 	end
 end

@@ -15,6 +15,7 @@ exec {
 	gsettings set org.gnome.desktop.interface font-name 'Nova Square 15'
 }
 
+## Sway specific
 seat seat0 xcursor_theme 'Sweet-cursors' 32
 
 # seat seat0 attach 1:1:AT_Translated_Set_2_keyboard
@@ -29,12 +30,11 @@ seat seat0 attach 1267:12717:ELAN2841:00_04F3:31AD_Mouse
 # seat seat1 attach 1133:49166:Logitech_USB-PS/2_Optical_Mouse
 # seat seat1 attach 5215:611:MOSART_Semi._Trust_Wireless_Mouse
 # bindcode --whole-window 274 seat - cursor press BTN_LEFT, seat - cursor release BTN_LEFT
-# seat * {
-# 	hide_cursor 5000
-# 	hide_cursor when-typing enable
-# }
+seat * {
+	hide_cursor 5000
+	# hide_cursor when-typing enable
+}
 
-## Sway specific
 # sway has the values flipped
 bindswitch --locked lid:off exec $lid open
 bindswitch --locked lid:on exec $lid closed
@@ -50,4 +50,5 @@ input type:touchpad {
 	tap enabled
 	# natural_scroll enabled
 	dwt enabled
+	events disabled_on_external_mouse
 }

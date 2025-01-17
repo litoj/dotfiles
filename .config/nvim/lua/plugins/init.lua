@@ -69,12 +69,19 @@ return {
 	},
 	-- { 'mpas/marp-nvim', cmd = 'MarpToggle', opts = { port = 8080 } },
 	{
-		'litoj/colorizer.nvim',
+		'catgoose/nvim-colorizer.lua',
 		cmd = 'ColorizerToggle',
 		config = function()
 			require('colorizer').setup {
 				user_default_options = {
-					names = function() return require('nerdcontrast').palette end,
+					names = false,
+					names_custom = function()
+						local palette = require('nerdcontrast').palette
+						for k, v in pairs(palette) do
+							if palette[k] == 'NONE' then palette[k] = nil end
+						end
+						return palette
+					end,
 					mode = 'foreground',
 				},
 			}

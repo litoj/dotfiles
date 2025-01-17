@@ -612,7 +612,7 @@ resizeParams=(
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
 	src '$+' "${MIME_TYPES['image']}" 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
-	predicate 'p?' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
+	predicate 'p*' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
        (comparing to dimension selected by --size)'
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
 	dst '$?' '$d$D\.(jpe?g|png|heif)' 'Output file/dir (default=$src)')
@@ -647,28 +647,31 @@ resize() {
 			[[ $oldSize != $size ]] && log Verbose ".size: $oldSize → $size"
 
 			if [[ $predicate ]]; then
-				((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]})
-				local gap=${predicate::-1} only=${predicate:0-1}
-				if [[ $gap == *% ]]; then
-					((gap = ${gap%'%'} * ${size%'^'} / 100))
-					log Verbose ".predicate: $predicate → $gap$only"
-				fi
-
-				# select compared dimension - `^` for shortest side
-				if [[ $size == *^ ]]; then
-					dim=${dim[1]}
-				elif [[ $size != *x* ]]; then
-					size=${size}x$size # to fix portraits being resized by width instead of height
-				fi
-
-				# require distance to target size greater/lower or equal to $gap
-				if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
-					if [[ $dst ]]; then
-						exec $( ((keepSrc > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
+				local pred
+				for pred in "${predicate[@]}"; do
+					((dim[0] < dim[1])) && dim=(${dim[1]} ${dim[0]})
+					local gap=${pred::-1} only=${pred:0-1}
+					if [[ $gap == *% ]]; then
+						((gap = ${gap%'%'} * ${size%'^'} / 100))
+						log Verbose ".predicate: $pred → $gap$only"
 					fi
-					log Info ": ${dim}px != <${gap}px${only}> → skipping"
-					return
-				fi
+
+					# select compared dimension - `^` for shortest side
+					if [[ $size == *^ ]]; then
+						dim=${dim[1]}
+					elif [[ $size != *x* ]]; then
+						size=${size}x$size # to fix portraits being resized by width instead of height
+					fi
+
+					# require distance to target size greater/lower or equal to $gap
+					if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
+						if [[ $dst ]]; then
+							exec $( ((keepSrc > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
+						fi
+						log Info ": ${dim}px != <${gap}px${only}> → skipping"
+						return
+					fi
+				done
 			fi
 
 			local cmd=(magick "$src" -auto-orient -resize "$size")

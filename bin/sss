@@ -81,7 +81,6 @@ LOG_NAMES=(quiet fatal error warn info verbose debug trace)
 CLI_MODE=$? # if the actions are specified via the cli (not tui)
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
 	[tui]=$((1 - CLI_MODE))
-	[tuiWithOpts]=0
 	[dryRun]=0
 	[color]=0
 	[guiPicker]=0
@@ -96,7 +95,6 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 actionInfo define D 'set script-processing options'
 defineParams=(
 	tui 'T?' '' 'Enter TUI after CLI is parsed'
-	tuiWithOpts '-?' '' 'Call action also with options when in TUI mode'
 	dryRun 'D?' '' 'Disable actual commands execution'
 	color 'C?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
@@ -169,7 +167,7 @@ define() {
 }
 
 exitFn() {
-	if [[ $ACTION ]]; then
+	if [[ $ACTION && $1 -gt 0 ]]; then
 		if [[ $i ]]; then
 			printActionParams "${ACTION%%[[]*}" 1 $((i / 4))
 		else
@@ -305,7 +303,7 @@ log() {
 	fi
 }
 
-# Supports simple redirection ... '>'/'>>' 'path'
+# Supports simple redirection ... '>'/'>>' 'path' with logging
 exec() {
 	((SCRIPT_OPTS['logLvl'] > 3)) && log Verbose " \$> $*"
 	((SCRIPT_OPTS['dryRun'] > 0)) && return
@@ -320,9 +318,50 @@ exec() {
 	fi
 }
 
+ui() {
+	SCRIPT_OPTS[argPicker]=1
+	SSS_OPTS[exitLogLvl]=0
+	while :; do
+		read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line
+		echo
+
+		if [[ $line == $'\004' ]]; then
+			line=quit
+		elif [[ -z $line ]]; then
+			line=${ACTION_INFO[$'\n']:-quit}
+		elif [[ $line == $'\E' ]]; then
+			read -r # skip all chars after escape
+			continue
+		else
+			line=${ACTION_INFO["$line"]}
+		fi
+
+		if [[ -z $line ]]; then
+			call help +pml
+			continue
+		fi
+
+		local _args=()
+		declare -n params=${line}Params
+		if ((${#params[@]} > 0)); then
+			declare -i i=${#params[@]}
+			readarray -t _args < <(while ((0 <= (i -= 4))); do
+				echo "--${params[$i]}"
+			done | fzf -m --prompt="Choose ${line} params: ")
+		fi
+		declare +n params
+		unset params i
+
+		parseAction $line "${_args[@]}"
+
+		LAST_LOG_LVL=100
+	done
+}
+
 main() {
 	trap 'runExitFn' EXIT
 
+	# load default config
 	local realOpt=${SCRIPT_OPTS['optArgPicker']}
 	SCRIPT_OPTS[optArgPicker]=0
 	[[ $NO_CONFIG ]] || call define --config
@@ -338,39 +377,7 @@ main() {
 		unset CLI_MODE
 	fi
 
-	SCRIPT_OPTS[argPicker]=1
-	local _esc
-	while :; do
-		if ((SCRIPT_OPTS['tuiWithOpts'])); then
-			read -rp "Choose $(ansi italic action noitalic delim \( oper + param opts delim \): fg) " line
-		else
-			read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line
-			echo
-		fi
-		if [[ $line == $'\004' ]]; then
-			line=q
-		elif [[ $line == $'\E' ]]; then
-			_esc=1
-			continue
-		elif [[ $_esc && $line == O ]]; then # arrow movement
-			read -rn 1
-			continue
-		fi
-		_esc=
-
-		if [[ $line == [-+]* ]]; then
-			parseAction $line
-		elif [[ ${line%% *} == ? ]]; then
-			parseAction -$line
-		else
-			local _prefix=
-			while [[ ! $_prefix =~ ^${SSS_OPTS['optionPrefix']}$ ]]; do
-				_prefix+=-
-			done
-			parseAction $_prefix$line
-		fi
-		LAST_LOG_LVL=100
-	done
+	ui
 }
 
 true=1 false=-1
@@ -641,15 +648,15 @@ REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 # string for argMatch capturing file of given type
 declare -A MIME_TYPES=(
-	[audio]='$^audio$f\.(opus|m4a|mp3|flac|wav|wma|ogg)'
-	[video]='$^video$f\.(mov|mkv|mp4|avi|webm)'
-	[image]='$^image$f\.(jpe?g|heif|png|webp)'
+	[audio]='$+audio$f\.(opus|m4a|mp3|flac|wav|wma|ogg)'
+	[video]='$+video$f\.(mov|mkv|mp4|avi|webm)'
+	[image]='$+image$f\.(jpe?g|heif|png|webp|jxl)'
 )
 
 #######################################
 # Test ^(RE)$ or custom pattern like $<k><RE> - <k>: test kind, <RE> tests the input text
 # $<b>: <b>: bash condexpr operator, UPPERCASE for negation, match against RE$
-# $^: mime type ^RE, follows symlinks
+# $+: mime type ^RE, follows symlinks
 # $|: fallback ^(RE)$, must be last in the pattern
 # Globals:
 #   reg: required format of the argument - described custom pattern
@@ -679,7 +686,7 @@ argMatch() {
 			ptn=${ptn%%'$'*}
 			log Trace " '$tested' =? \$$kind$ptn"
 
-			if [[ $kind == '^' ]]; then
+			if [[ $kind == '+' ]]; then
 				local mime
 				[[ ${mime:=$(file -Lb --mime-type "$1")} =~ ^$ptn ]] && return 0
 			else
@@ -778,7 +785,7 @@ helpParams=(
 declare -A helpBuilder=([actions]=pickHelpAction)
 pickHelpAction() {
 	declare -n arr="$1"
-	arr=("$(printf '%s\n' "${ACTION_ORDER[@]}" | fzf -m --prompt="$4: ")")
+	arr=($(printf '%s\n' "${ACTION_ORDER[@]}" | fzf -m --prompt="$4: "))
 }
 help() {
 	if [[ ! $actions ]]; then
@@ -813,7 +820,7 @@ help() {
     - $k<RE> - <RE> tests the input text, $k/kind:
       - $<b>: bash condexpr operator, ends with RE
       - $F: ensure file can exist at user input, ends with RE
-      - $^: existing input file mime type starts with RE
+      - $+: existing input file mime type starts with RE
       - $|: fallback simple input regex'
 
 	[[ $default && ${#actions[@]} -gt 9 ]]

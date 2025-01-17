@@ -25,8 +25,8 @@ map('i', '<A-u>', '\\underline{}<left>', { buffer = true })
 
 map(
 	{ 'n', 'i' },
-	'<A-B>',
-	'<Cmd>!set x (compiler "%:p"); if not pgrep -f "zathura $x"; zathura "$x" &; end<CR>',
+	'<A-b>',
+	'<Cmd>term set x (compiler "%:p"); if not pgrep -f "zathura $x"; zathura "$x" &; end<CR>',
 	{ buffer = true }
 )
 map(

@@ -1,2 +1,2 @@
-include *.swayconf
 include /etc/sway/config.d/50-systemd-user.conf
+include *.swayconf

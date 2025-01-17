@@ -8,11 +8,12 @@ configuration {
 	scroll-method: 1;
 	window-format: "{w} {c} {t}";
 	max-history-size: 0;
-	kb-row-up: "Up";
-	kb-row-down: "Down";
+	kb-row-up: "Up,Alt+k";
+	kb-row-down: "Down,Alt+j";
 	kb-element-next: "";
 	kb-accept-alt: "Tab,Shift+Return";
-	kb-cancel: "Escape,Super+q";
+	kb-accept-entry: "Return,Alt+l";
+	kb-cancel: "Escape,Super+q,Alt+h";
 	icon-theme: "Icons";
 }
 @theme "theme"

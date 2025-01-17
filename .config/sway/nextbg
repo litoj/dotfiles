@@ -1,23 +1,33 @@
 #!/usr/bin/bash
 
-if [[ -z $1 ]]; then
-	cd ~/Pictures/screen
-	[[ -f /tmp/my/nextbg ]] || cp ~/.local/state/nextbg /tmp/my/nextbg
-	bg=$(head -n 1 /tmp/my/nextbg 2> /dev/null)
-	if [[ $bg ]]; then
-		sed -i '1d' /tmp/my/nextbg
-	else
-		bg=(*)
-		printf '%s\n' "${bg[@]:1}" | shuf > /tmp/my/nextbg
+current() {
+	ps -C swaybg -o args | sed -n 's/.* -i \(.*\.[jJ][pP][gG]\).*/\1/p'
+}
+
+STATE_FILE="$HOME/.local/state/nextbg"
+
+next() {
+	local current=${current:-$(current)}
+	if [[ $current ]]; then # find next item in CWD
+		local next=$(ls | grep "$current" -A 1 | tail -n 1)
+		[[ $next == $current ]] && next=(*) # reached last -> start from first
 	fi
-elif [[ $1 == save ]]; then
+
+	[[ $next ]] && echo "$next" || cat "$STATE_FILE"
+}
+
+cd ~/Pictures/screen
+if [[ $1 == save ]]; then
 	hr=$(date +%H)
-	((${hr#0} > 20)) && cp /tmp/my/nextbg ~/.local/state/nextbg &> /dev/null
-	exit 0
+	if ((${hr#0} > 20)); then
+		current=$(current)
+		[[ $current ]] && next >"$STATE_FILE"
+	fi
+elif [[ $1 == current ]]; then
+	current
+else
+	bg=$(next)
+
+	killall swaybg 2>/dev/null
+	swaybg -i "${bg:=$1}" -m fill &
 fi
-
-killall swaybg 2> /dev/null
-swaybg -i "${bg:=$1}" -m fill &
-
-[[ $bg == /* ]] || bg="$PWD/$bg"
-echo "$bg" > /tmp/my/bg

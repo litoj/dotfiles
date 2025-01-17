@@ -11,7 +11,7 @@ bindsym {
 	$Mod+$Alt+Shift+t exec $signal theme toggle
 
 	$Mod+u exec $nextbg
-	$Mod+Ctrl+u exec swayimg "$(cat /tmp/my/bg)" "$(sed 's,/[^/]*$,,' /tmp/my/bg)"
+	$Mod+Ctrl+u exec cd ~/Pictures/screen/ && swayimg "$($nextbg current)"
 
 #---------------+
 # App selection |
@@ -26,6 +26,7 @@ bindsym {
 }
 set $Msg '[T]hunderbird [D]iscord [S]lack'
 set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider'
+set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
 	$Mod+1 exec $lof firefox '[app_id=firefox]'
@@ -37,7 +38,7 @@ bindsym --to-code {
 	$Mod+3 exec xterm
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
-	$Mod+7 exec $lof gimp '[app_id=gimp|mpv]'
+	$Mod+7 exec $lof 'swaymsg mode \$Media' '[workspace="$wMedia" app_id=gimp|mpv|darktable]'
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title=^(Minecraft|Prism Launcher).*]'
 	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title=^(Minecraft|Prism Launcher).*]'
 }
@@ -59,6 +60,16 @@ mode $IDE {
 		a mode default, exec $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' \
 			'[class=jetbrains-studio]'
 		e mode default, exec $lof 'gtk-launch ea' '[class=ea.exe]'
+		q mode default
+		Escape mode default
+	}
+}
+mode $Media {
+	bindsym {
+		g mode default, exec $lof gimp '[app_id=gimp]'
+		d mode default, exec $lof darktable '[app_id=darktable]'
+		t mode default, exec $lof twitch '[app_id=mpv]'
+		m mode default, exec xterm mom -DT
 		q mode default
 		Escape mode default
 	}
@@ -297,7 +308,7 @@ bindsym {
 	Shift+Print exec swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?)\
 		| .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp -d -c ad30a8 -s ad30a822\
 		-b 00000000 -B 55991522 | grim -c -g - - | wl-copy -t image/png
-	Ctrl+Print exec imv -n "$(ls -t Pictures/scrshot|head -n1)" Pictures/scrshot
+	Ctrl+Print exec xdg-open "Pictures/scrshot/$(ls -t Pictures/scrshot|head -n1)"
 
 # Keyboard layout toggle, manual
 	$Mod+n exec $signal kb
@@ -344,7 +355,6 @@ bindsym {
 	$Alt+KP_Divide exec $signal wp
 
 # Media management
-	$Mod+t exec twitch
 	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\

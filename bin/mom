@@ -243,7 +243,7 @@ runJob() {
 # expects $cmd, $keepSrc, $src, $dst, $out
 runCmdWithCleanup() {
 	exec "${cmd[@]}" "$out" && if ((keepSrc <= 0)); then
-		[[ $src == $out ]] || exec rm "$src"
+		[[ ${src#./} == "${out#./}" ]] || exec rm "$src"
 		if [[ -z $dst && $out != "${src%.*}".* ]]; then # used default $dst and output needs renaming
 			exec mv "$out" "${src%.*}.${out##*.}"
 		fi
@@ -363,13 +363,13 @@ edit() {
 				if [[ $rename ]]; then
 					out=$(call rename "${renameConfig[@]}" "$src" '-')
 					out=${out%.*}
+					out=${out%_1}
 					if [[ $out ]]; then
 						((copy > 0)) && out+=".${src##*.}" || out+=.opus
-						[[ -d ${dst:-${src%/*}} ]] && local dst=${dst:-${src%/*}}/$out || local dst=.
 					fi
 				fi
 				[[ ! $out ]] && out=${src/*\//}
-				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
+				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/${out##*/}"
 			fi
 
 			if [[ -d ${dst:-.} ]]; then

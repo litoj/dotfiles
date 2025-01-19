@@ -487,19 +487,19 @@ playParams=(
 	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
 	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
-	src '$!' '$e' 'Play file/dir')
+	src '$+' '$e' 'Play files or dir')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
 	if ((SCRIPT_OPTS['guiPicker'] > 0)); then
-		local cmd=(rofi -dmenu -i -p "$4" -theme-str 'window {width: 50%;}')
+		local cmd=(rofi -dmenu -i -multi-select -p "$4" -theme-str 'window {width: 50%;}')
 	else
-		local cmd=(fzf --prompt "$4: ")
+		local cmd=(fzf -m --prompt "$4: ")
 	fi
-	_choice+=("$({
+	readarray -t _choice < <({
 		find ~/Music/* -type d 2>/dev/null
 		find "${MUSIC_SOURCES[@]:-$HOME/Music/Songs}" -type f 2>/dev/null
-	} | "${cmd[@]}")")
+	} | "${cmd[@]}")
 }
 play() {
 	local playlistFile=/tmp/my/song
@@ -508,7 +508,7 @@ play() {
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 
 	if [[ -f $src ]]; then
-		exec echo "$src" \> "$playlistFile"
+		exec printf '%s\n' "${src[@]}" \> "$playlistFile"
 		cmd+=(--playlist-start=0)
 		src=${src%/*}
 	elif [[ -f $playlistFile ]]; then
@@ -707,7 +707,7 @@ renameConfig=(
 	format=audio:'$Artist - $Title'
 	format=mov:'$DateTimeOriginal'
 	format=image:'$DateTimeOriginal'
-	fallback=video:'s/\./ /g;s/^(.*) ([0-9]{4}) .*$/\2 \1/'
+	fallback=video:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,'
 	fallback=audio:'s,.*(/([^0-9]+( \w+)+)/).*- ?,\2 - ,'
 	dateFormat='%Y-%m-%d_%H%M%S'
 	useDateFallback=ask
@@ -773,7 +773,7 @@ rename() {
 					[[ $name ]]
 				}
 			}; then
-				local out=$name.$ext
+				local out=${name##*/}.$ext
 
 				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 				if [[ $src != "$out" ]]; then

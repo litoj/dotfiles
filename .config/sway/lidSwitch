@@ -6,8 +6,10 @@ LOW_HZ=/tmp/my/lowhz
 cmd=$1
 
 checkLowHZ() {
-	[[ -f $LOW_HZ ]] && swaymsg 'output eDP-1 mode 2560x1600@120Hz' &&
-		sleep 0.25 && swaymsg 'output eDP-1 mode 2560x1600@48Hz'
+	if swaymsg -t get_outputs -p | grep @48; then
+		[[ -f $LOW_HZ ]] && swaymsg 'output eDP-1 mode 2560x1600@120Hz' &&
+			sleep 0.25 && swaymsg 'output eDP-1 mode 2560x1600@48Hz'
+	fi
 }
 
 main() {
@@ -24,6 +26,14 @@ main() {
 
 	case "$cmd" in
 		mode)
+			state=($(swaymsg -t get_outputs -p |
+				awk '/Current/ {res=$3; print $3}; $1 == res {print int($3)}'))
+			res=${state[0]}
+			declare -A refRate
+			for hz in "${state[@]:1}"; do
+				refRate["$hz"]=$hz
+			done
+
 			mode=$2
 			if [[ -z $mode ]]; then
 				if [[ -f $LOW_HZ ]]; then
@@ -31,14 +41,16 @@ main() {
 				elif ! swaymsg -t get_outputs -p | grep 'Current.*@ 120'; then
 					mode=120
 				else
-					mode=48
+					mode=${refRate['48']:-${refRate['60']}}
 				fi
 			fi
+			mode=${refRate["$mode"]:-60}
 
 			((mode == 48)) && touch "$LOW_HZ" || rm "$LOW_HZ"
 
-			swaymsg "output eDP-1 mode 2560x1600@${mode}Hz"
-			notify-send "Hz" "$mode" -t 1000 -u low -h int:value:$((mode * 5 / 6)) -h string:synchronous:hz
+			swaymsg "output eDP-1 mode ${res}@${mode}Hz"
+			notify-send "Hz" "$mode" -t 1000 -u low \
+				-h int:value:$((mode * 5 / 6)) -h string:synchronous:hz
 			;;
 		closed) swaymsg 'output $d1 power off' ;;
 		open)

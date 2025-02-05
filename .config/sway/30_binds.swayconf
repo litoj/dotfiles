@@ -11,7 +11,7 @@ bindsym {
 	$Mod+$Alt+Shift+t exec $signal theme toggle
 
 	$Mod+u exec $nextbg
-	$Mod+Ctrl+u exec cd ~/Pictures/screen/ && swayimg "$($nextbg current)"
+	$Mod+Ctrl+u exec xdg-open "$($nextbg current)"
 
 #---------------+
 # App selection |
@@ -284,7 +284,8 @@ mode $Exit {
 		s mode default, exec $lid sleep
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		p exit, exec $nextbg save; exec systemctl poweroff
+		# exit kills swaybg so exit after the curreng bg has been detected
+		p exec $nextbg save && swaymsg exit & systemctl poweroff
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \

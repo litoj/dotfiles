@@ -2,7 +2,7 @@
 # This I use for my own use, simply put, it installs all the packages I need and puts all theme
 # files where I want them. Use only as the user on the machine who you want to affect
 
-cd "${0%install.sh}.." 2> /dev/null || cd ..
+cd "${0%install.sh}.." 2>/dev/null || cd ..
 
 if [[ ! $(which paru) ]]; then
 	(
@@ -185,6 +185,16 @@ configs() {
 	done
 	[[ -f /bin/fish ]] && chsh -s /bin/fish
 	gsettings set org.gtk.Settings.FileChooser sort-directories-first true
+
+	local name
+	mkdir -p ~/.cache/
+	for name in ranger thumbnails ueberzugpp; do
+		ln -s /tmp/cache ~/.cache/$name
+	done
+	mkdir -p ~/.local/state/nvim/
+	for name in dapui.log log lsp.log luasnip.log nio.log; do
+		ln -s /tmp/my/log ~/.local/state/nvim/$name
+	done
 }
 
 theming() {
@@ -198,7 +208,7 @@ theming() {
 		mv *Light*/ ~/.themes/Light
 		mkdir -p ~/.icons/default/
 		echo '[Icon Theme]
-Inherits=Sweet-cursors' > ~/.icons/default/index.theme
+Inherits=Sweet-cursors' >~/.icons/default/index.theme
 		mv */ ~/.icons/Icons
 	else
 		local dark=/usr/share/themes/Dark light=/usr/share/themes/Light icons=/usr/share/icons/Icons

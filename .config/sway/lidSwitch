@@ -12,7 +12,7 @@ checkLowHZ() {
 
 main() {
 	if [[ $cmd == closed && ! -f $NO_SLEEP || $cmd == sleep ]]; then
-		swaymsg 'output $d1 power off'
+		swaymsg 'output eDP-1 power off'
 		systemctl suspend
 		if sleep 1 && [[ $(cat /proc/acpi/button/lid/LID/state) == *" closed" ]]; then
 			"$0" closed &

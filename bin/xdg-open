@@ -10,8 +10,13 @@ if [[ $1 == open-sh://* ]]; then # for YT-to-external browser redirect
 fi
 
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")
-[[ $arg == *:* ]] && URI=${arg%:*}: || URI=:
-[[ $arg == *.* ]] && EXT=.${arg##*.} && EXT=${EXT,,} || EXT=.
+if [[ $arg == *://* ]]; then
+	URI=${arg%:*}:
+	EXT=.
+else
+	URI=:
+	[[ $arg == *.* ]] && EXT=.${arg##*.} || EXT=.
+fi
 
 run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
@@ -22,10 +27,12 @@ run() {
 		cmd="${TERMINAL:-xterm} $cmd"
 	if [[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]]; then
 		${cmd#@} "${arg[@]}"
+	elif declare -f "${cmd#@}" &>/dev/null; then
+		${cmd#@} "${arg[@]}" # run functions in-place
 	else
-		${cmd#@} "${arg[@]}" &
+		setsid ${cmd#@} "${arg[@]}" &>/dev/null &
 	fi
-	exit 0
+	exit $?
 }
 
 # prefix gui/bg apps with '@', $1=cmd
@@ -49,6 +56,6 @@ try() {
 [[ -f $CFG ]] && . "$CFG"
 
 [[ -d $arg ]] && run "${EXPLORER:-ranger}"
-[[ $EXT != . || -f $arg || ! -e $arg ]] && try "$EDITOR" . +text +*empty +*json
 [[ $URI != : ]] && run "$BROWSER"
+[[ $EXT != . || -f $arg || ! -e $arg ]] && try "$EDITOR" . +text +*empty +*json
 run "${FALLBACK:-$BROWSER}"

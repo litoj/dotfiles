@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 current() {
-	ps -C swaybg -o args | sed -n 's/.* -i \(.*\.[jJ][pP][gG]\).*/\1/p'
+	ps -C swaybg -o args | sed -n 's/.* -i \(.*\.[^. ]\+\).*/\1/p'
 }
 
 STATE_FILE=$HOME/.local/state/nextbg
@@ -12,6 +12,8 @@ next() {
 	if [[ $current ]]; then # move to next image
 		local next=$BG_DIR/$(ls "$BG_DIR" | grep -F "${current##*/}" -A 1 | tail -n 1)
 		[[ $next == $current ]] && next=("$BG_DIR"/*) # reached last -> start from first
+	elif [[ ! -f $STATE_FILE ]]; then
+		local next=("$BG_DIR"/*)
 	fi
 
 	[[ $next ]] && echo "$next" || cat "$STATE_FILE"

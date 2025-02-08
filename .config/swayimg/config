@@ -8,6 +8,7 @@ history=5
 preload=2
 antialiasing=box
 
+
 [info]
 show=no
 info_timeout=0
@@ -83,7 +84,7 @@ b=exec ~/.config/sway/nextbg '%'
 Alt+Shift+s=exec adb push '%' /storage/emulated/0/Download/
 Alt+f=exec dragon-drop -x -T '%'
 Alt+e=exec xterm ranger --selectfile='%'
-Ctrl+e=exec gimp '%'
+Ctrl+e=exec xdg-open -c ~/.config/ranger/edit.conf.sh '%'
 Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Shift+b=exec cp '%' ~/Pictures/screen/
 

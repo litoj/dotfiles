@@ -25,8 +25,8 @@ if attr app_id; then
 	# filter+="|select(.window_properties?)|select(window_properties.class | test($attr))"
 fi
 filter+='|.focused'
-echo "$filter" >/tmp/res
-swaymsg -t get_tree | jq "$filter" >>/tmp/res
+
+# can match multiple - launch new if none exist or one is in focus
 if [[ $(swaymsg -t get_tree | jq "$filter") =~ ^(.*true.*|)$ ]]; then
 	swaymsg exec "$1" && while ! swaymsg "$2" focus && ((++i < 15)); do sleep 0.3; done
 else

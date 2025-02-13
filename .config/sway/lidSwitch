@@ -1,16 +1,8 @@
 #!/usr/bin/bash
 
 NO_SLEEP=/tmp/my/nolidsleep
-LOW_HZ=/tmp/my/lowhz
 
 cmd=$1
-
-checkLowHZ() {
-	if swaymsg -t get_outputs -p | grep @48; then
-		[[ -f $LOW_HZ ]] && swaymsg 'output eDP-1 mode 2560x1600@120Hz' &&
-			sleep 0.25 && swaymsg 'output eDP-1 mode 2560x1600@48Hz'
-	fi
-}
 
 main() {
 	if [[ $cmd == closed && ! -f $NO_SLEEP || $cmd == sleep ]]; then
@@ -27,40 +19,27 @@ main() {
 	case "$cmd" in
 		mode)
 			state=($(swaymsg -t get_outputs -p |
-				awk '/Current/ {res=$3; print $3}; $1 == res {print int($3)}'))
-			res=${state[0]}
-			declare -A refRate
-			for hz in "${state[@]:1}"; do
-				refRate["$hz"]=$hz
-			done
+				awk '/Current/ {res=$3; current=$5}; $1 == res {print int($3)}; END {print res, int(current)}'))
+			res=${state[-2]}
+			current=${state[-1]}
+			unset state[-2] state[-1]
 
 			mode=$2
 			if [[ -z $mode ]]; then
-				if [[ -f $LOW_HZ ]]; then
-					mode=96
-				elif ! swaymsg -t get_outputs -p | grep 'Current.*@ 120'; then
-					mode=120
-				else
-					mode=${refRate['48']:-${refRate['60']}}
-				fi
+				declare -i i=${#state[@]}
+				while ((state[i--] != current)); do :; done
+				mode=${state[i]}
+			elif [[ ${state[*]} != *$mode* ]]; then # default if mode is invalid
+				mode=60
 			fi
-			mode=${refRate["$mode"]:-60}
-
-			((mode == 48)) && touch "$LOW_HZ" || rm "$LOW_HZ"
 
 			swaymsg "output eDP-1 mode ${res}@${mode}Hz"
 			notify-send "Hz" "$mode" -t 1000 -u low \
-				-h int:value:$((mode * 5 / 6)) -h string:synchronous:hz
+				-h int:value:$((100 * mode / state[1])) -h string:synchronous:hz
 			;;
 		closed) swaymsg 'output $d1 power off' ;;
-		open)
-			swaymsg 'output $d1 power on'
-			checkLowHZ
-			;;
-		resume)
-			swaymsg 'output * power on'
-			checkLowHZ
-			;;
+		open) swaymsg 'output $d1 power on' ;;
+		resume) swaymsg 'output * power on' ;;
 		idle) swaymsg 'output * power off' ;;
 		toggle)
 			if [[ -f $NO_SLEEP ]]; then

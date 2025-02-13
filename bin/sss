@@ -179,7 +179,7 @@ exitFn() {
 
 runExitFn() {
 	((EXITING)) && return
-	EXITING=1 ${SSS_OPTS['exitFn']} "$@"
+	EXITING=1 ${SSS_OPTS['exitFn']} "$@" 3>&2
 }
 
 declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
@@ -296,7 +296,7 @@ log() {
 	if ((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
 		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" reset) || type=${type^^}
-		echo "$type$(print ": $ACTION$2")" 1>&2
+		echo "$type$(print ": $ACTION$2")" 1>&3
 	fi
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
 		runExitFn $LAST_LOG_LVL
@@ -364,16 +364,16 @@ main() {
 	# load default config
 	local realOpt=${SCRIPT_OPTS['optArgPicker']}
 	SCRIPT_OPTS[optArgPicker]=0
-	[[ $NO_CONFIG ]] || call define --config
+	[[ $NO_CONFIG ]] || call define --config 3>&2
 	SCRIPT_OPTS[optArgPicker]=$realOpt
 	unset realOpt
 
 	if ((CLI_MODE > 0)); then
 		while (($#)); do
-			parseAction "$@"
+			parseAction "$@" 3>&2
 			shift $?
 		done
-		((SCRIPT_OPTS['tui'] > 0)) || quit
+		((SCRIPT_OPTS['tui'] > 0)) || quit 3>&2
 		unset CLI_MODE
 	fi
 

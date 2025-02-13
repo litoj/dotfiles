@@ -1,7 +1,34 @@
 #!/usr/bin/bash
 # launch or focus based on $2=sway condition string
-[[ $2 == *title* ]] || verify=" title=__focused__"
-[[ $2 == *workspace* ]] || verify+=" workspace=__focused__"
-if swaymsg "${2::-1} $verify]" focus || ! swaymsg "$2" focus; then
+
+cond=$2
+attr() {
+	[[ $cond =~ $1=(\"[^\"]*\"|[^\] ]+) ]] && {
+		attr=${BASH_REMATCH[1]}
+		[[ $attr == \"*\" ]] || attr="\"$attr\""
+	}
+}
+
+if attr workspace; then
+	filter='.nodes[].nodes[]|select(.name? == '$attr')|..|select(.layout? == "none")'
+else
+	filter='..|select(.layout? == "none")'
+	if attr con_mark; then
+		filter+="|select(.marks[] == $attr)"
+	elif attr title; then
+		filter+="|select(.name | test($attr))"
+	fi
+fi
+if attr app_id; then
+	filter+="|select(.app_id | test($attr))"
+# elif attr class; then
+	# filter+="|select(.window_properties?)|select(window_properties.class | test($attr))"
+fi
+filter+='|.focused'
+echo "$filter" >/tmp/res
+swaymsg -t get_tree | jq "$filter" >>/tmp/res
+if [[ $(swaymsg -t get_tree | jq "$filter") =~ ^(.*true.*|)$ ]]; then
 	swaymsg exec "$1" && while ! swaymsg "$2" focus && ((++i < 15)); do sleep 0.3; done
+else
+	swaymsg "$2" focus
 fi >/dev/null

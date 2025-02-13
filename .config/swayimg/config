@@ -8,7 +8,6 @@ history=5
 preload=2
 antialiasing=box
 
-
 [info]
 show=no
 info_timeout=0
@@ -55,6 +54,7 @@ Down=zoom -10
 a=zoom real
 f=zoom fill
 Shift+f=zoom fit
+MouseMiddle=zoom real
 1=zoom +100
 2=zoom real; zoom +100
 3=zoom real; zoom +200

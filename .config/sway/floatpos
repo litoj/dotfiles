@@ -2,6 +2,7 @@
 #sway/floatpos - sway floating mode tiling functionality improved over Windows
 
 p2="$2"
+[[ $p2 == snap || $p2 == shift ]] && p2=focusable
 ## very fast data filter (way faster than jq)
 W=$(swaymsg -t get_workspaces -p | sed -n 's/^Workspace \(.*\) (focused)/\1/p')
 BOTH=$(swaymsg -t get_tree | grep -F -e "\"name\": \"${W/\//\\/}\"" -B 23 -e '"focused": true' -A 8)

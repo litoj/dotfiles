@@ -103,13 +103,15 @@ if [[ -z $quality ]]; then
 fi
 
 mpv --ytdl-format="$quality" --no-terminal "$url" &
-params="[pid=$!] floating enable, sticky enable, border pixel \$border, move position 1897 1193"
+params="[pid=$!]"' floating enable, sticky enable, border pixel $border, resize set 648 368, focus'
 declare -i max=10 i=0
-while ! swaymsg $params &>/dev/null && ((++i < max)); do
+while ! swaymsg "$params" &>/dev/null && ((++i < max)); do
 	sleep $i
 done
 
 if ((i < max)); then
+	swaymsg 'exec $floatpos r snap && $floatpos d snap && swaymsg focus tiling'
+
 	[[ $streamers == $streamer || $streamer == http* ]] && exit 0
 
 	i=1

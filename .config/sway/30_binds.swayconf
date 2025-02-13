@@ -10,8 +10,10 @@ bindsym {
 	$Mod+$Alt+t border toggle $border
 	$Mod+$Alt+Shift+t exec $signal theme toggle
 
-	$Mod+u exec $nextbg
-	$Mod+Ctrl+u exec xdg-open "$($nextbg current)"
+	$Mod+u exec $custombg set
+	$Mod+Shift+u exec DIRECTION=prev $custombg set
+	$Mod+$Alt+u exec $custombg save
+	$Mod+Ctrl+u exec xdg-open "$($custombg current)"
 
 #---------------+
 # App selection |
@@ -30,45 +32,43 @@ set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
 	$Mod+1 exec $lof firefox '[app_id=firefox]'
-	$Mod+2 exec $lof 'xterm nvim && sleep 1 && swaymsg mark nvim' '[con_mark=nvim]'
-	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada && sleep 1 \
+$Mod+2 exec $lof 'xterm nvim && sleep 0.5 && swaymsg mark nvim' '[con_mark=nvim]'
+	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada && sleep 0.5 \
 		&& swaymsg mark work' '[con_mark=work]'
-	$Mod+$Alt+Shift+2 exec $lof 'xterm nvim -i ~/Documents/school/PG/SP/session.shada && sleep 1 \
+	$Mod+$Alt+Shift+2 exec $lof 'xterm nvim -i ~/Documents/school/PG/SP/session.shada && sleep 0.5 \
 		&& swaymsg mark dbs' '[con_mark=dbs]'
 	$Mod+3 exec xterm
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
 	$Mod+7 exec $lof 'swaymsg mode \$Media' '[workspace="$wMedia" app_id=gimp|mpv|darktable]'
-	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title=^(Minecraft|Prism Launcher).*]'
-	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title=^(Minecraft|Prism Launcher).*]'
+	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
+	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'
 }
 mode $Msg {
 	bindsym {
-		t mode default, exec $lof thunderbird '[app_id=thunderbird]'
-		d mode default, exec $lof ripcord '[class=Ripcord]'
-		s mode default, exec $lof 'slack --ozone-platform=wayland \
-			--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer' '[class=Slack]'
+		t mode default, exec thunderbird
+		s mode default, exec slack --ozone-platform=wayland \
+			--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer
 		Escape mode default
 	}
 }
 mode $IDE {
 	bindsym {
-		i mode default, exec $lof idea '[class=jetbrains-idea-ce]'
-		d mode default, exec $lof datagrip '[class=jetbrains-datagrip]'
-		r mode default, exec $lof rider '[class=jetbrains-rider]'
-		n mode default, exec $lof netbeans '[class=NetBeans]'
-		a mode default, exec $lof 'JAVA_HOME=/opt/android-studio/jbr android-studio' \
-			'[class=jetbrains-studio]'
-		e mode default, exec $lof 'gtk-launch ea' '[class=ea.exe]'
+		i mode default, exec idea
+		d mode default, exec datagrip
+		r mode default, exec rider
+		n mode default, exec netbeans
+		a mode default, exec JAVA_HOME=/opt/android-studio/jbr android-studio
+		e mode default, exec gtk-launch ea
 		q mode default
 		Escape mode default
 	}
 }
 mode $Media {
 	bindsym {
-		g mode default, exec $lof gimp '[app_id=gimp]'
-		d mode default, exec $lof darktable '[app_id=darktable]'
-		t mode default, exec $lof twitch '[app_id=mpv]'
+		g mode default, exec gimp
+		d mode default, exec darktable
+		t mode default, exec twitch
 		m mode default, exec xterm mom -DT
 		q mode default
 		Escape mode default
@@ -132,10 +132,10 @@ bindsym {
 	$Mod+Up exec $floatpos u
 	$Mod+Right exec $floatpos r
 # snap to side or focus in tiling mode
-	$Mod+Shift+Left exec $floatpos l focusable
-	$Mod+Shift+Down exec $floatpos d focusable
-	$Mod+Shift+Up exec $floatpos u focusable
-	$Mod+Shift+Right exec $floatpos r focusable
+	$Mod+Shift+Left exec $floatpos l snap
+	$Mod+Shift+Down exec $floatpos d snap
+	$Mod+Shift+Up exec $floatpos u snap
+	$Mod+Shift+Right exec $floatpos r snap
 # focus workspace
 	$Mod+Ctrl+Left workspace prev
 	$Mod+Ctrl+Right workspace next
@@ -159,10 +159,10 @@ bindsym {
 	Shift+KP_Up exec $floatpos u
 	Shift+KP_Right exec $floatpos r
 # snap to side or focus in tiling mode
-	Ctrl+KP_Left exec $floatpos l focusable
-	Ctrl+KP_Down exec $floatpos d focusable
-	Ctrl+KP_Up exec $floatpos u focusable
-	Ctrl+KP_Right exec $floatpos r focusable
+	Ctrl+KP_Left exec $floatpos l snap
+	Ctrl+KP_Down exec $floatpos d snap
+	Ctrl+KP_Up exec $floatpos u snap
+	Ctrl+KP_Right exec $floatpos r snap
 # focus workspace
 	KP_Add workspace back_and_forth
 	KP_Home workspace next
@@ -285,7 +285,7 @@ mode $Exit {
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
 		# exit kills swaybg so exit after the curreng bg has been detected
-		p exec $nextbg save && swaymsg exit & systemctl poweroff
+		p exec $custombg autosave && swaymsg exit & systemctl poweroff
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		b mode default, exec xterm sudo bash -c \

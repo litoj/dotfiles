@@ -81,7 +81,7 @@ bar {
 	mode dock
 	modifier $Mod+Ctrl
 	separator_symbol " "
-	position top
+	position bottom
 
 	colors {
 		statusline $fg

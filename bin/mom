@@ -2,7 +2,7 @@
 
 . sss
 
-SSS_OPTS[about]='MOM - Media Operation/Manipulation
+SSS_OPTS[about]='MOM - Media Operation&Manipulation
 A collection of media operation/manipulation scripts.'
 
 ((SCRIPT_OPTS[jobs] = (1 + $(nproc --all)) / 2))
@@ -574,6 +574,7 @@ play() {
 	sleep 1
 	exec rm "$playlistFile"
 }
+
 actionInfo linkFix 'fix symlinked files - find new paths, allowing slightly modified names+ft'
 linkFixParams=(
 	target 't?' '$d' 'Dir with broken links (default=./)'

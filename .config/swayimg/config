@@ -80,7 +80,7 @@ g=mode
 Tab=mode
 F5=reload
 
-b=exec ~/.config/sway/nextbg '%'
+b=exec ~/.config/sway/custombg '%'
 Alt+Shift+s=exec adb push '%' /storage/emulated/0/Download/
 Alt+f=exec dragon-drop -x -T '%'
 Alt+e=exec xterm ranger --selectfile='%'

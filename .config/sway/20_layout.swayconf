@@ -23,8 +23,7 @@ for_window [app_id="firefox" title="Picture-in-Picture|Obraz v obraze"] \
 for_window [title=".*Android Emulator.*"] floating enable, border none
 for_window [title="win0"] floating enable
 for_window [app_id="cpupower-gui"] floating enable, border pixel $border
-for_window [app_id="thunderbird" instance="Calendar"] floating enable
-for_window [app_id="thunderbird" instance="Msgcompose"] floating enable
+for_window [app_id="thunderbird" title="upozornění$"] floating enable, sticky enable
 for_window [class="scrcpy"] focus, floating enable, move position -1 191, resize set 1922 890
 for_window [class="Ripcord" title="Edit Message"] floating enable
 for_window [instance="gimp"] focus
@@ -46,9 +45,7 @@ smart_gaps on
 assign [title="Transmission"] $w1
 assign [app_id="firefox"] $wBrowser
 assign [class="NetBeans|jetbrains-.*|ea.exe"] $wCode
-assign [app_id="mpv|gimp|Inkscape|darktable|rawtherapee"] $wMedia
-assign [instance="gimp|ART.bin"] $wMedia
-assign [class="Ripcord"] $wMsg
+assign [app_id="mpv|gimp|Inkscape|darktable"] $wMedia
 assign [app_id="thunderbird|tutanota-desktop|Slack"] $wMsg
 assign [title="^Minecraft.? 1\.[1-2][0-9][0-9.]*$"] $wGame
 assign [app_id="org.prismlauncher.*"] $wGame

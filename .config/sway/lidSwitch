@@ -18,11 +18,16 @@ main() {
 
 	case "$cmd" in
 		mode)
-			state=($(swaymsg -t get_outputs -p |
-				awk '/Current/ {res=$3; current=$5}; $1 == res {print int($3)}; END {print res, int(current)}'))
+			state=($(
+				swaymsg -t get_outputs -p |
+					awk '/Current/ {res=$3; current=$5};
+							$1 == res {print int($3)};
+							END {print res, int(current)}'
+			))
 			res=${state[-2]}
 			current=${state[-1]}
 			unset state[-2] state[-1]
+			declare -p state
 
 			mode=$2
 			if [[ -z $mode ]]; then
@@ -35,7 +40,7 @@ main() {
 
 			swaymsg "output eDP-1 mode ${res}@${mode}Hz"
 			notify-send "Hz" "$mode" -t 1000 -u low \
-				-h int:value:$((100 * mode / state[1])) -h string:synchronous:hz
+				-h int:value:$((100 * mode / state[0])) -h string:synchronous:hz
 			;;
 		closed) swaymsg 'output $d1 power off' ;;
 		open) swaymsg 'output $d1 power on' ;;

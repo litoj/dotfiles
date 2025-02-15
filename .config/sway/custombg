@@ -4,7 +4,7 @@ current() {
 	ps -C swaybg -o args | sed -n 's/.* -i \(.*\.[^. ]\+\).*/\1/p'
 }
 
-STATE_FILE=$HOME/.local/state/nextbg
+STATE_FILE=$HOME/.local/state/custombg
 BG_DIR=$HOME/Pictures/screen
 
 pick() {
@@ -19,7 +19,9 @@ pick() {
 		[[ $pick == $current ]] && pick=("$BG_DIR"/*) # reached last -> start from first
 	elif [[ ! -f $STATE_FILE ]]; then              # initiate sequence
 		pick=("$BG_DIR"/*)
-	else # pick saved bg or the closest to its name
+	fi
+
+	if [[ -z $pick ]]; then # pick saved bg or the closest to its name
 		pick=$(<"$STATE_FILE")
 		if [[ ! -f $pick ]]; then
 			pick=$BG_DIR/$({
@@ -39,15 +41,16 @@ set() {
 		bg=$(pick)
 	fi
 
-	toKill=$(ps -C swaybg -o pid | tail -n +2)
+	# toKill=$(ps -C swaybg -o pid | tail -n +2)
+	killall swayimg
 	swaybg -i "$bg" -m fill &>/dev/null &
-	sleep 0.25 # updating the image isn't immediate, so we wait to avoid blank bg flash
-	kill $toKill 2>/dev/null
+	# sleep 0.25 # updating the image isn't immediate, so we wait to avoid blank bg flash
+	# kill $toKill 2>/dev/null
 }
 
 save() {
-	current=$(current)
-	[[ $current ]] && pick >"$STATE_FILE"
+	next=$(pick)
+	[[ $next == $(<"$STATE_FILE") ]] || echo "$next" >"$STATE_FILE"
 }
 
 autosave() {

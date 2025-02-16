@@ -87,6 +87,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[argPicker]=0
 	[optArgPicker]=1
 	[ignoreFailedPicker]=0
+	[jobs]=$(((1 + $(nproc --all)) / 2))
 	[logLvl]=${LOG_LEVELS['info']}
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
@@ -103,6 +104,7 @@ defineParams=(
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
+	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
  (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
@@ -178,6 +180,7 @@ exitFn() {
 }
 
 runExitFn() {
+	((IS_JOB)) && exit
 	((EXITING)) && return
 	EXITING=1 ${SSS_OPTS['exitFn']} "$@" 3>&2
 }
@@ -637,6 +640,15 @@ parseAction() {
 call() { # for script usage - calling actions like itself with cli, without external process
 	NO_CONFIG=1 USE_ALL_ARGS=1 parseAction "$@"
 	(($? == $# && LAST_LOG_LVL > 3))
+}
+
+# run a command in parallel/background
+# often used in a loop to call a custom fn and call `wait` after the loop
+runJob() {
+	while (($(jobs | wc -l) >= SCRIPT_OPTS['jobs'])); do
+		wait -n
+	done
+	IS_JOB=1 "$@" &
 }
 
 declare -A REGEX=(

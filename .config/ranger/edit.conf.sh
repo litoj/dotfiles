@@ -18,6 +18,13 @@ try @editImage .jpg
 try @darktable .RAF .JPG
 try @gimp +image
 
+runJob() {
+	while (($(jobs | wc -l) >= 8)); do
+		wait -n
+	done
+	IS_JOB=1 "$@" &
+}
+
 try 'mom edit' +audio .flac .opus .m4a .mp3 .wav .wma
 try 'mom subtitles' .srt .mp4
 # try @"kdenlive & dragon-drop -x -a" .mkv

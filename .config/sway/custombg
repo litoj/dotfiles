@@ -42,7 +42,7 @@ set() {
 	fi
 
 	# toKill=$(ps -C swaybg -o pid | tail -n +2)
-	killall swayimg
+	killall swaybg &>/dev/null
 	swaybg -i "$bg" -m fill &>/dev/null &
 	# sleep 0.25 # updating the image isn't immediate, so we wait to avoid blank bg flash
 	# kill $toKill 2>/dev/null

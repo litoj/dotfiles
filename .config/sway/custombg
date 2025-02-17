@@ -8,26 +8,26 @@ STATE_FILE=$HOME/.local/state/custombg
 BG_DIR=$HOME/Pictures/screen
 
 pick() {
-	local current=${current:-$(current)} pick dir
+	local current=$(current) pick dir
 	[[ $DIRECTION == prev* ]] && dir=(-B head) || dir=(-A tail)
-	if [[ $current ]]; then # move to next image
-		pick=$BG_DIR/$(
-			ls "$BG_DIR" |
-				grep -F "${current##*/}" ${dir[0]} $((SKIP + 1)) |
-				${dir[1]} -n 1
-		)
-		[[ $pick == $current ]] && pick=("$BG_DIR"/*) # reached last -> start from first
-	elif [[ ! -f $STATE_FILE ]]; then              # initiate sequence
-		pick=("$BG_DIR"/*)
-	fi
 
-	if [[ -z $pick ]]; then # pick saved bg or the closest to its name
-		pick=$(<"$STATE_FILE")
-		if [[ ! -f $pick ]]; then
-			pick=$BG_DIR/$({
-				echo "${pick##*/}"
-				ls "$BG_DIR"
-			} | sort | grep -F "${pick##*/}" ${dir[0]} $((SKIP + 1)) | ${dir[1]} -n 1)
+	if [[ -z $current || ! -f $STATE_FILE ]]; then # initiate sequence
+		pick=("$BG_DIR"/*)
+	else # move to next image
+		if [[ -z $current && -f ${current:=$(<"$STATE_FILE")} ]]; then
+			echo "$current" # use the last saved image
+			return
+		fi # pick next bg closest in name
+
+		current=${current##*/}
+		pick=$BG_DIR/$({
+			echo "$current"
+			ls "$BG_DIR"
+		} | sort | grep -F "$current" ${dir[0]} $((SKIP + 1)) | ${dir[1]} -n 1)
+
+		if [[ ${pick##*/} == "$current" ]]; then
+			pick=("$BG_DIR"/*) # reached last -> start from first
+			[[ $DIRECTION == prev* ]] && pick=${pick[-1]}
 		fi
 	fi
 
@@ -41,11 +41,8 @@ set() {
 		bg=$(pick)
 	fi
 
-	# toKill=$(ps -C swaybg -o pid | tail -n +2)
 	killall swaybg &>/dev/null
 	swaybg -i "$bg" -m fill &>/dev/null &
-	# sleep 0.25 # updating the image isn't immediate, so we wait to avoid blank bg flash
-	# kill $toKill 2>/dev/null
 }
 
 save() {

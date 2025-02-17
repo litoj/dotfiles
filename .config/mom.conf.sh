@@ -4,7 +4,6 @@ resizeConfig=(
 	quality=92
 )
 
-downloadConfig=(metadata=false)
 editConfig=(
 	--rename
 	volume=-14LUFS

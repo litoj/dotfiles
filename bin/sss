@@ -927,7 +927,7 @@ pickDir() {
 	"${RANGER_CMD[@]}" --choosedir="$tmp"
 	if [[ -e $tmp ]]; then
 		declare -n _choice="$1"
-		_choice="$(cat "$tmp")"
+		_choice="$(<"$tmp")"
 	fi
 	rm "$tmp"
 	[[ -d ${!1} ]]

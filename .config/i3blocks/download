@@ -14,7 +14,7 @@ fi
 
 # Issue #36 compliant.
 if ! [[ -e /sys/class/net/$INTERFACE/operstate ]] ||
-	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(cat /sys/class/net/"$INTERFACE"/operstate) != up ]]; then
+	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(</sys/class/net/"$INTERFACE"/operstate) != up ]]; then
 	echo " "
 	echo " "
 	~/.config/i3blocks/colorcode 0

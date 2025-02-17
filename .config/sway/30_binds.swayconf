@@ -256,7 +256,7 @@ set $Exit "C: D: Q: S: H: P: R: Esc:"
 bindsym {
 	$Mod+o bar mode toggle
 	XF86Launch4 exec cpupower-gui
-	Shift+XF86Launch4 exec f=$(cat /sys/firmware/acpi/platform_profile) && notify-send \
+	Shift+XF86Launch4 exec f=$(< /sys/firmware/acpi/platform_profile) && notify-send \
 		-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
 	XF86PowerOff exec ~/.config/sway/lidSwitch toggle
 	$Mod+x mode $Exit

@@ -149,6 +149,7 @@ $(print "<Enter> to pick --volume and quit")"}" --script="$pickerFile"
 		[[ ! -f $MPV_PICKER_PICK_PATH ]] && return 1
 	fi
 
+	DEFAULT_VALUE=${!1:-${DEFAULT_VALUE:-0}}
 	declare -n arr=$1
 
 	local line var
@@ -163,12 +164,12 @@ $(print "<Enter> to pick --volume and quit")"}" --script="$pickerFile"
 
 	arr=()
 	for line in "${src[@]}"; do
-		arr+=("${fileMappings["$line"]:-${DEFAULT_VALUE:-0}}")
+		arr+=("${fileMappings["$line"]:-$DEFAULT_VALUE}")
 	done
 	declare +n arr
 }
 mpvVolumePicker() {
-	DEFAULT_VALUE=${volume:-1} mpvPicker "$@"
+	DEFAULT_VALUE=1 mpvPicker "$@"
 }
 timeToSeconds() {
 	local str=${1#0}
@@ -342,8 +343,10 @@ edit() {
 						[[ $fE == .* || $fE == -* ]] && log Error '.fadeoutEnd < 1s'
 					else
 						[[ $fE == *:* ]] && fE=$(bc <<<"$(timeToSeconds $fE)-$fade")
+						[[ $fE == .* ]] && fE=0$fE
 
 						[[ ${end[i]:-0} == 0 ]] && e=$(bc <<<"$fade+$fE+$fP")
+						[[ $e == .* ]] && e=0$e
 					fi
 
 					cmd+=(-af afade=out:st=$fade:d=$fE)
@@ -369,7 +372,7 @@ edit() {
 				fi
 
 				if [[ ($v == 0* || $v == .*) && ${v#*.} -lt 4 ]]; then
-					log Info ": Volume difference = 0${v#0}dB -> not changing"
+					log Info ".volume = 1 (differs by 0${v#0}dB from target)"
 					v=1
 				else
 					v+=dB

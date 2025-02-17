@@ -7,14 +7,14 @@ if [[ -z $INTERFACE && $BLOCK_INSTANCE ]]; then
 elif [[ -z $INTERFACE ]]; then
 	while read -a LINE; do
 		[[ ${LINE[0]} == 'default' ]] && INTERFACE=${LINE[4]} && break
-	done <<< $(ip route)
+	done <<<$(ip route)
 fi
 # Exit if there is no default route
 [[ $INTERFACE ]] || exit
 
 # Issue #36 compliant.
 if ! [[ -e /sys/class/net/$INTERFACE/operstate ]] ||
-	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(cat /sys/class/net/$INTERFACE/operstate) != up ]]; then
+	[[ $TREAT_UNKNOWN_AS_UP != 1 && $(</sys/class/net/$INTERFACE/operstate) != up ]]; then
 	echo " "
 	echo " "
 	~/.config/i3blocks/colorcode 0
@@ -24,8 +24,8 @@ fi
 path="/dev/shm/${0##*/}-$INTERFACE"
 
 # grabbing data for each adapter.
-read rx < "/sys/class/net/$INTERFACE/statistics/rx_bytes"
-read tx < "/sys/class/net/$INTERFACE/statistics/tx_bytes"
+read rx <"/sys/class/net/$INTERFACE/statistics/rx_bytes"
+read tx <"/sys/class/net/$INTERFACE/statistics/tx_bytes"
 
 # get time
 time=$(date +%s)
@@ -33,13 +33,13 @@ time=$(date +%s)
 # write current data if file does not exist. Do not exit, this will cause
 # problems if this file is sourced instead of executed as another process.
 if ! [[ -f $path ]]; then
-	echo "$time $rx $tx" > "$path"
+	echo "$time $rx $tx" >"$path"
 	chmod 0666 "$path"
 fi
 
 # read previous state and update data storage
-old=($(cat "$path"))
-echo "$time $rx $tx" > "$path"
+old=($(<"$path"))
+echo "$time $rx $tx" >"$path"
 
 # calc time passed
 time_diff=$((time - old[0]))
@@ -59,7 +59,7 @@ tx_rate=$((tx_diff / time_diff))
 rx_KiB=$((rx_rate >> 10))
 # incoming
 if ((rx_KiB > 999)); then
-	TEXT=" $(bc <<< "scale=1;$rx_KiB/1024" | sed 's/^\./0./')M/"
+	TEXT=" $(bc <<<"scale=1;$rx_KiB/1024" | sed 's/^\./0./')M/"
 else
 	TEXT=" ${rx_KiB}K/"
 fi
@@ -67,7 +67,7 @@ fi
 # outgoing
 tx_KiB=$((tx_rate >> 10))
 if ((tx_KiB > 999)); then
-	TEXT+="$(bc <<< "scale=1;$tx_KiB/1024" | sed 's/^\./0./')M"
+	TEXT+="$(bc <<<"scale=1;$tx_KiB/1024" | sed 's/^\./0./')M"
 else
 	TEXT+="${tx_KiB}K"
 fi

@@ -12,7 +12,7 @@ setTheme() {
 	if [[ $todo ]]; then # use nerdcontrast to generate terminal colors
 		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2>/tmp/term >/dev/null
 		for f in "${todo[@]}"; do
-			[[ -O $f ]] && cat /tmp/term >"$f"
+			[[ -O $f ]] && echo "$(</tmp/term)" >"$f"
 		done
 		rm /tmp/term
 	fi

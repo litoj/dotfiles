@@ -235,7 +235,7 @@ sysFiles() {
 		done
 		echo "$hostname" | sudo tee /etc/hostname
 	else
-		hostname=$(cat /etc/hostname)
+		hostname=$(</etc/hostname)
 	fi
 	printf 'blacklist pcspkr\nblacklist btusb\n' | sudo tee /etc/modprobe.d/blacklist.conf
 	[[ -f /etc/locale.conf ]] || printf 'LANG=cs_CZ.UTF-8' | sudo tee /etc/locale.conf

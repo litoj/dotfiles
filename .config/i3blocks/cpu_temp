@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 # CPU temperature script
 
-temp=$(cat /sys/class/thermal/thermal_zone0/temp)
+temp=$(</sys/class/thermal/thermal_zone0/temp)
 temp=${temp%000}
 
 if ((temp < 45)); then

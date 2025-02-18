@@ -42,7 +42,7 @@ workspace $wGame gaps inner 0
 hide_edge_borders smart
 smart_gaps on
 
-assign [title="Transmission"] $w1
+assign [app_id=".*transmission.*"] $w1
 assign [app_id="firefox"] $wBrowser
 assign [class="NetBeans|jetbrains-.*|ea.exe"] $wCode
 assign [app_id="mpv|gimp|Inkscape|darktable"] $wMedia

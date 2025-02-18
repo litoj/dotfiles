@@ -98,6 +98,7 @@ abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only depen
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
 
 # navigation
+abbr cd     'zoxide'
 abbr ...    'cd ../..'
 abbr cdd    'cd ~/dotfiles'
 alias cdr='ranger --choosedir=/tmp/cwd && cd (cat /tmp/cwd) && rm /tmp/cwd'

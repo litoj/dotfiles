@@ -245,9 +245,11 @@ genDstFromSrc() {
 # moves $out to $src if ! $dst
 runCmdWithCleanup() {
 	exec "${cmd[@]}" "$out" && if ((keepSrc <= 0)); then
-		[[ ${src#./} == "${out#./}" ]] || exec rm "$src"
-		if [[ -z $dst && $out != "${src%.*}".* ]]; then # used default $dst and output needs renaming
-			exec mv "$out" "${src%.*}.${out##*.}"
+		[[ $src == */* ]] || src=$PWD/$src # $out always has the full path
+		if [[ -z $dst && $out == "${src%[_.]*}"[_.]*${src##*.} ]]; then
+			exec mv "$out" "$src"
+		else
+			exec rm "$src"
 		fi
 	fi
 }
@@ -306,7 +308,7 @@ edit() {
 				local srcBr=$(ffprobe "$src" |& sed -n 's#.*bitrate: \([0-9]\+\) kb/s.*#\1#p')
 				if [[ -z $b ]]; then
 					[[ ($src == *.opus && $srcBr -ge 118) ||
-						$src =~ \.(flac|wav)$ || $srcBr -ge 256 ]] && b=128 || b=96
+						$src =~ \.(flac|wav)$ || $srcBr -gt 220 ]] && b=128 || b=96
 					log Info ".bitrate = $b"
 				fi
 				local cmd+=(-b:a ${b}k) cmdBitratePos=${#cmd[@]}
@@ -371,8 +373,8 @@ edit() {
 					log Error ": Invalid --volume=$v - either dB or LUFS"
 				fi
 
-				if [[ ($v == 0* || $v == .*) && ${v#*.} -lt 4 ]]; then
-					log Info ".volume = 1 (differs by 0${v#0}dB from target)"
+				if [[ ($v == -.* || $v == .* || $v == 0*) && ${v#*.} -lt 4 ]]; then
+					log Info ".volume = 1 (differs by ${v}dB from target)"
 					v=1
 				else
 					v+=dB
@@ -388,7 +390,6 @@ edit() {
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
-					[[ $dst ]] || dst=. # to prevent runCmdWithCleanup renaming the output back
 					out=$(call rename "${renameConfig[@]}" "$src" '-' 3>/dev/null)
 					out=${out%.*}
 					out=${out%_1}
@@ -403,6 +404,10 @@ edit() {
 			if [[ -d ${dst:-.} ]]; then
 				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
 					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
+						if [[ -z $s && -z $e ]]; then
+							log Warn ': no changes required -> skipping'
+							return
+						fi
 						log Info '.copy = true (no reencoding required)'
 						cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
 					fi

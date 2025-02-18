@@ -11,7 +11,7 @@ pick() {
 	local current=$(current) pick dir
 	[[ $DIRECTION == prev* ]] && dir=(-B head) || dir=(-A tail)
 
-	if [[ -z $current || ! -f $STATE_FILE ]]; then # initiate sequence
+	if [[ -z $current && ! -f $STATE_FILE ]]; then # initiate sequence
 		pick=("$BG_DIR"/*)
 	else # move to next image
 		if [[ -z $current && -f ${current:=$(<"$STATE_FILE")} ]]; then

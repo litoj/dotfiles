@@ -361,7 +361,7 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -DGA -p
-	$Mod+$Alt+m exec mom -DGA -pLra
+	$Mod+$Alt+m exec mom -DGA -pLras
 	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
@@ -369,7 +369,8 @@ bindsym {
 	XF86AudioPlay exec $mpv play-pause
 	KP_Subtract exec playerctl -a play-pause
 	$Mod+$Alt+space exec playerctl -a play-pause
-	XF86AudioNext exec $mpv next
+	# not using 'next' to work for last song in mpv (where mom generates the next)
+	XF86AudioNext exec $mpv position 10000+
 	XF86AudioPrev exec $mpv prev
 	XF86AudioStop exec playerctl -a pause
 

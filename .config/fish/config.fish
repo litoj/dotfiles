@@ -126,7 +126,7 @@ abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7
 abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up'
 # shows connected devices
 abbr con    'arp -a'
-abbr sync   'rsync -rltvuP --delete ~/'
+abbr sync   'rsync -rltvuP --delete ~/Pictures /run/media/$USER/Elements/zaloha/linux/'
 
 abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
 

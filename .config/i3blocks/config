@@ -18,8 +18,8 @@ signal=12
 interval=60
 signal=14
 
-[updates]
-interval=once
+# [updates]
+# interval=once
 
 [kb]
 interval=once

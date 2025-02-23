@@ -521,7 +521,7 @@ playParams=(
 	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
 	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
-	src '$+' '$e' 'Play files or dir')
+	src '$+' '$e' 'Play files or dirs')
 declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
@@ -543,66 +543,76 @@ play() {
 
 	if [[ -f $src ]]; then
 		local file=true
-		exec printf '%s\n' "${src[@]}" \> "$playlistFile"
+		exec echo "$src" \> "$playlistFile"
 		cmd+=(--playlist-start=0)
-		src=${src%/*}
+		for src in "${src[@]:1}"; do
+			if [[ -f $src ]]; then
+				exec echo "$src" \>\> "$playlistFile"
+				local multipleFiles=true
+			fi
+		done
+		if [[ -z $multipleFiles ]]; then
+			src=${src%/*}
+		fi
 	elif [[ -f $playlistFile ]]; then
 		exec rm "$playlistFile"
 	fi
 
-	if [[ $randomizer == [da]* ]]; then
-		local allDirs=() artistDirs=() d f
-		readarray -t allDirs < <(fd '' -Lt d "$src")
-		for d in "${allDirs[@]}"; do # filter out dirs with no files
-			local contents=("$d"/*)
-			for f in "${contents[@]}"; do
-				if [[ -f $f ]]; then
-					artistDirs+=("$d")
-					break
-				fi
-			done
-		done
-		unset allDirs
+	local firstSrc=$src # to not loose track when passing args further
+	for src in "${src[@]}"; do
+		if [[ $multipleFiles ]]; then
+			: # play just selected files without further PWD addition
+		elif [[ $randomizer == [da]* ]]; then
+			local artistDirs=() d f
+			while read -r d; do # filter out dirs with no files
+				for f in "$d"/*; do
+					if [[ -f $f ]]; then
+						artistDirs+=("$d")
+						break
+					fi
+				done
+			done < <(fd '' -Lt d "$src")
+			[[ $artistDirs ]] || artistDirs=("$src")
 
-		function pickFromDir() {
-			if ((perDir >= $#)); then
-				echo "$@" | exec sort -R \>\> "$playlistFile"
-				return
+			function pickFromDir() {
+				if ((perDir >= $#)); then
+					echo "$@" | exec sort -R \>\> "$playlistFile"
+					return
+				fi
+				declare -i cnt=$perDir pick
+				while ((cnt--)); do
+					((pick = RANDOM % $#))
+					if reg="${MIME_TYPES['audio']}" argMatch "${!pick}"; then
+						exec echo "${!pick}" \>\> "$playlistFile"
+					else
+						((cnt++))
+					fi
+				done
+			}
+
+			if [[ $randomizer == d* ]]; then
+				[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
+				declare -i fileCnt=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
+				while ((n-- > 0)); do
+					pickFromDir "${artistDirs[RANDOM % fileCnt]%/}"/*
+				done
+			else # randomizer == a*
+				[[ $randomizer =~ ^a([0-9]*)s?$ ]]
+				declare -i perDir=${BASH_REMATCH[1]:-1}
+				for d in "${artistDirs[@]}"; do
+					pickFromDir "${d%/}"/*
+				done
 			fi
-			declare -i cnt=$perDir pick
-			while ((cnt--)); do
-				((pick = RANDOM % $#))
-				if [[ $(file -b --mime-type "${!pick}") == audio/* ]]; then
-					exec echo "${!pick}" \>\> "$playlistFile"
-				else
-					((cnt++))
-				fi
-			done
-		}
-
-		if ((!${#artistDirs[@]})); then
+			[[ $randomizer == *s ]] && cmd+=(--shuffle)
+		else
 			exec echo "$src" \>\> "$playlistFile"
-		elif [[ $randomizer == d* ]]; then
-			[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
-			declare -i fileCnt=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
-			while ((n-- > 0)); do
-				pickFromDir "${artistDirs[RANDOM % fileCnt]%/}"/*
-			done
-		else # randomizer == a*
-			[[ $randomizer =~ ^a([0-9]*)s?$ ]]
-			declare -i perDir=${BASH_REMATCH[1]:-1}
-			for d in "${artistDirs[@]}"; do
-				pickFromDir "${d%/}"/*
-			done
+			((randomizer >= 0)) && cmd+=(--shuffle)
 		fi
-		[[ $randomizer == *s ]] && cmd+=(--shuffle)
-	else
-		exec echo "$src" \>\> "$playlistFile"
-		((randomizer >= 0)) && cmd+=(--shuffle)
-	fi
+	done
 
 	if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
-		exec "${cmd[@]}" && "$0" $ACTION -L --randomizer=$randomizer "$src" &
+		src=$firstSrc
+		exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
 	else
 		exec "${cmd[@]}" &
 	fi

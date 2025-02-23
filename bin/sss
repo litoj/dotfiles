@@ -660,9 +660,9 @@ REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 # string for argMatch capturing file of given type
 declare -A MIME_TYPES=(
-	[audio]='$+audio$f\.(opus|m4a|mp3|flac|wav|wma|ogg)'
-	[video]='$+video$f\.(mov|mkv|mp4|avi|webm)'
-	[image]='$+image$f\.(jpe?g|heif|png|webp|jxl)'
+	[audio]='$f\.(opus|m4a|mp3|flac|wav|wma|ogg)$+audio'
+	[video]='$f\.(mov|mkv|mp4|avi|webm)$+video'
+	[image]='$f\.(jpe?g|heif|png|webp|jxl)$+image'
 )
 
 #######################################

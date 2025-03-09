@@ -98,7 +98,6 @@ abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only depen
 abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
 
 # navigation
-abbr cd     'zoxide'
 abbr ...    'cd ../..'
 abbr cdd    'cd ~/dotfiles'
 alias cdr='ranger --choosedir=/tmp/cwd && cd (cat /tmp/cwd) && rm /tmp/cwd'
@@ -123,12 +122,13 @@ abbr ipa    "ip a | sed -n 's/.* \([.0-9]\+\/[0-9]\+\).*/\1/p' | tail -n 1"
 abbr npa    "netstat -tn"
 abbr npo    "netstat -lutnp &| tail -n +4"
 abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7 | sort -k4n -k2n | column -t -R 2"
-abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up'
+abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up && sudo systemctl restart NetworkManager'
 # shows connected devices
 abbr con    'arp -a'
 abbr sync   'rsync -rltvuP --delete ~/Pictures /run/media/$USER/Elements/zaloha/linux/'
 
 abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
+abbr getcert 'gnutls-cli --save-cert=myvpn.pem --insecure'
 
 # system checks
 abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | bat -l yaml'

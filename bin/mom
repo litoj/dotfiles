@@ -534,6 +534,8 @@ pickSong() {
 		find ~/Music/* -type d 2>/dev/null
 		find "${MUSIC_SOURCES[@]:-$HOME/Music/Songs}" -type f 2>/dev/null
 	} | "${cmd[@]}")
+
+	((${#_choice[@]}))
 }
 play() {
 	local playlistFile=/tmp/my/song
@@ -541,21 +543,19 @@ play() {
 	exec pkill -f "${cmd[*]}" >/dev/null
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 
-	if [[ -f $src ]]; then
-		local file=true
-		exec echo "$src" \> "$playlistFile"
-		cmd+=(--playlist-start=0)
-		for src in "${src[@]:1}"; do
-			if [[ -f $src ]]; then
-				exec echo "$src" \>\> "$playlistFile"
-				local multipleFiles=true
-			fi
-		done
-		if [[ -z $multipleFiles ]]; then
-			src=${src%/*}
+	[[ -f $playlistFile ]] && exec rm "$playlistFile"
+
+	declare -i files
+	cmd+=(--playlist-start=0)
+	for src in "${src[@]:1}"; do
+		if [[ -f $src ]]; then
+			exec echo "$src" \>\> "$playlistFile"
+			((files += 1))
 		fi
-	elif [[ -f $playlistFile ]]; then
-		exec rm "$playlistFile"
+	done
+
+	if [[ -f $src && $files == 1 ]]; then # expand the directory, if it was the only file arg
+		src=${src%/*}
 	fi
 
 	local firstSrc=$src # to not loose track when passing args further
@@ -603,12 +603,13 @@ play() {
 					pickFromDir "${d%/}"/*
 				done
 			fi
-			[[ $randomizer == *s ]] && cmd+=(--shuffle)
+		elif [[ -d $src ]]; then
+			exec fd -t f '' "$src" \>\> "$playlistFile"
 		else
 			exec echo "$src" \>\> "$playlistFile"
-			((randomizer >= 0)) && cmd+=(--shuffle)
 		fi
 	done
+	[[ $randomizer == *s || $randomizer -ge 0 ]] && cmd+=(--shuffle)
 
 	if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
 		src=$firstSrc

@@ -49,7 +49,7 @@ if [[ $1 ]]; then
 	exit 0
 fi
 
-STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
+STAT=($(sunwait list 47.8N 13E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
 next=0
 
 update() {

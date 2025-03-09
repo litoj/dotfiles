@@ -28,7 +28,7 @@ function M.config()
 				--max-columns=255 --colors=line:fg:magenta --colors=column:fg:magenta \
 				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
-		lsp = { jump_to_single_result = true, ignore_current_line = true },
+		lsp = { jump1 = true, ignore_current_line = true },
 		oldfiles = { stat_file = exists },
 	}
 

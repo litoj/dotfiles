@@ -198,9 +198,14 @@ bindsym {
 	$Mod+Ctrl+d move workspace next, workspace next
 	$Mod+Ctrl+f move workspace back_and_forth, workspace back_and_forth
 
-# both hands
+## Both hands
 	$Mod+comma workspace prev
 	$Mod+period workspace next
+	$Mod+slash workspace back_and_forth
+
+	$Mod+Ctrl+comma move workspace prev, workspace prev
+	$Mod+Ctrl+period move workspace next, workspace next
+	$Mod+Ctrl+slash move workspace back_and_forth, workspace back_and_forth
 }
 # quick mark
 bindsym --to-code {

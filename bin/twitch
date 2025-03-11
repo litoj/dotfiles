@@ -13,7 +13,7 @@ wtwitch() {
 	[[ -f $CACHE_FILE ]] && source "$CACHE_FILE"
 
 	if [[ -z $token || $token == null ]] ||
-		(($(date +%s) >= expiry)); then
+		(($(date +%s) >= expiry - 86400)); then
 		newToken="$(curl --silent -d "client_id=${T[2]}&client_secret=${T[3]}&grant_type=client_credentials" "${T[1]}" | jq -r ".access_token")"
 		[[ -z $newToken || $newToken == null ]] && exit 1
 		token=$newToken

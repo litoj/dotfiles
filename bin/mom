@@ -547,18 +547,20 @@ play() {
 
 	declare -i files
 	cmd+=(--playlist-start=0)
-	for src in "${src[@]:1}"; do
+	local firstSrc=$src # to not loose track when passing args further
+	for src in "${src[@]}"; do
 		if [[ -f $src ]]; then
 			exec echo "$src" \>\> "$playlistFile"
 			((files += 1))
 		fi
 	done
+	src=$firstSrc
 
 	if [[ -f $src && $files == 1 ]]; then # expand the directory, if it was the only file arg
 		src=${src%/*}
 	fi
 
-	local firstSrc=$src # to not loose track when passing args further
+	firstSrc=$src 
 	for src in "${src[@]}"; do
 		if [[ $multipleFiles ]]; then
 			: # play just selected files without further PWD addition

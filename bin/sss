@@ -380,7 +380,7 @@ main() {
 		unset CLI_MODE
 	fi
 
-	ui
+	ui 3>&2
 }
 
 true=1 false=-1
@@ -484,8 +484,8 @@ parseAction() {
 		fi
 
 		if [[ $i ]]; then # set option / named parameter
-			local varName=${sigs[$i]//-/_} reg=${sigs[i + 2]}
-			if [[ $reg ]]; then # requires arg
+			local varName=${sigs[$i]//-/_} matcher=${sigs[i + 2]}
+			if [[ $matcher ]]; then # requires arg
 				if [[ $optCnt == - && ${!varName+y} ]]; then
 					unset "$varName" # `+o` resets the option value - for config override
 					[[ ${args[$i]} ]] && args[$i]=-1
@@ -520,7 +520,7 @@ parseAction() {
 
 					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
-					"${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}" || {
+					"${builder["$varName"]:=$(determinePicker "$matcher")}" "${sigs[@]:i:4}" || {
 						((${SCRIPT_OPTS['ignoreFailedPicker']} > 0)) && i=-1
 					}
 				}; then
@@ -562,7 +562,7 @@ parseAction() {
 			[[ $# -eq $actionArgFromEnd ]] && set -- "${1#-}" "${@:2}"
 
 			while ((posArg < sigN)); do
-				local varName=${sigs[$posArg]//-/_} sign=${sigs[posArg + 1]} reg=${sigs[posArg + 2]}
+				local varName=${sigs[$posArg]//-/_} sign=${sigs[posArg + 1]} matcher=${sigs[posArg + 2]}
 				if [[ $sign == '$'? ]] && argMatch "$1"; then
 					args[$posArg]+=1              # update before posArg changes
 					if [[ $sign == ?[+*] ]]; then # param is a list
@@ -607,13 +607,13 @@ parseAction() {
 	unset actionArgFromEnd posArg firstArg opts tmpArr _varName
 
 	while (((i += 4) < sigN)); do
-		local varName=${sigs[i]} sign=${sigs[i + 1]} reg=${sigs[i + 2]}
+		local varName=${sigs[i]} sign=${sigs[i + 1]} matcher=${sigs[i + 2]}
 		((${args[$i]:-1} > 0)) && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
 		if [[ ${SCRIPT_OPTS['argPicker']} -gt 0 && $sign == ?[+!] ]]; then
 			declare -a "$varName"
-			if "${builder["$varName"]:=$(determinePicker "$reg")}" "${sigs[@]:i:4}"; then
+			if "${builder["$varName"]:=$(determinePicker "$matcher")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
 				log Debug "\$$varName <${builder["$varName"]}>= '${!varName}'"
 			fi
@@ -626,7 +626,7 @@ parseAction() {
 	done
 
 	declare +n builder sigs
-	unset sigs i sigN args builder varName sign reg
+	unset sigs i sigN args builder varName sign matcher
 
 	# ensure valid state
 	if [[ $ACTION == "${SSS_OPTS['defAction']}" && $# -gt 0 && ${SSS_OPTS['defActionLast']} ]]; then
@@ -665,27 +665,30 @@ declare -A MIME_TYPES=(
 	[image]='$f\.(jpe?g|heif|png|webp|jxl)$+image'
 )
 
+# mapping of matched file mimetypes to save repeated tests
+declare -A _FILE_MIME_MAP
+
 #######################################
 # Test ^(RE)$ or custom pattern like $<k><RE> - <k>: test kind, <RE> tests the input text
 # $<b>: <b>: bash condexpr operator, UPPERCASE for negation, match against RE$
 # $+: mime type ^RE, follows symlinks
 # $|: fallback ^(RE)$, must be last in the pattern
 # Globals:
-#   reg: required format of the argument - described custom pattern
+#   matcher: required format of the argument - described custom pattern
 # Arguments:
 #   tested: input argument to be tested against the pattern
 #######################################
 argMatch() {
 	local tested=$1
-	if [[ $reg == '$'* ]]; then # file requirements
-		local ptn=${tested/*./} reg=$reg kind
+	if [[ $matcher == '$'* ]]; then # file requirements
+		local ptn=${tested/*./} matcher=$matcher kind
 		[[ ${#ptn} != ${#tested} && $ptn != */* ]] && tested=${tested%.*}.${ptn,,} # lowercase file extension
 
-		if [[ $reg == *'$|'* ]]; then
-			ptn=${reg#*'$|'}
+		if [[ $matcher == *'$|'* ]]; then
+			ptn=${matcher#*'$|'}
 			log Trace " '$tested' =? $ptn"
 			[[ $tested =~ ^($ptn)$ ]] && return 0 # one of special values after '$|'
-			reg=${reg::-2-${#ptn}}
+			matcher=${matcher::-2-${#ptn}}
 		fi
 
 		if ! [[ $tested =~ ^[^+-][^=]*$ ]]; then
@@ -693,14 +696,14 @@ argMatch() {
 			return 1
 		fi
 
-		while [[ $reg ]]; do
-			ptn=${reg:2} kind=${reg:1:1}
+		while [[ $matcher ]]; do
+			ptn=${matcher:2} kind=${matcher:1:1}
 			ptn=${ptn%%'$'*}
 			log Trace " '$tested' =? \$$kind$ptn"
 
 			if [[ $kind == '+' ]]; then
 				local mime
-				[[ ${mime:=$(file -Lb --mime-type "$1")} =~ ^$ptn ]] && return 0
+				[[ ${mime:=${_FILE_MIME_MAP["$1"]:=$(file -Lb --mime-type "$1")}} =~ ^$ptn ]] && return 0
 			else
 				[[ $tested =~ $ptn$ ]] && if [[ $kind == [A-Z] ]]; then
 					eval [[ ! -${kind,} '$tested' ]] && return 0
@@ -709,12 +712,12 @@ argMatch() {
 				fi
 			fi
 
-			reg=${reg:2+${#ptn}}
+			matcher=${matcher:2+${#ptn}}
 		done
 
 		return 1
 	else # normal regex
-		[[ $tested =~ ^($reg)$ ]]
+		[[ $tested =~ ^($matcher)$ ]]
 	fi
 }
 
@@ -722,7 +725,7 @@ argMatch() {
 # Print help about specified parameter from given action.
 # Arguments:
 #   action: string
-#   matcher: boolean show regex used for matching args
+#   matcher: boolean show argument matcher expression
 #   paramIdx?: integer
 #######################################
 printActionParams() {
@@ -994,7 +997,8 @@ Usage:
      toggleable arg opts should be always default=false
 	5. Declare a mapping of picker functions for args if defaults are insufficient
      declare -A <fName>Builder=([<argName>]=<picker/selector fName>)
-  6. Picker gets full arg quaternion, saves selection to $1/argName
+  6. Picker gets full arg info, saves selection to $1/argName
+     Pickers must verify arg validity themselves!
   7. Write your function.
   8?. for execution after configuration overwrite SSS_OPTS[exitFn]
   9. Call `main "$@"` at the end of your script; set defAction for setup-then-exec use

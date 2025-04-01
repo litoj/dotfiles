@@ -2,7 +2,7 @@
 # simpler=faster xdg-open replacement
 LC_ALL=C
 
-[[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME:-$HOME/.config}/open.conf.sh
+[[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME-$HOME/.config}/open.conf.sh
 
 if [[ $1 == open-sh://* ]]; then # for YT-to-external browser redirect
 	arg=${1#open-sh://}
@@ -49,8 +49,8 @@ try() {
 	((match)) && run "$app"
 }
 
-[[ -f $CFG ]] && . "$CFG"
+[[ -f $CFG ]] && . "$CFG" # config calls try() for given apps with listed allowed files
 
 [[ -d $arg ]] && run "${EXPLORER:-ranger}"
-try "$EDITOR" '.*' +text +*empty +*json
-run "${FALLBACK:-$BROWSER}"
+try "$EDITOR" +text +*empty +*json
+run "${FALLBACK:-${BROWSER:-false}}" # using ':-' because empty value would execute $1 itself

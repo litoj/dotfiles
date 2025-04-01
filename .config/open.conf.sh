@@ -3,6 +3,7 @@ BROWSER=@${BROWSER#@}
 TERM_BLOCKING=1
 try 'mpv --no-audio-display' +audio .m3u .m4a .mp3
 try '@mpv --no-terminal' +video
+try @geeqie .RAF
 imgFallback() {
 	BLOCKING=1
 	# try @imv-dir +image
@@ -18,7 +19,8 @@ try @zathura .pdf
 try @transmission-gtk magnet:
 try @thunderbird mailto:
 try @twitch youtube.com/watch youtu.be
+try "$BROWSER" http: https:
 try 'java -jar' .jar
 try '' .AppImage # execute the file itself
-try "$BROWSER" http: https:
+try jupyter-notebook .ipynb
 FALLBACK=$EDITOR

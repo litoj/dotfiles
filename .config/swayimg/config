@@ -37,8 +37,8 @@ Shift+l=next_file
 
 Alt+ScrollDown=zoom -1
 Alt+ScrollUp=zoom +1
-Ctrl+ScrollDown=zoom -5
-Ctrl+ScrollUp=zoom +5
+Ctrl+ScrollDown=zoom -2
+Ctrl+ScrollUp=zoom +2
 ScrollLeft=step_left 1
 ScrollDown=step_down 1
 ScrollUp=step_up 1

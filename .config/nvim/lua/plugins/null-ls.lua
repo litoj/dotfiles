@@ -88,7 +88,7 @@ IndentWidth: %d, ContinuationIndentWidth: %d, TabWidth: %d, UseTab: %s, ColumnLi
 					}
 				end,
 			},
-			nls.builtins.formatting.yapf,
+			nls.builtins.formatting.black,
 		},
 	}
 end

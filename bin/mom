@@ -245,8 +245,10 @@ genDstFromSrc() {
 # moves $out to $src if ! $dst
 runCmdWithCleanup() {
 	exec "${cmd[@]}" "$out" && if ((keepSrc <= 0)); then
-		[[ $src == */* ]] || src=$PWD/$src # $out always has the full path
-		if [[ -z $dst && $out == "${src%[_.]*}"[_.]*${src##*.} ]]; then
+		[[ $out == */* ]] || out=$PWD/$out
+		[[ $src == */* ]] || src=$PWD/$src
+		local name=${src%.*}
+		if [[ -z $dst && $out == "${name%_*}"_*.${src##*.} ]]; then
 			exec mv "$out" "$src"
 		else
 			exec rm "$src"
@@ -259,7 +261,7 @@ PICKER_FOR_REGEX[${REGEX['timestamp']}]=mpvPicker
 actionInfo edit 'cut, strip metadata and/or convert media; time picker works only after `src`'
 declare -A editBuilder=([volume]=mpvVolumePicker)
 editParams=(
-	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvf)'
+	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvfp)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
 	rename 'r?' '' 'Rename using rename action, file $dst has priority'
 	keepSrc 'k?' '' 'Keep $src file (removes by default)'
@@ -272,10 +274,11 @@ editParams=(
 	'End of fadeout, or fadeout duration, priority: -e > -F > -p'
 	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
 	volume 'v*' '-?[0-9]+(\.[0-9]+)?(dB|LUFS)?' 'Volume multiplier or target dB (default=1)'
-	pickAll 'a?' '' 'Use a picker for all timestamp values + volume'
+	volumeTolerance 't?' '[0-9]+(\.[0-9]+)?' 'Required dB offset before correction to given dB/LUFS (default=0.4)'
+	pickAll 'a?' '' 'Use a picker for all timestamp values + volume - for automation'
 	dst '$?' '$d$D\.(opus|mp3|m4a|flac|wma)' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
-	if reg='$D\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
+	if matcher='$D\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
@@ -373,7 +376,7 @@ edit() {
 					log Error ": Invalid --volume=$v - either dB or LUFS"
 				fi
 
-				if [[ ($v == -.* || $v == .* || $v == 0*) && ${v#*.} -lt 4 ]]; then
+				if [[ $v == 0 || $src == *.opus ]] && (($(bc <<<"${v#-} < ${volumeTolerance:-0.4}"))); then
 					log Info ".volume = 1 (differs by ${v}dB from target)"
 					v=1
 				else
@@ -386,13 +389,13 @@ edit() {
 			fi
 
 			local out
-			if reg='$D\.[^ ]+$' argMatch "$dst"; then
+			if matcher='$D\.[^ ]+' argMatch "$dst"; then
 				out=$dst # file $dst has priority
 			else
 				if [[ $rename ]]; then
 					out=$(call rename "${renameConfig[@]}" "$src" '-' 3>/dev/null)
 					out=${out%.*}
-					out=${out%_1}
+					out=${out%_1} # we only need the right filename, overiding issues are solved later
 					if [[ $out ]]; then
 						((copy > 0)) && out+=".${src##*.}" || out+=.opus
 					fi
@@ -560,7 +563,7 @@ play() {
 		src=${src%/*}
 	fi
 
-	firstSrc=$src 
+	firstSrc=$src
 	for src in "${src[@]}"; do
 		if [[ $multipleFiles ]]; then
 			: # play just selected files without further PWD addition
@@ -584,7 +587,7 @@ play() {
 				declare -i cnt=$perDir pick
 				while ((cnt--)); do
 					((pick = RANDOM % $#))
-					if reg="${MIME_TYPES['audio']}" argMatch "${!pick}"; then
+					if matcher="${MIME_TYPES['audio']}" argMatch "${!pick}"; then
 						exec echo "${!pick}" \>\> "$playlistFile"
 					else
 						((cnt++))
@@ -667,7 +670,7 @@ resizeParams=(
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
 	dst '$?' '$d$D\.(jpe?g|png|heif)' 'Output file/dir (default=$src)')
 resize() {
-	if reg='$D' argMatch "$dst" && ((${#src[@]} > 1)); then
+	if matcher='$D' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
 	fi
@@ -745,80 +748,84 @@ arrayToMap() {
 
 actionInfo rename R 'rename video/image files using `exiftool` with `sed` fallback'
 renameParams=(
-	format 'f*' '[a-z0-9]+[:=].*' 'Exiftool format per mimetype/extension'
-	fallback 'F*' '[a-z0-9]+[:=].*' 'Sed fallback expression per mimetype/extension)'
+	format 'f*' '[^:]+[:=].*' 'Exiftool format per argMatch expression'
+	fallback 'F*' '[^:]+[:=].*' 'Sed fallback expression per argMatch expression'
 	dateFormat 'd!' '.+' 'Timestamp format'
-	useDateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
+	dateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
 	src '$+' "\$d${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
 	dst '$?' '$d$|-' 'Destination to rename to, or `-` to just print the final dst'
 )
 renameConfig=(
-	format=audio:'$Artist - $Title'
-	format=mov:'$DateTimeOriginal'
-	format=image:'$DateTimeOriginal'
-	fallback=video:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,'
-	fallback=audio:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+|.*-) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
+	format=${MIME_TYPES['audio']}:'$Artist - $Title'
+	format='$f.mov:$DateTimeOriginal'
+	format='$f^[^ .].*.mp4:$CreateDate'
+	format=${MIME_TYPES['image']}:'$DateTimeOriginal'
+	fallback=${MIME_TYPES['video']}:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,' # movies
+	fallback=${MIME_TYPES['audio']}:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+|.*-) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
 	dateFormat='%Y-%m-%d_%H%M%S'
-	useDateFallback=ask
+	dateFallback=ask
 )
 rename() {
-	declare -A exif sed
-	if ((${#exif[@]} == 0)); then
-		arrayToMap format exif
-		arrayToMap fallback sed
-	fi
-
 	if ((${#src[@]} > 1)); then
 		for src in "${src[@]}"; do
 			src=$src rename # to pass a string instead of an array
 		done
 	elif [[ -d $src ]]; then
 		for src in "$src"/*; do
-			reg=${renameParams[-6]} argMatch "$src" && rename
+			matcher=${renameParams[-6]} argMatch "$src" && rename
 		done
 	else
 		function isolated() {
-			if reg="${MIME_TYPES['video']}" argMatch "$src"; then
-				local mime=video
-			elif reg="${MIME_TYPES['audio']}" argMatch "$src"; then
-				local mime=audio
-			else
-				local mime=image
-			fi
+			local name=${src##*/}
+			for pair in "${format[@]}"; do
+				if matcher=${pair/:*/} argMatch "$name"; then
+					local exif=${pair#*:}
+					break
+				fi
+			done
+			for pair in "${fallback[@]}"; do
+				if matcher=${pair/:*/} argMatch "$name"; then
+					local sed=${pair#*:}
+					break
+				fi
+			done
 
-			local ext=$(exiftool "$src" -p '$FileTypeExtension')
-			local exif=${exif["$ext"]-${exif["$mime"]}} sed=${sed["$ext"]-${sed["$mime"]}}
+			local ext=${name##*.}
+			ext=${ext,,}
+			[[ $ext == jpeg ]] && ext=jpg
 
-			local name
-			if { # exiftool
-				[[ $exif ]] && name=$( # regex creates cond to check all exif vars have a value
-					exiftool "$src" -d "$dateFormat" -p "$exif" -if "$(
-						echo "$exif" | sed 's/^[^$]*//;s/\(\$\w\+\)[^$]*/\1 and /g;s/ and $//'
-					)" 2>/dev/null
-				) && [[ $name ]]
-			} || { # date fallback (for images)
-				[[ $exif =~ ^[^$]*\$DateTimeOriginal[^$]*$ ]] && {
-					name="${exif/'$DateTimeOriginal'*/}$(
-						date -r "$src" +"$dateFormat"
-					)${exif/*'$DateTimeOriginal'/}"
+			local name=''
+			if [[ $exif ]] && {
+				{ # exiftool
+					name=$( # regex creates cond to check all exif vars have a value
+						exiftool "$src" -d "$dateFormat" -p "$exif" -if "$(
+							echo "$exif" | sed 's/^[^$]*//;s/\(\$\w\+\)[^$]*/\1 and /g;s/ and $//'
+						)" 2>/dev/null
+					) && [[ $name ]]
+				} || { # date fallback (for images); relies on datetime being the only exif var
+					[[ $exif =~ ^[^$]*\$DateTimeOriginal[^$]*$ ]] && {
+						name="${exif/'$DateTimeOriginal'*/}$(
+							date -r "$src" +"$dateFormat"
+						)${exif/*'$DateTimeOriginal'/}"
+						[[ $name == "${src%.*}" ]] && dateFallback=y
+						echo "test $name $dateFallback"
 
-					[[ $name == "${src%.*}" ]] && dateFallback=y
+						if [[ $dateFallback == a* ]]; then
+							local dateFallback
+							read -p "$(
+								print "rename '$src' to file mod date = '$name.$ext'? [y/N]: "
+							)" -n1 dateFallback
+							[[ $dateFallback ]] && echo # fix missing newline after user input
+						fi
 
-					if [[ $dateFallback == a* ]]; then
-						local dateFallback
-						read -p "$(
-							print "rename '$src' to file mod date ('$name.$ext')? [y/N]: "
-						)" -n1 dateFallback
-						[[ $dateFallback ]] && echo # fix missing newline after user input
-					fi
-
-					[[ $dateFallback == [yY]* ]]
+						[[ $dateFallback == [yY]* ]]
+					}
 				}
 			} || { # sed fallback
 				[[ $sed ]] && {
 					[[ $src == *[^.]/* ]] || src=$PWD/${src#./}
 					name=$(echo "${src%.*}" | sed -E "$sed")
-					[[ $exif ]] && log Warn " - Missing '$exif' exif data, fallback name: '$name.$ext'"
+					[[ $exif ]] && log Warn " - Missing '$exif' exif data, fallback name: '${name##*/}.$ext'"
 					[[ $name ]]
 				}
 			}; then

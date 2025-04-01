@@ -7,13 +7,16 @@ vim.diagnostic.config {
 	severity_sort = true,
 	float = { focusable = false, border = 'rounded', source = 'if_many' },
 }
-vim.lsp.handlers['textDocument/hover'] =
-	vim.lsp.with(vim.lsp.handlers.hover, { border = 'rounded' })
-
-for k, v in pairs { Error = '', Warn = '', Hint = '', Info = '' } do
-	k = 'DiagnosticSign' .. k
-	vim.fn.sign_define(k, { texthl = k, text = v, numhl = k })
-end
+vim.diagnostic.config {
+	signs = {
+		text = {
+			[vim.diagnostic.severity.ERROR] = '',
+			[vim.diagnostic.severity.WARN] = '',
+			[vim.diagnostic.severity.HINT] = '',
+			[vim.diagnostic.severity.INFO] = '',
+		},
+	},
+}
 
 local lsc = require 'lspconfig'
 local lsu = require 'lspconfig.util'
@@ -55,7 +58,7 @@ end
 M.setup = setup
 
 setup 'bashls'
-setup('pyright', {})
+setup 'pyright'
 setup 'volar'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
@@ -65,16 +68,11 @@ setup 'volar'
 -- Lsp diagnostic
 map('n', '<A-d>', vim.diagnostic.open_float)
 map('i', '<A-d>s', vim.diagnostic.open_float)
-map('n', '[d', vim.diagnostic.goto_prev)
-map('n', ']d', vim.diagnostic.goto_next)
--- Lsp code helpers
-map('n', 'gD', vim.lsp.buf.declaration)
-map('n', 'gd', vim.lsp.buf.definition)
-map('n', 'gr', vim.lsp.buf.references)
+map('n', '[d', function() vim.diagnostic.jump { count = 1, float = true } end)
+map('n', ']d', function() vim.diagnostic.jump { count = -1, float = true } end)
+-- Lsp code helpers gd,gr... in ../plugins/fzf.lua
 map('n', 'gt', vim.lsp.buf.type_definition)
--- gd,gr in ../plugins/fzf.lua
-map('n', 'gI', vim.lsp.buf.implementation)
-map({ 'n', 'i' }, '<A-i>', vim.lsp.buf.hover)
+map({ 'n', 'i' }, '<A-i>', function() vim.lsp.buf.hover { border = 'rounded' } end)
 map('i', '<A-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)

@@ -84,7 +84,10 @@ abbr s      'sensors'
 abbr cp     'cp -i'
 abbr mv     'mv -i'
 abbr gparted 'xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root'
-abbr dl     'mom -d'
+
+function setpy
+end
+
 
 # get error messages from journalctl
 abbr jctl   'journalctl -p 3 -b'
@@ -109,6 +112,7 @@ abbr ga     'git add -v (git lf | fzf -m | sed "s/..//")'
 abbr gC     'git commit'
 abbr gr     'git rebase'
 abbr grc    'git rebase --continue'
+abbr grf    'git checkout @ --'
 abbr gP     'git push'
 abbr gbP    'git push origin HEAD:'
 abbr gdP    'git push -d origin'
@@ -140,22 +144,24 @@ function fish_user_key_bindings
 	fzf_key_bindings
 end
 
-if status is-login
-	if [ -z "$DISPLAY" -a "$XDG_VTNR" -eq 1 ]
-		eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
-		export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
-		export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
-		# for '~' expansion
-		set -x XDG_CONFIG_HOME ~/.config
-		set -x XDG_CACHE_HOME ~/.cache
-		set cache $XDG_CACHE_HOME
-		export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
-		export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
-		export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
-		export QT_QPA_PLATFORMTHEME=qt6ct RADV_PERFTEST=video_decode
-		export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
-		WLR_RENDERER=vulkan sway < /dev/null # to disable stdin and not cause term apps to open in tty
-		killall -15 ssh-agent
-	end
+if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
+	eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
+	export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
+	export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
+	# for '~' expansion
+	set -x XDG_CONFIG_HOME ~/.config
+	set -x XDG_CACHE_HOME ~/.cache
+	set cache $XDG_CACHE_HOME
+	export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
+	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
+	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
+	export QT_QPA_PLATFORMTHEME=qt6ct RADV_PERFTEST=video_decode
+	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
+	export PATH="$HOME/.pyenv/shims:$PATH"
+	WLR_RENDERER=vulkan sway < /dev/null # to disable stdin and not cause term apps to open in tty
+	killall -15 ssh-agent
+else if status --is-interactive && test -f .python-version -o -f ../.python-version
+	pyenv init - | source
+	# pyenv activate (cat .python-version ../.python-version 2>/dev/null)
 end
 # vim: ft=bash

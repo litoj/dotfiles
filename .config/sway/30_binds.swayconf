@@ -279,9 +279,9 @@ mode $Exit {
 		a mode default, exec $signal cpu Auto
 		w mode default, exec $signal cpu Schedutil
 		t mode default, exec $signal cpu Test
-		Shift+E mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
-		Shift+A mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
-		Shift+P mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
+		Shift+e mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
+		Shift+a mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
+		Shift+p mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
 		--release $Alt+d mode default, exec $lid mode
@@ -289,10 +289,11 @@ mode $Exit {
 		s mode default, exec $lid sleep
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		# exit kills swaybg so exit after the curreng bg has been detected
-		p exec $custombg autosave && swaymsg exit & systemctl poweroff
+		# exit kills swaybg so exit after the current bg has been stored
+		p exec '$custombg autosave && { swaymsg exit & sleep 1 && systemctl poweroff; }'
 		r exit, exec reboot
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
+		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
 		b mode default, exec xterm sudo bash -c \
 			'f=/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode && echo $((($(cat \
 			$f)+1)%2)) > $f && (($(cat $f)==0)) && echo Full Charge || echo Conservation mode && sleep 1'

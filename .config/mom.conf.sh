@@ -9,7 +9,7 @@ editConfig=(
 	--rename
 	no-metadata
 	volume=-14LUFS
-	pickAll=true
+	volumeTolerance=0.8
 )
 
 linkFixConfig=(--resources ~/Music/Songs/)

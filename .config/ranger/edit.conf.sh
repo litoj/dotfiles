@@ -25,9 +25,11 @@ runJob() {
 	IS_JOB=1 "$@" &
 }
 
-try 'mom edit' +audio .flac .opus .m4a .mp3 .wav .wma
+try 'mom edit --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
 try 'mom subtitles' .srt .mp4
 # try @"kdenlive & dragon-drop -x -a" .mkv
+
+try 'jupyter nbconvert --to script' .ipynb
 
 editDir() {
 	# doesn't work if directories are inside the given one
@@ -47,3 +49,4 @@ editDir() {
 	fi
 }
 EXPLORER=@editDir
+FALLBACK=

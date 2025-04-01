@@ -101,8 +101,6 @@ map('n', ' h', '<Cmd>vsplit<CR>')
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
 -- search into quickfix list
-map('n', ' qN', '<Cmd>cp<CR>')
-map('n', ' qn', '<Cmd>cn<CR>')
 map('n', ' qc', '<Cmd>cclose<CR>')
 map('n', 'n', 'nzz')
 map('n', 'N', 'Nzz')

@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 bat=(/sys/class/power_supply/BAT*/uevent)
 eval "$(sed -n 's/^.\{13\}\(.*=\)/\1/p' "${bat[${BAT:-0}]}")"
+
 if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then
 	echo " $CAPACITY%"
 else
@@ -21,9 +22,16 @@ else
 				notify-send -u low -h int:value:$CAPACITY \
 					-h string:synchronous:battery "Battery   $CAPACITY%" 'Plug the system in.'
 			else
-				{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
-					systemctl hibernate && sleep 60 &&
-					sudo swapoff /swapfile && swaymsg output eDP-1 power on
+				for ((i = 60; i > 0; i--)); do
+					notify-send -u critical -t 984 -h int:value:$((i * 3)) \
+						-h string:synchronous:hibernate "Hibernating in ${i}s" 'Plug the system in.'
+					sleep 1
+				done
+				if [[ $(<"${bat[${BAT:-0}]%/uevent}/status") != Charging ]]; then
+					{ [[ $(swapon --show=NAME) ]] || sudo swapon /swapfile; } &&
+						systemctl hibernate && sleep 60 &&
+						sudo swapoff /swapfile && swaymsg output eDP-1 power on
+				fi
 			fi
 			;;
 		C*)

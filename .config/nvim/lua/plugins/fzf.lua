@@ -32,13 +32,16 @@ function M.config()
 		oldfiles = { stat_file = exists },
 	}
 
-	vim.lsp.handlers['textDocument/declaration'] = fzf.lsp_declarations
-	vim.lsp.handlers['textDocument/definition'] = fzf.lsp_definitions
-	vim.lsp.handlers['textDocument/references'] = fzf.lsp_references
-	vim.lsp.handlers['textDocument/implementation'] = fzf.lsp_implementation
+	vim.lsp.buf.document_symbol = fzf.lsp_document_symbols
+	vim.lsp.buf.references = fzf.lsp_references
+	vim.lsp.buf.implementation = fzf.lsp_implementations
+
+	map('n', 'gD', fzf.lsp_declarations)
+	map('n', 'gd', fzf.lsp_definitions)
 
 	map('n', ' pf', fzf.files)
 	map('n', ' pg', fzf.live_grep_native)
+	map('n', ' ps', fzf.lsp_live_workspace_symbols)
 	map('n', ' pd', fzf.diagnostics_workspace) -- list diagnostics
 	map('n', ' bf', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
 	map('n', ' bl', fzf.buffers)

@@ -72,6 +72,7 @@ map('n', '[d', function() vim.diagnostic.jump { count = 1, float = true } end)
 map('n', ']d', function() vim.diagnostic.jump { count = -1, float = true } end)
 -- Lsp code helpers gd,gr... in ../plugins/fzf.lua
 map('n', 'gt', vim.lsp.buf.type_definition)
+map('n', 'gr', function() vim.lsp.buf.references() end)
 map({ 'n', 'i' }, '<A-i>', function() vim.lsp.buf.hover { border = 'rounded' } end)
 map('i', '<A-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)

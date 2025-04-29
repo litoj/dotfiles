@@ -189,7 +189,7 @@ configs() {
 	local name
 	mkdir -p ~/.cache/
 	for name in ranger thumbnails ueberzugpp; do
-		ln -s /tmp/cache ~/.cache/$name
+		ln -s /tmp/my/cache ~/.cache/$name
 	done
 	mkdir -p ~/.local/state/nvim/
 	for name in dapui.log log lsp.log luasnip.log nio.log; do

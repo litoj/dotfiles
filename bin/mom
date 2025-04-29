@@ -199,7 +199,7 @@ secondsToTime() {
 # $src, $2= name of the param for which we are creating the path
 #######################################
 # Globals:
-#   keepSrc if the original will not be replaced by this path
+#   deleteSrc if the original will not be replaced by this path
 #   src source filename (if dst should move into it, log path as verbose only)
 # Arguments:
 #   filename base path name to get a free name for
@@ -228,27 +228,43 @@ getFreePath() {
 	fi
 
 	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
-		$keepSrc -lt 1 && ${BASH_REMATCH[2]} -le $i ]] || log Info " = '$text'"
+		$deleteSrc -ge 1 && ${BASH_REMATCH[2]} -le $i ]] || log Info " = '$text'"
 	echo "$text"
 }
 
-# expects $dst, $src
-genDstFromSrc() {
-	local out=${dst:-$src}
-	[[ -d $dst ]] && out="${dst%/}/${src##*/}"
-	# default path included to not override source file, but override if file dst was given
-	[[ -d ${dst:-.} || $override -lt 0 ]] && out=$(ACTION+=.dst getFreePath "$out")
-	echo "$out"
+# expects $src, $dst in form $d.ext or $F
+# determine $out, $ext
+determineOut() {
+	# NOTE: this overwrites caller → relies on use inside runJob()
+	if matcher='$D[^/]\.[^ ]+' argMatch "${dst:=.}"; then # file $dst has priority
+		ext=${dst##*.}
+		out=$dst
+	elif [[ -d $dst ]]; then # for directory dst use src as the name
+		ext=${src##*.}
+		out=${dst%/}/${src##*/}
+	elif [[ $dst == *.* ]]; then # use the name but dst for dir and ext
+		ext=${dst##*.}
+		[[ $dst == */* ]] && dst=${dst%/.*} || dst=.
+		out=$dst/${src##*/}
+		out=${out%.*}.$ext
+	else
+		log Error ".dst: unexpected value format '$dst'"
+	fi
 }
 
-# expects $cmd, $keepSrc, $src, $dst, $out
-# moves $out to $src if ! $dst
+# expects $cmd, $deleteSrc, $src, $dst, $out
+# executes $cmd with safely named $out
+#   then moves $out to $src if ! $dst
 runCmdWithCleanup() {
-	exec "${cmd[@]}" "$out" && if ((keepSrc <= 0)); then
+	out=$(ACTION+=.dst getFreePath "$out")
+	[[ $src == $PWD/* ]] && src=${src#"$PWD"/} # to clean the log message
+	[[ $out == $PWD/* ]] && out=${out#"$PWD"/}
+	src=${src#./} out=${out#./}
+	exec "${cmd[@]}" "$out" && if ((deleteSrc > 0)); then
 		[[ $out == */* ]] || out=$PWD/$out
 		[[ $src == */* ]] || src=$PWD/$src
 		local name=${src%.*}
-		if [[ -z $dst && $out == "${name%_*}"_*.${src##*.} ]]; then
+		if [[ -z $dst && $out == "${name%_*}"_*.${src##*.} ]]; then # move if name is the same
 			exec mv "$out" "$src"
 		else
 			exec rm "$src"
@@ -264,7 +280,7 @@ editParams=(
 	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvfp)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
 	rename 'r?' '' 'Rename using rename action, file $dst has priority'
-	keepSrc 'k?' '' 'Keep $src file (removes by default)'
+	deleteSrc 'd?' '' 'Delete $src file (keeps by default)'
 	bitrate 'b*' '[0-9]+' 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
@@ -388,37 +404,30 @@ edit() {
 				[[ $fE ]] && cmd[-3]+=,volume=$v || cmd+=(-af volume=$v)
 			fi
 
-			local out
-			if matcher='$D\.[^ ]+' argMatch "$dst"; then
-				out=$dst # file $dst has priority
-			else
+			local out ext dst=${dst}
+			determineOut
+
+			if [[ -d $dst ]]; then # dst as file overrides $rename and $copy
 				if [[ $rename ]]; then
-					out=$(call rename "${renameConfig[@]}" "$src" '-' 3>/dev/null)
-					out=${out%.*}
-					out=${out%_1} # we only need the right filename, overiding issues are solved later
-					if [[ $out ]]; then
-						((copy > 0)) && out+=".${src##*.}" || out+=.opus
+					local renamed=$(call rename --extension=$ext "${renameConfig[@]}" "$src" '-' 3>/dev/null)
+					if [[ $renamed ]]; then # we only need the right filename, overiding issues are solved later
+						out=${out%/*}/${renamed##*/}
 					fi
 				fi
-				[[ ! $out ]] && out=${src/*\//}
-				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/${out##*/}"
+
+				if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
+					if [[ -z $s && -z $e ]]; then
+						log Warn ': no changes required -> skipping'
+						return
+					fi
+					log Info '.copy = true (no reencoding required)'
+					cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
+					local copy=1
+				fi
+
+				((copy > 0)) && out=${out%.*}.${src##*.}
 			fi
 
-			if [[ -d ${dst:-.} ]]; then
-				if ((copy <= 0)); then # if codec is not being copied already, try to copy if possible
-					if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
-						if [[ -z $s && -z $e ]]; then
-							log Warn ': no changes required -> skipping'
-							return
-						fi
-						log Info '.copy = true (no reencoding required)'
-						cmd=("${cmd[@]::cmdBitratePos-2}" -c copy "${cmd[@]:cmdBitratePos}")
-					fi
-					out=${out%.*}.opus
-				fi
-				out=$(ACTION+=.dst getFreePath "$out")
-			fi
-			[[ $src == $PWD/* ]] && src=${src#"$PWD"/}
 			runCmdWithCleanup
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
@@ -428,9 +437,9 @@ edit() {
 
 actionInfo subtitles 'convert mp4 with srt to mkv'
 subtitlesParams=(
-	keepSrc 'k?' '' 'Keep used files (default=false, true for mkv for potential subtitle fail)'
+	deleteSrc 'd?' '' 'Delete used files (default=false)'
 	keepSrcSubs 's?' '' 'Keep original video subtitles - use if added subs are not visible'
-	keepDefaults 'd?' '' 'Keep default sub selection, or set to the first added'
+	keepDefaults 'D?' '' 'Keep default sub selection, or set to the first added'
 	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
 	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
@@ -512,8 +521,7 @@ subtitles() {
 	local tmp="/tmp/mom-${dst##*/}"
 	cmd+=("$tmp")
 
-	[[ ${vid} == *.mkv ]] && local keepSrc=1
-	exec "${cmd[@]}" && exec mv "$tmp" "$dst" && if ((keepSrc <= 0)); then
+	exec "${cmd[@]}" && exec mv "$tmp" "$dst" && if ((deleteSrc > 0)); then
 		exec rm "${subs[@]}" "$vid"
 	fi
 }
@@ -662,23 +670,17 @@ linkFix() {
 
 actionInfo resize 'resize images'
 resizeParams=(
-	keepSrc 'k?' '' 'Keep $src file (removes by default)'
+	deleteSrc 'd?' '' 'Delete $src file'
 	src '$+' "${MIME_TYPES['image']}" 'File to resize'
 	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
 	predicate 'p*' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
        (comparing to dimension selected by --size)'
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
-	dst '$?' '$d$D\.(jpe?g|png|heif)' 'Output file/dir (default=$src)')
+	dst '$?' '$d$D\.(jpe?g|png|heif|jxl|avif)' 'Output file/dir (default=$src)')
 resize() {
 	if matcher='$D' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error '- cannot specify multiple $src and a file $dst'
 		return 1
-	fi
-	if [[ ! -d ${dst:-.} ]]; then
-		local ext=${dst##*.} srcExt=${src[0]##*.}
-		if [[ ${ext,,} != "${srcExt,,}" ]]; then
-			log Warn ".\$dst: extension mismatch '$ext' != '$srcExt'"
-		fi
 	fi
 
 	declare -i i=-1 srcN=${#src[@]}
@@ -699,6 +701,9 @@ resize() {
 
 			[[ $oldSize != $size ]] && log Verbose ".size: $oldSize → $size"
 
+			local out ext dst=${dst}
+			determineOut
+
 			if [[ $predicate ]]; then
 				local pred
 				for pred in "${predicate[@]}"; do
@@ -718,8 +723,8 @@ resize() {
 
 					# require distance to target size greater/lower or equal to $gap
 					if ! [[ ($only == + && $dim -ge $gap) || ($only == - && $dim -le $gap) ]]; then
-						if [[ $dst ]]; then
-							exec $( ((keepSrc > 0)) && echo cp || echo mv) "$src" "$(genDstFromSrc)"
+						if [[ $dst ]]; then # no conversion, only move to destination
+							exec $( ((deleteSrc <= 0)) && echo cp || echo mv) "$src" "${out%.*}.${src##*.}"
 						fi
 						log Info ": ${dim}px != <${gap}px${only}> → skipping"
 						return
@@ -730,7 +735,7 @@ resize() {
 			local cmd=(magick "$src" -auto-orient -resize "$size")
 			((quality)) && cmd+=(-quality $quality)
 
-			out="$(genDstFromSrc)" runCmdWithCleanup
+			runCmdWithCleanup
 		}
 		ACTION+="['${src/*\//…/}']" runJob isolated
 	done
@@ -752,6 +757,7 @@ renameParams=(
 	fallback 'F*' '[^:]+[:=].*' 'Sed fallback expression per argMatch expression'
 	dateFormat 'd!' '.+' 'Timestamp format'
 	dateFallback 'D?' '[yan]|yes|no|ask' 'Use file mod time for timestamp fallback'
+	extension 'e?' '.?[0-9a-z]+' 'Look for a free name with this extension'
 	src '$+' "\$d${MIME_TYPES['video']}${MIME_TYPES['audio']}${MIME_TYPES['image']}" 'File to rename'
 	dst '$?' '$d$|-' 'Destination to rename to, or `-` to just print the final dst'
 )
@@ -762,6 +768,7 @@ renameConfig=(
 	format=${MIME_TYPES['image']}:'$DateTimeOriginal'
 	fallback=${MIME_TYPES['video']}:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,' # movies
 	fallback=${MIME_TYPES['audio']}:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+|.*-) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
+	fallback=${MIME_TYPES['image']}:'s,IMG-(....)(..)(..)-WA(....)$,\1-\2-\3_00\4,'
 	dateFormat='%Y-%m-%d_%H%M%S'
 	dateFallback=ask
 )
@@ -793,6 +800,8 @@ rename() {
 			local ext=${name##*.}
 			ext=${ext,,}
 			[[ $ext == jpeg ]] && ext=jpg
+			local extension=${extension:-$ext}
+			extension=${extension#.}
 
 			local name=''
 			if [[ $exif ]] && {
@@ -813,7 +822,7 @@ rename() {
 						if [[ $dateFallback == a* ]]; then
 							local dateFallback
 							read -p "$(
-								print "rename '$src' to file mod date = '$name.$ext'? [y/N]: "
+								print "rename '$src' to file mod date = '$name.$extension'? [y/N]: "
 							)" -n1 dateFallback
 							[[ $dateFallback ]] && echo # fix missing newline after user input
 						fi
@@ -825,11 +834,12 @@ rename() {
 				[[ $sed ]] && {
 					[[ $src == *[^.]/* ]] || src=$PWD/${src#./}
 					name=$(echo "${src%.*}" | sed -E "$sed")
-					[[ $exif ]] && log Warn " - Missing '$exif' exif data, fallback name: '${name##*/}.$ext'"
+					[[ $exif ]] &&
+						log Warn " - Missing '$exif' exif data, fallback name: '${name##*/}.$extension'"
 					[[ $name ]]
 				}
 			}; then
-				local out=${name##*/}.$ext
+				local out=${name##*/}.$extension
 
 				[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 				if [[ $src != "$out" ]]; then

@@ -34,7 +34,7 @@ local function setCWD(s)
 	local dir = vim.b[s.buf].cwd or s.file:match 'term://(.+)//[0-9]+:'
 	if dir then
 		dir = dir:gsub('^~', os.getenv 'HOME')
-		 vim.api.nvim_set_current_dir(dir)
+		vim.api.nvim_set_current_dir(dir)
 		return
 	end
 
@@ -68,7 +68,8 @@ au('BufRead', setIndentMarks)
 
 au(
 	'TextYankPost',
-	function() require('vim.highlight').on_yank { higroup = 'Search', timeout = 50 } end
+	vim.version().minor > 10 and function() vim.hl.on_yank { higroup = 'Search', timeout = 50 } end
+		or function() require('vim.highlight').on_yank { higroup = 'Search', timeout = 50 } end
 )
 au('FileType', 'nnoremap <buffer> q <Cmd>close<CR>', { 'qf', 'help', 'man' })
 au('Filetype', 'setlocal expandtab', { 'yaml' })

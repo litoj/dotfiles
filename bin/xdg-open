@@ -29,6 +29,7 @@ run() {
 		${cmd#@} "${arg[@]}" &
 	else
 		setsid ${cmd#@} "${arg[@]}" &>/dev/null &
+		# swaymsg exec ${cmd#@} "${arg[@]}" # to generate xdga token for autofocus to work
 	fi
 	(($?)) && return 1 || exit 0
 }

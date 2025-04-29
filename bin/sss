@@ -389,7 +389,7 @@ parseAction() {
 	declare -i argc=$#
 
 	local ACTION= actionArg= actionArgFromEnd=
-	log Trace "parsing $*"
+	log Trace "parsing '$*'"
 	if [[ $1 =~ ^(${SSS_OPTS['actionPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
 		actionArg=${BASH_REMATCH[3]:1}
 		ACTION=$(
@@ -441,7 +441,7 @@ parseAction() {
 	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
-		log Trace " parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
+		log Trace " - parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
 		if [[ $optChain ]]; then # processing previously found shortopt chain
 			i=${opts["${arg::1}"]}
 			if [[ -z $i ]]; then
@@ -633,7 +633,7 @@ parseAction() {
 		log Error " - Default action must use all args, but some were left: $*"
 	fi
 
-	log Trace ' >>' && "$ACTION" && log Trace ' finished!' || log Warn ' failed!'
+	log Trace ' $>>' && "$ACTION" && log Trace ' <<$' || log Warn ' <<FAIL!'
 	return $((argc - $#))
 }
 
@@ -679,14 +679,14 @@ declare -A _FILE_MIME_MAP
 #   tested: input argument to be tested against the pattern
 #######################################
 argMatch() {
-	local tested=$1
 	if [[ $matcher == '$'* ]]; then # file requirements
+		local tested=$1
 		local ptn=${tested/*./} matcher=$matcher kind
 		[[ ${#ptn} != ${#tested} && $ptn != */* ]] && tested=${tested%.*}.${ptn,,} # lowercase file extension
 
 		if [[ $matcher == *'$|'* ]]; then
 			ptn=${matcher#*'$|'}
-			log Trace " '$tested' =? $ptn"
+			log Trace ": '$tested' =? $ptn"
 			[[ $tested =~ ^($ptn)$ ]] && return 0 # one of special values after '$|'
 			matcher=${matcher::-2-${#ptn}}
 		fi
@@ -699,16 +699,16 @@ argMatch() {
 		while [[ $matcher ]]; do
 			ptn=${matcher:2} kind=${matcher:1:1}
 			ptn=${ptn%%'$'*}
-			log Trace " '$tested' =? \$$kind$ptn"
+			log Trace ": '$tested' =? \$$kind$ptn"
 
 			if [[ $kind == '+' ]]; then
 				local mime
 				[[ ${mime:=${_FILE_MIME_MAP["$1"]:=$(file -Lb --mime-type "$1")}} =~ ^$ptn ]] && return 0
 			else
 				[[ $tested =~ $ptn$ ]] && if [[ $kind == [A-Z] ]]; then
-					eval [[ ! -${kind,} '$tested' ]] && return 0
+					eval [[ ! -${kind,} '$1' ]] && return 0
 				else
-					eval [[ -$kind '$tested' ]] && return 0
+					eval [[ -$kind '$1' ]] && return 0
 				fi
 			fi
 
@@ -717,7 +717,7 @@ argMatch() {
 
 		return 1
 	else # normal regex
-		[[ $tested =~ ^($matcher)$ ]]
+		[[ $1 =~ ^($matcher)$ ]]
 	fi
 }
 
@@ -725,11 +725,11 @@ argMatch() {
 # Print help about specified parameter from given action.
 # Arguments:
 #   action: string
-#   matcher: boolean show argument matcher expression
+#   showMatcher: boolean show argument matcher expression
 #   paramIdx?: integer
 #######################################
 printActionParams() {
-	local action=$1 matcher=$2 fmt
+	local action=$1 showMatcher=$2 fmt
 	declare -n name=${action}Params
 	[[ $3 ]] && declare -i i="$3*4" end=i+4 || declare -i i=0 end=${#name[@]}
 	declare -a sig desc
@@ -759,7 +759,7 @@ printActionParams() {
 
 		((SCRIPT_OPTS[color] > 0)) && sign+=$(ansi nobold)
 		if [[ $regex ]]; then
-			((matcher <= 0)) && sign+=' <>' || sign+=" <$regex>"
+			((showMatcher <= 0)) && sign+=' <>' || sign+=" <$regex>"
 		fi
 
 		sign="$varName$sign"
@@ -793,7 +793,7 @@ actionInfo help 'h' '[?/h]elp' 'display this help'
 ACTION_INFO['?']=help
 helpParams=(
 	legend 'l?' '' 'Show legend for param notation'
-	matcher 'm?' '' 'Show argument matcher expression'
+	matchexpr 'm?' '' 'Show expression for argument matching'
 	params 'p?' '' 'Show params=opts+args (default=true for lower action count)'
 	config 'c?' '' 'Show action configs'
 	actions '$*' '.+' 'Display help for (default=all)')
@@ -865,7 +865,7 @@ help() {
 
 			# enabled params or always write complete info about help options
 			if [[ $params -gt 0 || $act == help ]]; then
-				printActionParams "$act" "$matcher"
+				printActionParams "$act" "$matchexpr"
 			fi
 
 			if ((config > 0)); then

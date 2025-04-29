@@ -27,11 +27,12 @@ for_window [app_id="thunderbird" title="upozornění$"] floating enable, sticky 
 for_window [class="scrcpy"] focus, floating enable, move position -1 191, resize set 1922 890
 for_window [class="Ripcord" title="Edit Message"] floating enable
 for_window [instance="gimp"] focus
+for_window [app_id="ueberzugpp_.*"] exec ~/.config/sway/move_ueberzug.sh
 
 # Use Mouse+↓ to drag floating windows
 floating_modifier $Mod
 xwayland enable
-focus_on_window_activation smart
+focus_on_window_activation focus
 focus_follows_mouse no
 focus_wrapping workspace
 mouse_warping output

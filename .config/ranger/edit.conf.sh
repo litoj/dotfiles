@@ -25,8 +25,14 @@ runJob() {
 	IS_JOB=1 "$@" &
 }
 
-try 'mom edit --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
-try 'mom subtitles' .srt .mp4
+try 'mom edit --delete-src --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
+try 'mom subtitles --delete-src' .srt .mp4
+
+compressMOV() {
+	ffmpeg -hide_banner -i "$1" -crf 30 -c:a libopus -b:a 32k -preset slow \
+		"$(mom rename -e mp4 "$1" -)" && rm "$1"
+}
+try compressMOV .MOV
 # try @"kdenlive & dragon-drop -x -a" .mkv
 
 try 'jupyter nbconvert --to script' .ipynb

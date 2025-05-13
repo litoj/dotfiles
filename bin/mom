@@ -294,8 +294,8 @@ editParams=(
 	pickAll 'a?' '' 'Use a picker for all timestamp values + volume - for automation'
 	dst '$?' '$d$D\.(opus|mp3|m4a|flac|wma)' 'Output file/dir (default=`$src.opus`, deletes `$src`)')
 edit() {
-	if matcher='$D\.opus' argMatch "$dst" && ((${#src[@]} > 1)); then
-		log Error '- cannot specify multiple $src and a file $dst'
+	if matcher='$D[^/]\.[^ ]+' argMatch "$dst" && ((${#src[@]} > 1)); then
+		log Error ' - cannot specify multiple $src and a file $dst'
 		return 1
 	fi
 
@@ -409,9 +409,10 @@ edit() {
 
 			if [[ -d $dst ]]; then # dst as file overrides $rename and $copy
 				if [[ $rename ]]; then
-					local renamed=$(call rename --extension=$ext "${renameConfig[@]}" "$src" '-' 3>/dev/null)
+					local renamed=$(call rename --extension=fake "${renameConfig[@]}" "$src" '-' 3>/dev/null)
+					renamed=${renamed%.*}
 					if [[ $renamed ]]; then # we only need the right filename, overiding issues are solved later
-						out=${out%/*}/${renamed##*/}
+						out=${out%/*}/${renamed##*/}.$ext
 					fi
 				fi
 
@@ -526,14 +527,6 @@ subtitles() {
 	fi
 }
 
-actionInfo play 'select and play a song/dir using mpv'
-playParams=(
-	NO_LOOP 'L?' '' 'Do not loop playlist'
-	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
-	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
-       d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
-	src '$+' '$e' 'Play files or dirs')
-declare -A playBuilder=([src]=pickSong)
 pickSong() {
 	declare -n _choice=$1
 	if ((SCRIPT_OPTS['guiPicker'] > 0)); then
@@ -548,10 +541,21 @@ pickSong() {
 
 	((${#_choice[@]}))
 }
+
+actionInfo play 'select and play a song/dir using mpv'
+playParams=(
+	NO_LOOP 'L?' '' 'Do not loop playlist'
+	disown 'd?' '' 'Run as a separate process with no controlls (default=true for GUI use)'
+	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
+	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
+       d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
+	src '$+' '$e' 'Play files or dirs')
+declare -A playBuilder=([src]=pickSong)
 play() {
+	local disown=${disown:-${SCRIPT_OPTS[guiPicker]}}
 	local playlistFile=/tmp/my/song
-	local cmd=(mpv --no-audio-display --no-terminal --playlist="$playlistFile")
-	exec pkill -f "${cmd[*]}" >/dev/null
+	local cmd=(mpv --no-audio-display --playlist="$playlistFile")
+	exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
 	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 
 	[[ -f $playlistFile ]] && exec rm "$playlistFile"
@@ -624,13 +628,20 @@ play() {
 	done
 	[[ $randomizer == *s || $randomizer -ge 0 ]] && cmd+=(--shuffle)
 
-	if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
-		src=$firstSrc
-		exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
+	if ((disown <= 0)); then
+		exec "${cmd[@]}"
 	else
-		exec "${cmd[@]}" &
+		cmd+=(--no-terminal)
+		if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
+			src=$firstSrc
+			exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
+		else # for whatever reason cmds launched via terminal, but from desktop ignore disown
+			log Verbose && log Verbose " \$> ${cmd[*]} &"
+			nohup "${cmd[@]}" >/dev/null 2>&1 &
+			disown
+		fi
+		sleep 1
 	fi
-	sleep 1
 	exec rm "$playlistFile"
 }
 
@@ -678,8 +689,8 @@ resizeParams=(
 	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
 	dst '$?' '$d$D\.(jpe?g|png|heif|jxl|avif)' 'Output file/dir (default=$src)')
 resize() {
-	if matcher='$D' argMatch "$dst" && ((${#src[@]} > 1)); then
-		log Error '- cannot specify multiple $src and a file $dst'
+	if matcher='$D[^/]\.[^ ]+' argMatch "$dst" && ((${#src[@]} > 1)); then
+		log Error ' - cannot specify multiple $src and a file $dst'
 		return 1
 	fi
 
@@ -856,6 +867,7 @@ rename() {
 				log Info " - skipping"
 			fi
 		}
+		# TODO: paralelize by using mv enforcing no overrides
 		ACTION+="['${src/*\//…/}']" isolated
 	fi
 }

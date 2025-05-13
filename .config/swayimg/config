@@ -26,6 +26,7 @@ cache=0
 
 [keys.viewer]
 Shift+Space=prev_file
+BackSpace=prev_file
 p=prev_file
 n=next_file
 Left=prev_file
@@ -57,7 +58,7 @@ Shift+f=zoom fit
 MouseMiddle=zoom real
 1=zoom +100
 2=zoom real; zoom +100
-3=zoom real; zoom +200
+3=zoom real; zoom -50
 4=zoom real; zoom +300
 Shift+a=scale real
 s=scale fill

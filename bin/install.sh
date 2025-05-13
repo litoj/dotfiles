@@ -128,6 +128,7 @@ ttf-nova
 udisks2
 ufw
 urlencode
+wayvnc
 wget
 wireplumber
 wl-clipboard

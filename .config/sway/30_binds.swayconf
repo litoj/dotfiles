@@ -69,7 +69,7 @@ mode $Media {
 		g mode default, exec gimp
 		d mode default, exec darktable
 		t mode default, exec twitch
-		m mode default, exec xterm mom -DT
+		m mode default, exec xterm mom
 		q mode default
 		Escape mode default
 	}
@@ -279,8 +279,9 @@ mode $Exit {
 		a mode default, exec $signal cpu Auto
 		w mode default, exec $signal cpu Schedutil
 		t mode default, exec $signal cpu Test
+		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+e mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
-		Shift+a mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
+		Shift+b mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
 		Shift+p mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle

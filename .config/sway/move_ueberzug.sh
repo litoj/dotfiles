@@ -16,8 +16,6 @@ while read -r pid; do
 	[[ $uw == $rw || $cw == $rw ]] && continue # ignore correctly placed ueberzug windows
 
 	swaymsg "[app_id=ueberzug.*] move workspace $rw"
-	# sleep 1
-	# swaymsg "[app_id=ueberzug.*] move workspace $rw"
 done < <(ps -o pid= -C ueberzug)
 
-sleep 3 # to block at least some redundant instances when scrolling through images
+# sleep 3 # to block at least some redundant instances when scrolling through images

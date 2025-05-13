@@ -89,6 +89,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[ignoreFailedPicker]=0
 	[jobs]=$(((1 + $(nproc --all)) / 2))
 	[logLvl]=${LOG_LEVELS['info']}
+	[configPicker]=0
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1 SCRIPT_OPTS[argPicker]=1
@@ -97,13 +98,14 @@ actionInfo define D 'set script-processing options'
 defineParams=(
 	tui 'T?' '' 'Enter TUI after CLI is parsed'
 	dryRun 'D?' '' 'Disable actual commands execution'
-	color 'C?' '' 'Colorize output (default=true when not redirected)'
+	color '_?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
        or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
 	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
+	configPicker 'C?' '' 'Run a config picker when actionConfigMap is defined'
 	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
@@ -296,6 +298,11 @@ print() {
 #######################################
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS["${1,,}"]:-$1}
+	if (($# == 1)); then # when called with no message, return if message would get displayed
+		((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL))
+		return $?
+	fi
+
 	if ((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
 		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" reset) || type=${type^^}
@@ -306,18 +313,31 @@ log() {
 	fi
 }
 
-# Supports simple redirection ... '>'/'>>' 'path' with logging
+# Supports simple redirection ... '>'/'>>' 'path' with logging + '&' for bg process
 exec() {
-	((SCRIPT_OPTS['logLvl'] > 3)) && log Verbose " \$> $*"
+	log Verbose && log Verbose " \$> $*"
 	((SCRIPT_OPTS['dryRun'] > 0)) && return
-	if [[ ${*:0-2:1} == \>* ]]; then
-		if [[ ${*:0-2:1} == \>\> ]]; then
-			"${@:1:$#-2}" >>"${!#}"
+	# cannot use eval because args lose quotes
+	if [[ ${!#} == \& ]]; then # without this, exec() would block disowning of the bg process
+		if [[ ${*:0-3:1} == \>* ]]; then
+			if [[ ${*:0-3:1} == \>\> ]]; then
+				"${@:1:$#-3}" >>"${@:0-2:1}" &
+			else
+				"${@:1:$#-3}" >"${@:0-2:1}" &
+			fi
 		else
-			"${@:1:$#-2}" >"${!#}"
+			"${@:1:$#-1}" &
 		fi
 	else
-		"$@"
+		if [[ ${*:0-2:1} == \>* ]]; then
+			if [[ ${*:0-2:1} == \>\> ]]; then
+				"${@:1:$#-2}" >>"${!#}"
+			else
+				"${@:1:$#-2}" >"${!#}"
+			fi
+		else
+			"$@"
+		fi
 	fi
 }
 
@@ -389,7 +409,7 @@ parseAction() {
 	declare -i argc=$#
 
 	local ACTION= actionArg= actionArgFromEnd=
-	log Trace "parsing '$*'"
+	log Trace && log Trace "parsing '$*'"
 	if [[ $1 =~ ^(${SSS_OPTS['actionPrefix']})([^-][^=]+)(=.*)?$ ]] && { # full action name
 		actionArg=${BASH_REMATCH[3]:1}
 		ACTION=$(
@@ -433,11 +453,13 @@ parseAction() {
 	declare -n builder=${ACTION}Builder
 	[[ ${builder[*]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
 
-	((NO_CONFIG)) || {
-		declare -n cfg=${ACTION}Config # load config for this action
+	local cfg
+	if ! ((NO_CONFIG)) && pickConfig cfg '' "${ACTION}Presets" "Pick preset for $ACTION"; then
+		declare -n cfg
+		log Debug && log Debug "\$Config = (${cfg[*]})"
 		set -- "${cfg[@]}" "$@"
 		declare +n cfg
-	}
+	fi
 	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
@@ -841,11 +863,7 @@ help() {
 	[[ $default && ${#actions[@]} -gt 9 ]]
 	declare -i params="${params:-$?}"
 
-	if [[ $default ]]; then
-		print 'Actions: (use `-p`, `-m`, `-c` for more info)'
-	else
-		((${#actions[@]} > 1)) && print 'Actions:' || print 'Action:'
-	fi
+	((${#actions[@]} > 1)) && print 'Actions:' || print 'Action:'
 	local act fmt
 	((SCRIPT_OPTS[color] > 0)) && fmt='\033[1;4m%-*s  \033[0;4m%s\033[m' || fmt='%-*s  %s'
 	for act in "${actions[@]}"; do
@@ -948,7 +966,7 @@ pickFile() {
 
 pickFilesOrDir() {
 	((SCRIPT_OPTS['guiPicker'] > 0)) &&
-		local _cmd=(rofi -dmenu) ||
+		local _cmd=(rofi -dmenu -p "$4") ||
 		local _cmd=(fzf --prompt "$4: " --preview 'ls {}')
 	if [[ $2 == ?[+*] ]]; then
 		((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
@@ -961,8 +979,7 @@ pickFilesOrDir() {
 		readarray -t _pick < <({
 			echo '..'
 			for f in "${toView[@]}"; do
-				f=("$f"/*)
-				printf '%s\n' "${f[@]}"
+				printf '%s\n' "$f"/*
 			done
 		} | "${_cmd[@]}")
 
@@ -982,6 +999,24 @@ pickFilesOrDir() {
 	done
 	[[ ${_ng[1]} == -s ]] || shopt -u nullglob
 	[[ -e ${!1} ]]
+}
+
+# $1=pickVar, $3=presetMap, $4=Prompt message
+pickConfig() {
+	declare -n _choice=$1
+	declare -n presetMap=$3
+	if ((${SCRIPT_OPTS['configPicker']} > 0 && ${#presetMap[@]})); then
+		presetMap['default']=${ACTION}Config
+		((SCRIPT_OPTS['guiPicker'] > 0)) &&
+			local _cmd=(rofi -dmenu -p "$4") ||
+			local _cmd=(fzf --prompt "$4: ")
+		read -r _choice < <(printf "%s\n" "${!presetMap[@]}" | "${_cmd[@]}")
+
+		[[ $_choice ]] && _choice=${presetMap["$_choice"]} || return 1
+	else
+		_choice=${ACTION}Config
+	fi
+	declare -p $_choice &>/dev/null || return 1
 }
 
 if [[ $0 == *sss ]]; then

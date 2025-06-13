@@ -1,6 +1,6 @@
 [list]
 all=yes
-order=alpha
+order=numeric
 
 [viewer]
 window=#000000
@@ -19,7 +19,7 @@ window=#000000
 background=#101010
 border=#bb33aa
 shadow=#00000000
-size=400
+size=500
 fill=no
 select=#bb33aa
 cache=0
@@ -48,23 +48,24 @@ Shift+ScrollLeft=step_left 5
 Shift+ScrollDown=step_down 5
 Shift+ScrollUp=step_up 5
 Shift+ScrollRight=step_right 5
+Shift+k=zoom keep
+Alt+a=zoom keep
 i=zoom +10
 Up=zoom +10
 o=zoom -10
 Down=zoom -10
-a=zoom real
+a=zoom 100
 f=zoom fill
 Shift+f=zoom fit
-MouseMiddle=zoom real
+MouseMiddle=zoom 100
 1=zoom +100
-2=zoom real; zoom +100
-3=zoom real; zoom -50
-4=zoom real; zoom +300
-Shift+a=scale real
-s=scale fill
-Shift+s=scale fit
-Alt+s=scale optimal
-Alt+a=scale
+2=zoom 200
+5=zoom 50
+4=zoom 400
+Shift+a=zoom real
+s=zoom fill
+Shift+s=zoom fit
+Alt+s=zoom optimal
 
 h=step_left 5
 j=step_down 5
@@ -84,10 +85,11 @@ F5=reload
 b=exec ~/.config/sway/custombg '%'
 Alt+Shift+s=exec adb push '%' /storage/emulated/0/Download/
 Alt+f=exec dragon-drop -x -T '%'
-Alt+e=exec xterm ranger --selectfile='%'
+Alt+e=exec nohup xterm ranger --selectfile='%' &>/dev/null
 Ctrl+e=exec xdg-open -c ~/.config/ranger/edit.conf.sh '%'
 Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Shift+b=exec cp '%' ~/Pictures/screen/
+Delete=exec bash -c 'x="%" && mv "$x" "/tmp/my/trash/${x##*/}"'; skip_file
 
 [keys.gallery]
 # too fast -> scroll only horizontally
@@ -101,6 +103,7 @@ h=step_left
 j=step_down
 k=step_up
 l=step_right
+Delete=exec bash -c 'x="%" && mv "$x" "/tmp/my/trash/${x##*/}"'; skip_file
 
 Alt+f=exec dragon-drop -x -T '%'
 Alt+e=exec xterm ranger --selectfile='%'

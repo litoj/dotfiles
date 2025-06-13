@@ -60,7 +60,7 @@ wp() {
 	wpctl set-default ${nodes[${def[source]}]%;*}
 	[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
 	[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
-	echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" > /tmp/my/wp
+	echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" >/tmp/my/wp
 	pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
 }
 
@@ -69,15 +69,16 @@ cpu() {
 	# from ../cpupower_gui/
 	local profile=$1 state
 	declare -A urgency=([Auto]=low [Schedutil]=critical)
-	cpupower-gui pr $profile &> /dev/null &&
+	cpupower-gui pr $profile &>/dev/null &&
 		notify-send -t 1000 -h string:synchronous:battery -u ${urgency[$profile]:-normal} " $profile"
 }
 
 cpuByBattery() {
 	local profile
-	read profile < /sys/class/power_supply/BAT0/status
+	read profile </sys/class/power_supply/BAT0/status
 	[[ $profile != D* ]] && profile=Auto || profile=Powersave
 	cpu "$profile"
+	pkill -RTMIN+14 i3blocks # update battery status
 }
 
 load() {
@@ -96,16 +97,15 @@ load() {
 		case "$line" in
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
-			ac_adapter*1)((SECONDS != old)) && old=$SECONDS  && cpu Auto;;
-			ac_adapter*0)((SECONDS != old)) && old=$SECONDS  && cpu Powersave;;
-			button/lid*open) sleep 1 && cpuByBattery;;
+			ac_adapter*) ((SECONDS != old)) && old=$SECONDS && cpuByBattery ;;
+			button/lid*open) sleep 1 && cpuByBattery ;;
 		esac
 	done < <(acpi_listen)
 }
 
 case "$1" in
 	vol)
-		read -ra WP < /tmp/my/wp
+		read -ra WP </tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[0]} "$2"
 		else
@@ -114,7 +114,7 @@ case "$1" in
 		pkill -RTMIN+10 i3blocks
 		;;
 	mic)
-		read -ra WP < /tmp/my/wp
+		read -ra WP </tmp/my/wp
 		if [[ $2 == toggle ]]; then
 			wpctl set-mute ${WP[1]} "$2"
 		else

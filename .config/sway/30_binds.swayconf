@@ -46,7 +46,7 @@ $Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
 }
 mode $Msg {
 	bindsym {
-		t mode default, exec thunderbird
+		t mode default, exec thunderbird &>/dev/null
 		s mode default, exec slack --ozone-platform=wayland \
 			--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer
 		Escape mode default
@@ -279,7 +279,6 @@ mode $Exit {
 		a mode default, exec $signal cpu Auto
 		w mode default, exec $signal cpu Schedutil
 		t mode default, exec $signal cpu Test
-		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+e mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
 		Shift+b mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
 		Shift+p mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
@@ -293,6 +292,7 @@ mode $Exit {
 		# exit kills swaybg so exit after the current bg has been stored
 		p exec '$custombg autosave && { swaymsg exit & sleep 1 && systemctl poweroff; }'
 		r exit, exec reboot
+		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
 		b mode default, exec xterm sudo bash -c \
@@ -388,7 +388,7 @@ bindsym {
 }
 bindgesture {
 	swipe:3:up exec $signal vol 1%+
-	swipe:3:right exec $signal vol 2%+
+	swipe:3:right exec $signal vol 3%+
 	swipe:3:down exec $signal vol 1%-
-	swipe:3:left exec $signal vol 2%-
+	swipe:3:left exec $signal vol 3%-
 }

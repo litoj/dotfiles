@@ -574,7 +574,7 @@ parseAction() {
 		else # set arg
 			if ((posArg >= sigN)); then
 				if ((USE_ALL_ARGS)); then
-					log Error " - Too many arguments: $*"
+					log Error " - Too many arguments: $(printf "'%s'" "$@")"
 					return
 				else
 					break # NOTE: this is where the loop ends successfully
@@ -584,8 +584,16 @@ parseAction() {
 			[[ $# -eq $actionArgFromEnd ]] && set -- "${1#-}" "${@:2}"
 
 			while ((posArg < sigN)); do
-				local varName=${sigs[$posArg]//-/_} sign=${sigs[posArg + 1]} matcher=${sigs[posArg + 2]}
-				if [[ $sign == '$'? ]] && argMatch "$1"; then
+				local sign=${sigs[posArg + 1]}
+				if [[ $sign != '$'? || $1 == '--' ]]; then
+					posArg+=4
+					# when both posArgs accept same data this enforces next posArg
+					[[ $1 == '--' ]] && shift # also allows for skipping an otherwise required arg position
+					continue                  # this means '--' must be passed as an optval: --posArg='--'
+				fi
+				local varName=${sigs[$posArg]//-/_} matcher=${sigs[posArg + 2]}
+
+				if argMatch "$1"; then
 					args[$posArg]+=1              # update before posArg changes
 					if [[ $sign == ?[+*] ]]; then # param is a list
 						declare _varName=$varName
@@ -603,12 +611,10 @@ parseAction() {
 					shift
 					break # continue in parsing cli
 				else
-					if [[ $sign == '$'? ]]; then
-						if [[ $sign == ?[?*] || ${args[$posArg]} -gt 0 ]]; then
-							log Trace ".$varName != '$1'"
-						else
-							log Error ".$varName != '$1', but is next in order"
-						fi
+					if [[ $sign == ?[?*] || ${args[$posArg]} -gt 0 ]]; then
+						log Trace ".$varName != '$1'"
+					else
+						log Error ".$varName != '$1', but is next in order"
 					fi
 					posArg+=4 # given value doesn't match → try next arg
 				fi
@@ -660,7 +666,7 @@ parseAction() {
 }
 
 call() { # for script usage - calling actions like itself with cli, without external process
-	NO_CONFIG=1 USE_ALL_ARGS=1 parseAction "$@"
+	NO_CONFIG=${NO_CONFIG:-1} USE_ALL_ARGS=1 parseAction "$@"
 	(($? == $# && LAST_LOG_LVL > 3))
 }
 
@@ -676,7 +682,10 @@ runJob() {
 declare -A REGEX=(
 	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'
+	[uint]='[1-9][0-9]*|0' [int]='-?[1-9][0-9]*|-?0'
 )
+REGEX[ufloat]="${REGEX['uint']}(.[0-9]+)?"
+REGEX[float]="${REGEX['int']}(.[0-9]+)?"
 REGEX[email]="${REGEX['var']}@${REGEX['domain']}"
 REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 

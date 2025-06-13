@@ -1,22 +1,30 @@
 declare -gA resizePresets
-resizePresets['100%i=92/1.jxl']=resizeIdentity
-resizePresets['50%h=90/2.jpg']=resizeHalf
-resizePresets['25%q=90/4.jxl']=resizeQuarter
-resizePresets['s%l=82/1280.jxl']=resizeLow
+resizePresets['i=92/1.jxl']=resizeIdentity
+resizePresets['h=90/2.jpg']=resizeHalf
+resizePresets['m=85/2.jxl']=resizeMid
+resizePresets['q=85/4.jxl']=resizeQuarter
+resizePresets['l=82/1280.jxl']=resizeLow
+resizePresets['s=78/800^.jxl']=resizeSmall
 resizeIdentity=(
 	quality=92
 	size=100%
 	dst=.jxl
 )
 resizeHalf=(
-	predicate=2000+
+	predicate=1000+
 	quality=90
 	size=50%
 	dst=.jpg
 )
+resizeMid=(
+	predicate=1000+
+	quality=85
+	size=50%
+	dst=.jxl
+)
 resizeQuarter=(
 	predicate=2000+
-	quality=90
+	quality=85
 	size=25%
 	dst=.jxl
 )
@@ -24,6 +32,12 @@ resizeLow=(
 	predicate=1800+
 	quality=82
 	size=1280
+	dst=.jxl
+)
+resizeSmall=(
+	predicate=1200+
+	quality=78
+	size=800^
 	dst=.jxl
 )
 
@@ -42,3 +56,4 @@ editConfig=(
 )
 
 linkFixConfig=(--resources ~/Music/Songs/)
+renameConfig+=(+D)

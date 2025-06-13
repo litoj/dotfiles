@@ -240,7 +240,7 @@ if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 
 		'zbirenbaum/copilot.lua',
 		opts = {
 			panel = { enabled = false },
-			suggestion = { enabled = false },
+			suggestion = { enabled = true },
 			filetypes = {
 				['*'] = false,
 				c = true,

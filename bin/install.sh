@@ -69,6 +69,7 @@ bashmount
 bat
 bat-extras
 booster
+downgrade
 dragon-drop
 dunst
 engrampa
@@ -103,7 +104,6 @@ otf-overpass
 otf-stix
 p7zip
 pacman-contrib
-pcmanfm-gtk3
 pipewire-alsa
 pipewire-jack
 pipewire-pulse
@@ -119,6 +119,7 @@ swaybg
 swayidle
 swayimg
 sweet-cursor-theme-git
+trash-cli
 ttf-exo-2
 ttf-fira-code
 ttf-jetbrains-mono
@@ -156,6 +157,7 @@ yt-dlp' | paru --needed -S -
 # GUI applications installation
 guis() {
 	printf '\nInstalling GUI applications.\n'
+
 	echo '
 cpupower-gui
 firefox

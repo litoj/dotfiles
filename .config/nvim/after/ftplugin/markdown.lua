@@ -12,6 +12,7 @@ local function enter_or_list()
 		local main
 		if not start or not finish then
 			start, finish = line:find '[%-.%)]+.?'
+			if not start then return '\r' end
 			return '\r' .. line:sub(start, finish)
 		else
 			main = line:sub(start, finish)

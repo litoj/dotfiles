@@ -4,7 +4,7 @@ function M.config()
 	require('nerdcontrast').setup {
 		export = true,
 		light = { opacity = 'ff' },
-		dark = { opacity = 'cc' },
+		dark = { opacity = 'dd' },
 		theme = { override = { StatusLine = 'Bg0' } },
 	}
 	-- Dark/Light theme toggle

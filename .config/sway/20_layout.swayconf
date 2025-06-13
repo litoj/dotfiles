@@ -31,7 +31,7 @@ for_window [app_id="ueberzugpp_.*"] exec ~/.config/sway/move_ueberzug.sh
 
 # Use Mouse+↓ to drag floating windows
 floating_modifier $Mod
-xwayland enable
+xwayland disable
 focus_on_window_activation focus
 focus_follows_mouse no
 focus_wrapping workspace

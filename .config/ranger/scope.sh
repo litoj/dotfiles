@@ -160,6 +160,7 @@ handle_image() {
 		## Image
 		image/*)
 			if [[ $mimetype == image/x-fuji-raf ]]; then
+				exiftool -b -PreviewImage "${FILE_PATH}" -W "${IMAGE_CACHE_PATH}" && exit 6
 				imageExif
 			fi
 

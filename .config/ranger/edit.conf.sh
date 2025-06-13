@@ -15,24 +15,21 @@ editImage() {
 	fi
 }
 try @editImage .jpg
-try @darktable .RAF .JPG
+try @darktable .RAF .JPG .raf
 try @gimp +image
-
-runJob() {
-	while (($(jobs | wc -l) >= 8)); do
-		wait -n
-	done
-	IS_JOB=1 "$@" &
-}
 
 try 'mom edit --delete-src --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
 try 'mom subtitles --delete-src' .srt .mp4
 
-compressMOV() {
-	ffmpeg -hide_banner -i "$1" -crf 30 -c:a libopus -b:a 32k -preset slow \
-		"$(mom rename -e mp4 "$1" -)" && rm "$1"
+compressVideo() {
+	for f in "$@"; do
+		name=$(mom rename -e mp4 "$f" -)
+		ffmpeg -hide_banner -i "$f" -crf 32 -c:a libopus -b:a 32k -preset slow "$name" &&
+			exiftool -TagsFromFile "$f" -'Media*Date' -'Track*date' \
+				-CreateDate -ModifyDate -overwrite_original "$name" && rm "$f"
+	done
 }
-try compressMOV .MOV
+try compressVideo .MOV .mp4
 # try @"kdenlive & dragon-drop -x -a" .mkv
 
 try 'jupyter nbconvert --to script' .ipynb

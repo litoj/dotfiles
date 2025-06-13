@@ -100,6 +100,10 @@ if [[ -z $quality ]]; then
 
 	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
 		quality=${presets[$quality]:-bv*[height=$quality]+ba}
+
+	if [[ $url == *youtube.com/w* && $quality =~ ^(.*)(.ba)$ ]]; then
+		quality="${BASH_REMATCH[1]}[ext=webm]${BASH_REMATCH[2]}"
+	fi
 fi
 
 mpv --ytdl-format="$quality" --no-terminal "$url" &

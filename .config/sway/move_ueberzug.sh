@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-(($(ps -o pid= -C move_ueberzug.sh | wc -l) < 2)) || exit 0 # when scrolling through images
+(($(ps -o pid= -C move_ueberzug.sh | wc -l) < 3)) || exit 0 # when scrolling through images
 tree=$(swaymsg -t get_tree -p)
 
 get_ws() {
@@ -17,6 +17,7 @@ get_win_id() { # ranger runs inside a terminal windowa or neovim
 	echo "$lastid"
 }
 
+declare -i corrected=0
 while read -r pid; do
 	uw=$(get_ws $pid)
 	[[ $uw ]] || continue
@@ -24,7 +25,8 @@ while read -r pid; do
 	rw=$(get_ws $ranger_win)
 	[[ $uw == $rw ]] && continue # ignore correctly placed ueberzug windows
 
+	((corrected+=1))
 	swaymsg "[pid=$pid] move workspace $rw" &>/dev/null
 done < <(ps -o pid= -C ueberzug)
 
-# sleep 3 # to block at least some redundant instances when scrolling through images
+((corrected)) || sleep 3 # to block at least some redundant instances when scrolling through images

@@ -75,7 +75,11 @@ cpu() {
 
 cpuByBattery() {
 	local profile
-	read profile </sys/class/power_supply/BAT0/status
+	if ((!$#)); then
+		read profile </sys/class/power_supply/BAT0/status
+	else
+		(($1)) && profile=Charging || profile=Discharging
+	fi
 	[[ $profile != D* ]] && profile=Auto || profile=Powersave
 	cpu "$profile"
 	pkill -RTMIN+14 i3blocks # update battery status
@@ -97,7 +101,7 @@ load() {
 		case "$line" in
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
-			ac_adapter*) ((SECONDS != old)) && old=$SECONDS && cpuByBattery ;;
+			ac_adapter*) ((SECONDS != old)) && old=$SECONDS && cpuByBattery ${line:0-1} ;;
 			button/lid*open) sleep 1 && cpuByBattery ;;
 		esac
 	done < <(acpi_listen)

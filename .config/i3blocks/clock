@@ -17,10 +17,19 @@ setTheme() {
 		rm /tmp/term
 	fi
 
-	local msgpack="\x94\x0\x1\xafnvim_set_option\x92\xaabackground\xa${#1}$1"
+	local msg="\x94\x0\x1\xafnvim_set_option\x92\xaabackground\xa${#1}$1"
+	# light=${msg}5light
+	# dark=${msg}4dark
+	# [[ $1 == light ]] && msg=("$dark" "$light") || msg=("$light" "$dark")
+	
 	for f in /run/user/$(id -u)/nvim.*.0; do
 		local pid=${f#*.}
-		ps -p ${pid%.*} >/dev/null && printf "$msgpack" | ncat -U "$f"
+		if ps -p ${pid%.*} >/dev/null; then
+			# # first set to the opposite then wanted to force nvim update
+			printf "$msg" | ncat -U "$f"
+			# sleep 0.5
+			# printf "${msg[1]}" | ncat -U "$f"
+		fi
 	done
 }
 
@@ -60,6 +69,6 @@ update() {
 
 while :; do
 	update
-	((next < x || x < prev)) && updateTheme
+	((next < x || x < prev)) && updateTheme >/dev/null
 	sleep $((60 - ${x[2]#0}))
 done

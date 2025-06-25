@@ -7,6 +7,7 @@ try @blockbench .json
 try @engrampa .jar
 
 try @inkscape +image/*svg
+export RUSTICL_ENABLE=radeonsi
 editImage() {
 	if swaymsg "[app_id=gimp] focus" &>/dev/null; then
 		run @gimp

@@ -9,4 +9,5 @@ map R rotate
 map i recolor
 map p print
 map <Left> navigate previous
+map <BackSpace> navigate previous
 map <Right> navigate next

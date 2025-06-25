@@ -4,6 +4,7 @@ local M = {
 		'mfussenegger/nvim-dap',
 		'theHamsta/nvim-dap-virtual-text',
 		'nvim-neotest/nvim-nio',
+		'mfussenegger/nvim-dap-python',
 	},
 	keys = { ' db' },
 }

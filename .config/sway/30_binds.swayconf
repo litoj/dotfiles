@@ -67,7 +67,7 @@ mode $IDE {
 mode $Media {
 	bindsym {
 		g mode default, exec gimp
-		d mode default, exec darktable
+		d mode default, exec RUSTICL_ENABLE=radeonsi darktable
 		t mode default, exec twitch
 		m mode default, exec xterm mom
 		q mode default

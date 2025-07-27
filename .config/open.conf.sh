@@ -3,7 +3,7 @@ BROWSER=@${BROWSER#@}
 TERM_BLOCKING=1
 try 'mpv --no-audio-display' +audio .m3u .m4a .mp3
 try '@mpv --no-terminal' +video
-try @geeqie .RAF
+# try @geeqie .RAF
 imgFallback() {
 	BLOCKING=1
 	# try @imv-dir +image

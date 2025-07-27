@@ -89,6 +89,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[ignoreFailedPicker]=0
 	[jobs]=$(((1 + $(nproc --all)) / 2))
 	[logLvl]=${LOG_LEVELS['info']}
+	[tmpLogLvl]=${LOG_LEVELS['info']}
 	[configPicker]=0
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
@@ -96,7 +97,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 
 actionInfo define D 'set script-processing options'
 defineParams=(
-	tui 'T?' '' 'Enter TUI after CLI is parsed'
+	tui 'T?' '' 'Enter TUI after CLI is parsed (specify twice to add params to called action in tui)'
 	dryRun 'D?' '' 'Disable actual commands execution'
 	color '_?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
@@ -107,22 +108,23 @@ defineParams=(
 	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
 	configPicker 'C?' '' 'Run a config picker when actionConfigMap is defined'
 	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
+	tmpLogLvl 'L?' '([0-9]+|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
 	"Depth of logging, -lll=-l3…\
  (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
 )
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
-SCRIPT_OPTS[logLvl]=${LOG_LEVELS["${DEBUG:-x}"]:-${DEBUG:-${SCRIPT_OPTS['logLvl']}}}
+[[ $DEBUG ]] && SCRIPT_OPTS[logLvl]=${LOG_LEVELS["${DEBUG:-x}"]:-${DEBUG}}
 define() {
 	declare -i i=0
 	local opt
-	while [[ ${defineParams[i]} ]]; do # opts with an arg value
+	while [[ ${defineParams[i]} ]]; do # go through all defined options
 		opt=${defineParams[i]}
-		if [[ ! ${!opt} ]]; then
+		if [[ ! ${!opt} ]]; then # unspecified option
 			:
-		elif [[ -z ${defineParams[i + 2]} ]]; then
+		elif [[ -z ${defineParams[i + 2]} ]]; then # bool
 			SCRIPT_OPTS["$opt"]=${!opt}
-		elif [[ $opt == config ]]; then
+		elif [[ $opt == config ]]; then # string to load that file
 			local x
 			for x in "${config[@]}"; do
 				if [[ $x =~ ^-?[0-9]*$ ]]; then
@@ -150,21 +152,20 @@ define() {
 				fi
 			done
 		elif [[ ${!opt} ]]; then
-			if [[ ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS["${!opt,,}"]} ]]; then
-				[[ $opt == logLvl ]] &&
-					SCRIPT_OPTS["$opt"]=${LOG_LEVELS['info']} ||
-					SCRIPT_OPTS["$opt"]=${LOG_LEVELS['warn']}
+			if [[ ${opt,,} == *loglvl && ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS["${!opt,,}"]} ]]; then
+				SCRIPT_OPTS["$opt"]=${LOG_LEVELS['info']}
 				log Warn ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS["$opt"]}]}'
   Available are: ${LOG_NAMES[*]}"
-			else
-				if [[ ${!opt} == -* ]]; then
-					((SCRIPT_OPTS["$opt"] += ${!opt}))
-				else
-					SCRIPT_OPTS["$opt"]=${LOG_LEVELS["${!opt,,}"]:-${!opt}}
-				fi
+				continue
+			fi
+
+			if [[ ${!opt} == -* ]]; then # subtract negative numbers
+				((SCRIPT_OPTS["$opt"] += ${!opt}))
+			else # set positive numbers or strings
+				SCRIPT_OPTS["$opt"]=${LOG_LEVELS["${!opt,,}"]:-${!opt}}
 			fi
 		fi
-		unset "$opt" # to not parse multiopt twice
+		unset "$opt" # to not parse multiopt twice (logLvl as both param and arg)
 		i+=4
 	done
 	return 0
@@ -178,7 +179,7 @@ exitFn() {
 			call help -pm "$ACTION"
 		fi
 	fi
-	exit $1
+	[[ $(jobs -p) ]] && kill -- -$$ || exit $1
 }
 
 runExitFn() {
@@ -290,6 +291,8 @@ print() {
 
 #######################################
 # Print given message with context of current action and log level
+# Globals:
+#   TMPLOG: bool, allow message overwrite (-'\n' +'\r')
 # Arguments:
 #   LAST_LOG_LVL: one of ${LOG_LEVELS[@]}, determines message importance
 #   msg: message to print with context, ignored when SCRIPT_OPTS[logLvl]<LAST_LOG_LVL
@@ -298,15 +301,24 @@ print() {
 #######################################
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS["${1,,}"]:-$1}
-	if (($# == 1)); then # when called with no message, return if message would get displayed
-		((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL))
-		return $?
-	fi
+	if {
+		if ((TMPLOG)); then
+			((SCRIPT_OPTS['tmpLogLvl'] >= LAST_LOG_LVL))
+		else
+			((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL))
+		fi
+	}; then
+		(($# > 1)) || return 0 # when called with no message, signal if message would get displayed
 
-	if ((SCRIPT_OPTS['logLvl'] >= LAST_LOG_LVL)); then
 		local type=${LOG_NAMES[$LAST_LOG_LVL]}
 		((SCRIPT_OPTS['color'] > 0)) && type=$(ansi "$type" "${type^^}" reset) || type=${type^^}
-		echo "$type$(print ": $ACTION$2")" 1>&3
+		if ((TMPLOG)); then
+			printf "%s\r" "$type$(print ": $ACTION$2")" 1>&3
+		else
+			echo "$type$(print ": $ACTION$2")" 1>&3
+		fi
+	else
+		(($# > 1)) || return 1
 	fi
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
 		runExitFn $LAST_LOG_LVL
@@ -365,15 +377,17 @@ ui() {
 		fi
 
 		local _args=()
-		declare -n params=${line}Params
-		if ((${#params[@]} > 0)); then
-			declare -i i=${#params[@]}
-			readarray -t _args < <(while ((0 <= (i -= 4))); do
-				echo "--${params[$i]}"
-			done | fzf -m --prompt="Choose ${line} params: ")
+		if ((SCRIPT_OPTS['tui'] >= 2)); then
+			declare -n params=${line}Params
+			if ((${#params[@]} > 0)); then
+				declare -i i=${#params[@]}
+				readarray -t _args < <(while ((0 <= (i -= 4))); do
+					echo "--${params[$i]}"
+				done | fzf -m --prompt="Choose ${line} params: ")
+			fi
+			declare +n params
+			unset params i
 		fi
-		declare +n params
-		unset params i
 
 		parseAction $line "${_args[@]}"
 
@@ -673,27 +687,52 @@ call() { # for script usage - calling actions like itself with cli, without exte
 # run a command in parallel/background
 # often used in a loop to call a custom fn and call `wait` after the loop
 runJob() {
-	while (($(jobs | wc -l) >= SCRIPT_OPTS['jobs'])); do
+	while jobs=($(jobs -p)) && ((${#jobs[@]} >= SCRIPT_OPTS['jobs'])); do
 		wait -n
 	done
 	IS_JOB=1 "$@" &
 }
 
+# run given fn=$1 $#-1-times with $2... as arg for the first run etc.
+runJobs() {
+	local _fn=$1 jobs
+	shift 1
+	declare -i i=0
+
+	if TMPLOG=1 log Info; then # run with progressbar
+		for _arg in "$@"; do
+			runJob "$_fn" "$_arg"
+			i+=1
+			jobs=($(jobs -p)) && jobs=${#jobs[@]}
+			TMPLOG=1 log Info ".jobs: \$done=$((i - jobs)), \$active=$jobs, \$todo=$(($# - i))"
+		done
+		while jobs=($(jobs -p)) && jobs=${#jobs[@]} && ((jobs)); do
+			wait -n
+			TMPLOG=1 log Info ".jobs: \$done=$((i - jobs)), \$active=$jobs, \$todo=0"
+		done
+	else
+		for _arg in "$@"; do
+			runJob "$_fn" "$_arg"
+		done
+		wait
+	fi
+}
+
 declare -A REGEX=(
 	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'
-	[uint]='[1-9][0-9]*|0' [int]='-?[1-9][0-9]*|-?0'
+	[pint]='[1-9][0-9]*' [uint]='[1-9][0-9]*|0' [int]='-?[1-9][0-9]*|0'
+	[ufloat]='([1-9][0-9]*|0)(\.[0-9]+)?' [float]='-?([1-9][0-9]*|0)(\.[0-9]+)?'
+	[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
+	[timestamp]='[0-9]+(:[0-9]+){0,2}(\.[0-9]+)?'
 )
-REGEX[ufloat]="${REGEX['uint']}(.[0-9]+)?"
-REGEX[float]="${REGEX['int']}(.[0-9]+)?"
 REGEX[email]="${REGEX['var']}@${REGEX['domain']}"
-REGEX[str]="\"[^\"]*\"|'([^']|'[A-Za-z])*'|\`[^\`]*\`"
 
 # string for argMatch capturing file of given type
 declare -A MIME_TYPES=(
 	[audio]='$f\.(opus|m4a|mp3|flac|wav|wma|ogg)$+audio'
 	[video]='$f\.(mov|mkv|mp4|avi|webm)$+video'
-	[image]='$f\.(jpe?g|heif|png|webp|jxl)$+image'
+	[image]='$f\.(jpe?g|heif|png|webp|jxl|raf)$+image'
 )
 
 # mapping of matched file mimetypes to save repeated tests

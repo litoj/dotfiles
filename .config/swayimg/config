@@ -25,6 +25,7 @@ select=#bb33aa
 cache=0
 
 [keys.viewer]
+x=skip_file
 Shift+Space=prev_file
 BackSpace=prev_file
 p=prev_file
@@ -35,6 +36,10 @@ comma=prev_file
 period=next_file
 Shift+h=prev_file
 Shift+l=next_file
+Shift+n=next_dir
+Alt+p=prev_dir
+Shift+p=prev_dir;prev_dir;next_dir
+Alt+n=next_dir;next_dir;prev_dir
 
 Alt+ScrollDown=zoom -1
 Alt+ScrollUp=zoom +1
@@ -57,9 +62,9 @@ Down=zoom -10
 a=zoom 100
 f=zoom fill
 Shift+f=zoom fit
-MouseMiddle=zoom 100
+MouseMiddle=zoom +100
 1=zoom +100
-2=zoom 200
+2=zoom keep; zoom 200
 5=zoom 50
 4=zoom 400
 Shift+a=zoom real
@@ -77,7 +82,8 @@ Shift+r=rotate_left
 
 # d=description g=gallery
 d=info
-u=antialiasing
+u=antialiasing mks13
+Shift+u=antialiasing none
 g=mode
 Tab=mode
 F5=reload
@@ -104,6 +110,7 @@ j=step_down
 k=step_up
 l=step_right
 Delete=exec bash -c 'x="%" && mv "$x" "/tmp/my/trash/${x##*/}"'
+x=skip_file
 
 Alt+f=exec dragon-drop -x -T '%'
 Alt+e=exec xterm ranger --selectfile='%'

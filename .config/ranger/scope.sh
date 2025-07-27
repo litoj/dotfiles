@@ -272,6 +272,13 @@ handle_image() {
 			#     ;;
 	esac
 
+	case "${FILE_EXTENSION_LOWER}" in
+		cr3)
+			exiftool -b -PreviewImage "${FILE_PATH}" -W "${IMAGE_CACHE_PATH}" && exit 6
+			imageExif && exit 5
+			;;
+	esac
+
 	# openscad_image() {
 	#     TMPPNG="$(mktemp -t XXXXXX.png)"
 	#     openscad --colorscheme="${OPENSCAD_COLORSCHEME}" \

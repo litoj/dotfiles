@@ -94,11 +94,12 @@ abbr jctl   'journalctl -p 3 -b'
 
 # pacman
 set pp "fzf -m --preview-window=wrap --preview 'paru --color=always -Sii {1}'" # package preview
-abbr psi    "paru -Slq | $pp | paru -S -" # search install
-abbr pif    "paru -Qq | $pp | paru -Ql -" # installed files
-abbr pir    "paru -Qq | $pp | paru -Rscn -" # installed remove - only dependencies
-abbr piu    "paru -Qttq | $pp | paru -Rscn -" # installed uninstall - only dependents-less
-abbr pou    "paru -Qtqd | paru -Rscn -" # orphans remove
+abbr psi    "paru -S (paru -Slq | $pp)" # search install
+abbr pif    "paru -Ql (paru -Qq | $pp)" # list installed files
+abbr pir    "paru -Rscn (paru -Qq | $pp)" # installed remove - only dependencies
+abbr piu    "paru -Rscn (paru -Qttq | $pp)" # installed uninstall - only dependents-less / roots
+abbr pou    "paru -Rscn (paru -Qtqd)" # orphans remove
+abbr pis    "paru -S (paru -Qq | $pp)" # installed search and sync
 
 # navigation
 abbr ...    'cd ../..'
@@ -129,7 +130,9 @@ abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7
 abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up && sudo systemctl restart NetworkManager'
 # shows connected devices
 abbr con    'arp -a'
-abbr sync   'rsync -rltvuP --delete ~/Pictures /run/media/$USER/Elements/zaloha/linux/'
+abbr sync   'rsync -rltvuP --delete ~/Pictures ~/Music /run/media/$USER/Elements/zaloha/linux/'
+abbr revsync   'rsync -rltvuP /run/media/$USER/Elements/zaloha/linux/Pictures ~'
+abbr sydoc   'rsync -rltvuPC --exclude="__*" --exclude=bin --exclude=node_modules --exclude=work ~/Documents /run/media/$USER/Elements/zaloha/linux/'
 
 abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
 abbr getcert 'gnutls-cli --save-cert=myvpn.pem --insecure'

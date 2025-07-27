@@ -25,7 +25,7 @@ run() {
 		cmd="${TERMINAL:-xterm} $cmd"
 	if [[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]]; then
 		${cmd#@} "${arg[@]}"
-	elif declare -f "${cmd#@}" &>/dev/null; then # run functions in-place
+	elif declare -F "${cmd#@}" &>/dev/null; then # run functions in-place
 		${cmd#@} "${arg[@]}" &
 	else
 		setsid ${cmd#@} "${arg[@]}" &>/dev/null &

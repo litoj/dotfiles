@@ -51,6 +51,7 @@ save() {
 }
 
 autosave() {
+	return # disable autosave for now
 	hour=$(date +%H)
 	if ((${hour#0} > 20)); then
 		save

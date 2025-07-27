@@ -68,8 +68,8 @@ setup 'volar'
 -- Lsp diagnostic
 map('n', '<A-d>', vim.diagnostic.open_float)
 map('i', '<A-d>s', vim.diagnostic.open_float)
-map('n', '[d', function() vim.diagnostic.jump { count = 1, float = true } end)
-map('n', ']d', function() vim.diagnostic.jump { count = -1, float = true } end)
+map('n', '[d', function() vim.diagnostic.jump { count = -1, float = true } end)
+map('n', ']d', function() vim.diagnostic.jump { count = 1, float = true } end)
 -- Lsp code helpers gd,gr... in ../plugins/fzf.lua
 map('n', 'gt', vim.lsp.buf.type_definition)
 map('n', 'gr', function() vim.lsp.buf.references() end)

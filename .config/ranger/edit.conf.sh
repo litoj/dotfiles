@@ -19,19 +19,11 @@ try @editImage .jpg
 try @darktable .RAF .JPG .raf
 try @gimp +image
 
+# try @"kdenlive & dragon-drop -x -a" .mkv
+
+try 'mom cut' .MOV ^VID_.*
 try 'mom edit --delete-src --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
 try 'mom subtitles --delete-src' .srt .mp4
-
-compressVideo() {
-	for f in "$@"; do
-		name=$(mom rename -e mp4 "$f" -)
-		ffmpeg -hide_banner -i "$f" -crf 32 -c:a libopus -b:a 32k -preset slow "$name" &&
-			exiftool -TagsFromFile "$f" -'Media*Date' -'Track*date' \
-				-CreateDate -ModifyDate -overwrite_original "$name" && rm "$f"
-	done
-}
-try compressVideo .MOV .mp4
-# try @"kdenlive & dragon-drop -x -a" .mkv
 
 try 'jupyter nbconvert --to script' .ipynb
 

@@ -32,7 +32,7 @@ set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
 	$Mod+1 exec $lof firefox '[app_id=firefox]'
-$Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
+	$Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
 	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada && sleep 0.5 \
 		&& swaymsg mark work' '[con_mark=work]'
 	$Mod+$Alt+Shift+2 exec $lof 'xterm nvim -i ~/Documents/school/PG/SP/session.shada && sleep 0.5 \
@@ -158,11 +158,11 @@ bindsym {
 	Shift+KP_Down exec $floatpos d
 	Shift+KP_Up exec $floatpos u
 	Shift+KP_Right exec $floatpos r
-# snap to side or focus in tiling mode
-	Ctrl+KP_Left exec $floatpos l snap
-	Ctrl+KP_Down exec $floatpos d snap
-	Ctrl+KP_Up exec $floatpos u snap
-	Ctrl+KP_Right exec $floatpos r snap
+# focus output
+	Ctrl+KP_Left focus output left
+	Ctrl+KP_Down focus output down
+	Ctrl+KP_Up focus output up
+	Ctrl+KP_Right focus output right
 # focus workspace
 	KP_Add workspace back_and_forth
 	KP_Home workspace next
@@ -260,8 +260,8 @@ set $dpmsOff pkill -USR1 swayidle
 set $Exit "C: D: Q: S: H: P: R: Esc:"
 bindsym {
 	$Mod+o bar mode toggle
-	XF86Launch4 exec cpupower-gui
-	Shift+XF86Launch4 exec f=$(< /sys/firmware/acpi/platform_profile) && notify-send \
+	XF86RefreshRateToggle exec cpupower-gui
+	Shift+XF86RefreshRateToggle exec f=$(< /sys/firmware/acpi/platform_profile) && notify-send \
 		-t 1000 $([[ $f = *b* ]] && echo '-u low' || ([[ $f = *m* ]] && echo '-u critical')) $f
 	XF86PowerOff exec ~/.config/sway/lidSwitch toggle
 	$Mod+x mode $Exit
@@ -279,9 +279,7 @@ mode $Exit {
 		a mode default, exec $signal cpu Auto
 		w mode default, exec $signal cpu Schedutil
 		t mode default, exec $signal cpu Test
-		Shift+e mode default, exec xterm sudo bash -c 'echo low-power > /sys/firmware/acpi/platform_profile'
-		Shift+b mode default, exec xterm sudo bash -c 'echo balanced > /sys/firmware/acpi/platform_profile'
-		Shift+p mode default, exec xterm sudo bash -c 'echo performance > /sys/firmware/acpi/platform_profile'
+		$Alt+p mode default, output * pos 0 0
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
 		--release $Alt+d mode default, exec $lid mode

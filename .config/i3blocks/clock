@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 setTheme() {
+	gsettings set org.gnome.desktop.interface color-scheme prefer-${1,,}
 	gsettings set org.gnome.desktop.interface gtk-theme ${1^}
 	sed "s/Dark/${1^}/" ~/.config/gtk-3.0/theme.ini >/tmp/my/gtk3rc
 	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc >/tmp/my/gtk2rc
@@ -21,7 +22,7 @@ setTheme() {
 	# light=${msg}5light
 	# dark=${msg}4dark
 	# [[ $1 == light ]] && msg=("$dark" "$light") || msg=("$light" "$dark")
-	
+
 	for f in /run/user/$(id -u)/nvim.*.0; do
 		local pid=${f#*.}
 		if ps -p ${pid%.*} >/dev/null; then
@@ -37,14 +38,18 @@ updateTheme() {
 	pkill -RTMIN+20 i3blocks
 	if ((STAT[0] <= x && x < STAT[1])); then
 		next=${STAT[1]}
-		touch /tmp/my/day
-		setTheme light
-		swaymsg -q 'set $bg #ffffff; set $fg #000000'
+		[[ -e /tmp/my/day ]] || {
+			touch /tmp/my/day
+			setTheme light
+			swaymsg -q 'set $bg #ffffff; set $fg #000000'
+		}
 	else
 		((x > STAT[1])) && next=1440 || next=${STAT[0]}
-		[[ -e /tmp/my/day ]] && rm /tmp/my/day
-		setTheme dark
-		swaymsg -q 'set $bg #101010; set $fg #ffffff'
+		[[ -e /tmp/my/day ]] && {
+			rm /tmp/my/day
+			setTheme dark
+			swaymsg -q 'set $bg #101010; set $fg #ffffff'
+		}
 	fi
 	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
 		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"

@@ -29,4 +29,4 @@ while read -r pid; do
 	swaymsg "[pid=$pid] move workspace $rw" &>/dev/null
 done < <(ps -o pid= -C ueberzug)
 
-((corrected)) || sleep 3 # to block at least some redundant instances when scrolling through images
+((corrected)) || sleep 1 # to block at least some redundant instances when scrolling through images

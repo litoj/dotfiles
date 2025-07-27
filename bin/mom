@@ -439,7 +439,7 @@ actionInfo cut 'cut and concat video files'
 cutParams=(
 	copy 'c?' '' 'Copy all data, no recompression (disables -qa and volume filter)'
 	deleteSrc 'd?' '' 'Delete $src file (default=true if only one clip is created from only one src)'
-	quantizer 'q?' "${REGEX['pint']}" 'CRF setting (default=28)'
+	crf 'q?' "${REGEX['pint']}" 'CRF quantization setting (default=28)'
 	metadata 'm?' '' 'Copy metadata from the first file (default=true)'
 	rename 'r?' '' 'Rename using rename action, file $dst has priority'
 	audioBitrate 'a?' "${REGEX['pint']}" 'Bitrate (in kbps) for opus audio (default=32)'
@@ -461,6 +461,45 @@ cut() {
 		end
 		
 		_G.clips = {{}}
+
+		local function getClipStr(clip)
+			if not clip.file then return 'Empty clip' end
+			return 'Clip: "' .. clip.file .. '"[' ..
+					(clip.start or '0') .. ' - ' .. (clip['end'] or 'end') .. '] volume=' ..
+					(clip.volume or 1)
+		end
+		local function printClip(clip)
+			mp.osd_message(getClipStr(clip), 4)
+		end
+
+		local function markClip()
+			local clip = _G.clips[#_G.clips]
+			if not clip.file then
+				mp.osd_message('Clip empty', 2)
+				return false
+			end
+			if not clip.start then clip.start = '0' end
+			if not clip['end'] then clip['end'] = 'end' end
+			if not clip.volume then clip.volume = 1 end
+
+			printClip(clip)
+
+			_G.clips[#_G.clips + 1] = {}
+			return true
+		end
+
+		local function writeAll()
+			if not markClip() and #_G.clips == 1 then return false end -- autoconfirm last clip,
+			_G.clips[#_G.clips] = nil
+
+			local f = io.open(_G.pick_file, 'w')
+			for _, clip in ipairs(_G.clips) do
+				f:write(table.concat({clip.file, clip.start, clip['end'], clip.volume}, '\t'))
+				f:write '\n'
+			end
+			f:close()
+			return true
+		end
 
 		local function add(varName, value)
 			if _G.clips[#_G.clips]['end'] and varName == 'start' then
@@ -484,41 +523,6 @@ cut() {
 			end
 		end
 
-		local function printClip(clip)
-			if not clip.file then return end
-			mp.osd_message('Clip: "' .. clip.file .. '"[' ..
-				(clip.start or '0') .. ' - ' .. (clip['end'] or 'end') .. '] volume=' ..
-				(clip.volume or 1), 4)
-		end
-
-		local function markClip()
-			local clip = _G.clips[#_G.clips]
-			if not clip.file then
-				mp.osd_message('Clip empty', 2)
-				return false
-			end
-			if not clip.start then clip.start = '0' end
-			if not clip['end'] then clip['end'] = 'end' end
-			if not clip.volume then clip.volume = 1 end
-
-			printClip(clip)
-
-			_G.clips[#_G.clips + 1] = {}
-			return true
-		end
-
-		local function writeAll()
-			if not markClip() and #_G.clips == 1 then return end -- autoconfirm last clip,
-			_G.clips[#_G.clips] = nil
-
-			local f = io.open(_G.pick_file, 'a')
-			for _, clip in ipairs(_G.clips) do
-				f:write(table.concat({clip.file, clip.start, clip['end'], clip.volume}, '\t'))
-				f:write '\n'
-			end
-			f:close()
-		end
-
 		mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
 		mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
 		mp.add_key_binding('v', 'pickVolume', function()
@@ -529,17 +533,22 @@ cut() {
 		mp.add_key_binding('Shift+v', 'dropVolume', function() remove('volume') end)
 		mp.add_key_binding('Alt+Enter', 'confirmClip', function() markClip() end)
 		mp.add_key_binding('Enter', 'confirm', function()
-			writeAll()
-			mp.commandv 'quit'
-		end)
-		mp.add_key_binding('Alt+i', 'printClipInfo', function()
-			for _, clip in ipairs(_G.clips) do
-				printClip(clip)
+			if writeAll() then
+				mp.commandv 'quit'
+			else
+				mp.osd_message('No clips to process, set volume for full length', 3)
 			end
 		end)
+		mp.add_key_binding('Alt+i', 'printClipInfo', function()
+			local info = {}
+			for _, clip in ipairs(_G.clips) do
+				info[#info + 1] = getClipStr(clip)
+			end
+			mp.osd_message(table.concat(info, '\n'), 4)
+		end)
 		mp.add_key_binding('d', 'dropClip', remove)
-
-		mp.osd_message([[Create clips in the order you want them to be concatenated in.
+		mp.add_key_binding('h', 'help', function()
+			mp.osd_message([[Create clips in the order you want them to be concatenated in.
 <s> start a clip
 <e> end a clip
 <v> set clip volume
@@ -547,6 +556,9 @@ cut() {
 <d> drop all current params, edit last confirmed clip
 <Alt+Enter> to confirm clip params
 <Enter> to process clips and quit]], 15)
+		end)
+		mp.osd_message('Press <h> for editing help', 3)
+
 		_G.pick_file = '${MPV_PICKER_PICK_PATH}'
 lua
 
@@ -562,13 +574,13 @@ lua
 
 	local _cmd=($(ffmpegCmd) -i "${line[0]}")
 	local fileArgPos=${#_cmd[@]}-1
-	_cmd+=(-crf "${quality:-28}")
+	_cmd+=(-crf "${crf:-28}")
 	((metadata >= 0)) && _cmd+=(-map_metadata 0)
 	if ((copy > 0)); then
 		_cmd+=(-c copy)
 		local ext=${src[0]##*.}
 	else
-		_cmd+=(-preset slow)
+		_cmd+=(-preset slow -c:a libopus -b:a ${audioBitrate:-32}k)
 		local ext=mp4
 	fi
 
@@ -581,11 +593,11 @@ lua
 		if [[ $volume == 0 ]]; then
 			cmd+=(-map v)
 		elif [[ $volume != 1 && copy -lt 0 ]]; then
-			cmd+=(-c:a libopus -b:a ${audioBitrate:-32}k -af volume="$volume")
+			cmd+=(-af volume="$volume")
 		fi
 
 		local out=/tmp/mom-cut-${file##*/}_s${start}_e${end}.$ext
-		# exec "${cmd[@]}" "$out" || return 1
+		exec "${cmd[@]}" "$out" || return 1
 		clips+=("$out")
 	done 4<"${MPV_PICKER_PICK_PATH}" # redirect input to keep ffmpeg user interaction
 
@@ -1073,7 +1085,7 @@ rename() {
 
 SSS_OPTS[exitFn]=exitFnMom
 exitFnMom() {
-	# rm -f /tmp/mom-*
+	rm -f /tmp/mom-*
 	exitFn "$@"
 }
 

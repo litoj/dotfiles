@@ -1,51 +1,40 @@
+# dynamically generate presets
 declare -gA resizePresets
-resizePresets['i=92/1.jxl']=resizeIdentity
-resizePresets['h=90/2.jpg']=resizeHalf
-resizePresets['m=85/2.jxl']=resizeMid
-resizePresets['q=85/4.jpg']=resizeQuarter
-resizePresets['s=80/1280.jxl']=resizeSmall
-resizePresets['l=78/800^.jxl']=resizeLow
-resizePresets['e=90/1.jpg']=resizeExport
-resizeIdentity=(
-	quality=92
-	size=100%
-	dst=.jxl
+presets=(
+	'i=92/1.jxl'
+	'h=90/2.jpg'
+	'm=87/2.jxl'
+	'q=82/4.jxl'
+	's=80/1280.jxl'
+	'l=78/800^.jxl'
+	'e=90/1.jpg'
 )
-resizeHalf=(
-	predicate=1000+
-	quality=90
-	size=50%
-	dst=.jpg
-)
-resizeMid=(
-	predicate=1000+
-	quality=85
-	size=50%
-	dst=.jxl
-)
-resizeQuarter=(
-	predicate=2000+
-	quality=85
-	size=25%
-	dst=.jpg
-)
-resizeSmall=(
-	predicate=1800+
-	quality=80
-	size=1280
-	dst=.jxl
-)
-resizeLow=(
-	predicate=1200+
-	quality=78
-	size=800^
-	dst=.jxl
-)
-resizeExport=(
-	quality=90
-	size=100%
-	dst=.jpg
-)
+for preset in "${presets[@]}"; do
+	[[ $preset =~ ^(.)=(..)/([^.]*)(\..*)$ ]]
+	arr=resize${BASH_REMATCH[1]^}
+	resizePresets["$preset"]=$arr
+	declare -ga "$arr"
+	declare -n arr=$arr
+	size=${BASH_REMATCH[3]}
+	[[ $size == ? ]] && size=$((100 / size))%
+
+	pred=${BASH_REMATCH[3]%^}
+	if ((pred > 1)); then
+		((pred < 100)) &&
+			((pred = 500 * pred)) || # downsize to max 500px
+			((pred = pred * 3 / 2)) # require at least 1.5x the target size
+		arr+=(predicate=$pred+)
+	fi
+
+	arr+=(
+		quality=${BASH_REMATCH[2]}
+		size=$size
+		dst=${BASH_REMATCH[4]}
+	)
+
+	declare +n arr
+done
+unset arr presets size pred
 
 resizeConfig=(
 	predicate=2000+

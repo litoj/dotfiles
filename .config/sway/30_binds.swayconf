@@ -76,7 +76,6 @@ mode $Media {
 }
 bindsym {
 	$Mod+e exec xterm ranger
-	$Mod+$Alt+e exec pcmanfm
 # managing/control
 	Ctrl+Shift+Escape exec xterm htop
 

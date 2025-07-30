@@ -6,7 +6,7 @@ order=numeric
 window=#000000
 history=5
 preload=2
-antialiasing=box
+antialiasing=mks13
 
 [info]
 show=no
@@ -53,7 +53,7 @@ Shift+ScrollLeft=step_left 5
 Shift+ScrollDown=step_down 5
 Shift+ScrollUp=step_up 5
 Shift+ScrollRight=step_right 5
-Shift+k=zoom keep
+Shift+k=zoom keep;zoom 63
 Alt+a=zoom keep
 i=zoom +10
 Up=zoom +10

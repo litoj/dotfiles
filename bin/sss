@@ -1053,17 +1053,27 @@ pickFilesOrDir() {
 pickConfig() {
 	declare -n _choice=$1
 	declare -n presetMap=$3
-	if ((${SCRIPT_OPTS['configPicker']} > 0 && ${#presetMap[@]})); then
-		presetMap['default']=${ACTION}Config
-		((SCRIPT_OPTS['guiPicker'] > 0)) &&
-			local _cmd=(rofi -dmenu -p "$4") ||
-			local _cmd=(fzf --prompt "$4: ")
-		read -r _choice < <(printf "%s\n" "${!presetMap[@]}" | "${_cmd[@]}")
-
-		[[ $_choice ]] && _choice=${presetMap["$_choice"]} || return 1
-	else
+	if ((${SCRIPT_OPTS['configPicker']} <= 0 || ${#presetMap[@]})); then
 		_choice=${ACTION}Config
+		declare -p $_choice &>/dev/null || return 1
 	fi
+
+	presetMap['default']=${ACTION}Config
+	local pre=/tmp/mom-$ACTION preset
+	for preset in "${!presetMap[@]}"; do # prepare preview data
+		declare -n arr=${presetMap["$preset"]}
+		printf '%s\n' "${arr[@]}" >"$pre-${preset//\//-}.sh"
+	done
+
+	((SCRIPT_OPTS['guiPicker'] > 0)) &&
+		local _cmd=(rofi -dmenu -p "$4") ||
+		local _cmd=(fzf --prompt "$4: " --preview-window=wrap
+			--preview "bash -c 'x={1}; cat $pre-\${x//\//-}.sh'")
+	read -r _choice < <(printf "%s\n" "${!presetMap[@]}" | "${_cmd[@]}")
+
+	rm "$pre-"*.sh
+
+	[[ $_choice ]] && _choice=${presetMap["$_choice"]} || return 1
 	declare -p $_choice &>/dev/null || return 1
 }
 

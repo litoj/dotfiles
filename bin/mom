@@ -450,7 +450,7 @@ giphie() {
 	fi
 
 	if [[ $framerate ]]; then
-		local interval=$(bc <<<"scale=3; 1 / $framerate")
+		local interval=$(bc <<<"scale=3; 1 / $framerate / $srcN")
 	fi
 
 	if [[ $duration ]]; then
@@ -463,7 +463,7 @@ giphie() {
 		local framerate=${framerate:-$srcN}
 		local interval=$(bc <<<"scale=3; 1 / $framerate")
 	fi
-	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; 1 / $interval")
+	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; $srcN / $interval")
 
 	declare -i clips=${loops:-1}*$srcN i=-1
 
@@ -483,7 +483,7 @@ giphie() {
 
 	cmd=(
 		$(ffmpegCmd) -stream_loop $loops -i "$tmp"
-		-r $framerate -preset veryslow -crf ${crf:-32}
+		-r $framerate -preset veryslow -crf ${crf:-32} -g 65536 -keyint_min 65536 -sc_threshold 0 
 	)
 
 	local dst=${dst} out ext=mp4

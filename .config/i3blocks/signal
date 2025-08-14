@@ -86,6 +86,7 @@ cpuByBattery() {
 }
 
 load() {
+	killall acpi_listen
 	cpuByBattery
 	wp detect
 

@@ -9,13 +9,13 @@ SCRIPT_OPTS[freePathNumberReuse]=0
 SCRIPT_OPTS[ffmpegLogLvl]=2
 defineParams=(
 	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
-	ffmpegLogLvl 'f?' '-?[0-9]*' 'Set ffmpeg log level or +f to use the script $logLvl'
+	ffmpegLogLvl 'f?' "${REGEX['int']}" 'Set ffmpeg log level or +f to use the script $logLvl'
 	"${defineParams[@]}")
 SSS_OPTS[onNoArg]=1
 
 ffmpegCmd() {
 	local cmd=(ffmpeg -hide_banner -v)
-	((SCRIPT_OPTS['ffmpegLogLevel'] > 0)) &&
+	((SCRIPT_OPTS['ffmpegLogLvl'] > 0)) &&
 		echo "${cmd[@]}" ${LOG_NAMES[${SCRIPT_OPTS['ffmpegLogLvl']}]/warn/warning} ||
 		echo "${cmd[@]}" ${LOG_NAMES[$((-SCRIPT_OPTS['logLvl']))]/warn/warning}
 }
@@ -46,7 +46,7 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 		function isolated() {
 			local prefix=$prefix-${src#*=}-
 			local cmd=("${cmd[@]}" "$src" -o "$prefix$tmp") dst=${dst[i]:-$dst}
-			((SCRIPT_OPTS['logLvl'] < 3)) && cmd+=(-q)
+			log Warn || cmd+=(-q)
 			exec "${cmd[@]}" && {
 				cmd=("$prefix"*)
 				local file=$cmd.$ext
@@ -248,17 +248,15 @@ determineOut() {
 		return
 	elif [[ -d $dst ]]; then # for directory dst use src as the name
 		[[ $ext ]] || ext=${src##*.}
-		mkdir -p $dst
-		out=${dst%/}/${src##*/}
 	elif [[ $dst == *.* ]]; then # use the name but dst for dir and ext
 		ext=${dst##*.}
 		[[ $dst == */* ]] && dst=${dst%/.*} || dst=.
-		mkdir -p $dst
-		out=$dst/${src##*/}
-		out=${out%.*}.$ext
 	else
 		log Error ".dst: unexpected value format '$dst'"
 	fi
+	mkdir -p $dst
+	out=${dst%/}/${src##*/}
+	out=${out%.*}.$ext
 	if ((rename > 0)); then
 		out=$(NO_CONFIG=0 call rename --extension=$ext "$src" "$dst/-")
 	fi
@@ -435,6 +433,64 @@ edit() { # TODO: use picker only
 	fn=isolated runJobs jobSrcDistributor $(seq 0 $((srcN - 1)))
 }
 
+actionInfo giphie 'convert images to a looped mp4'
+giphieParams=(
+	src '$+' "${MIME_TYPES['image']}" 'Image files to concat into a gif-like video'
+	interval 'i?' "${REGEX['ufloat']}" 'Interval in seconds between images (default=1/framerate)'
+	loops 'l?' "${REGEX['pint']}" 'Number of loops (default=1)'
+	duration 'd?' "${REGEX['ufloat']}" 'Duration of the video in seconds (default=i*l*#src)'
+	framerate 'f?' "${REGEX['ufloat']}" 'Framerate (default=#src)'
+	crf 'c?' "${REGEX['pint']}" 'CRF quantization setting (default=32)'
+	dst '$?' '$d$D\.mp4' 'Output file/dir (default=`$src.mp4`)')
+giphie() {
+	declare -i srcN=${#src[@]}
+	if [[ ($interval || $fps) && $loops && $duration ]]; then
+		log Error ': only two of -i/-l/-d can be used'
+		return 1
+	fi
+
+	if [[ $framerate ]]; then
+		local interval=$(bc <<<"scale=3; 1 / $framerate")
+	fi
+
+	if [[ $duration ]]; then
+		if [[ $interval ]]; then
+			local loops=$(bc <<<"scale=0; $duration / $interval / $srcN")
+		else
+			local interval=$(bc <<<"scale=3; $duration / ${loops:-1} / $srcN")
+		fi
+	elif [[ -z $interval ]]; then
+		local framerate=${framerate:-$srcN}
+		local interval=$(bc <<<"scale=3; 1 / $framerate")
+	fi
+	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; 1 / $interval")
+
+	declare -i clips=${loops:-1}*$srcN i=-1
+
+	local cmd=($(ffmpegCmd) -framerate $framerate)
+	local filterstr=""
+	while ((++i < srcN)); do
+		cmd+=(-i "${src[$i]}")
+		filterstr+="[$i:v]"
+	done
+	cmd+=(
+		-filter_complex "${filterstr}concat=n=$srcN:v=1:a=0"
+		-r $framerate -pix_fmt yuv420p -q 0 #q=0 means lossless
+	)
+
+	local tmp="/tmp/mom-$ACTION-${src##*/}.mp4"
+	exec "${cmd[@]}" "$tmp" || return 1
+
+	cmd=(
+		$(ffmpegCmd) -stream_loop $loops -i "$tmp"
+		-r $framerate -preset veryslow -crf ${crf:-32}
+	)
+
+	local dst=${dst} out ext=mp4
+	determineOut
+	exec "${cmd[@]}" "$out" && rm "$tmp"
+}
+
 actionInfo cut 'cut and concat video files'
 cutParams=(
 	copy 'c?' '' 'Copy all data, no recompression (disables -qa and volume filter)'
@@ -446,9 +502,13 @@ cutParams=(
 	src '$+' "${MIME_TYPES['video']}" 'File to cut/convert'
 	dst '$?' '$d$D\.mp4' 'Output file/dir (default=`$src.mp4`)')
 cut() {
+	local crf=${crf:-28}
 	local pickerFile=${MPV_PICKER_PICK_PATH%.pick}.lua
-	cat >>"$pickerFile" <<lua
+	cat >"$pickerFile" <<lua
 		require 'mp'
+		local crf=$crf
+lua
+	cat >>"$pickerFile" <<lua
 		
 		local function divmod(a, b) return a / b, a % b end
 		
@@ -461,15 +521,20 @@ cut() {
 		end
 		
 		_G.clips = {{}}
+		_G.lastAction = {}
 
 		local function getClipStr(clip)
 			if not clip.file then return 'Empty clip' end
 			return 'Clip: "' .. clip.file .. '"[' ..
 					(clip.start or '0') .. ' - ' .. (clip['end'] or 'end') .. '] volume=' ..
-					(clip.volume or 1)
+					(clip.volume or 1) .. ' crf=' .. (clip.crf or crf)
 		end
 		local function printClip(clip)
 			mp.osd_message(getClipStr(clip), 4)
+		end
+
+		local function getVol()
+			return mp.get_property('mute') == 'yes' and 0 or mp.get_property_number 'volume' / 100
 		end
 
 		local function markClip()
@@ -480,11 +545,12 @@ cut() {
 			end
 			if not clip.start then clip.start = '0' end
 			if not clip['end'] then clip['end'] = 'end' end
-			if not clip.volume then clip.volume = 1 end
-
+			if clip.volume ~= -1 then clip.volume = getVol() end
+			if not clip.crf then clip.crf = crf end
 			printClip(clip)
 
 			_G.clips[#_G.clips + 1] = {}
+			_G.lastAction = {}
 			return true
 		end
 
@@ -494,7 +560,10 @@ cut() {
 
 			local f = io.open(_G.pick_file, 'w')
 			for _, clip in ipairs(_G.clips) do
-				f:write(table.concat({clip.file, clip.start, clip['end'], clip.volume}, '\t'))
+				f:write(table.concat(
+					{clip.file, clip.start, clip['end'], clip.volume, clip.crf},
+					'\t'
+				))
 				f:write '\n'
 			end
 			f:close()
@@ -506,16 +575,16 @@ cut() {
 				markClip()
 			end
 
+			if varName ~= _G.lastAction[#_G.lastAction] then
+				_G.lastAction[#_G.lastAction+1] = varName
+			end
 			_G.clips[#_G.clips][varName] = value
 			_G.clips[#_G.clips].file = mp.get_property('path')
 			mp.osd_message(varName .. ' = ' .. value, 2)
 		end
 
-		local function remove(varName)
-			if varName then
-				_G.clips[#_G.clips][varName] = nil
-				mp.osd_message(varName .. ' removed', 2)
-			elseif #_G.clips > 1 then
+		local function dropClip()
+			if #_G.clips > 1 then
 				_G.clips[#_G.clips] = nil
 				mp.osd_message('Clip removed', 2)
 			else
@@ -523,15 +592,44 @@ cut() {
 			end
 		end
 
+
+		local function remove(varName)
+			if not varName then
+				while #_G.lastAction > 0 and not _G.clips[#_G.clips][_G.lastAction[#_G.lastAction]] do
+					_G.lastAction[#_G.lastAction] = nil
+				end
+
+				if #_G.lastAction == 0 then
+					mp.osd_message('Already default clip', 2)
+					return
+				end
+				varName = _G.lastAction[#_G.lastAction]
+				_G.lastAction[#_G.lastAction] = nil
+			elseif not _G.clips[#_G.clips][varName] then
+				mp.osd_message('Already undone clip.' .. varName, 2)
+				return
+			end
+
+			mp.osd_message('Undone clip.' .. varName .. '=' .. _G.clips[#_G.clips][varName], 2)
+			_G.clips[#_G.clips][varName] = nil
+		end
+
 		mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
 		mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
-		mp.add_key_binding('v', 'pickVolume', function()
-			add('volume', mp.get_property_number 'volume' / 100)
-		end)
+		mp.add_key_binding('v', 'pickVolume', function() add('volume', getVol()) end)
 		mp.add_key_binding('Shift+s', 'dropStart', function() remove('start') end)
 		mp.add_key_binding('Shift+e', 'dropEnd', function() remove('end') end)
-		mp.add_key_binding('Shift+v', 'dropVolume', function() remove('volume') end)
-		mp.add_key_binding('Alt+Enter', 'confirmClip', function() markClip() end)
+		mp.add_key_binding('Shift+v', 'dropVolume', function() add('volume', -1) end)
+		mp.add_key_binding('Alt+Enter', 'confirmClip', markClip)
+		local function qualGen(change)
+			return function()
+				crf = crf + change
+				add('crf', crf)
+			end
+		end
+		mp.add_key_binding('Alt+q', 'incCrf', qualGen(1))
+		mp.add_key_binding('Alt+Shift+q', 'decCrf', qualGen(-1))
+		mp.add_key_binding('Shift+q', 'dropCrf', function() remove('crf') end)
 		mp.add_key_binding('Enter', 'confirm', function()
 			if writeAll() then
 				mp.commandv 'quit'
@@ -546,16 +644,20 @@ cut() {
 			end
 			mp.osd_message(table.concat(info, '\n'), 4)
 		end)
-		mp.add_key_binding('d', 'dropClip', remove)
+		mp.add_key_binding('u', 'undoPrevAction', remove)
+		mp.add_key_binding('d', 'dropClip', dropClip)
 		mp.add_key_binding('h', 'help', function()
 			mp.osd_message([[Create clips in the order you want them to be concatenated in.
 <s> start a clip
 <e> end a clip
-<v> set clip volume
-<Shift+S>/<Shift+E>/<Shift+V> reset clip param
+<v> set clip volume (or disable when muted)
+<Alt+q> increase clip crf (lower quality)
+<Alt+Shift+q> decrease clip crf (higher quality)
+<Shift+S/E/Q/V> reset clip param
+<u> undo previous action
 <d> drop all current params, edit last confirmed clip
-<Alt+Enter> to confirm clip params
-<Enter> to process clips and quit]], 15)
+<Alt+Enter> to confirm clip params (vol+crf automatically set to current)
+<Enter> to process clips and quit]], 8)
 		end)
 		mp.osd_message('Press <h> for editing help', 3)
 
@@ -572,9 +674,8 @@ lua
 
 	local clips=()
 
-	local _cmd=($(ffmpegCmd) -i "${line[0]}")
+	local _cmd=($(ffmpegCmd) -i '<placeholder>')
 	local fileArgPos=${#_cmd[@]}-1
-	_cmd+=(-crf "${crf:-28}")
 	((metadata >= 0)) && _cmd+=(-map_metadata 0)
 	if ((copy > 0)); then
 		_cmd+=(-c copy)
@@ -584,26 +685,28 @@ lua
 		local ext=mp4
 	fi
 
-	while read -ra line <&4; do
+	while IFS=$'\t' read -ra line <&4; do
 		local file=${line[0]} start=${line[1]} end=${line[2]} volume=${line[3]}
-		local cmd=("${_cmd[@]}")
+		local cmd=("${_cmd[@]}" -crf "${line[4]}")
 		cmd[$fileArgPos]=$file
+
 		[[ $start != 0 ]] && cmd+=(-ss "$start")
 		[[ $end != end ]] && cmd+=(-to "$end")
+
 		if [[ $volume == 0 ]]; then
 			cmd+=(-map v)
 		elif [[ $volume != 1 && copy -lt 0 ]]; then
 			cmd+=(-af volume="$volume")
 		fi
 
-		local out=/tmp/mom-cut-${file##*/}_s${start}_e${end}.$ext
+		local out=/tmp/mom-$ACTION-${file##*/}_${start}_${end}.$ext
 		exec "${cmd[@]}" "$out" || return 1
 		clips+=("$out")
 	done 4<"${MPV_PICKER_PICK_PATH}" # redirect input to keep ffmpeg user interaction
 
 	if ((${#clips[@]} > 1)); then
-		out=/tmp/mom-cut-concat.$ext
-		local concatFile=/tmp/mom-cut-concat.txt
+		out=/tmp/mom-$ACTION.$ext
+		local concatFile=/tmp/mom-$ACTION.txt
 		printf 'file %s\n' "${clips[@]}" >"$concatFile"
 		cmd=($(ffmpegCmd) -f concat -safe 0 -i "$concatFile" -i "$src" -c copy
 		-map_metadata 1 -map 0 "$out")
@@ -873,12 +976,12 @@ actionInfo resize 'resize images'
 resizeParams=(
 	deleteSrc 'd?' '' 'Delete $src file'
 	rename 'r?' '' 'If output should be renamed according to its exif data'
-	src '$+' "${MIME_TYPES['image']}" 'File to resize'
-	quality 'q?' '[0-9]+' 'Change image quality (default=original quality)'
+	src '$+' "${MIME_TYPES['image']}" 'Files to convert'
+	quality 'q?' '[0-9]+' 'Change image quality (default=imagemagick default)'
 	predicate 'p*' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
        (comparing to dimension selected by --size)'
-	size 's!' 'x?[0-9]+[x^%]?' 'Longest side, *`^`=shortest, `*x*`=width/height, `*%`'
-	dst '$?' '$d$D\.(jpe?g|png|heif|jxl|avif)' 'Output file/dir (default=$src)')
+	size 's?' 'x?[0-9]+[x^%]?' 'Longest side px, *`^`=shortest, *`x`*=width/height, *`%`'
+	dst '$?' '$d$D\.(jpe?g|png|heif|jxl|avif)' 'Output file / dir with target extension (default=$src)')
 resize() {
 	if matcher='$D[^/]\.[^ ]+' argMatch "$dst" && ((${#src[@]} > 1)); then
 		log Error ' - cannot specify multiple $src and a file $dst'
@@ -886,7 +989,7 @@ resize() {
 	fi
 
 	declare -i i=-1 srcN=${#src[@]}
-	local only=${only:->}
+	local only=${only:->} size=${size:-'100%'}
 	function isolated() {
 		declare -ai dim=($(magick identify -auto-orient -format '%w %h' "$src"))
 		# imagemagick would understand, but it's easier to reuse our shortest side checker
@@ -1068,15 +1171,12 @@ rename() {
 
 		[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 		out=${out#./}
-		if [[ ${src#./} != "$out" ]]; then
-			out=$(ACTION+=.dst getFreePath "$out")
-			if [[ $src != "$out" ]]; then
-				if ((print_only)); then
-					echo "$out"
-				else
-					exec mv -i "$src" "$out"
-				fi
-			fi
+		src=${src#./}
+		[[ $src == "$out" && $allowOverwrite -le 0 ]] && out=$(ACTION+=.dst getFreePath "$out")
+		if ((print_only)); then
+			echo "$out"
+		else
+			exec mv -i "$src" "$out"
 		fi
 	else
 		log Info " - skipping"

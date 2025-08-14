@@ -16,7 +16,7 @@ editImage() {
 	fi
 }
 try @editImage .jpg
-try @darktable .RAF .JPG .raf
+try @darktable .RAF .JPG .raf .dng
 try @gimp +image
 
 # try @"kdenlive & dragon-drop -x -a" .mkv

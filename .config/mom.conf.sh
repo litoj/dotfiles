@@ -2,12 +2,12 @@
 declare -gA resizePresets
 presets=(
 	'i=92/1.jxl'
-	'h=90/2.jpg'
-	'm=87/2.jxl'
-	'q=82/4.jxl'
-	's=80/1280.jxl'
-	'l=78/800^.jxl'
 	'e=90/1.jpg'
+	'm=89/2.jxl'
+	'h=90/2.jpg'
+	'q=86/4.jxl'
+	's=82/1280.jxl'
+	'l=78/800^.jxl'
 )
 for preset in "${presets[@]}"; do
 	[[ $preset =~ ^(.)=(..)/([^.]*)(\..*)$ ]]
@@ -26,6 +26,7 @@ for preset in "${presets[@]}"; do
 		arr+=(predicate=$pred+)
 	fi
 
+	[[ ${BASH_REMATCH[4]} != .jpg ]] && arr+=(delete-src=true)
 	arr+=(
 		quality=${BASH_REMATCH[2]}
 		size=$size
@@ -37,9 +38,7 @@ done
 unset arr presets size pred
 
 resizeConfig=(
-	predicate=2000+
 	quality=90
-	dst=.jxl
 )
 
 downloadConfig=(metadata=false)
@@ -52,6 +51,7 @@ editConfig=(
 )
 cutConfig=(
 	rename=true
+	crf=30
 )
 
 linkFixConfig=(--resources ~/Music/Songs/)

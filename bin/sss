@@ -468,11 +468,17 @@ parseAction() {
 	[[ ${builder[*]+ok} ]] || declare -A ${ACTION}Builder # ensure we don't index a null
 
 	local cfg
-	if ! ((NO_CONFIG)) && pickConfig cfg '' "${ACTION}Presets" "Pick preset for $ACTION"; then
-		declare -n cfg
-		log Debug && log Debug "\$Config = (${cfg[*]})"
-		set -- "${cfg[@]}" "$@"
-		declare +n cfg
+	if ! ((NO_CONFIG)); then
+		if pickConfig cfg '' "${ACTION}Presets" "Pick preset for $ACTION"; then
+			if declare -p $cfg &>/dev/null; then
+				declare -n cfg
+				log Debug && log Debug "\$Config = (${cfg[*]})"
+				set -- "${cfg[@]}" "$@"
+				declare +n cfg
+			fi
+		else
+			log Error " - No config chosen"
+		fi
 	fi
 	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
@@ -687,6 +693,7 @@ call() { # for script usage - calling actions like itself with cli, without exte
 # run a command in parallel/background
 # often used in a loop to call a custom fn and call `wait` after the loop
 runJob() {
+	local jobs
 	while jobs=($(jobs -p)) && ((${#jobs[@]} >= SCRIPT_OPTS['jobs'])); do
 		wait -n
 	done
@@ -707,9 +714,10 @@ runJobs() {
 			TMPLOG=1 log Info ".jobs: \$done=$((i - jobs)), \$active=$jobs, \$todo=$(($# - i))"
 		done
 		while jobs=($(jobs -p)) && jobs=${#jobs[@]} && ((jobs)); do
-			wait -n
 			TMPLOG=1 log Info ".jobs: \$done=$((i - jobs)), \$active=$jobs, \$todo=0"
+			wait -n
 		done
+		ACTION='' TMPLOG=1 log Info "                                                                 "
 	else
 		for _arg in "$@"; do
 			runJob "$_fn" "$_arg"
@@ -1053,9 +1061,9 @@ pickFilesOrDir() {
 pickConfig() {
 	declare -n _choice=$1
 	declare -n presetMap=$3
-	if ((${SCRIPT_OPTS['configPicker']} <= 0 || ${#presetMap[@]})); then
+	if ((${SCRIPT_OPTS['configPicker']} <= 0 || !${#presetMap[@]})); then
 		_choice=${ACTION}Config
-		declare -p $_choice &>/dev/null || return 1
+		return 0
 	fi
 
 	presetMap['default']=${ACTION}Config

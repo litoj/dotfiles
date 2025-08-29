@@ -448,30 +448,35 @@ giphie() {
 		log Error ': only two of -i/-l/-d can be used'
 		return 1
 	fi
+	local seqN=$((srcN * 2 - 1))
 
 	if [[ $framerate ]]; then
-		local interval=$(bc <<<"scale=3; 1 / $framerate / $srcN")
+		local interval=$(bc <<<"scale=3; 1 / $framerate / $seqN")
 	fi
 
 	if [[ $duration ]]; then
 		if [[ $interval ]]; then
-			local loops=$(bc <<<"scale=0; $duration / $interval / $srcN")
+			local loops=$(bc <<<"scale=0; $duration / $interval / $seqN")
 		else
-			local interval=$(bc <<<"scale=3; $duration / ${loops:-1} / $srcN")
+			local interval=$(bc <<<"scale=3; $duration / ${loops:-1} / $seqN")
 		fi
 	elif [[ -z $interval ]]; then
-		local framerate=${framerate:-$srcN}
+		local framerate=${framerate:-$seqN}
 		local interval=$(bc <<<"scale=3; 1 / $framerate")
 	fi
-	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; $srcN / $interval")
-
-	declare -i clips=${loops:-1}*$srcN i=-1
+	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; $seqN / $interval")
 
 	local cmd=($(ffmpegCmd) -framerate $framerate)
+
 	local filterstr=""
+	declare -i i=-1
 	while ((++i < srcN)); do
 		cmd+=(-i "${src[$i]}")
 		filterstr+="[$i:v]"
+	done
+	while ((--i >= 0)); do
+		cmd+=(-i "${src[$i]}")
+		filterstr+="[$((2 * srcN - i)):v]"
 	done
 	cmd+=(
 		-filter_complex "${filterstr}concat=n=$srcN:v=1:a=0"
@@ -482,8 +487,8 @@ giphie() {
 	exec "${cmd[@]}" "$tmp" || return 1
 
 	cmd=(
-		$(ffmpegCmd) -stream_loop $loops -i "$tmp"
-		-r $framerate -preset veryslow -crf ${crf:-32} -g 65536 -keyint_min 65536 -sc_threshold 0 
+		$(ffmpegCmd) -stream_loop ${loops:-1} -i "$tmp"
+		-r $framerate -preset veryslow -crf ${crf:-32} -g 65536 -keyint_min 32769 -sc_threshold 0
 	)
 
 	local dst=${dst} out ext=mp4
@@ -493,7 +498,7 @@ giphie() {
 
 actionInfo cut 'cut and concat video files'
 cutParams=(
-	copy 'c?' '' 'Copy all data, no recompression (disables -qa and volume filter)'
+	copy 'c?' '' 'Copy all data, no recompression (disables -qa and volume amplifier)'
 	deleteSrc 'd?' '' 'Delete $src file (default=true if only one clip is created from only one src)'
 	crf 'q?' "${REGEX['pint']}" 'CRF quantization setting (default=28)'
 	metadata 'm?' '' 'Copy metadata from the first file (default=true)'
@@ -695,7 +700,7 @@ lua
 
 		if [[ $volume == 0 ]]; then
 			cmd+=(-map v)
-		elif [[ $volume != 1 && copy -lt 0 ]]; then
+		elif [[ $volume != 1 && $copy -le 0 ]]; then
 			cmd+=(-af volume="$volume")
 		fi
 

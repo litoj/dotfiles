@@ -37,13 +37,13 @@ setTheme() {
 updateTheme() {
 	pkill -RTMIN+20 i3blocks
 	if ((STAT[0] <= x && x < STAT[1])); then
-		next=${STAT[1]}
-		[[ ! -e /tmp/my/day ]] && touch /tmp/my/day && setTheme light
+		[[ ! -e /tmp/my/day || $next == 0 ]] && touch /tmp/my/day && setTheme light
 		swaymsg -q 'set $bg #ffffff; set $fg #000000'
+		next=${STAT[1]}
 	else
-		((x > STAT[1])) && next=1440 || next=${STAT[0]}
-		rm /tmp/my/day &>/dev/null && setTheme dark
+		[[ $next == 0 ]] || rm /tmp/my/day &>/dev/null && setTheme dark
 		swaymsg -q 'set $bg #101010; set $fg #ffffff'
+		((x > STAT[1])) && next=1440 || next=${STAT[0]}
 	fi
 	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
 		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"

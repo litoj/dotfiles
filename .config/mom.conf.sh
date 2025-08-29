@@ -2,12 +2,14 @@
 declare -gA resizePresets
 presets=(
 	'i=92/1.jxl'
+	'a=81/1.avif'
 	'e=90/1.jpg'
 	'm=89/2.jxl'
 	'h=90/2.jpg'
 	'q=86/4.jxl'
 	's=82/1280.jxl'
 	'l=78/800^.jxl'
+	'w=51/1.avif' #whatsapp quality
 )
 for preset in "${presets[@]}"; do
 	[[ $preset =~ ^(.)=(..)/([^.]*)(\..*)$ ]]

@@ -80,9 +80,15 @@ cpuByBattery() {
 	else
 		(($1)) && profile=Charging || profile=Discharging
 	fi
-	[[ $profile != D* ]] && profile=Auto || profile=Powersave
+	if [[ $profile != D* ]]; then
+		profile=Auto
+		pkill -f 'bash hibernateDelayed.sh'
+	else
+		profile=Powersave
+	fi
 	cpu "$profile"
-	pkill -RTMIN+14 i3blocks # update battery status
+
+	sleep 1 && pkill -RTMIN+14 i3blocks # update battery status
 }
 
 load() {

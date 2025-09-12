@@ -12,7 +12,7 @@ bindsym {
 
 	$Mod+u exec $custombg set
 	$Mod+Shift+u exec DIRECTION=prev $custombg set
-	$Mod+$Alt+u exec $custombg save
+	$Mod+$Alt+u exec $custombg cursave
 	$Mod+Ctrl+u exec xdg-open "$($custombg current)"
 
 #---------------+

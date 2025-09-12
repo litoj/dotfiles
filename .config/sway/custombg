@@ -42,12 +42,16 @@ set() {
 	fi
 
 	killall swaybg &>/dev/null
-	swaybg -i "$bg" -m fill &>/dev/null &
+	swaymsg output '*' bg "$bg" fill
 }
 
 save() {
-	next=$(pick)
-	[[ $next == $(<"$STATE_FILE") ]] || echo "$next" >"$STATE_FILE"
+	[[ -f $1 ]] && toSave=$1 || toSave=$(pick)
+	[[ $toSave == $(<"$STATE_FILE") ]] || echo "$toSave" >"$STATE_FILE"
+}
+
+cursave() {
+	save "$(current)"
 }
 
 autosave() {

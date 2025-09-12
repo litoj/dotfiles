@@ -1,0 +1,380 @@
+#!/usr/bin/bash
+# This I use for my own use, simply put, it installs all the packages I need and puts all theme
+# files where I want them. Use only as the user on the machine who you want to affect
+
+cd "${0%systall}."
+mainDir=$PWD
+
+. sss
+SSS_OPTS[about]='This program was made to simplify my linux reinstallations.'
+SCRIPT_OPTS[argPicker]=1
+
+if ! which paru &>/dev/null; then
+	log Info 'Installing paru AUR helper.'
+	exec sudo pacman --needed -S git base-devel cargo
+	git clone https://aur.archlinux.org/paru-bin.git
+	cd paru-bin && exec makepkg -si && cd .. && rm -rf paru-bin ||
+		log Error 'Failed installing paru-bin'
+	cd "$mainDir"
+fi
+
+actionInfo full 'do full system installation - minimal, or full'
+fullParams=(
+	minimal 'm?' '' 'Setup everything but no dev/latex/guis packages'
+)
+full() {
+	local action installed=0
+	for action in "${ACTION_ORDER[@]}"; do
+		if ((installed)); then # install action is the first declared -> we skip builtin actions
+			call "$action"
+		elif [[ $action == install ]]; then
+			local cmd=(call install --all)
+			((minimal > 0)) && "${cmd[@]}" --no-latex --no-dev --no-guis || "${cmd[@]}"
+			installed=1
+		fi
+	done
+}
+
+pkgAdd() {
+	if [[ ${!1} ]]; then
+		declare -n bundle="$1"
+		exec paru --needed ${flags} -S "${bundle[@]}"
+	else
+		exec paru --needed ${flags} -S "$@"
+	fi
+}
+
+condPkg() {
+	local given=$1
+	if which "$given" &>/dev/null; then
+		log Info " - Pkg '$given' exists, installing ${@:2}"
+		flags=--noconfirm pkgAdd "${@:2}"
+	else
+		return 1
+	fi
+}
+
+basicsBundle=(
+	acpid
+	arch-install-scripts
+	arp-scan
+	bc
+	bashmount
+	bat
+	bat-extras
+	booster
+	downgrade
+	dragon-drop
+	dunst
+	engrampa
+	eza
+	fd
+	firefox
+	fish
+	foot
+	fzf
+	gnu-netcat
+	gparted
+	grim
+	htop
+	i3blocks
+	#inxi
+	jq # twitch script
+	libva-mesa-driver
+	linux-firmware-amdgpu
+	linux-firmware-intel
+	#linux-firmware-mediatek
+	man-db
+	man-pages
+	mpv-mpris # use pyenv with 2.7 with autosub to generate decent subtitles for any audio
+	neofetch
+	neovim
+	net-tools
+	networkmanager
+	nm-connection-editor
+	nmap
+	npm
+	ntfs-3g
+	openssh
+	otf-font-awesome
+	otf-overpass
+	otf-stix
+	p7zip
+	pacman-contrib
+	pipewire-alsa
+	pipewire-jack
+	pipewire-pulse
+	pulsemixer
+	python-pynvim
+	ranger
+	ripgrep
+	rofi
+	slurp
+	sunwait
+	sway
+	swaybg
+	swayidle
+	swayimg
+	sweet-cursor-theme-git
+	trash-cli
+	ttf-exo-2
+	ttf-fira-code
+	ttf-jetbrains-mono
+	ttf-joypixels
+	ttf-nerd-fonts-symbols-mono
+	ttf-nova
+	udisks2
+	ufw
+	urlencode
+	vulkan-mesa-layers # https://wiki.archlinux.org/title/Hardware_video_acceleration#Installation
+	vulkan-radeon
+	wayvnc
+	wget
+	wireplumber
+	wl-clipboard
+	wlsunset
+	xdg-desktop-portal-wlr
+	xdg-desktop-portal-gtk
+	xdg-utils
+	xorg-xhost
+	xorg-xwayland
+	yt-dlp
+)
+installBasics() {
+	pkgAdd basicsBundle
+	exec sudo systemctl enable NetworkManager ufw acpid
+	exec sudo mkdir -p /etc/acpi/events
+
+	exec sudo ln -s "$PWD"/bin/* /usr/local/bin/ && {
+		sudo rm /usr/local/bin/${0##*/}
+		exec sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
+		exec sudo chmod +s /usr/local/bin/backlight
+	}
+}
+
+guisBundle=(
+	cpupower-gui
+	gimp
+	prismlanucher
+	scrcpy
+	thunderbird
+	transmission-gtk
+	qt6-wayland
+	qt6ct
+)
+
+installDev() {
+	pkgAdd bash-language-server shfmt
+	condPkg 'node' typescript eslint-language-server vscode-js-debug &&
+		pkgAdd vue-language-server
+	pkgAdd stylua lua-language-server
+	condPkg 'pyenv' pyright yapf
+
+	pkgAdd clang pandoc-bin prettier
+
+	condPkg 'java' jdtls java-debug && {
+		export JAVA_HOME=/usr/lib/jvm/default-runtime/
+		mkdir -p ~/.local/share/
+		cd ~/.local/share/
+		git clone https://github.com/microsoft/vscode-java-test &&
+			cd vscode-java-test && npm install && npm run build-plugin
+		cd "$mainDir"
+	}
+}
+
+latexBundle=(
+	texlab
+	texlive-bibtexextra
+	texlive-fontsextra
+	texlive-formatsextra
+	texlive-humanities
+	texlive-latexindent-meta
+	texlive-pictures
+	texlive-publishers
+	texlive-science
+)
+
+actionInfo install 'install various package categories'
+installParams=(
+	basics 'b?' '' 'Basic and essential packages'
+	dev 'd?' '' 'Packages for development in neovim'
+	latex 'l?' '' 'Latex packages'
+	guis 'g?' '' 'GUI applications'
+	all 'a?' '' 'All listed categories'
+)
+install() {
+	paru -Sy
+	declare -i i=-4 state
+	while (((i -= 4) > 0)); do
+		[[ ${installParams[i]} == all ]] && return 0
+		state=${!installParams[i]}
+		if ((state > 0 || (state == 0 && all > 0))); then
+			local f=install${installParams[i]^}
+			log Info "Installing ${installParams[i]}."
+			if declare -f "$f" &>/dev/null; then
+				$f
+			else
+				pkgAdd "${f}Bundle"
+			fi
+		fi
+	done
+}
+
+actionInfo configs 'link config files to these dotfiles'
+configs() {
+	log Info " - Linking base configs."
+
+	ln -s "$PWD"/.bashrc ~/
+	ln -s "$PWD"/.gitconfig ~/
+	mkdir -p ~/.config
+
+	ln -s "$PWD"/.config/* ~/.config/
+	bat cache --build
+
+	mkdir -p ~/.local/share/applications/
+	ln -s "$PWD"/other/*.desktop ~/.local/share/applications/
+	local mimes=($(sed -n 's/^MimeType=//;s/;/ /gp' ../other/opener.desktop))
+	for mime in ${mimes[@]}; do
+		xdg-mime default opener.desktop $mime
+	done
+	[[ -f /bin/fish ]] && exec chsh -s /bin/fish
+	gsettings set org.gtk.Settings.FileChooser sort-directories-first true
+
+	log Info " - Linking caches and logs to '/tmp'."
+	local name
+	mkdir -p ~/.cache/
+	for name in ranger thumbnails ueberzugpp; do
+		ln -s /tmp/my/cache ~/.cache/$name
+	done
+	mkdir -p ~/.local/state/nvim/
+	for name in dapui.log log lsp.log luasnip.log nio.log; do
+		ln -s /tmp/my/log ~/.local/state/nvim/$name
+	done
+}
+
+actionInfo theming 'install and link themes'
+themingParams=(
+	local 'l?' '' 'Install themes to ~/.themes and ~/.icons'
+)
+theming() {
+	log Info ""
+
+	which unzip &>/dev/null || exec paru --noconfirm -S unzip
+	cd ../theming
+	for f in *.tar.*; do exec tar -xf "$f"; done
+
+	if ((local > 0)); then
+		mkdir -p ~/.themes
+		local theme themeDir
+		for theme in dark light; do
+			themeDir=$HOME/.themes/${theme^}/
+			[[ ! -d $themeDir ]] && exec rm -r "$themeDir"
+			exec mv *${theme^}*/ "$themeDir"
+		done
+
+		mkdir -p ~/.icons/default/
+		echo -e '[Icon Theme]\nInherits=Sweet-cursors' >~/.icons/default/index.theme
+		exec mv */ ~/.icons/Icons
+	else
+		local theme themeDir
+		for theme in dark light; do
+			themeDir=/usr/share/themes/${theme^}/
+			[[ ! -d $themeDir ]] && exec sudo rm -r "$themeDir"
+			exec sudo mv *${theme^}*/ "$themeDir"
+		done
+
+		local icons=/usr/share/icons/Icons
+		exec sudo sed -i 's/^\(Inherits=\).*$/\1Sweet-cursors/' /usr/share/icons/default/index.theme
+		[[ -d $icons ]] && exec sudo rm -r "$icons"
+		exec sudo mv */ "$icons"
+	fi
+
+	[[ -f ~/.gtkrc-2.0 ]] && rm ~/.gtkrc-2.0
+	ln -s /tmp/my/gtk2rc ~/.gtkrc-2.0
+
+	cd "$mainDir"
+}
+
+pickHostname() {
+	[[ -f /etc/hostname ]] && hostname=$(</etc/hostname) || pickValue "$@"
+}
+
+pickLocale() {
+	local _locales=($(grep -o '[a-zA-Z_]\+\.UTF-8' /etc/locale.gen))
+	choiceList=_locales pickFromList "$@"
+}
+
+actionInfo sysFiles 'write system files like environment, autologin, etc.'
+sysFilesParams=(
+	hostname 'h!' '[^ ]+' 'Set the system/host name'
+	locale 'l?' '[0-9A-Za-z_.-]+' 'Set locale by prefix'
+)
+declare -A sysFilesBuilder=([hostname]=pickHostname [locale]=pickLocale)
+sysFiles() {
+	exec sudo echo "Setting up system files" || {
+		log Error ' - Failed to get root permissions'
+		return 1
+	}
+	if [[ ! -f /etc/hostname ]]; then
+		log Verbose ' - Saving hostname'
+		exec echo "$hostname" | exec sudo tee /etc/hostname >/dev/null
+	fi
+
+	# disable beep noise on empty backspace
+	# disable bluetooth (bluetooth.service off by default, install bluez + bluetuith to use)
+	exec printf 'blacklist pcspkr\nblacklist btusb\n' |
+		exec sudo tee /etc/modprobe.d/blacklist.conf >/dev/null
+
+	if [[ $lang ]]; then
+		[[ $locale == *.???* ]] && local reg=$locale || reg="$locale.*\.UTF-8"
+		local locales=($(sed -n "s/^#\?\($reg\) .*/\1/p" /etc/locale.gen))
+		if ((${#locales[@]} > 1)); then
+			log Warn " - Multiple locales found, picking the first: $locales"
+		elif ((${#locales[@]} == 0)); then
+			log Error " - No locales found matching '$reg' in /etc/locale.gen"
+		elif [[ $locale != $reg ]]; then
+			log Info " - Matched '$locale' to locale '$locales'"
+		fi
+
+		printf "LANG=$locales\n" | exec sudo tee /etc/locale.conf >/dev/null
+		exec sudo sed -i "s/^#\($locales\)/\1/" /etc/locale.gen
+		exec sudo locale-gen
+	fi
+
+	exec sudo ln -sf /usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime
+
+	declare -A regexes=()
+	local fileVar var
+	cd ../sys_files
+	for fileVar in *; do
+		regexes["$fileVar"]=""
+	done
+
+	while IFS=: read -ra fileVar; do
+		var=${fileVar[1]:2:-1}
+		if [[ ${!var} ]]; then
+			log Verbose " - Replacing {\$$var} with ${!var} in ${fileVar[0]}"
+		else
+			log Error " - Error processing $fileVar - \$$var not found"
+		fi
+
+		regexes["$fileVar"]+=";s/${fileVar[1]/'$'/'\$'}/${!var}/g"
+	done < <(grep -o '{\$\w\+}' *)
+
+	for var in "${!regexes[@]}"; do
+		fileVar="/${var//-/\/}"
+		exec mkdir -p "${fileVar%/*}"
+		if [[ ${regexes["$var"]} ]]; then
+			if [[ ${regexes["$var"]} != */root/g* ]]; then
+				exec sed "${regexes["$var"]:1}" "$var" | exec sudo tee "$fileVar" >/dev/null
+			else
+				log Warn ' - Autologin setup forbids using a root account - skipping.'
+			fi
+		else
+			exec sudo cp "$var" "$fileVar"
+		fi
+	done
+	cd "$mainDir"
+}
+
+main "$@"

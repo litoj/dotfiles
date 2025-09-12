@@ -5,15 +5,13 @@ local M = {
 }
 function M.config()
 	local ufo = require 'ufo'
+	local cfg = {
+		markdown = 'indent',
+		sh = 'indent',
+	}
 	ufo.setup {
 		open_fold_hl_timeout = 0,
-		provider_selector = function(buf, ft, type)
-			return ft == 'markdown' and 'indent'
-				-- or (
-					-- #vim.lsp.get_clients { bufnr = buf } > 0 and { 'lsp', 'treesitter' }
-					or { 'treesitter', 'indent' }
-				-- )
-		end,
+		provider_selector = function(buf, ft, type) return cfg[ft] or { 'treesitter', 'indent' } end,
 	}
 	vim.o.fdl = 99
 	vim.o.fdls = 99

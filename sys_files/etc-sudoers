@@ -83,7 +83,7 @@ root ALL=(ALL) ALL
 ## Uncomment to allow members of group wheel to execute any command
 %wheel ALL=(ALL) ALL
 
-%wheel ALL= NOPASSWD: /usr/bin/paru,/usr/bin/pacman,/usr/bin/swapon,/usr/bin/swapoff
+%wheel ALL= NOPASSWD: /usr/bin/pacman,/usr/bin/swapon,/usr/bin/swapoff
 
 ## Same thing without a password
 # %wheel ALL=(ALL) NOPASSWD: ALL

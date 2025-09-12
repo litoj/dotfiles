@@ -103,12 +103,12 @@ load() {
 
 	[[ -f /bin/acpi_listen ]] || exit
 
-	declare -i old=$SECONDS
 	while read -r line; do
 		case "$line" in
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
-			ac_adapter*) ((SECONDS != old)) && old=$SECONDS && cpuByBattery ${line:0-1} ;;
+			# plugging in emmits the *1 event twice
+			ac_adapter*) [[ ${line:0-1} == 0 ]] || read -r line && cpuByBattery ${line:0-1} ;;
 			button/lid*open) sleep 1 && cpuByBattery ;;
 		esac
 	done < <(acpi_listen)

@@ -11,17 +11,106 @@ connect() {
 	[[ $dst =~ ^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)?:?([0-9]*)$ ]]
 	local ip=${BASH_REMATCH[1]} port=${BASH_REMATCH[2]}
 	if [[ -z $ip || -z $port ]]; then
-		[[ $ip ]] || ip=$(
+		[[ $ip ]] || ip=($(
 			ip a | sed -nE 's,.*inet ((1[^2][^.]|12[^7]|[1-9][0-9])\.[0-9]+\.[0-9]+\.)[0-9]+/([0-9]+).*,\10/\3,p'
-		)
+		))
 		[[ $port ]] || port=30000-50000
 		dst=$(
-			exec nmap -T4 -p$port $ip | awk '$4=="for"{ip=$5};$2=="open"{print ip":"gensub("/tcp","",1,$1)}'
+			exec nmap -n -p$port $ip | awk '$4=="for"{ip=$5};$2=="open"{print ip":"gensub("/tcp","",1,$1)}'
 		)
 	else
 		dst=$ip:$port
 	fi
 	exec adb connect $dst
+
+	which gio &>/dev/null || return 0
+}
+
+actionInfo mount 'mount/unmount device storage to local path using gvfs or adbfs'
+mountParams=(
+	method 'm?' 'adbfs|adb|gio|gvfs' 'Mount method (default: gio if available, else adbfs)'
+	device 'd?' '.+' 'Device name or serial to mount (default: first device found)'
+	path '$?' '.+' 'Local path to link the mount to'
+)
+mount() {
+	if which gio &>/dev/null && [[ ${method:-gvfs} == g* ]]; then
+		local name=($(gio mount -li | sed -n 's,.*activation_root=mtp://\(.*\)/.*,\1,p'))
+		if [[ $device ]]; then
+			local match
+			for match in "${name[@]}"; do
+				[[ $match == *"$device"* ]] && device='__found__' && break
+			done
+
+			[[ $device == '__found__' ]] || log Error ": Device '$device' not found in: (${name[*]})"
+			name=("$match")
+			unset match
+		elif ((${#name[@]} > 1)); then
+			log Warn ": Mounting first of devices: (${name[*]})"
+		fi
+
+		local defaultPath="/tmp/sam-$USER/$name"
+		[[ -z $path ]] && local path=$defaultPath
+		path=${path%/}
+
+		exec gio mount "mtp://$name/"
+		local mountPath="/run/user/$(id -u)/gvfs/mtp:host=$name"
+
+		local internalStorage=("$mountPath"/I*) # get internal storage
+		if [[ ! -d $internalStorage ]]; then
+			internalStorage=("$mountPath"/*)
+			log Warn ": Guessing internal storage folder as '${internalStorage##*/}'"
+		fi
+
+		if [[ $path == - ]]; then
+			echo "$internalStorage"
+		else
+			mkdir -p "${path%/*}"
+			[[ -d $path ]] && exec rmdir "$path"
+			ln -s "$internalStorage" "$path"
+		fi
+	elif which adbfs &>/dev/null && [[ ${method:-adb} == a* ]]; then
+		local defaultPath="/tmp/sam-$USER"
+		[[ -z $path ]] && local path=$defaultPath
+		[[ $path == - ]] && local echo=1 path=$defaultPath
+
+		[[ -d $path ]] || mkdir -p "$path"
+		exec adbfs "$path"
+		if ((echo)); then
+			echo "$path"
+		fi
+	else
+		log Error ': No suitable tool found to mount (gio=gvfs-mtp or adbfs)'
+	fi
+}
+
+actionInfo unmount M 'un[M]ount' 'unmount device storage from local path using gvfs or adbfs'
+unmountParams=(
+	method 'm?' 'adbfs|adb|gio|gvfs' 'Mount method (default: gio if available, else adbfs)'
+	keepLink 'k?' '' 'Keep the mountpath'
+	path '$?' '.+' 'Custom path to unmount')
+unmount() {
+	if which gio &>/dev/null && [[ ${method:-gvfs} == g* ]]; then
+		if [[ -z $path ]]; then
+			# unmount all mtp devices, gvfs always returns 2
+			exec gio mount -s mtp && log Error ': No device to unmount'
+			if ((keepLink <= 0)); then
+				find "/tmp/sam-$USER/" -xtype l -delete
+				rmdir "/tmp/sam-$USER/"
+			fi
+		else
+			local storagePath=$(readlink -f "$path")
+			[[ $storagePath =~ mtp:host=([^/]*)/ ]] || log Error ": Invalid link '$path'"
+			gio mount -u "mtp://${BASH_REMATCH[1]}/"
+			((keepLink > 0)) || rm "$path"
+		fi
+	elif which adbfs &>/dev/null && [[ ${method:-adb} == a* ]]; then
+		local path=${path:-/tmp/sam-$USER/}
+		[[ -d $path ]] || log Error ": Path '$path' does not exist"
+		exec fusermount -u "$path"
+		((keepLink > 0)) || rmdir "$path"
+	else
+		log Error ': No suitable tool found to unmount (gio=gvfs-mtp or adbfs)'
+	fi
 }
 
 actionInfo screen 'capture/share screen, sound and controls'
@@ -54,7 +143,7 @@ pickPackage() {
 		declare -A installed
 		local pkg
 		for pkg in $(adb shell pm list packages ${_filter/-u/} | sed 's/package://'); do
-			installed["$pkg"]=1;
+			installed["$pkg"]=1
 		done
 
 		for pkg in $(adb shell pm list packages $_filter | sed 's/package://'); do

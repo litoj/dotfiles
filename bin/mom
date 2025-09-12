@@ -5,10 +5,8 @@
 SSS_OPTS[about]='MOM - Media Operation&Manipulation
 A collection of media operation/manipulation scripts.'
 
-SCRIPT_OPTS[freePathNumberReuse]=0
 SCRIPT_OPTS[ffmpegLogLvl]=2
 defineParams=(
-	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
 	ffmpegLogLvl 'f?' "${REGEX['int']}" 'Set ffmpeg log level or +f to use the script $logLvl'
 	"${defineParams[@]}")
 SSS_OPTS[onNoArg]=1
@@ -200,42 +198,6 @@ secondsToTime() {
 		str=$((s % 60)):$str
 	done
 	echo "$str"
-}
-
-# $src, $2= name of the param for which we are creating the path
-#######################################
-# Globals:
-#   deleteSrc if the original will not be replaced by this path
-#   src source filename (if dst should move into it, log path as verbose only)
-# Arguments:
-#   filename base path name to get a free name for
-#######################################
-getFreePath() {
-	if [[ ! -e $1 ]]; then
-		echo "$1"
-		return
-	fi
-	local filename=$1 text=$1
-	[[ $filename =~ (0*([1-9][0-9]*)?)(\.[^.]+)$ ]]
-	local ext=${BASH_REMATCH[3]} numLen=${#BASH_REMATCH[1]}
-	if ((${SCRIPT_OPTS['freePathNumberReuse']} > 0 && numLen)); then # num reuse allowed and possible
-		local prefix=${filename::-${#BASH_REMATCH[0]}}
-		declare -i i=${BASH_REMATCH[2]}
-
-		while [[ -e $text ]]; do
-			text=$(printf '%s%0*d%s' "$prefix" $numLen $((++i)) "$ext")
-		done
-	else
-		local prefix=${filename::-${#ext}}_
-		declare -i i=0
-		while [[ -e $text ]]; do
-			text="$prefix$((++i))$ext"
-		done
-	fi
-
-	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
-		$deleteSrc -ge 1 && ${BASH_REMATCH[2]} -le $i ]] || log Info " = '$text'"
-	echo "$text"
 }
 
 # expects $src, $dst in form $d.ext or $F
@@ -448,23 +410,30 @@ giphie() {
 		log Error ': only two of -i/-l/-d can be used'
 		return 1
 	fi
-	local seqN=$((srcN * 2 - 1))
+	local seqN=$((srcN)) # * 2 - 2))
+	log Debug ".seqN = $seqN"
 
 	if [[ $framerate ]]; then
-		local interval=$(bc <<<"scale=3; 1 / $framerate / $seqN")
+		local interval=$(bc <<<"scale=3; 1 / $framerate")
+		log Debug ".interval = $interval"
 	fi
 
 	if [[ $duration ]]; then
 		if [[ $interval ]]; then
 			local loops=$(bc <<<"scale=0; $duration / $interval / $seqN")
+			log Debug ".loops = $loops"
 		else
 			local interval=$(bc <<<"scale=3; $duration / ${loops:-1} / $seqN")
+			log Debug ".interval = $interval"
 		fi
 	elif [[ -z $interval ]]; then
 		local framerate=${framerate:-$seqN}
 		local interval=$(bc <<<"scale=3; 1 / $framerate")
 	fi
-	[[ $framerate ]] || local framerate=$(bc <<<"scale=3; $seqN / $interval")
+	[[ $framerate ]] || {
+		local framerate=$(bc <<<"scale=3; 1 / $interval")
+		log Debug ".framerate = $framerate"
+	}
 
 	local cmd=($(ffmpegCmd) -framerate $framerate)
 
@@ -474,18 +443,20 @@ giphie() {
 		cmd+=(-i "${src[$i]}")
 		filterstr+="[$i:v]"
 	done
-	while ((--i >= 0)); do
-		cmd+=(-i "${src[$i]}")
-		filterstr+="[$((2 * srcN - i)):v]"
-	done
+	((i = i - 1))
+	# while ((--i > 0)); do
+	# 	cmd+=(-i "${src[$i]}")
+	# 	filterstr+="[$((seqN - i)):v]"
+	# done
 	cmd+=(
-		-filter_complex "${filterstr}concat=n=$srcN:v=1:a=0"
+		-filter_complex "${filterstr}concat=n=$seqN:v=1:a=0"
 		-r $framerate -pix_fmt yuv420p -q 0 #q=0 means lossless
 	)
 
 	local tmp="/tmp/mom-$ACTION-${src##*/}.mp4"
 	exec "${cmd[@]}" "$tmp" || return 1
 
+	exit 1
 	cmd=(
 		$(ffmpegCmd) -stream_loop ${loops:-1} -i "$tmp"
 		-r $framerate -preset veryslow -crf ${crf:-32} -g 65536 -keyint_min 32769 -sc_threshold 0
@@ -1063,7 +1034,7 @@ renameParams=(
 	fallback 'F*' '[^:]+[:=].*' 'Sed fallback expression per argMatch expression (last match used)'
 	dateFormat 'd!' '.+' 'Timestamp format'
 	dateFallback 'D?' '' 'Use file mod time for timestamp fallback (default=ask)'
-	allowOverwrite 'o?' '' 'Allow renaming to itself (default= dst!=`-`)'
+	allowOverwrite 'o?' '' 'Allow renaming to itself when dst=`-` (default=true)'
 	extension 'e?' '.?[0-9a-z]+' 'Look for a free name with this extension'
 	src '$+' "\$d${MIME_TYPES['image']}${MIME_TYPES['audio']}${MIME_TYPES['video']}" 'File to rename'
 	dst '$?' '$d$D-$|-' 'Destination to rename to, or `-` to just print the final dst'
@@ -1071,7 +1042,7 @@ renameParams=(
 renameConfig=(
 	format=${MIME_TYPES['audio']}:'$Artist - $Title'
 	format='$f.mov:$DateTimeOriginal'
-	format='$f^[^ .].*.mp4:$CreateDate'
+	format='$f^VID[^ .]*.mp4:$CreateDate'
 	format=${MIME_TYPES['image']}:'$DateTimeOriginal'
 	fallback=${MIME_TYPES['video']}:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,' # movies
 	fallback=${MIME_TYPES['audio']}:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+|.*-) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
@@ -1083,30 +1054,25 @@ rename() {
 		local dst=${src[-1]}
 		src=("${src[@]::${#src[@]}-1}")
 	fi
-	if [[ ! $print_only ]]; then
-		[[ $dst == */- || $dst == - ]] && dst=${dst::-1} && local print_only=1 || local print_only=0
-		dst=${dst%/}
+	if [[ -z $printOnly ]]; then
+		[[ $dst == */- || $dst == - ]] && dst=${dst::-1} && local printOnly=1 || local printOnly=0
+		[[ ${dst:-/} == / ]] && unset dst || local dst=${dst%/}
+		local dst=${dst:-.}
 	fi
 
 	if [[ ${#src[@]} -gt 1 || -d $src ]]; then
 		traverse() {
-			for src in "$1"/*; do
+			for src in "$@"; do
 				if matcher=${renameParams[-6]} argMatch "$src"; then
 					if [[ -d $src ]]; then
-						traverse "$src"
+						traverse "$src"/*
 					else
 						src="$src" runJob rename
 					fi
 				fi
 			done
 		}
-		for src in "${src[@]}"; do
-			if [[ -d $src ]]; then
-				traverse "$src"
-			else
-				src="$src" runJob rename
-			fi
-		done
+		traverse "${src[@]}"
 		wait
 		return 0
 	fi
@@ -1177,21 +1143,20 @@ rename() {
 		[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
 		out=${out#./}
 		src=${src#./}
-		[[ $src == "$out" && $allowOverwrite -le 0 ]] && out=$(ACTION+=.dst getFreePath "$out")
-		if ((print_only)); then
+
+		# allowOverwrite is for print_only for use in other functions
+		if ((printOnly)); then
+			[[ $src == "$out" && $allowOverwrite -le 0 ]] && out=$(ACTION+=.dst getFreePath "$out")
 			echo "$out"
+		elif [[ $src != "$out" ]]; then
+			out=$(ACTION+=.dst getFreePath "$out") # never override itself
+			[[ $src != "${out#./}" ]] && exec mv -i "$src" "$out"
 		else
-			exec mv -i "$src" "$out"
+			log Verbose " - already correct"
 		fi
 	else
 		log Info " - skipping"
 	fi
-}
-
-SSS_OPTS[exitFn]=exitFnMom
-exitFnMom() {
-	rm -f /tmp/mom-*
-	exitFn "$@"
 }
 
 main "$@"

@@ -3,11 +3,11 @@ exec_always $signal load
 set $lid ~/.config/sway/lidSwitch
 
 # set background
+exec_always $custombg set
 exec {
-	mkdir -p /tmp/my/cache /tmp/my/trash && $custombg set
+	mkdir -p /tmp/my/cache /tmp/my/trash
 	$lid mode 60
-	# wlsunset -l 50 -L 14.5 &>/dev/null &
-	wlsunset -l 47.8 -L 13 &>/dev/null &
+	wlsunset -l 50 -L 14.5
 	swayidle timeout 300 "$lid idle" resume "$lid resume"
 
 	gsettings set org.gnome.desktop.interface icon-theme 'Icons'
@@ -52,5 +52,5 @@ input type:touchpad {
 	drag_lock disabled
 	# natural_scroll enabled
 	dwt enabled
-	events disabled_on_external_mouse
+	# events disabled_on_external_mouse
 }

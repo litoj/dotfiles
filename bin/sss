@@ -70,6 +70,7 @@ actionInfo() {
 	[[ $key ]] && ACTION_INFO["$key"]="$name"
 	((ALIGNER < ${#helpsig})) && ALIGNER=${#helpsig}
 	ACTION_INFO["$name"]="$helpsig $help"
+	# allow multiple shorthands to link to the same action - like --help = -h -?
 	[[ ${ACTION_ORDER[@]:0-1} == "$name" ]] || ACTION_ORDER+=("$name")
 }
 
@@ -86,11 +87,12 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[guiPicker]=0
 	[argPicker]=0
 	[optArgPicker]=1
+	[configPicker]=0
 	[ignoreFailedPicker]=0
+	[freePathNumberReuse]=0
 	[jobs]=$(((1 + $(nproc --all)) / 2))
 	[logLvl]=${LOG_LEVELS['info']}
 	[tmpLogLvl]=${LOG_LEVELS['info']}
-	[configPicker]=0
 )
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1 SCRIPT_OPTS[argPicker]=1
@@ -105,8 +107,9 @@ defineParams=(
 	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
-	ignoreFailedPicker 'I?' '' 'Discard option when picker returned no value'
+	ignoreFailedPicker 'I?' '' 'Discard option when picker failed instead of exiting'
 	configPicker 'C?' '' 'Run a config picker when actionConfigMap is defined'
+	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
 	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
 	tmpLogLvl 'L?' '([0-9]+|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
 	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
@@ -176,7 +179,7 @@ exitFn() {
 		if [[ $i ]]; then
 			printActionParams "${ACTION%%[[]*}" 1 $((i / 4))
 		else
-			call help -pm "$ACTION"
+			call help -p "$ACTION"
 		fi
 	fi
 	[[ $(jobs -p) ]] && kill -- -$$ || exit $1
@@ -323,6 +326,16 @@ log() {
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
 		runExitFn $LAST_LOG_LVL
 	fi
+}
+
+# for debugging - logs all given variables
+logVar() { # TODO: pretty print format for arrays
+	local lvl=$1 varName str=":"
+	shift
+	for varName in "$@"; do
+		str+=$'\n'"$varName='${!varName}'"
+	done
+	log "$lvl" "$str"
 }
 
 # Supports simple redirection ... '>'/'>>' 'path' with logging + '&' for bg process
@@ -726,6 +739,42 @@ runJobs() {
 	fi
 }
 
+#######################################
+# Globals:
+#   deleteSrc if the original will not be replaced by this path
+#   src source filename (if dst should move into it, log path as verbose only)
+# Arguments:
+#   filename base path name to get a free name for
+#   name of the param for which we are creating the path
+#######################################
+getFreePath() {
+	if [[ ! -e $1 ]]; then
+		echo "$1"
+		return
+	fi
+	local filename=$1 text=$1
+	[[ $filename =~ (0*([1-9][0-9]*)?)(\.[^.]+)$ ]]
+	local ext=${BASH_REMATCH[3]} numLen=${#BASH_REMATCH[1]}
+	if ((${SCRIPT_OPTS['freePathNumberReuse']} > 0 && numLen)); then # num reuse allowed and possible
+		local prefix=${filename::-${#BASH_REMATCH[0]}}
+		declare -i i=${BASH_REMATCH[2]}
+
+		while [[ -e $text ]]; do
+			text=$(printf '%s%0*d%s' "$prefix" $numLen $((++i)) "$ext")
+		done
+	else
+		local prefix=${filename::-${#ext}}_
+		declare -i i=0
+		while [[ -e $text ]]; do
+			text="$prefix$((++i))$ext"
+		done
+	fi
+
+	[[ $src =~ ^"${prefix%_}"(_0*([1-9][0-9]*)?)?"$ext"$ &&
+		$deleteSrc -ge 1 && ${BASH_REMATCH[2]} -le $i ]] || log Info " = '$text'"
+	echo "$text"
+}
+
 declare -A REGEX=(
 	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'
@@ -877,7 +926,7 @@ helpParams=(
 	actions '$*' '.+' 'Display help for (default=all)')
 declare -A helpBuilder=([actions]=pickHelpAction)
 pickHelpAction() {
-	declare -n arr="$1"
+	declare -n arr=$1
 	arr=($(printf '%s\n' "${ACTION_ORDER[@]}" | fzf -m --prompt="$4: "))
 }
 help() {
@@ -972,8 +1021,44 @@ determinePicker() {
 	esac
 }
 
+#######################################
+# Choose a value from a predefined set of choices
+# Globals:
+#   choiceList list of valid choices
+# Arguments:
+#   name of the variable to store the choice(s) in
+#   signature ?[+*] for multiple choices
+#   matcher
+#   description prompt message
+#######################################
+pickFromList() {
+	declare -n _dst=$1 choiceList
+	((SCRIPT_OPTS['guiPicker'] > 0)) && local _cmd=(rofi -dmenu -p) || local _cmd=(fzf --prompt)
+	if [[ $2 == ?[+*] ]]; then
+		((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
+	fi
+
+	while :; do
+		local _pick=
+		while [[ ! $_pick =~ ^$3$ ]]; do
+			_pick=$(printf '%s\n' "${choiceList[@]}" |
+				"${_cmd[@]}" "${_pick:+Argument has to match /$3/! }$4")
+			[[ $_pick ]] || break
+		done
+
+		if [[ $2 == ?[+*] ]]; then
+			[[ $_pick ]] || break
+			_dst+=("$_pick")
+		else
+			_dst="$_pick"
+			break
+		fi
+	done
+	[[ $_dst ]]
+}
+
 pickValue() {
-	declare -n _dst="$1"
+	declare -n _dst=$1
 	while :; do
 		local _pick=
 		while [[ ! $_pick =~ ^$3$ ]]; do
@@ -1003,7 +1088,7 @@ pickDir() {
 	local tmp="$(mktemp)"
 	"${RANGER_CMD[@]}" --choosedir="$tmp"
 	if [[ -e $tmp ]]; then
-		declare -n _choice="$1"
+		declare -n _choice=$1
 		_choice="$(<"$tmp")"
 	fi
 	rm "$tmp"
@@ -1027,7 +1112,7 @@ pickFilesOrDir() {
 	if [[ $2 == ?[+*] ]]; then
 		((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
 	fi
-	declare -n selected="$1"
+	declare -n selected=$1
 	local toView=(.) _ng=("$(shopt -p nullglob)")
 	shopt -s nullglob
 	while :; do

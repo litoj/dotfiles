@@ -44,8 +44,8 @@ main() {
 			;;
 		closed) swaymsg 'output $d1 power off' ;;
 		open) swaymsg 'output $d1 power on' ;;
-		resume) swaymsg 'output * power on' ;;
 		idle) swaymsg 'output * power off' ;;
+		resume) swaymsg 'output * power on' ;;
 		toggle)
 			if [[ -f $NO_SLEEP ]]; then
 				rm "$NO_SLEEP"

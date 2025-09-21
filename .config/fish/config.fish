@@ -158,7 +158,7 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	set -x XDG_CACHE_HOME ~/.cache
 	set -x XDG_DATA_HOME ~/.local/share
 	set cache $XDG_CACHE_HOME
-	export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go MAVEN_HOME=$cache/maven-m2
+	export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go
 	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
 	export QT_QPA_PLATFORMTHEME=qt6ct RADV_PERFTEST=video_decode

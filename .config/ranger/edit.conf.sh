@@ -1,6 +1,6 @@
 # config for ../../bin/xdg-open
-# functions must be prefixed with @ otherwise they're run as terminal commands (and not found)
 TERM_BLOCKING=1
+
 try 'tar -xvf' .bz2 .gz .tgz .xz .zst
 try '7z x' .7z .tar .rar .zip
 try @blockbench .json
@@ -45,4 +45,6 @@ editDir() {
 	fi
 }
 EXPLORER=@editDir
+
 FALLBACK=
+BROWSER=

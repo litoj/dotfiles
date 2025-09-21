@@ -20,7 +20,7 @@ run() {
 	[[ -e $arg && $arg != /* ]] && for ((i = ${#arg[@]} - 1; i >= 0; i--)); do
 		arg[$i]="$PWD/${arg[$i]}"
 	done
-	local cmd=$1
+	local cmd=$1 # bash fn()s require the '@' prefix to work
 	[[ $cmd == @* || ${BLOCKING:-$TERM_BLOCKING} == 1 && -t 0 && -t 1 ]] ||
 		cmd="${TERMINAL:-xterm} $cmd"
 	if [[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]]; then
@@ -41,7 +41,7 @@ try() {
 	while (($# && !match)); do
 		case "$1" in
 			.*) [[ $EXT == $1 ]] && match=1 ;;
-			+*) [[ ${MIME:=$(file -Lb --mime-type "$arg")} == ${1#+}* ]] && match=1 ;;
+			+*) [[ +${MIME:=$(file -Lb --mime-type "$arg")} == $1* ]] && match=1 ;;
 			*:) [[ $URI == $1 ]] && match=1 ;;
 			*) [[ $arg =~ $1 ]] && match=1 ;;
 		esac

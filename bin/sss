@@ -1166,8 +1166,7 @@ pickConfig() {
 
 	rm "$pre-"*.sh
 
-	[[ $_choice ]] && _choice=${presetMap["$_choice"]} || return 1
-	declare -p $_choice &>/dev/null || return 1
+	[[ $_choice ]] && _choice=${presetMap["$_choice"]} && [[ $_choice ]]
 }
 
 if [[ $0 == *sss ]]; then

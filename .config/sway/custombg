@@ -42,7 +42,8 @@ set() {
 	fi
 
 	killall swaybg &>/dev/null
-	swaymsg output '*' bg "$bg" fill
+	# swaymsg output '*' bg "$bg" fill
+	swaymsg exec "swaybg -i $bg -m fill &>/dev/null"
 }
 
 save() {

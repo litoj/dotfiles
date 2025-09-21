@@ -33,7 +33,7 @@ map('n', '<A-R>', '<Cmd>MarpToggle<CR><CR>')
 map(
 	{ 'n', 'i' },
 	'<A-r>',
-	'<C-s><Cmd>!$BROWSER --new-tab (compiler "%:p") & && swaymsg [app_id="$BROWSER"] focus<CR><CR>',
+	'<C-s><Cmd>!$BROWSER --new-tab (compiler "%:p") & sleep 1 && swaymsg [app_id="$BROWSER"] focus<CR><CR>',
 	{ buffer = true, remap = true }
 )
 map(

@@ -31,7 +31,7 @@ set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider'
 set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
-	$Mod+1 exec $lof firefox '[app_id=firefox]'
+	$Mod+1 exec $lof 'firefox --MOZ_LOG_FILE=/dev/null' '[app_id=firefox]'
 	$Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
 	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada && sleep 0.5 \
 		&& swaymsg mark work' '[con_mark=work]'

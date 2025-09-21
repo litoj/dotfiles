@@ -9,7 +9,7 @@ mainDir=$PWD
 SSS_OPTS[about]='This program was made to simplify my linux reinstallations.'
 SCRIPT_OPTS[argPicker]=1
 
-if ! which paru &>/dev/null; then
+if [[ ! -f /bin/paru ]]; then
 	log Info 'Installing paru AUR helper.'
 	exec sudo pacman --needed -S git base-devel cargo
 	git clone https://aur.archlinux.org/paru-bin.git
@@ -259,7 +259,7 @@ themingParams=(
 theming() {
 	log Info ""
 
-	which unzip &>/dev/null || exec paru --noconfirm -S unzip
+	[[ -f /bin/unzip ]] || exec paru --noconfirm -S unzip
 	cd ../theming
 	for f in *.tar.*; do exec tar -xf "$f"; done
 

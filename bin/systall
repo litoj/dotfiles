@@ -4,6 +4,7 @@
 
 cd "${0%systall}."
 mainDir=$PWD
+repoDir=${PWD%/*}
 
 . sss
 SSS_OPTS[about]='This program was made to simplify my linux reinstallations.'
@@ -145,7 +146,7 @@ installBasics() {
 	exec sudo systemctl enable NetworkManager ufw acpid
 	exec sudo mkdir -p /etc/acpi/events
 
-	exec sudo ln -s "$PWD"/bin/* /usr/local/bin/ && {
+	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/ && {
 		sudo rm /usr/local/bin/${0##*/}
 		exec sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
 		exec sudo chmod +s /usr/local/bin/backlight
@@ -224,15 +225,13 @@ actionInfo configs 'link config files to these dotfiles'
 configs() {
 	log Info " - Linking base configs."
 
-	ln -s "$PWD"/.bashrc ~/
-	ln -s "$PWD"/.gitconfig ~/
+	ln -s "${repoDir}"/.{bashrc,gitconfig} ~/
 	mkdir -p ~/.config
-
-	ln -s "$PWD"/.config/* ~/.config/
+	ln -s "${repoDir}"/.config/* ~/.config/
 	bat cache --build
 
 	mkdir -p ~/.local/share/applications/
-	ln -s "$PWD"/other/*.desktop ~/.local/share/applications/
+	ln -s "${repoDir}"/other/*.desktop ~/.local/share/applications/
 	local mimes=($(sed -n 's/^MimeType=//;s/;/ /gp' ../other/opener.desktop))
 	for mime in ${mimes[@]}; do
 		xdg-mime default opener.desktop $mime

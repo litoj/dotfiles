@@ -1,0 +1,54 @@
+#!/usr/bin/bash
+
+rep=${REPORTFILE:-$HOME/Documents/school/Bakal/workreport.md}
+
+sumWeek() {
+	sed 's/^[^=]*= \([0-9.]\+\)/= \1/;s/;[^=]*= \([0-9.]\+\)/\n= \1/g' "$rep" |
+		awk '/^[0-9]/ || /[WM]/ {x=0}; /^=/  {x+=+$2}; END {print x}'
+}
+
+sumMonth() {
+	awk '/^[0-9]/ || /M/ {x=0}; /W/ {x+=$3}; END {print x}' "$rep"
+}
+
+sumAll() {
+	local week=$(sumWeek) month=$(sumMonth) pastMonths=$(
+		awk '/M/ {x+=$3}; END {print x}' "$rep"
+	)
+	bc <<<"scale=2;$week+$month+$pastMonths"
+}
+
+if [[ -z $1 ]]; then
+	sumAll
+	exit
+else
+	start=$(date +%H:%M)
+	"$@"
+	((SECONDS < 300 )) && exit
+	dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
+fi
+
+last=$(tail -n 1 "$rep")
+read today < <(date +%e)
+if [[ $last == *[^=]" $today."* ]]; then # append to current day
+	head -n -1 "$rep" >/tmp/wrep
+	echo "$last; $dur" >>/tmp/wrep
+	mv /tmp/wrep "$rep"
+else
+	last="${last/. */}"
+	last=${last#*- }
+
+	thisMonth=$(date +%m) # expecting same month from prev year to have been summed (no 1y gap)
+	newMonth=$(awk "BEGIN {x=1} /^$thisMonth/ {x=0}; /M$thisMonth/ {x=1}; END {print x}" "$rep")
+	thisWeek=$(date +%W)
+
+	if ((newMonth || last < today - $(date +%u))); then # sum up past day
+		echo "- W$thisWeek: $(sumWeek)" >>"$rep"
+	fi
+	if ((newMonth)); then # month
+		echo "- M$thisMonth: $(sumMonth)" >>"$rep"
+		date +%m. >>"$rep" # mark beginning of current month
+	fi
+
+	echo "  - $today. $dur" >>"$rep"
+fi

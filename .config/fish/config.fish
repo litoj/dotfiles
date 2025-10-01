@@ -161,7 +161,7 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go
 	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
-	export QT_QPA_PLATFORMTHEME=qt6ct RADV_PERFTEST=video_decode
+	export QT_QPA_PLATFORMTHEME=qt5ct RADV_PERFTEST=video_decode
 	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
 	export PATH="$HOME/.pyenv/shims:$PATH"
 	WLR_RENDERER=vulkan sway < /dev/null # to disable stdin and not cause term apps to open in tty

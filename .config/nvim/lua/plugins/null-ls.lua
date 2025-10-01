@@ -12,10 +12,11 @@ function M.config()
 			nls.builtins.formatting.stylua.with {
 				extra_args = function()
 					local cwd = vim.loop.cwd():gsub('/lua$', '')
-					for _, f in ipairs { '/.stylua.toml', '/stylua.toml', '/.editorconfig' } do
+					for _, f in ipairs { '/.stylua.toml', '/stylua.toml' } do
 						f = cwd .. f
 						if exists(f) then return {} end
 					end
+					if not vim.tbl_isempty(vim.b.editorconfig) then return {} end
 					return {
 						'--column-width=' .. vim.bo.textwidth,
 						'--indent-type=' .. (vim.bo.expandtab and 'Spaces' or 'Tabs'),
@@ -50,6 +51,7 @@ function M.config()
 			},
 			nls.builtins.formatting.shfmt.with {
 				extra_args = function()
+					if not vim.tbl_isempty(vim.b.editorconfig) then return {} end
 					return { '-ci', '-s', '-i', (vim.bo.expandtab and vim.bo.tabstop or 0) }
 				end,
 			},

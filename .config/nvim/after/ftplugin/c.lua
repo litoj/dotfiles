@@ -32,9 +32,17 @@ withMod('dap', function(dap)
 			request = 'launch',
 			cwd = '${workspaceFolder}',
 			program = function()
-				if exists 'main.out' then return 'main.out' end
-				local name = vim.api.nvim_buf_get_name(0)
-				return name:gsub('%.c$', '.out')
+				local name = vim.api.nvim_buf_get_name(0):sub(#vim.loop.cwd() + 2) -- relative path
+				local seek = {
+					'main.out',
+					name:gsub('[^/]+$', 'main.out'),
+					name:gsub('%.c$', '.out'),
+					name:gsub('%.c$', ''),
+				}
+				for _, main in ipairs(seek) do
+					if exists(main) then return main end
+				end
+				vim.notify('None of the expected executables found:\n' .. table.concat(seek, '\n'))
 				-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 			end,
 		},
@@ -42,7 +50,4 @@ withMod('dap', function(dap)
 	dap.configurations.cpp = dap.configurations.c
 end)
 
-withMod('mylsp', function(ml)
-	ml.setup 'clangd'
-	vim.cmd.LspStart 'clangd'
-end)
+withMod('mylsp', function(ml) ml.setup 'clangd' end)

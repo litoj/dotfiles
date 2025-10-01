@@ -27,7 +27,7 @@ bindsym {
 	$Mod+Return exec xterm
 }
 set $Msg '[T]hunderbird [D]iscord [S]lack'
-set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider'
+set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider [W]inVM'
 set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
@@ -52,6 +52,8 @@ mode $Msg {
 		Escape mode default
 	}
 }
+set $BindFree "Binding-free mode - Al+Esc / NumLock to cancel"
+bindsym Num_Lock mode $BindFree
 mode $IDE {
 	bindsym {
 		i mode default, exec idea
@@ -60,9 +62,15 @@ mode $IDE {
 		n mode default, exec netbeans
 		a mode default, exec JAVA_HOME=/opt/android-studio/jbr android-studio
 		e mode default, exec gtk-launch ea
+		w mode $BindFree, \
+			exec VirtualBoxVM --startvm c277c887-e9ec-4d3c-8645-340edee7fb80 && swaymsg mode default
 		q mode default
 		Escape mode default
 	}
+}
+mode $BindFree {
+	bindsym $Alt+Escape mode default
+	bindsym Num_Lock mode default
 }
 mode $Media {
 	bindsym {
@@ -365,7 +373,7 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom -DGA -p
-	$Mod+$Alt+m exec mom -DGA -pLras
+	$Mod+$Alt+m exec mom -DGA -pLra3s
 	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"

@@ -18,19 +18,19 @@ vim.diagnostic.config {
 	},
 }
 
-local lsc = require 'lspconfig'
-local lsu = require 'lspconfig.util'
-
-lsu.default_config.capabilities = vim.tbl_deep_extend(
-	'force',
-	lsu.default_config.capabilities,
-	require('cmp_nvim_lsp').default_capabilities()
+vim.lsp.config(
+	'*',
+	{ capabilities = require('cmp_nvim_lsp').default_capabilities() }
 	-- ../plugins/ufo.lua
 	-- { textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
 )
 
-lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(opts)
-	opts.on_attach = lsu.add_hook_before(opts.on_attach, function(client, bufnr)
+local function setup(server, opts)
+	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
+	if not server then return opts end
+
+	local on_attach = opts.on_attach
+	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
 		-- custom settings for dynamic capability override
 		if client.server_capabilities.documentFormattingProvider then
@@ -47,19 +47,19 @@ lsu.on_setup = lsu.add_hook_before(lsu.on_setup, function(opts)
 				end
 			end
 		end
-	end)
-end)
 
-local function setup(server, opts)
-	if server and lsc[server].autostart ~= nil then return end
-	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
-	return server and lsc[server].setup(opts) or opts
+		if on_attach then on_attach(client, bufnr) end
+	end
+
+	vim.lsp.config(server, opts)
+	vim.lsp.enable(server)
+	return opts
 end
 M.setup = setup
 
 setup 'bashls'
 setup 'pyright'
-setup 'volar'
+setup 'vue_ls'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
 -- setup 'jsonls'

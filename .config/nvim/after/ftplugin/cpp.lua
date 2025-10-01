@@ -40,7 +40,4 @@ withMod('dap', function(dap)
 	}
 end)
 
-withMod('mylsp', function(ml)
-	ml.setup 'clangd'
-	vim.cmd.LspStart 'clangd'
-end)
+withMod('mylsp', function(ml) ml.setup 'clangd' end)

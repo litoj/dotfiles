@@ -92,13 +92,13 @@ require('mylsp').setup('eslint', {
 return {
 	format = false,
 	folding = true,
-	root_dir = require('lspconfig.util').root_pattern(
+	root_markers = {
 		'src',
 		'package.json',
 		'tsconfig.json',
 		'jsconfig.json',
-		'.git'
-	),
+		'.git',
+	},
 	init_options = {
 		suggestFromUnimportedLibraries = false,
 		closingLabels = true,

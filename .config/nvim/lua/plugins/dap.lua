@@ -40,7 +40,12 @@ function M.config()
 					if arg:sub(-1) == '\\' then concat = true end
 				end
 				if args[#args - 1] == '<' then
-					config.stdio = { args[#args], nil, nil }
+					if exists(args[#args]) then
+						config.stdio = { args[#args], nil, nil }
+					else
+						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.loop.cwd() .. '`')
+						return
+					end
 					args[#args] = nil
 					args[#args] = nil
 				end
@@ -78,12 +83,18 @@ function M.config()
 				size = 0.25,
 				position = 'right',
 			},
-			{ elements = { { id = 'console', size = 1 }, --[[ {id = 'repl', size = 0.5} ]] }, size = 0.3, position = 'bottom' },
+			{
+				elements = {
+					{ id = 'console', size = 1 }, --[[ {id = 'repl', size = 0.5} ]]
+				},
+				size = 0.3,
+				position = 'bottom',
+			},
 		},
 		mappings = {
 			expand = { '<RightMouse>', 'o', '<CR>', '<Left>', 'l' },
 			remove = { 'D', '<Del>' },
-			edit = { 'R', 'E', '<S-CR>', 'e' },
+			edit = { 'R', 'E', '<S-CR>', 'e', 'i' },
 			open = { 'O', '<A-CR>', '<Left>', 'l' },
 			toggle = 'T',
 		},

@@ -11,7 +11,7 @@ setTheme() {
 	shopt -s nullglob
 	local todo=(/dev/pts/*)
 	if [[ $todo ]]; then # use nerdcontrast to generate terminal colors
-		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity='cc'}" -c q 2>/tmp/term >/dev/null
+		nvim -i NONE --headless -c "lua require'nerdcontrast'.setup{opacity=require'nerdcontrast'.config.dark.opacity}" -c q 2>/tmp/term >/dev/null
 		for f in "${todo[@]}"; do
 			[[ -O $f ]] && echo "$(</tmp/term)" >"$f"
 		done

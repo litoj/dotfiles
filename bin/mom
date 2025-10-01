@@ -209,6 +209,7 @@ determineOut() {
 		out=$dst
 		return
 	elif [[ -d $dst ]]; then # for directory dst use src as the name
+		dst=${dst%/}
 		[[ $ext ]] || ext=${src##*.}
 	elif [[ $dst == *.* ]]; then # use the name but dst for dir and ext
 		ext=${dst##*.}
@@ -217,7 +218,7 @@ determineOut() {
 		log Error ".dst: unexpected value format '$dst'"
 	fi
 	mkdir -p $dst
-	out=${dst%/}/${src##*/}
+	out=${dst}/${src##*/}
 	out=${out%.*}.$ext
 	if ((rename > 0)); then
 		out=$(NO_CONFIG=0 call rename --print-only "$src" "$dst/.$ext")
@@ -239,8 +240,6 @@ runCmdWithCleanup() {
 	stripPWD src
 	stripPWD out
 	exec "${cmd[@]}" "$out" && if ((deleteSrc > 0)); then
-		[[ $out == */* ]] || out=$PWD/$out
-		[[ $src == */* ]] || src=$PWD/$src
 		local name=${src%.*}
 		if [[ -z $dst && $out == "${name%_*}"_*.${src##*.} ]]; then # move if name is the same
 			exec mv "$out" "$src"
@@ -708,14 +707,15 @@ lua
 
 actionInfo subtitles 'convert mp4 with srt to mkv'
 subtitlesParams=(
-	deleteSrc 'd?' '' 'Delete used files'
-	keepSrcSubs 's?' '' 'Keep original video subtitles - use if added subs are not visible'
-	keepDefaults 'D?' '' 'Keep default sub selection, or set to the first added'
+	deleteSrc 'd?' '' 'Delete used files and subtitles'
+	keepSrcSubs 's?' '' 'Keep original video file subs (disable if added subs are invisible)'
+	defaultSubs 'D?' '[0-9]*' 'Set default subs track, -1 to leave unchanged (default=first added)'
 	lang 'l*' '[a-z]+' 'Languages in order of provided subtitles (default={name}.srt|eng per sub)'
 	# encoding '-e' "${REGEX[dashvar]}" 'wanted final encoding (requires `enca`; default=UTF-8)'
+	rename 'r?' '' 'Rename using rename action, file $dst has priority'
 	subs '$*' '$f\.srt' 'Subtitles to add (default=*.srt)'
 	vid '$?' "${MIME_TYPES['video']}" 'Source video file (default=first of `*.mp4`,`*.mkv`)'
-	dst '$?' '$D\.mkv' 'Output file (default=`$vid.mkv`)')
+	dst '$?' '$d$D\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
 subtitles() {
 	if [[ -z $subs ]]; then
@@ -724,10 +724,9 @@ subtitles() {
 			local match=${vid@L}
 			match=${match%.*}.srt
 			match=${match##*/}
-			subs=()
 			for src in *.srt; do
 				if [[ ${src@L} == "$match" ]]; then
-					local subs=$src
+					local subs=("$src")
 					break
 				fi
 			done
@@ -771,8 +770,11 @@ subtitles() {
 		# fi
 		cmd+=(-i "$sub")
 	done
+	# add video as the last source to simplify subtitle track indexes
 	cmd+=(-i "$vid" -map $len:a -map $len:v -c copy)
-	((keepSrcSubs > 0)) && ffprobe "$vid" |& grep Subtitle &>/dev/null && cmd+=(-map $len:s)
+
+	declare -i origSubCount=$(ffprobe "$vid" |& grep Subtitle | wc -l)
+	((keepSrcSubs > 0 && origSubCount > 0)) && cmd+=(-map $len:s)
 
 	[[ $lang ]] || local lang=()
 	for ((i = 0; i < len; i++)); do
@@ -781,19 +783,15 @@ subtitles() {
 			[[ $sub == [a-z][a-z][a-z].srt ]] && lang[i]=${sub%.srt} || lang[i]=eng
 			log Info "['${subs[i]/*\//…/}'].lang = ${lang[i]}"
 		fi
-		cmd+=(-metadata:s:s:$i language=${lang[i]} -map $i)
+		cmd+=(-map $i -metadata:s:s:$i language=${lang[i]})
 	done
 
-	((keepDefaults > 0)) || cmd+=(-disposition:s:0 default)
-	if [[ -z $dst ]]; then
-		local dst=${vid%.*}.mkv
-		[[ -f $dst ]] && dst="${vid%.*} $lang-sub.mkv"
-	fi
-	local tmp=$(ACTION+=.tmpFile getFreePath "/tmp/mom-${dst##*/}")
-	cmd+=("$tmp")
+	((defaultSubs > 0)) && cmd+=(-disposition:s:$((defaultSubs - 1)) default)
+	local src=$vid ext=mkv out dst=${dst}
+	determineOut
 
-	exec "${cmd[@]}" && exec mv "$tmp" "$dst" && if ((deleteSrc > 0)); then
-		exec rm "${subs[@]}" "$vid"
+	runCmdWithCleanup && if ((deleteSrc > 0)); then
+		exec rm "${subs[@]}"
 	fi
 }
 
@@ -957,7 +955,7 @@ linkFix() {
 actionInfo resize 'resize images'
 resizeParams=(
 	deleteSrc 'd?' '' 'Delete $src file'
-	rename 'r?' '' 'If output should be renamed according to its exif data'
+	rename 'r?' '' 'Rename using rename action, file $dst has priority'
 	src '$+' "${MIME_TYPES['image']}" 'Files to convert'
 	quality 'q?' '[0-9]+' 'Change image quality (default=imagemagick default)'
 	predicate 'p*' '[0-9]+%?[+-]' 'Source size requirement, pixels or % of the target size
@@ -1044,7 +1042,7 @@ renameParams=(
 	allowOverwrite 'o?' '' 'Allow renaming to itself in printOnly mode (default=true)'
 	printOnly 'p?' '' 'Print the final dst instead of moving'
 	src '$+' "\$d${MIME_TYPES['image']}${MIME_TYPES['audio']}${MIME_TYPES['video']}" 'File to rename'
-	dst '$?' '$d$D' 'Output file / dir with target extension (default=$src)'
+	dst '$?' '$d$D' 'Output file / dir with target extension (default=$(basename $src)/…)'
 )
 renameConfig=(
 	format=${MIME_TYPES['audio']}:'$Artist - $Title'
@@ -1060,14 +1058,6 @@ rename() {
 	if [[ ${#src[@]} -gt 1 && -d ${src[-1]} && -z $dst ]]; then # dst dir parsed as src
 		local dst=${src[-1]}
 		src=("${src[@]::${#src[@]}-1}")
-	fi
-	if [[ -z $ext ]]; then
-		local out= ext= dst=${dst:-.}
-		if [[ $dst == *.?* ]]; then
-			rename=-1 determineOut # extract the extension from dst
-		fi
-
-		[[ $dst == / ]] || dst=${dst%/}
 	fi
 
 	if [[ ${#src[@]} -gt 1 || -d $src ]]; then
@@ -1108,10 +1098,6 @@ rename() {
 	done
 	log Debug ".sed = '$sed'"
 
-	local ext=${ext:-${src##*.}}
-	ext=${ext,,}
-	[[ $ext == jpeg ]] && ext=jpg
-
 	local name=''
 	if [[ $exif ]] && {
 		{ # exiftool
@@ -1146,10 +1132,11 @@ rename() {
 			[[ $name ]]
 		}
 	}; then
-		local out=${name##*/}.$ext
+		local out= ext= dst=${dst:-.}
+		rename=-1 determineOut # extract the extension from dst
+		out=${out%/*}/${name##*/}.${ext/jpeg/jpg}
 
-		[[ -d ${dst:-${src%/*}} ]] && out="${dst:-${src%/*}}/$out"
-		# ensure absolute paths for name identity checking
+		# ensure shortest path versions for identicity checking
 		stripPWD src
 		stripPWD out
 

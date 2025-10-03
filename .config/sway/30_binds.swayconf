@@ -31,7 +31,7 @@ set $IDE '[I]dea [N]etbeans [A]ndroid [E]Architect [D]ataGrip [R]ider [W]inVM'
 set $Media '[G]imp [D]arktable [T]witch [M]usic'
 set $lof ~/.config/sway/lof
 bindsym --to-code {
-	$Mod+1 exec $lof 'firefox --MOZ_LOG_FILE=/dev/null' '[app_id=firefox]'
+	$Mod+1 exec $lof 'firefox --MOZ_LOG_FILE=/dev/null &>/dev/null' '[app_id=firefox]'
 	$Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
 	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada \
 		&& sleep 0.5 && swaymsg mark work' '[con_mark=work]'
@@ -372,9 +372,11 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -DGA -p
-	$Mod+$Alt+m exec mom -DGA -pLra3s
-	$Mod+Ctrl+$Alt+m exec mom -p "$($info '{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
+	$Mod+m exec mom -DGA -play
+	$Mod+Shift+m exec mom -DGA -play -r
+	$Mod+$Alt+m exec mom -DGA -play -ra3s +l
+	$Mod+Ctrl+$Alt+m exec mom -play "$($info\
+		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15

@@ -5,7 +5,8 @@ wtwitch() {
 	# ORIGINAL SOURCE: https://github.com/krathalan/wtwitch
 	# THIS VERSION IS STRIPPED DOWN FOR ONLY GETTING VOD INFO
 
-	declare token -i expiry
+	declare token
+	declare -i expiry
 	declare -Ai streamerIds
 	local CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/wtwitch.cache.sh"
 	local T=("https://api.twitch.tv/helix" "https://id.twitch.tv/oauth2/token" "cotxsalhlctv8z572f7fant4b0sc3u" "gaofxvult280l3sbz8n6btvk5fdswp")

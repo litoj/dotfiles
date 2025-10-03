@@ -812,65 +812,61 @@ pickSong() {
 
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
-	NO_LOOP 'L?' '' 'Do not loop playlist'
+	loop 'l?' '' 'Loop playlist (default=true when playing folders)'
 	disown 'd?' '' 'Run as a separate process with no controlls (default=true for GUI use)'
 	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
-	'(default=true=mpv --shuffle); a<f>= <f> picks per artist/final dir;
+	'(default=false) true=mpv --shuffle; a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$+' '$e' 'Play files or dirs')
 declare -A playBuilder=([src]=pickSong)
 play() {
 	local disown=${disown:-${SCRIPT_OPTS[guiPicker]}}
-	local playlistFile=/tmp/my/song
+	local playlistFile=/tmp/mom-$ACTION
 	local cmd=(mpv --no-audio-display --playlist="$playlistFile")
 	exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
-	((NO_LOOP > 0)) || cmd+=(--loop-playlist)
 
 	[[ -f $playlistFile ]] && exec rm "$playlistFile"
 
 	declare -i files
-	cmd+=(--playlist-start=0)
-	local firstSrc=$src # to not loose track when passing args further
-	for src in "${src[@]}"; do
-		if [[ -f $src ]]; then
-			exec echo "$src" \>\> "$playlistFile"
+	local tmp
+	for tmp in "${src[@]}"; do
+		if [[ -f $tmp ]]; then
+			[[ $tmp == /* ]] || tmp=$PWD/$tmp
+			exec echo "$tmp" \>\> "$playlistFile"
 			((files += 1))
 		fi
 	done
-	src=$firstSrc
 
-	if [[ -f $src && $files == 1 ]]; then # expand the directory, if it was the only file arg
-		src=${src%/*}
-	fi
+	((loop > 0 || loop == 0 && files <= 1)) && cmd+=(--loop-playlist)
+	# expand the directory, if it was the only file arg
+	[[ -f $src && $files == 1 ]] && src=${src%/*}
 
-	firstSrc=$src
-	for src in "${src[@]}"; do
-		if [[ $multipleFiles ]]; then
-			: # play just selected files without further PWD addition
-		elif [[ $randomizer == [da]* ]]; then
+	((files <= 1)) && for tmp in "${src[@]}"; do
+		[[ $tmp == /* ]] || tmp=$PWD/$tmp
+		if [[ $randomizer == [da]* ]]; then
 			local artistDirs=() d f
-			while read -r d; do # filter out dirs with no files
-				for f in "$d"/*; do
+			while read -r d; do  # filter out dirs with no files
+				for f in "$d"/*; do # ensure the folder has files to play
 					if [[ -f $f ]]; then
 						artistDirs+=("$d")
 						break
 					fi
 				done
-			done < <(fd '' -Lt d "$src")
-			[[ $artistDirs ]] || artistDirs=("$src")
+			done < <(fd '' -Lt d "$tmp")
+			[[ $artistDirs ]] || artistDirs=("$tmp")
 
+			local matcher="${MIME_TYPES['audio']}" # for argMatch
 			function pickFromDir() {
 				if ((perDir >= $#)); then
 					echo "$@" | exec sort -R \>\> "$playlistFile"
 					return
 				fi
 				declare -i cnt=$perDir pick
-				while ((cnt--)); do
+				while ((cnt)); do
 					((pick = RANDOM % $#))
-					if matcher="${MIME_TYPES['audio']}" argMatch "${!pick}"; then
+					if argMatch "${!pick}"; then
 						exec echo "${!pick}" \>\> "$playlistFile"
-					else
-						((cnt++))
+						cnt+=-1
 					fi
 				done
 			}
@@ -888,21 +884,21 @@ play() {
 					pickFromDir "${d%/}"/*
 				done
 			fi
-		elif [[ -d $src ]]; then
-			exec fd -tf -tl '' "$src" \>\> "$playlistFile"
+		elif [[ -d $tmp ]]; then
+			exec fd -tf -tl '' "$tmp" \>\> "$playlistFile"
 		else
-			exec echo "$src" \>\> "$playlistFile"
+			exec echo "$tmp" \>\> "$playlistFile"
 		fi
 	done
-	[[ $randomizer == *s || $randomizer -ge 0 ]] && cmd+=(--shuffle)
+	[[ $randomizer == *s || $randomizer -gt 0 ]] &&
+		cmd+=(--shuffle) || cmd+=(--playlist-start=0)
 
 	if ((disown <= 0)); then
 		exec "${cmd[@]}"
 	else
 		cmd+=(--no-terminal)
 		if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
-			src=$firstSrc
-			exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
+			exec mdo"${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
 		else # for whatever reason cmds launched via terminal, but from desktop ignore disown
 			log Verbose && log Verbose " \$> ${cmd[*]} &"
 			nohup "${cmd[@]}" &>/dev/null &

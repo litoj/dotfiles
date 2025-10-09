@@ -203,12 +203,12 @@ map('x', '<Tab>', function() -- simple indentation changer ('>' cancels visual m
 	local lines = vim.api.nvim_buf_get_lines(0, from - 1, to, true)
 	for i, line in ipairs(lines) do
 		local indent = line:match '^%s'
-		if not indent then
+		if not indent and #line > 0 then
 			indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
-		elseif indent == ' ' then
+		elseif indent == ' ' then -- add the appropriate amount of spaces to shift by 1 level
 			indent = string.rep(' ', vim.bo.sw)
 		end
-		lines[i] = indent .. line
+		if indent then lines[i] = indent .. line end
 	end
 	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
 end)
@@ -222,8 +222,7 @@ map('x', '<S-Tab>', function()
 	local lines = vim.api.nvim_buf_get_lines(0, from - 1, to, true)
 	for i, line in ipairs(lines) do
 		local indent = line:match '^%s'
-		if not indent then return end
-		lines[i] = line:sub((indent == ' ' and vim.bo.sw or 1) + 1)
+		if indent then lines[i] = line:sub((indent == ' ' and vim.bo.sw or 1) + 1) end
 	end
 	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
 end)

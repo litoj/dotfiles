@@ -10,6 +10,7 @@ presets=(
 	's=82/1280.jxl'
 	'l=78/800^.jxl'
 	'w=51/1.avif' #whatsapp quality
+	'n=95/1350.jpg' # iNstagram
 )
 for preset in "${presets[@]}"; do
 	[[ $preset =~ ^(.)=(..)/([^.]*)(\..*)$ ]]

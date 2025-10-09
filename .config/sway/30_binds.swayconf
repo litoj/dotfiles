@@ -47,8 +47,8 @@ bindsym --to-code {
 mode $Msg {
 	bindsym {
 		t mode default, exec thunderbird &>/dev/null
-		s mode default, exec slack --ozone-platform=wayland \
-			--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer
+		s mode default, exec slack -g warning \ #--ozone-platform=wayland \
+			--enable-features=WebRTCPipeWireCapturer,WaylandWindowDecorations
 		Escape mode default
 	}
 }

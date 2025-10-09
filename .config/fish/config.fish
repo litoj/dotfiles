@@ -150,9 +150,10 @@ function fish_user_key_bindings
 end
 
 if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
-	eval (ssh-agent | head -2 | sed 's/\(.*\)=\(.*\);/set \1 \2;/')
+	export (ssh-agent | sed -n 's/^\([^ ]*\);.*/\1/p')
 	export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
 	export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
+	export WINDEDEBUG=-all
 	# for '~' expansion
 	set -x XDG_CONFIG_HOME ~/.config
 	set -x XDG_CACHE_HOME ~/.cache

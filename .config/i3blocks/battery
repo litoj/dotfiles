@@ -1,8 +1,9 @@
 #!/usr/bin/bash
-bat=(/sys/class/power_supply/BAT*/uevent)
-mapfile tmp <"${bat[${BAT:-0}]}"
-# set the variables defined inside (same as reading each variable file)
-eval "${tmp[*]//POWER_SUPPLY_/}"
+bat=(/sys/class/power_supply/BAT*)
+read STATUS < "$bat/status"
+read ENERGY_NOW < "$bat/energy_now"
+read POWER_NOW < "$bat/power_now"
+read CAPACITY < "$bat/capacity"
 
 if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then
 	echo " $CAPACITY%"

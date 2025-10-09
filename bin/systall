@@ -148,7 +148,7 @@ installBasics() {
 
 	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/ && {
 		sudo rm /usr/local/bin/${0##*/}
-		exec sudo gcc -O3 other/backlight.c -o /usr/local/bin/backlight
+		exec sudo gcc -O3 -flto -march=native other/backlight.c -o /usr/local/bin/backlight
 		exec sudo chmod +s /usr/local/bin/backlight
 	}
 }

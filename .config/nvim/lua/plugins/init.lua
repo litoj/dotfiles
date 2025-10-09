@@ -1,9 +1,18 @@
 return {
+	{
+		'nvzone/typr',
+		dependencies = 'nvzone/volt',
+		opts = {},
+		cmd = { 'Typr', 'TyprStats' },
+	},
 	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
 		'neovim/nvim-lspconfig',
-		dependencies = 'hrsh7th/cmp-nvim-lsp',
+		dependencies = {
+			'hrsh7th/cmp-nvim-lsp',
+			'j-hui/fidget.nvim',
+		},
 		event = 'VeryLazy',
 		config = function() require 'mylsp' end,
 	},

@@ -45,7 +45,7 @@ smart_gaps on
 
 assign [app_id=".*transmission.*"] $w1
 assign [app_id="firefox"] $wBrowser
-assign [class="NetBeans|jetbrains-.*|ea.exe"] $wCode
+assign [class="NetBeans|jetbrains-.*|ea.exe|VirtualBox.*"] $wCode
 assign [app_id="mpv|gimp|Inkscape|darktable"] $wMedia
 assign [app_id="thunderbird|tutanota-desktop|Slack"] $wMsg
 assign [title="^Minecraft.? 1\.[0-9.]+$"] $wGame

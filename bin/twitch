@@ -117,15 +117,13 @@ done
 if ((i < max)); then
 	swaymsg 'exec $floatpos r snap && $floatpos d snap && swaymsg focus tiling'
 
+	# set the watched streamer to the front
 	[[ $streamers == $streamer || $streamer == http* ]] && exit 0
-
-	i=1
+	i=1 # find the index of the streamer
 	len=${#streamers[@]}
 	while [[ ${streamers[$i]} != $streamer ]] && ((++i < len)); do
 		:
 	done
-
-	# set the watched streamer to the front
 	streamers=($streamer ${streamers[@]:0:i} ${streamers[@]:i+1})
 	echo "streamers=(${streamers[*]})" >"$CONFIG_FILE"
 else

@@ -31,10 +31,10 @@ textype() {
 		file="$dir/prace.tex"
 	fi
 	bibtex "$basename" >&2
-	command="pdflatex -shell-escape -file-line-error"
-	(sed 5q "$file" | grep -i -q 'xelatex' > /dev/null) && command="xelatex"
+	command="lualatex --shell-escape --file-line-error"
+	# (sed 5q "$file" | grep -i -q 'xelatex' > /dev/null) && command="xelatex"
 	$command --output-directory="$dir" "$base" >&2 &&
-		grep -i addbibresource "$file" > /dev/null &&
+		grep -i addbibresource "$file" >/dev/null &&
 		$command --output-directory="$dir" "$base" >&2
 	echo "$base.pdf"
 }

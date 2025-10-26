@@ -40,10 +40,11 @@ function M.config()
 					if arg:sub(-1) == '\\' then concat = true end
 				end
 				if args[#args - 1] == '<' then
-					if exists(args[#args]) then
-						config.stdio = { args[#args], nil, nil }
+					local file = require('reform.util').real_file(args[#args])
+					if file then
+						config.stdio = { file, nil, nil }
 					else
-						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.loop.cwd() .. '`')
+						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.fn.getcwd() .. '`')
 						return
 					end
 					args[#args] = nil

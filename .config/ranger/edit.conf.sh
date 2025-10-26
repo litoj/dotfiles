@@ -23,7 +23,7 @@ try @gimp +image
 
 try 'mom cut' .MOV ^VID_.*
 try 'mom edit --delete-src --pick-all' +audio .flac .opus .m4a .mp3 .wav .wma
-try 'mom subtitles --delete-src' .srt .mp4
+try 'mom subtitles --delete-src' .srt .mp4 || try 'mom cut' .mp4
 
 try 'jupyter nbconvert --to script' .ipynb
 

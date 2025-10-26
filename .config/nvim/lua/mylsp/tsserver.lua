@@ -17,7 +17,7 @@ withMod('dap', function(dap)
 			processId = function()
 				return require('dap.utils').pick_process { filter = '^%S*node.*--inspect' }
 			end,
-			cwd = vim.loop.cwd(),
+			cwd = vim.fn.getcwd(),
 			sourceMaps = true,
 		},
 		{
@@ -40,7 +40,7 @@ withMod('dap', function(dap)
 					end)
 				end) ]]
 			end,
-			webRoot = vim.loop.cwd(),
+			webRoot = vim.fn.getcwd(),
 			protocol = 'inspector',
 			sourceMaps = true,
 			userDataDir = false,

@@ -62,8 +62,7 @@ mode $IDE {
 		n mode default, exec netbeans
 		a mode default, exec JAVA_HOME=/opt/android-studio/jbr android-studio
 		e mode default, exec gtk-launch ea
-		w mode $BindFree, \
-			exec VirtualBoxVM --startvm c277c887-e9ec-4d3c-8645-340edee7fb80 && swaymsg mode default
+		w mode default, exec VirtualBoxVM --startvm c277c887-e9ec-4d3c-8645-340edee7fb80
 		q mode default
 		Escape mode default
 	}
@@ -77,7 +76,6 @@ mode $Media {
 		g mode default, exec gimp
 		d mode default, exec RUSTICL_ENABLE=radeonsi darktable >/dev/null
 		t mode default, exec twitch
-		m mode default, exec xterm mom
 		q mode default
 		Escape mode default
 	}
@@ -172,8 +170,8 @@ bindsym {
 	Ctrl+KP_Right focus output right
 # focus workspace
 	KP_Add workspace back_and_forth
-	KP_Home workspace next
-	KP_End workspace prev
+	KP_Home workspace prev
+	KP_End workspace next
 
 #-----------+
 # Left Hand |

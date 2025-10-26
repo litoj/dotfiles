@@ -51,6 +51,10 @@ local function setup(server, opts)
 		if on_attach then on_attach(client, bufnr) end
 	end
 
+	if opts.root_markers then
+		vim.list_extend(opts.root_markers, vim.lsp.config[server].root_markers)
+	end
+	opts = vim.tbl_deep_extend('keep', opts, vim.lsp.config[server])
 	vim.lsp.config(server, opts)
 	vim.lsp.enable(server)
 	return opts

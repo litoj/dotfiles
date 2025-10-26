@@ -19,22 +19,109 @@ if [[ ! -f /bin/paru ]]; then
 	cd "$mainDir"
 fi
 
-actionInfo full 'do full system installation - minimal, or full'
-fullParams=(
-	minimal 'm?' '' 'Setup everything but no dev/latex/guis packages'
+### Action section
+SYSTALL_ACTION_IDX=${#ACTION_ORDER[@]}
+
+pickHostname() {
+	[[ -f /etc/hostname ]] && hostname=$(</etc/hostname) || pickValue "$@"
+}
+
+pickLocale() {
+	local _locales=($(grep -o '[a-zA-Z_]\+\.UTF-8' /etc/locale.gen))
+	choiceList=_locales pickFromList "$@"
+}
+
+actionInfo sysFiles 'write system files like environment, autologin, etc.'
+sysFilesParams=(
+	hostname 'h?' '[^ ]+' 'Set the system/host name'
+	locale 'l?' '[0-9A-Za-z_.-]+' 'Set locale by prefix'
+	exclude 'E*' '.+' 'Regex for excluding files from copying to system locations'
 )
-full() {
-	local action installed=0
-	for action in "${ACTION_ORDER[@]}"; do
-		if ((installed)); then # install action is the first declared -> we skip builtin actions
-			call "$action"
-		elif [[ $action == install ]]; then
-			local cmd=(call install --all)
-			((minimal > 0)) && "${cmd[@]}" --no-latex --no-dev --no-guis || "${cmd[@]}"
-			installed=1
+declare -A sysFilesBuilder=([hostname]=pickHostname [locale]=pickLocale)
+sysFiles() {
+	exec sudo echo "Setting up system files" || {
+		log Error ' - Failed to get root permissions'
+		return 1
+	}
+
+	if [[ ! -f /etc/hostname ]]; then
+		if [[ ! $hostname ]]; then
+			local hostname
+			pickHostname "${sysFilesParams[@]:0:4}"
+		fi
+
+		log Verbose ' - Saving hostname'
+		exec echo "$hostname" | exec sudo tee /etc/hostname >/dev/null
+	fi
+
+	# disable beep noise on empty backspace
+	# disable bluetooth (bluetooth.service off by default, install bluez + bluetuith to use)
+	exec printf 'blacklist pcspkr\nblacklist btusb\n' |
+		exec sudo tee /etc/modprobe.d/blacklist.conf >/dev/null
+
+	if [[ $lang ]]; then
+		[[ $locale == *.???* ]] && local reg=$locale || reg="$locale.*\.UTF-8"
+		local locales=($(sed -n "s/^#\?\($reg\) .*/\1/p" /etc/locale.gen))
+		if ((${#locales[@]} > 1)); then
+			log Warn " - Multiple locales found, picking the first: $locales"
+		elif ((${#locales[@]} == 0)); then
+			log Error " - No locales found matching '$reg' in /etc/locale.gen"
+		elif [[ $locale != $reg ]]; then
+			log Info " - Matched '$locale' to locale '$locales'"
+		fi
+
+		printf "LANG=$locales\n" | exec sudo tee /etc/locale.conf >/dev/null
+		exec sudo sed -i "s/^#\($locales\)/\1/" /etc/locale.gen
+		exec sudo locale-gen
+	fi
+
+	exec sudo ln -sf /usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime
+
+	declare -A regexes=()
+	local fileVar var
+	cd ../sys_files
+	for fileVar in *; do # initialize variable replacement sed expressions
+		regexes["$fileVar"]=""
+	done
+
+	while IFS=: read -ra fileVar; do # generate variable replacements
+		var=${fileVar[1]:2:-1}
+		if [[ ${!var} ]]; then
+			log Verbose " - Replacing {\$$var} with ${!var} in ${fileVar[0]}"
+		else
+			log Error " - Error processing $fileVar - \$$var not found"
+		fi
+
+		regexes["$fileVar"]+=";s/${fileVar[1]/'$'/'\$'}/${!var}/g"
+	done < <(grep -o '{\$\w\+}' *)
+
+	for var in "${!regexes[@]}"; do # put template system files to their locations
+		if [[ $exclude ]]; then
+			local expr
+			for expr in "${exclude[@]}"; do
+				if [[ $var =~ ${ex//\//-/} ]]; then
+					log Info " - Excluding '$var' from system files setup."
+					continue 2
+				fi
+			done
+		fi
+
+		fileVar="/${var//-/\/}"
+		exec mkdir -p "${fileVar%/*}"
+		if [[ ${regexes["$var"]} ]]; then
+			if [[ ${regexes["$var"]} != */root/g* ]]; then
+				exec sed "${regexes["$var"]:1}" "$var" | exec sudo tee "$fileVar" >/dev/null
+			else
+				log Warn ' - Autologin setup forbids using a root account - skipping.'
+			fi
+		else
+			exec sudo cp "$var" "$fileVar"
 		fi
 	done
+	cd "$mainDir"
 }
+
+### Package installation section
 
 pkgAdd() {
 	if [[ ${!1} ]]; then
@@ -102,9 +189,8 @@ basicsBundle=(
 	otf-stix
 	p7zip
 	pacman-contrib
-	pipewire-alsa
-	pipewire-jack
-	pipewire-pulse
+	pipewire-audio
+	pipewire-pulse # for firefox and pulsemixer
 	pulsemixer
 	python-pynvim
 	ranger
@@ -197,11 +283,11 @@ latexBundle=(
 
 actionInfo install 'install various package categories'
 installParams=(
-	basics 'b?' '' 'Basic and essential packages'
-	dev 'd?' '' 'Packages for development in neovim'
-	latex 'l?' '' 'Latex packages'
-	guis 'g?' '' 'GUI applications'
-	all 'a?' '' 'All listed categories'
+	basics 'b?' '' 'Install basic and essential packages'
+	dev 'd?' '' 'Install packages for development in neovim'
+	latex 'l?' '' 'Install LaTeX packages'
+	guis 'g?' '' 'Install GUI applications'
+	all 'a?' '' 'Install all listed categories'
 )
 install() {
 	paru -Sy
@@ -220,6 +306,8 @@ install() {
 		fi
 	done
 }
+
+### Config section
 
 actionInfo configs 'link config files to these dotfiles'
 configs() {
@@ -294,86 +382,19 @@ theming() {
 	cd "$mainDir"
 }
 
-pickHostname() {
-	[[ -f /etc/hostname ]] && hostname=$(</etc/hostname) || pickValue "$@"
-}
-
-pickLocale() {
-	local _locales=($(grep -o '[a-zA-Z_]\+\.UTF-8' /etc/locale.gen))
-	choiceList=_locales pickFromList "$@"
-}
-
-actionInfo sysFiles 'write system files like environment, autologin, etc.'
-sysFilesParams=(
-	hostname 'h!' '[^ ]+' 'Set the system/host name'
-	locale 'l?' '[0-9A-Za-z_.-]+' 'Set locale by prefix'
+actionInfo all 'perform all actions in order (specify options only via their full name)'
+allParams=(
+	"${sysFilesParams[@]}"
+	"${installParams[@]}"
+	"${configsParams[@]}"
+	"${themingParams[@]}"
 )
-declare -A sysFilesBuilder=([hostname]=pickHostname [locale]=pickLocale)
-sysFiles() {
-	exec sudo echo "Setting up system files" || {
-		log Error ' - Failed to get root permissions'
-		return 1
-	}
-	if [[ ! -f /etc/hostname ]]; then
-		log Verbose ' - Saving hostname'
-		exec echo "$hostname" | exec sudo tee /etc/hostname >/dev/null
-	fi
-
-	# disable beep noise on empty backspace
-	# disable bluetooth (bluetooth.service off by default, install bluez + bluetuith to use)
-	exec printf 'blacklist pcspkr\nblacklist btusb\n' |
-		exec sudo tee /etc/modprobe.d/blacklist.conf >/dev/null
-
-	if [[ $lang ]]; then
-		[[ $locale == *.???* ]] && local reg=$locale || reg="$locale.*\.UTF-8"
-		local locales=($(sed -n "s/^#\?\($reg\) .*/\1/p" /etc/locale.gen))
-		if ((${#locales[@]} > 1)); then
-			log Warn " - Multiple locales found, picking the first: $locales"
-		elif ((${#locales[@]} == 0)); then
-			log Error " - No locales found matching '$reg' in /etc/locale.gen"
-		elif [[ $locale != $reg ]]; then
-			log Info " - Matched '$locale' to locale '$locales'"
-		fi
-
-		printf "LANG=$locales\n" | exec sudo tee /etc/locale.conf >/dev/null
-		exec sudo sed -i "s/^#\($locales\)/\1/" /etc/locale.gen
-		exec sudo locale-gen
-	fi
-
-	exec sudo ln -sf /usr/share/zoneinfo-leaps/Europe/Prague /etc/localtime
-
-	declare -A regexes=()
-	local fileVar var
-	cd ../sys_files
-	for fileVar in *; do
-		regexes["$fileVar"]=""
+all() {
+	call define --arg-picker --opt-arg-picker
+	local action
+	for action in "${ACTION_ORDER[@]:SYSTALL_ACTION_IDX}"; do
+		call "$action"
 	done
-
-	while IFS=: read -ra fileVar; do
-		var=${fileVar[1]:2:-1}
-		if [[ ${!var} ]]; then
-			log Verbose " - Replacing {\$$var} with ${!var} in ${fileVar[0]}"
-		else
-			log Error " - Error processing $fileVar - \$$var not found"
-		fi
-
-		regexes["$fileVar"]+=";s/${fileVar[1]/'$'/'\$'}/${!var}/g"
-	done < <(grep -o '{\$\w\+}' *)
-
-	for var in "${!regexes[@]}"; do
-		fileVar="/${var//-/\/}"
-		exec mkdir -p "${fileVar%/*}"
-		if [[ ${regexes["$var"]} ]]; then
-			if [[ ${regexes["$var"]} != */root/g* ]]; then
-				exec sed "${regexes["$var"]:1}" "$var" | exec sudo tee "$fileVar" >/dev/null
-			else
-				log Warn ' - Autologin setup forbids using a root account - skipping.'
-			fi
-		else
-			exec sudo cp "$var" "$fileVar"
-		fi
-	done
-	cd "$mainDir"
 }
 
 main "$@"

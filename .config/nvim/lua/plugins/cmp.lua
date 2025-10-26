@@ -161,13 +161,9 @@ function M.config()
 			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
 			['<A-j>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
 			['<C-2>'] = select(2),
-			['<C-ě>'] = select(2),
 			['<C-3>'] = select(3),
-			['<C-š>'] = select(3),
 			['<C-4>'] = select(4),
-			['<C-č>'] = select(4),
 			['<C-5>'] = select(5),
-			['<C-ř>'] = select(5),
 		},
 		formatting = {
 			fields = { 'kind', 'abbr' },

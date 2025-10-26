@@ -36,13 +36,15 @@ map('i', '<C-S-V>', '<C-o>gP')
 map('n', '<C-v>', 'p')
 map('v', '<C-v>', '"ddP')
 map('v', '<C-S-V>', '"ddp')
-map('', 'c', '"dc')
+map('', 'c', '"dc') -- breaks avante ca (change accept)
 -- Deleting text
 map('i', '<C-d>', '<C-o>"ddd')
 map('n', '<C-d>', '"ddd')
 map('i', '<A-d>', '<C-o>"dd') -- overrides lsp diagnostic
 map('i', '<A-d>b', '<Esc>"ddbi<Del>')
 map('i', '<A-d>B', '<Esc>"ddBi<Del>')
+map('v', '<Delete>', '"dd')
+map('n', '<Delete>', '"_dl')
 -- gui-like remap
 map('c', '<C-BS>', '<C-w>')
 map('i', '<C-BS>', '<C-w>')
@@ -67,10 +69,15 @@ map('i', '<A-g>', '<C-o>g', { remap = true })
 map('i', '<A-[>', '<C-o>[', { remap = true })
 map('i', '<A-]>', '<C-o>]', { remap = true })
 map('i', '<A-`>', '<C-o>`') -- quick mark jump
-map('', '<C-j>', '<PageDown>zz')
-map('', '<C-k>', '<PageUp>zz')
-map({ 'i', 't' }, '<C-j>', '<PageDown><C-o>zz')
-map({ 'i', 't' }, '<C-k>', '<PageUp><C-o>zz')
+map('i', '<A-f>', '<C-o>f')
+-- zz=center screen, M=center cursor
+-- <C-u>/<C-d>=half page up/down, H/L=move to screen top/bot
+map('', '<C-k>', '<C-u>zz')
+map('', '<C-j>', '<C-d>zz')
+map('', '<C-A-k>', '<C-y>')
+map('', '<C-A-j>', '<C-e>')
+map({ 'i', 't' }, '<C-k>', '<C-o><C-u><C-o>zz')
+map({ 'i', 't' }, '<C-j>', '<C-o><C-d><C-o>zz')
 map({ '', '!', 't' }, '<C-h>', '<C-Left>')
 map({ '', '!', 't' }, '<C-l>', '<C-Right>')
 map({ '!', 't' }, '<C-S-H>', '<C-o>B')
@@ -80,8 +87,10 @@ map({ '!', 't' }, '<A-j>', '<Down>')
 map({ '!', 't' }, '<A-k>', '<Up>')
 map({ '!', 't' }, '<A-l>', '<Right>')
 -- gui-like remap
-map({ '', 'i', 't' }, '<C-Up>', '<PageUp>')
-map({ '', 'i', 't' }, '<C-Down>', '<PageDown>')
+map('', '<C-Up>', '<PageUp>M')
+map('', '<C-Down>', '<PageDown>M')
+map({ 'i', 't' }, '<C-Up>', '<PageUp><C-o>M')
+map({ 'i', 't' }, '<C-Down>', '<PageDown><C-o>M')
 
 -- Window actions
 -- focus
@@ -180,7 +189,7 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 	elseif vim.startswith(path, 'plugins') then
 		if type(res[1]) == 'string' then res = { res } end
 		for _, cfg in ipairs(res) do
-			if type(cfg.config) == 'function' then cfg.config() end
+			if type(cfg.config) == 'function' then cfg.config(nil, cfg.opts) end
 		end
 	elseif vim.startswith(path, 'vim.') then
 		local dst = vim

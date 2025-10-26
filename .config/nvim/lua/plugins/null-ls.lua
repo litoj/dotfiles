@@ -11,7 +11,7 @@ function M.config()
 		sources = {
 			nls.builtins.formatting.stylua.with {
 				extra_args = function()
-					local cwd = vim.loop.cwd():gsub('/lua$', '')
+					local cwd = vim.fn.getcwd():gsub('/lua$', '')
 					for _, f in ipairs { '/.stylua.toml', '/stylua.toml' } do
 						f = cwd .. f
 						if exists(f) then return {} end

@@ -479,7 +479,8 @@ cutParams=(
 	crf 'q?' "${REGEX['pint']}" 'CRF quantization setting (default=28)'
 	metadata 'm?' '' 'Copy metadata from the first file (default=true)'
 	rename 'r?' '' 'Rename using rename action, file $dst has priority'
-	audioBitrate 'a?' "${REGEX['pint']}" 'Bitrate (in kbps) for opus audio (default=32)'
+	audioCodec 'A?' '[0-9a-z]+' 'Audio codec / extension / ffmpeg encoder (default=opus)'
+	audioBitrate 'a?' "${REGEX['pint']}" 'Bitrate (kb/s) for opus audio (default=crf+codec-based)'
 	src '$+' "${MIME_TYPES['video']}" 'File to cut/convert'
 	dst '$?' '$d$D\.mp4' 'Output file/dir (default=`$src.mp4`)')
 cut() {
@@ -662,14 +663,53 @@ lua
 		_cmd+=(-c copy)
 		local ext=${src[0]##*.}
 	else
-		_cmd+=(-preset slow -c:a libopus -b:a ${audioBitrate:-32}k)
+		# decides only based on first source
+		_cmd+=(-preset slow)
+		if ((audioBitrate || $(ffprobe "${src[0]}" |&
+			sed -n 's|.*Audio.*, \([0-9]\+\) kb/s.*|\1|p') > 105)); then
+			declare -A codecMap=(
+				[mp3]=libmp3lame
+				[m4a]=aac
+				[opus]=libopus
+				[ogg]=libvorbis
+				[vorbis]=libvorbis
+			)
+			[[ $audioEncoder ]] && audioEncoder=${codecMap["${audioEncoder}"]:-$audioEncoder}
+			local audioEncoder=${audioEncoder:-libopus}
+			_cmd+=(-c:a "$audioEncoder")
+			((audioBitrate)) && _cmd+=(-b:a "${audioBitrate}k") # otherwise set based on crf
+		else
+			local audioBitrate=-1
+			_cmd+=(-c:a copy)
+		fi
 		local ext=mp4
 	fi
 
 	while IFS=$'\t' read -ra line <&4; do
-		local file=${line[0]} start=${line[1]} end=${line[2]} volume=${line[3]}
-		local cmd=("${_cmd[@]}" -crf "${line[4]}")
+		local file=${line[0]} start=${line[1]} end=${line[2]} volume=${line[3]} crf=${line[4]}
+		local cmd=("${_cmd[@]}" -crf "$crf")
 		cmd[$fileArgPos]=$file
+		if ! ((audioBitrate)); then
+			if ((crf > 30)); then
+				local ab=64
+			elif ((crf > 26)); then
+				local ab=48
+			elif ((crf > 24)); then
+				local ab=32
+			else
+				local ab=16
+			fi
+
+			if [[ $audioEncoder == libmp3lame ]]; then
+				((ab *= 3))
+			elif
+				[[ $audioEncoder != libopus ]]
+			then
+				((ab *= 2))
+			fi
+			cmd+=(-b:a ${ab}k)
+			log Info "[${file##*/}].audioBitrate = $ab"
+		fi
 
 		[[ $start != 0 ]] && cmd+=(-ss "$start")
 		[[ $end != end ]] && cmd+=(-to "$end")

@@ -694,7 +694,7 @@ parseAction() {
 		log Error " - Default action must use all args, but some were left: $*"
 	fi
 
-	log Trace ' $>>' && "$ACTION" && log Trace ' <<$' || log Warn ' <<FAIL!'
+	log Trace ' $>>' && "$ACTION" && log Trace ' <<$' || log Error ' <<FAIL!'
 	return $((argc - $#))
 }
 

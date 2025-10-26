@@ -61,13 +61,15 @@ function M.config()
 			sts.filtered_jump(dst, fwd, opts)
 		end
 	end
+	-- jumps of the same kind as the previous one we used
 	map('n', 'gtt', function() sts.fzf_jump(last) end)
 	map({ 'n', 'i' }, '<A-n>', function() sts.filtered_jump(last, true) end)
 	map({ 'n', 'i' }, '<A-N>', function() sts.filtered_jump(last, false) end)
-	local function mapAll(key, dst)
-		map('n', 'gt' .. key, list(dst))
-		map('n', '[' .. key, goTo(dst, false))
-		map('n', ']' .. key, goTo(dst, true))
+	local function mapAll(key, dst, opts)
+		opts = opts and { desc = opts }
+		map('n', 'gt' .. key, list(dst), opts)
+		map('n', '[' .. key, goTo(dst, false), opts)
+		map('n', ']' .. key, goTo(dst, true), opts)
 	end
 	sts.list = list
 	sts.goTo = goTo
@@ -76,7 +78,7 @@ function M.config()
 		'function',
 		'arrow_function', --[[ 'function_definition', ]]
 		'method_declaration',
-	})
+	}, 'jump to functions')
 	mapAll('s', {
 		'if_statement',
 		'elseif_statement',
@@ -84,7 +86,7 @@ function M.config()
 		'else_statement',
 		'switch_statement',
 		'case_statement',
-	})
-	mapAll('l', { 'for_statement', 'while_statement', 'do_statement' })
+	}, 'jump to switches / conditionals')
+	mapAll('l', { 'for_statement', 'while_statement', 'do_statement' }, 'jump to loops')
 end
 return M

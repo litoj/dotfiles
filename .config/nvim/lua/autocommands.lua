@@ -2,7 +2,7 @@ local group = vim.api.nvim_create_augroup('CfgAU', { clear = true })
 local vau = vim.api.nvim_create_autocmd
 
 ---@param ev string|string[]
----@param cb string|function
+---@param cb string|fun(state:{buf:number,event:string,file:string,group:number,id:number,match:string}):boolean?
 ---@param extra? string|string[]|number|boolean pattern|buffer|once
 local function au(ev, cb, extra)
 	local opts = { group = group }
@@ -55,7 +55,7 @@ local function setCWD(s)
 end
 au('BufEnter', setCWD, '*') -- to execute on every focus change
 au('BufLeave', function(s) fakeUpdate = not validUpdate(s) end)
-map('n', ' md', function() cwdEnabled = not cwdEnabled end) -- toggle cwd changing
+map('n', ' md', function() cwdEnabled = not cwdEnabled end, { desc = 'toggle cwd changing' })
 
 local function setIndentMarks(state)
 	vim.opt_local.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks
@@ -95,6 +95,7 @@ au('WinNew', hiNotes)
 if vim.fn.bufname() == '' then
 	if vim.fn.bufnr '$' > 1 then
 		vim.schedule(function()
+			-- if it shows No buffers were wiped out, then switch to the real file from another buf first
 			vim.cmd.bwipeout(1)
 			setCWD { file = vim.api.nvim_buf_get_name(0), buf = 0 }
 		end)

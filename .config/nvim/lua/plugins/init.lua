@@ -1,5 +1,18 @@
 return {
 	{
+		'RaafatTurki/hex.nvim',
+		ft = { 'hex', 'xxd' },
+		config = function()
+			local h = require 'hex'
+			h.setup()
+			require 'autocommands'('FileType', 'set ft=xxd', 'hex')
+			require 'autocommands'('FileType', function()
+				h.dump()
+				map({ 'n', 'i' }, '<C-h>', h.toggle, { buffer = true })
+			end, 'xxd')
+		end,
+	},
+	{
 		'nvzone/typr',
 		dependencies = 'nvzone/volt',
 		opts = {},
@@ -11,7 +24,7 @@ return {
 		'neovim/nvim-lspconfig',
 		dependencies = {
 			'hrsh7th/cmp-nvim-lsp',
-			'j-hui/fidget.nvim',
+			-- { 'j-hui/fidget.nvim', opts = {} },
 		},
 		event = 'VeryLazy',
 		config = function() require 'mylsp' end,
@@ -20,7 +33,7 @@ return {
 		'litoj/reform.nvim',
 		event = 'VeryLazy',
 		opts = {
-			-- docmd = { debug = '/tmp/docmd.md' },
+			docmd = { debug = '/tmp/docmd.md' },
 			link = { fallback = { copy = true, print = true, branch = 'current' } },
 			tbl_extras = true,
 		},
@@ -77,23 +90,4 @@ return {
 		end,
 	},
 	-- { 'mpas/marp-nvim', cmd = 'MarpToggle', opts = { port = 8080 } },
-	{
-		'catgoose/nvim-colorizer.lua',
-		cmd = 'ColorizerToggle',
-		config = function()
-			require('colorizer').setup {
-				user_default_options = {
-					names = false,
-					names_custom = function()
-						local palette = require('nerdcontrast').palette
-						for k, v in pairs(palette) do
-							if palette[k] == 'NONE' then palette[k] = nil end
-						end
-						return palette
-					end,
-					mode = 'foreground',
-				},
-			}
-		end,
-	},
 }

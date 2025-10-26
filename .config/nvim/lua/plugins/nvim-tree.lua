@@ -21,6 +21,7 @@ function M.config()
 			icons = { show = { git = false } },
 			root_folder_label = label,
 			group_empty = label,
+			highlight_opened_files = 'all',
 		},
 		actions = {
 			open_file = { quit_on_open = true, window_picker = { enable = true } },
@@ -64,10 +65,12 @@ function M.config()
 			map({ 'cd', 'O', '<S-CR>' }, api.tree.change_root_to_node)
 			map('<A-i>', api.node.show_info_popup)
 			map('S', function()
-				local cwd = vim.loop.cwd()
-				vim.loop.chdir(api.tree.get_node_under_cursor().absolute_path:match '(.+/)')
+				local cwd = vim.fn.getcwd()
+				vim.api.nvim_set_current_dir(
+					vim.api.tree.get_node_under_cursor().absolute_path:match '(.+/)'
+				)
 				vim.cmd.terminal()
-				vim.loop.chdir(cwd)
+				vim.api.nvim_set_current_dir(cwd)
 				vim.cmd.startinsert()
 			end)
 			map('s', api.node.run.cmd)
@@ -78,7 +81,7 @@ function M.config()
 	map('n', '<A-Tab>', api.tree.open)
 	local file = vim.api.nvim_buf_get_name(0)
 	if vim.fn.isdirectory(file) == 1 then
-		vim.loop.chdir(file)
+		vim.api.nvim_set_current_dir(file)
 		api.tree.open()
 	end
 end

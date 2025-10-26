@@ -54,8 +54,9 @@ assign [app_id="org.prismlauncher.*"] $wGame
 assign [class="[sS]team.*"] $wGame
 
 # Outputs
+output * adaptive_sync on
 output $d1 pos 0 1200
-output $dMedia adaptive_sync on scale 2
+output $dMedia scale 2
 
 workspace $w1 output $d1
 # by not specifying an output, $w2 will be assigned to the first new output

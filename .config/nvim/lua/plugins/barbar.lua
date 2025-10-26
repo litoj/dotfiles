@@ -1,7 +1,7 @@
 vim.g.barbar_auto_setup = false
 local M = {
 	'romgrk/barbar.nvim',
-	dependencies = 'kyazdani42/nvim-web-devicons',
+	dependencies = 'nvim-tree/nvim-web-devicons',
 	event = 'VeryLazy',
 }
 function M.config()

@@ -68,7 +68,7 @@ cpu() {
 	[[ -f /bin/cpupower-gui ]] || return
 	# from ../cpupower_gui/
 	local profile=$1 state
-	declare -A urgency=([Auto]=low [Schedutil]=critical)
+	declare -A urgency=([Powersave]=low [Schedutil]=critical)
 	cpupower-gui pr $profile &>/dev/null &&
 		notify-send -t 1000 -h string:synchronous:battery -u ${urgency[$profile]:-normal} " $profile"
 }
@@ -81,7 +81,7 @@ cpuByBattery() {
 		(($1)) && profile=Charging || profile=Discharging
 	fi
 	if [[ $profile != D* ]]; then
-		profile=Auto
+		profile=Schedutil
 		pkill -f 'bash hibernateDelayed.sh'
 	else
 		profile=Powersave

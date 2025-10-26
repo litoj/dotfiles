@@ -47,7 +47,7 @@ try() {
 		esac
 		shift
 	done
-	((match)) && run "$app"
+	! ((match)) || run "$app"
 }
 
 [[ -f $CFG ]] && . "$CFG" # config calls try() for given apps with listed allowed files

@@ -1,5 +1,25 @@
 local M = { 'goolord/alpha-nvim', keys = '<C-n>' }
 function M.config()
+	local alpha = require 'alpha'
+	local function dashboard()
+		vim.g.old_buf = vim.api.nvim_get_current_buf()
+		alpha.start()
+
+		vim.bo.bufhidden = nil
+		-- TODO: this fails with bg tasks making windows (spinner)
+		_G.protectWindow = #vim.api.nvim_list_wins() > 1
+
+		require 'autocommands'('BufLeave', function(state)
+			vim.bo[state.buf].bufhidden = 'wipe'
+			vim.g.old_buf = nil
+		end, vim.api.nvim_get_current_buf())
+
+		map('n', 'q', function() vim.api.nvim_set_current_buf(vim.g.old_buf) end, { buffer = true })
+		map('n', '<Esc>', 'q', { remap = true, buffer = true })
+		map('n', '<Right>', '<CR>', { remap = true, buffer = true })
+		map('n', 'l', '<CR>', { remap = true, buffer = true })
+	end
+
 	local function buttons(name, btns)
 		local home = os.getenv 'HOME'
 		local group = { type = 'group', val = { { type = 'text', val = '  ' .. name, opts = {} } } }
@@ -11,10 +31,21 @@ function M.config()
 			key = ''
 			group.val[1].opts.hl = 'Title'
 		end
+
 		for i, val in ipairs(btns) do
 			val[2] = val[2]:gsub(home .. '/?', '~/')
 			local path = val[2]:match '.*/'
-			local cmd = 'cd ' .. path .. '|e ' .. val[2]
+
+			local file = val[2]
+			local cmd = function()
+				if _G.protectWindow and path == file then -- dirs open NvimTree and discard current window
+					vim.api.nvim_set_current_buf(vim.g.old_buf)
+					vim.cmd.split()
+				end
+				vim.cmd.cd(path)
+				vim.cmd.edit(file)
+			end
+
 			local hi = {
 				{ '.*/nvim/lua/', ' ', 'Cyan' },
 				{ '.*/.config/', ' ', 'Orange' },
@@ -48,9 +79,9 @@ function M.config()
 			group.val[i + 2] = {
 				type = 'button',
 				val = val[2],
-				on_press = function() vim.api.nvim_command(cmd) end,
+				on_press = cmd,
 				opts = {
-					keymap = { 'n', key .. val[1], ':' .. cmd .. '<CR>', { silent = true, nowait = true } },
+					keymap = { 'n', key .. val[1], cmd, { silent = true, nowait = true } },
 					position = 'left',
 					shortcut = '   [' .. val[1] .. ']' .. (' '):rep(4 - #val[1]),
 					cursor = 1,
@@ -84,13 +115,7 @@ function M.config()
 		layout = {
 			{
 				type = 'group',
-				val = function()
-					map('n', 'q', function() vim.api.nvim_buf_delete(0, {}) end, { buffer = true })
-					map('n', '<Esc>', 'q', { remap = true, buffer = true })
-					map('n', '<Right>', '<CR>', { remap = true, buffer = true })
-					map('n', 'l', '<CR>', { remap = true, buffer = true })
-					return { oldfiles(10) }
-				end,
+				val = function() return { oldfiles(10) } end,
 			},
 			buttons('Bookmarks', {
 				{ 'dp', '~/Documents/personal/' },
@@ -116,9 +141,8 @@ function M.config()
 			}),
 		},
 	}
-	local alpha = require 'alpha'
 	alpha.setup(config)
 
-	map({ '', 'i' }, '<C-n>', alpha.start)
+	map({ '', 'i' }, '<C-n>', dashboard)
 end
 return M

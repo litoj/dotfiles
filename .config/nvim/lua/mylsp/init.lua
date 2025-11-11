@@ -25,9 +25,10 @@ vim.lsp.config(
 	-- { textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
 )
 
+---@param server? string
+---@param opts? string|vim.lsp.Config|{setCwd:boolean, format:boolean}
 local function setup(server, opts)
 	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
-	if not server then return opts end
 
 	local on_attach = opts.on_attach
 	opts.on_attach = function(client, bufnr)
@@ -38,7 +39,8 @@ local function setup(server, opts)
 		end
 		if opts.setCwd ~= false then
 			local bname = vim.api.nvim_buf_get_name(bufnr)
-			for _, ws in ipairs(client.config.workspace_folders or {}) do
+			for _, ws in ipairs(client.config.workspace_folders or { { name = client.root_dir } }) do
+				---@diagnostic disable-next-line: cast-local-type
 				ws = ws.name
 				if ws and bname:sub(1, #ws) == ws then
 					vim.b[bufnr].cwd = ws
@@ -51,10 +53,13 @@ local function setup(server, opts)
 		if on_attach then on_attach(client, bufnr) end
 	end
 
+	if not server then return opts end
+
 	if opts.root_markers then
-		vim.list_extend(opts.root_markers, vim.lsp.config[server].root_markers)
+		vim.list_extend(opts.root_markers, vim.lsp.config[server].root_markers or {})
 	end
 	opts = vim.tbl_deep_extend('keep', opts, vim.lsp.config[server])
+
 	vim.lsp.config(server, opts)
 	vim.lsp.enable(server)
 	return opts
@@ -62,7 +67,6 @@ end
 M.setup = setup
 
 setup 'bashls'
-setup 'pyright'
 setup 'vue_ls'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})

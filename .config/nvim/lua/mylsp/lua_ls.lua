@@ -1,8 +1,7 @@
 return {
 	settings = {
 		Lua = { -- https://luals.github.io/wiki/settings/
-			completion = { autoRequire = false, showParams = false, callSnippet = 'Replace' },
-			diagnostics = { globals = { 'vim' } },
+			completion = { autoRequire = false, showParams = true, callSnippet = 'Disable' },
 			format = {
 				enable = false, -- TODO: try to switch
 				defaultConfig = {
@@ -16,8 +15,8 @@ return {
 					table_separator_style = 'comma',
 					trailing_table_separator = 'smart',
 					call_arg_parentheses = 'remove',
-					align_continuous_rect_table_field = 'false'
-				}
+					align_continuous_rect_table_field = 'false',
+				},
 			},
 			hint = { enable = true, paramName = 'Disable', setType = true },
 			runtime = { version = 'LuaJIT' },

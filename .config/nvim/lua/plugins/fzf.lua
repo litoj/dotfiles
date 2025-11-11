@@ -41,12 +41,13 @@ function M.config()
 
 	map('n', ' pf', fzf.files)
 	map('n', ' pg', fzf.live_grep_native)
-	map('n', ' ps', fzf.lsp_live_workspace_symbols)
+	map('n', ' po', function() fzf.oldfiles { cwd_only = true } end)
+	-- map('n', ' ps', fzf.lsp_live_workspace_symbols)
 	map('n', ' pd', fzf.diagnostics_workspace) -- list diagnostics
-	map('n', ' bf', function() fzf.files { cwd = vim.fn.expand '%:h' } end)
-	map('n', ' bl', fzf.buffers)
+	map('n', ' cl', function() fzf.files { cwd = vim.fn.expand '%:h' } end) -- current list
+	map('n', ' bl', fzf.buffers) -- buffers list
 	map('n', ' of', fzf.oldfiles)
-	map('n', ' ql', fzf.quickfix)
+	map('n', ' ql', fzf.quickfix) -- quickfix list
 	map({ '', 'i' }, '<C-/>', fzf.blines)
 	map({ '', 'i' }, '<C-f>', fzf.blines)
 	map('n', ' mc', fzf.highlights) -- my colors

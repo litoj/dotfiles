@@ -44,7 +44,7 @@ function M.config()
 					if file then
 						config.stdio = { file, nil, nil }
 					else
-						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.fn.getcwd() .. '`')
+						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.loop.cwd() .. '`')
 						return
 					end
 					args[#args] = nil
@@ -86,9 +86,10 @@ function M.config()
 			},
 			{
 				elements = {
-					{ id = 'console', size = 1 }, --[[ {id = 'repl', size = 0.5} ]]
+					{ id = 'console', size = 0.5 },
+					{ id = 'repl', size = 0.5 },
 				},
-				size = 0.3,
+				size = 0.2,
 				position = 'bottom',
 			},
 		},
@@ -105,13 +106,13 @@ function M.config()
 	map('n', ' db', dap.toggle_breakpoint)
 	map('n', ' dB', dap.clear_breakpoints)
 	map('n', ' dg', dap.goto_)
-	map('n', ' dL', function() dap.list_breakpoints(true) end)
+	map('n', ' dl', function() dap.list_breakpoints(true) end)
 	map('n', ' du', dapui.toggle)
 	map('n', ' dE', dapui.eval)
 	map('n', ' de', function()
 		vim.ui.input(
 			{ prompt = 'Eval: ', default = vim.fn.expand '/nat' },
-			function(res) dapui.eval(res) end
+			vim.schedule_wrap(function(res) dapui.eval(res) end)
 		)
 	end)
 	map('n', '<F6>', dap.continue)
@@ -119,6 +120,9 @@ function M.config()
 	map('n', '<F7>', dap.step_into)
 	map('n', '<F8>', dap.step_over)
 	map('n', '<F9>', dap.step_out)
-	map('n', '<F10>', dap.terminate)
+	map('n', '<F10>', function()
+		dap.terminate()
+		dapui.close()
+	end)
 end
 return M

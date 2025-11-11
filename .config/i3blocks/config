@@ -18,6 +18,9 @@ signal=12
 interval=60
 signal=14
 
+# [cpu_check]
+# interval=-3
+
 # [updates]
 # interval=once
 

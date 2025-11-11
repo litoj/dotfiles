@@ -1,0 +1,19 @@
+#!/usr/bin/bash
+
+proc="${PROC:-nvim --embed}"
+interval=${INTERVAL_MS:-1000}
+seconds=$(bc <<<"scale=2;$interval/1000")
+while :; do
+	pids=($(pgrep -f "$proc"))
+	declare -i sum=0
+	for pid in ${pids[@]}; do
+		((sum -= $(cat /proc/$pid/stat | awk '{print $14+$15}')))
+	done
+	sleep $seconds
+	for pid in ${pids[@]}; do
+		((sum += $(cat /proc/$pid/stat | awk '{print $14+$15}')))
+	done
+	((sum = 1000 * sum / interval))
+	echo "${proc^^}: $sum%"
+	((sum > 70)) && notify-send "High CPU Usage" "$proc is using $sum CPU" -t $interval
+done

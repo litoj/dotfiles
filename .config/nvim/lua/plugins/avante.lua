@@ -1,3 +1,5 @@
+if vim.g.features_level < 4 then return {} end
+
 ---@type avante.Config
 return {
 	'yetone/avante.nvim',

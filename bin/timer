@@ -21,12 +21,12 @@ sumAll() {
 if [[ -z $1 ]]; then
 	sumAll
 	exit
-else
-	start=$(date +%H:%M)
-	"$@"
-	((SECONDS < 300 )) && exit
-	dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
 fi
+
+start=$(date +%H:%M)
+"$@"
+((SECONDS < 5)) && exit
+dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
 
 last=$(tail -n 1 "$rep")
 read today < <(date +%e)

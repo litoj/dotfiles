@@ -113,7 +113,8 @@ abbr ga     'git add -v (git lf | fzf -m | sed "s/..//")'
 abbr gC     'git commit'
 abbr gr     'git rebase'
 abbr grc    'git rebase --continue'
-abbr grf    'git checkout <branch> --'
+abbr grf    'git checkout <branch>^ --' # restore file
+abbr gff    'git log --all -1 --' # go find file
 abbr gP     'git push'
 abbr gbP    'git push origin HEAD:'
 abbr gdP    'git push -d origin'

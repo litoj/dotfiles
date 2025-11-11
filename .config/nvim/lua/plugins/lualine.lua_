@@ -1,6 +1,6 @@
 local M = {
 	'nvim-lualine/lualine.nvim',
-	dependencies = { 'nvim-tree/nvim-web-devicons', 'nerdcontrast.nvim' },
+	dependencies = { 'nvim-tree/nvim-web-devicons' },
 	event = 'VeryLazy',
 }
 function M.config()
@@ -50,11 +50,18 @@ function M.config()
 					function() return (vim.bo.et and '_' or 't') .. vim.bo.sw end,
 					color = 'SLYellow',
 				},
-				{ function() return '<' .. vim.bo.tw end, padding = 0 },
 			},
 			lualine_z = {
 				{
-					function() return vim.fn.line '.' .. ':' .. vim.fn.virtcol '.' .. '/' .. vim.fn.line '$' end,
+					function()
+						return string.format(
+							'<%d %d:%d/%d',
+							vim.bo.tw,
+							vim.fn.line '.',
+							vim.fn.virtcol '.',
+							vim.fn.line '$'
+						)
+					end,
 				},
 			},
 		},

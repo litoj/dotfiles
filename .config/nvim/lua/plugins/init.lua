@@ -1,5 +1,5 @@
 return {
-	{
+	--[[ {
 		'RaafatTurki/hex.nvim',
 		ft = { 'hex', 'xxd' },
 		config = function()
@@ -11,13 +11,13 @@ return {
 				map({ 'n', 'i' }, '<C-h>', h.toggle, { buffer = true })
 			end, 'xxd')
 		end,
-	},
-	{
+	}, ]]
+	--[[ {
 		'nvzone/typr',
 		dependencies = 'nvzone/volt',
 		opts = {},
 		cmd = { 'Typr', 'TyprStats' },
-	},
+	}, ]]
 	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
@@ -28,6 +28,18 @@ return {
 		},
 		event = 'VeryLazy',
 		config = function() require 'mylsp' end,
+	},
+	{
+		'folke/lazydev.nvim',
+		dependencies = {
+			'nvim-lspconfig',
+			'jbyuki/one-small-step-for-vimkind', -- for lua debugging from separate instance
+		},
+		ft = 'lua',
+		config = function()
+			require('lazydev').setup()
+			require('mylsp').setup 'lua_ls' -- must be set up after lazydev
+		end,
 	},
 	{
 		'litoj/reform.nvim',
@@ -47,22 +59,7 @@ return {
 			map({ 'n', 'i' }, '<A-y>', ng.generate)
 		end,
 	},
-	{
-		'folke/lazydev.nvim',
-		dependencies = 'nvim-lspconfig',
-		ft = 'lua',
-		config = function()
-			require('lazydev').setup {}
-			require('mylsp').setup 'lua_ls'
-		end,
-	},
 	{ 'tpope/vim-abolish', event = 'VeryLazy' },
-	{
-		'pmizio/typescript-tools.nvim',
-		ft = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact', 'vue' },
-		dependencies = { 'nvim-lua/plenary.nvim', 'nvim-lspconfig', 'mxsdev/nvim-dap-vscode-js' },
-		config = function() require('typescript-tools').setup(require('mylsp').setup(nil, 'tsserver')) end,
-	},
 	{ 'litoj/i3config.vim', ft = 'swayconfig' },
 	--[[ {
 		'habamax/vim-asciidoctor',

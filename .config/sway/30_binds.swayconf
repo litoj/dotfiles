@@ -14,6 +14,7 @@ bindsym {
 	$Mod+Shift+u exec DIRECTION=prev $custombg set
 	$Mod+$Alt+u exec $custombg cursave
 	$Mod+Ctrl+u exec xdg-open "$($custombg current)"
+	$Mod+Ctrl+$Alt+u exec xdg-open "$(fd "$($custombg current | sed 's,.*/\(.*\)\..*,\1,')" -t f ~/Pictures/sdcard/Pictures/)"
 
 #---------------+
 # App selection |
@@ -35,7 +36,7 @@ bindsym --to-code {
 	$Mod+2 exec xterm nvim && sleep 0.3 && swaymsg mark 2
 	$Mod+$Alt+2 exec $lof 'xterm nvim -i ~/Documents/work/session.shada \
 		&& sleep 0.5 && swaymsg mark work' '[con_mark=work]'
-	$Mod+$Alt+Shift+2 exec $lof 'timer xterm nvim -i ~/Documents/school/PG/SP/session.shada \
+	$Mod+$Alt+Shift+2 exec $lof 'xterm timer nvim -i ~/Documents/school/PG/SP/session.shada \
 		&& sleep 0.5 && swaymsg mark dbs' '[con_mark=dbs]'
 	$Mod+3 exec xterm
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
@@ -370,11 +371,13 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -DGA -play
-	$Mod+Shift+m exec mom -DGA -play -r
-	$Mod+$Alt+m exec mom -DGA -play -ra3s +l
+	$Mod+m exec mom -play
+	$Mod+Shift+m exec mom -play -r
+	$Mod+$Alt+m exec mom -play -ra3s +l
 	$Mod+Ctrl+$Alt+m exec mom -play "$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+$Alt+Shift+m exec mom -play "$($info\
+		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*/[^/$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
 		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15

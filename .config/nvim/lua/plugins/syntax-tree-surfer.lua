@@ -22,29 +22,44 @@ function M.config()
 			parameter_declaration = '',
 		},
 	}
-	local opt = { silent = true }
-	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>', opt)
 
-	map({ 'n' }, '<C-S-H>', '<Cmd>STSSwapCurrentNodePrevNormal<CR>', opt)
-	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>', opt)
-	map({ 'n', 'i' }, '<A-H>', '<Cmd>STSSwapUpNormal<CR>', opt)
-	map({ 'n' }, '<C-S-L>', '<Cmd>STSSwapCurrentNodeNextNormal<CR>', opt)
+	local mts = require 'manipulator.ts'
+	local mn = require 'manipulator.manipulate'
+	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>')
 
-	map('x', '<A-J>', '<Cmd>STSSwapNextVisual<CR>', opt)
-	map('x', '<A-K>', '<Cmd>STSSwapPrevVisual<CR>', opt)
+	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>')
+	map({ 'n', 'i' }, '<A-H>', '<Cmd>STSSwapUpNormal<CR>')
+	map({ '', 'i' }, '<C-S-H>', function()
+		local cur = mts.current { v_partial = 0 }
+		cur:move { dst = cur:prev() }
+	end)
+	map({ '', 'i' }, '<C-S-L>', function()
+		local cur = mts.current { v_partial = 0 }
+		cur:move { dst = cur:next() }
+	end)
+	-- TODO: when working well make this into <C-l>
+	map({ '', 'i' }, '<C-A-L>', function() mts.current({ v_modes = {} }):next():jump(true) end)
+	-- TODO: why does this always jump up
+	map({ '', 'i' }, '<C-A-H>', function() mts.current({ v_modes = {} }):prev():jump() end)
 
-	map('n', '<A-s>', '<Cmd>STSSelectCurrentNode<CR>', opt)
-	map('i', '<A-s>', '<C-o><Cmd>STSSelectCurrentNode<CR>', opt)
+	map('x', '<A-J>', '<Cmd>STSSwapNextVisual<CR>')
+	map('x', '<A-K>', '<Cmd>STSSwapPrevVisual<CR>')
 
-	map('x', 'H', '<Cmd>STSSelectPrevSiblingNode<CR>', opt)
-	map('x', 'J', '<Cmd>STSSelectChildNode<CR>', opt)
-	map('x', 'K', '<Cmd>STSSelectParentNode<CR>', opt)
-	map('x', 'L', '<Cmd>STSSelectNextSiblingNode<CR>', opt)
+	map({ '', 'i' }, '<A-s>', function() mts.current({ v_modes = { v = true } }):select(true) end)
+	map({ '', 'i' }, '<A-p>', function() mts.current():parent():select() end)
 
-	map('x', 'N', '<Cmd>STSSelectPrevSiblingNode<CR>', opt)
-	map('x', 'C', '<Cmd>STSSelectChildNode<CR>', opt)
-	map('x', 'P', '<Cmd>STSSelectParentNode<CR>', opt)
-	map('x', 'n', '<Cmd>STSSelectNextSiblingNode<CR>', opt)
+	map('x', 'H', '<Cmd>STSSelectPrevSiblingNode<CR>')
+	map('x', 'J', '<Cmd>STSSelectChildNode<CR>')
+	map('x', 'K', '<Cmd>STSSelectParentNode<CR>')
+	map('x', 'L', '<Cmd>STSSelectNextSiblingNode<CR>')
+
+	map('x', 'P', function() mts.current():parent():select() end)
+	map('x', 'i', function() mts.current():closer_edge_child():select() end)
+	-- TODO: add fallback selector for largest non-space object
+	map('x', ',', function() mts.current():closer_edge_child():select() end)
+	map('x', '.', function() mts.current():parent():select() end)
+	map('x', 'n', function() mts.current():next('path'):select() end)
+	map('x', 'N', function() mts.current():prev('path'):select() end)
 
 	local last = {}
 	local function list(dst)
@@ -55,10 +70,10 @@ function M.config()
 	end
 	map('n', 'gtv', list { 'variable_declaration', 'parameter_declaration', 'field' })
 	map('n', 'gtc', list { 'function_call', 'call_expression', 'return_statement' })
-	local function goTo(dst, fwd, opts)
+	local function goTo(dst, fwd, s)
 		return function()
 			last = dst
-			sts.filtered_jump(dst, fwd, opts)
+			sts.filtered_jump(dst, fwd, s)
 		end
 	end
 	-- jumps of the same kind as the previous one we used

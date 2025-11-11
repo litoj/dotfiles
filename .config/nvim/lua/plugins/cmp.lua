@@ -79,12 +79,11 @@ function M.config()
 
 	local comparators = {
 		cmp.config.compare.offset,
-		cmp.config.compare.score,
+		src.copilot and require('cmp_copilot.comparators').score or cmp.config.compare.score,
 		-- cmp.config.compare.recently_used,
 		cmp.config.compare.kind,
 		cmp.config.compare.length,
 	}
-	if src.copilot then comparators[2] = require('cmp_copilot.comparators').score end
 
 	cmp.setup {
 		snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
@@ -179,14 +178,15 @@ function M.config()
 			end,
 		},
 		completion = {
-			keyword_length = 2, --[[ autocomplete = false ]]
+			keyword_length = 2,
+			autocomplete = false,
 		},
 		performance = { max_view_entries = 50, throttle = 1, fetching_timeout = 1 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
 		},
-		experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
+		-- experimental = { ghost_text = { hl_group = 'DiagnosticVirtualTextHint' } },
 		sorting = { comparators = comparators },
 		sources = { src.calc, src.path, src.lsp, src.snip, src.copilot },
 	}
@@ -205,10 +205,10 @@ function M.config()
 		{ sources = { src.calc, src.path, src.lsp, src.font, src.copilot } }
 	)
 
-	cmp.setup.cmdline(
-		':',
-		{ sources = { { name = 'cmdline', group_index = 0 }, src.path, src.latex, src.buf } }
-	)
+	cmp.setup.cmdline(':', {
+		sources = { { name = 'cmdline', group_index = 0 }, src.path, src.latex, src.buf },
+		completion = { autocomplete = { 'TextChanged' } },
+	})
 	cmp.setup.cmdline('/', { sources = { src.latex, src.buf } })
 end
 
@@ -220,10 +220,7 @@ M = {
 }
 
 -- add AI plugins when plugged in and on the main pc
-local f = io.open '/sys/class/power_supply/BAT0/status'
-local ok = f and f:read '*l' ~= 'Discharging'
-if f then f:close() end
-if ok and exists(os.getenv 'HOME' .. '/Documents/work') and os.getenv 'USER' ~= 'root' then
+if vim.g.features_level >= 7 then
 	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',

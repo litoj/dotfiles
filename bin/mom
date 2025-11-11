@@ -202,8 +202,8 @@ secondsToTime() {
 
 # expects $src, $dst in form $d.ext or $F
 # determine $out, $ext
+# NOTE: this overwrites caller → relies on use inside runJob() or just a one-time use
 determineOut() {
-	# NOTE: this overwrites caller → relies on use inside runJob() or just a one-time use
 	if matcher='$D[^/]\.[^ ]+' argMatch "${dst:=.}"; then # file $dst has priority
 		ext=${dst##*.}
 		out=$dst
@@ -256,7 +256,7 @@ editParams=(
 	copy 'c?' '' 'Copy, otherwise convert to opus (disables -bvfp)'
 	metadata 'm?' '' 'Keep metadata (default=true)'
 	rename 'r?' '' 'Rename using rename action, file $dst has priority'
-	deleteSrc 'd?' '' 'Delete $src file (keeps by default)'
+	deleteSrc 'd?' '' 'Delete $src file (default=false)'
 	bitrate 'b*' "${REGEX['pint']}" 'Output bitrate in kbps (default=96 for <=192kbps, else 128)'
 	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
@@ -378,11 +378,11 @@ edit() { # TODO: use picker only
 			[[ $fE ]] && cmd[-3]+=,volume=$v || cmd+=(-af volume=$v)
 		fi
 
-		local out ext dst=${dst}
+		local out ext=opus dst=${dst}
 		determineOut
 
 		if [[ -d $dst ]]; then # dst as file overrides $rename and $copy
-			if [[ $copy -eq 0 && $src == *.opus && $v == 1 && -z $fE ]]; then
+			if [[ $copy -eq 0 && $src == *.$ext && $v == 1 && -z $fE ]]; then
 				if [[ -z $s && -z $e ]]; then
 					log Warn ': no changes required -> skipping'
 					return
@@ -392,7 +392,7 @@ edit() { # TODO: use picker only
 				local copy=1
 			fi
 
-			((copy > 0)) && out=${out%.*}.${src##*.}
+			((copy > 0)) && out=${out%.*}.$ext
 		fi
 
 		runCmdWithCleanup
@@ -665,8 +665,9 @@ lua
 	else
 		# decides only based on first source
 		_cmd+=(-preset slow)
-		if ((audioBitrate || $(ffprobe "${src[0]}" |&
-			sed -n 's|.*Audio.*, \([0-9]\+\) kb/s.*|\1|p') > 105)); then
+		[[ $audioBitrate ]] || local recAudio=$(ffprobe "${src[0]}" |&
+			sed -n 's|.*Audio.*, \([0-9]\+\) kb/s.*|\1|p')
+		if ((audioBitrate || ${recAudio:-0} > 105)); then
 			declare -A codecMap=(
 				[mp3]=libmp3lame
 				[m4a]=aac
@@ -853,14 +854,14 @@ pickSong() {
 actionInfo play 'select and play a song/dir using mpv'
 playParams=(
 	loop 'l?' '' 'Loop playlist (default=true when playing folders)'
-	disown 'd?' '' 'Run as a separate process with no controlls (default=true for GUI use)'
+	daemonize 'd?' '' 'Run as a separate process with no controlls (default=true for GUI use)'
 	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
 	'(default=false) true=mpv --shuffle; a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
 	src '$+' '$e' 'Play files or dirs')
 declare -A playBuilder=([src]=pickSong)
 play() {
-	local disown=${disown:-${SCRIPT_OPTS[guiPicker]}}
+	local daemonize=${daemonize:-${SCRIPT_OPTS[guiPicker]}}
 	local playlistFile=/tmp/mom-$ACTION
 	local cmd=(mpv --no-audio-display --playlist="$playlistFile")
 	exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
@@ -879,7 +880,7 @@ play() {
 
 	((loop > 0 || loop == 0 && files <= 1)) && cmd+=(--loop-playlist)
 	# expand the directory, if it was the only file arg
-	[[ -f $src && $files == 1 ]] && src=${src%/*}
+	[[ -f $src && $files == 1 ]] && src=${src%/*} cmd+=(--playlist-start=0)
 
 	((files <= 1)) && for tmp in "${src[@]}"; do
 		[[ $tmp == /* ]] || tmp=$PWD/$tmp
@@ -895,19 +896,24 @@ play() {
 			done < <(fd '' -Lt d "$tmp")
 			[[ $artistDirs ]] || artistDirs=("$tmp")
 
-			local matcher="${MIME_TYPES['audio']}" # for argMatch
+			local matcher="${MIME_TYPES['audio']}" # for pickFromDir argMatch tests
+			# uses $perDir
 			function pickFromDir() {
-				if ((perDir >= $#)); then
+				local validPicks=() pick
+				for pick in "$@"; do # filter out directories
+					if argMatch "$pick"; then
+						validPicks+=("$pick")
+					fi
+				done
+				declare -i len=${#validPicks[@]}
+
+				if ((perDir >= len)); then
 					echo "$@" | exec sort -R \>\> "$playlistFile"
 					return
 				fi
 				declare -i cnt=$perDir pick
-				while ((cnt)); do
-					((pick = RANDOM % $#))
-					if argMatch "${!pick}"; then
-						exec echo "${!pick}" \>\> "$playlistFile"
-						cnt+=-1
-					fi
+				while ((cnt--)); do
+					exec echo "${validPicks[RANDOM % len]}" \>\> "$playlistFile"
 				done
 			}
 
@@ -933,12 +939,12 @@ play() {
 	[[ $randomizer == *s || $randomizer -gt 0 ]] &&
 		cmd+=(--shuffle) || cmd+=(--playlist-start=0)
 
-	if ((disown <= 0)); then
+	if ((daemonize <= 0)); then
 		exec "${cmd[@]}"
 	else
 		cmd+=(--no-terminal)
 		if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
-			exec mdo"${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
+			exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
 		else # for whatever reason cmds launched via terminal, but from desktop ignore disown
 			log Verbose && log Verbose " \$> ${cmd[*]} &"
 			nohup "${cmd[@]}" &>/dev/null &

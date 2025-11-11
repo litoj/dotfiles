@@ -15,6 +15,7 @@ map('i', '<C-S-j>', '<C-c>md"dY"dP`da')
 map('n', '<C-a>', 'ggVG')
 map('i', '<C-a>', '<C-o>gg<C-o>VG')
 map({ 'n', 'i' }, '<C-S-A>', '<C-c>mdggVGy`da')
+map('x', 'r', '"dc')
 map('i', '<C-u>', '<C-v>u')
 map('i', '<C-S-U>', '<C-v>U')
 map('i', '<S-Enter>', '<C-o>o')
@@ -126,44 +127,106 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
 
-	if not exists(name) then -- helper functions for testing
-		function _G.bench(cfg, ...)
-			local arg = type(cfg) == 'table' and cfg.arg or cfg
-			cfg = type(cfg) == 'table' and cfg or {}
-			local tries = cfg.tries or 1000000
-			local dur = cfg.dur or cfg.duration or 1
-			local warmup = cfg.warmup or 5
-			local time = {}
-			local s = os.time()
-			while os.time() - s < warmup do
-				for _, f in ipairs { ... } do
-					f(arg)
-				end
+	---@generic A:any[]
+	---@param cfg {iterations?:integer, duration?:number, warmup_s?:number, args?:A[]|fun(i:integer):(A), methods?:table<string,fun(...:A)>, return_results?:boolean}
+	function _G.bench(cfg)
+		local gen = type(cfg.args) == 'function' and cfg.args
+			or (
+				cfg.args and function(i) return cfg.args[i % #cfg.args + 1] end or function() return {} end
+			)
+		local methods = cfg.methods
+
+		local iterations = cfg.iterations
+		local dur = cfg.duration or (not iterations and 5 / #vim.tbl_keys(methods))
+		cfg.warmup_s = cfg.warmup_s or 1
+
+		local results = {}
+		local s = os.time()
+
+		local i = 0
+		while os.time() - s < cfg.warmup_s do
+			local args = gen(i)
+			for _, f in ipairs(methods) do
+				f(unpack(args))
 			end
-			for _, f in ipairs { ... } do
-				local s = os.clock()
-				for i = 1, tries do
-					f(arg)
+			i = i + 1
+		end
+
+		for name, fn in pairs(methods) do
+			if iterations then
+				s = os.clock()
+
+				for i = 1, iterations do
+					fn(unpack(gen(i)))
 				end
-				time[#time + 1] = { os.clock() - s }
-				local c = 0
-				local s = os.time()
+
+				results[name] = os.clock() - s
+			elseif dur then
+				local i = 1
+				s = os.time()
+
 				while os.time() - s < dur do
-					f(arg)
-					c = c + 1
+					fn(unpack(gen(i)))
+					i = i + 1
 				end
-				time[#time][2] = c
+
+				results[name] = i - 1
 			end
-			vim.notify(vim.inspect(time))
+		end
+
+		if cfg.return_results then
+			return results
+		else
+			local log = {}
+			local length, num_len, extreme = 0, 0, iterations and math.huge or 0
+			for name, result in pairs(results) do
+				if #name > length then length = #name end
+				local nl = math.floor(math.log10(result)) + 1
+				if nl > num_len then num_len = nl end
+				if iterations then
+					if result < extreme then extreme = result end
+				else
+					if result > extreme then extreme = result end
+				end
+			end
+
+			local fmt = '%'
+				.. length
+				.. 's | %'
+				.. (iterations and (tostring(num_len * 1000) .. 'd ms') or (tostring(num_len) .. 'd runs'))
+				.. ' | %6.2f%% perf'
+
+			for name, result in pairs(results) do
+				log[#log + 1] = string.format(
+					fmt,
+					name,
+					result,
+					100 * (iterations and extreme / result or result / extreme)
+				)
+			end
+			table.sort(log)
+			vim.notify(table.concat(log, '\n'), vim.log.levels.INFO)
 		end
 	end
 
 	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
 	local old = package.loaded[path]
-	if not exists(name) then
-		_G.bench = nil
-	else
-		package.loaded[path] = res
+	if exists(name) then
+		-- inner deep override (ensures deeper references get updated, too)
+		-- override from inside to update also all variables referencing the module
+		local function extend(v1, v2)
+			if type(v1) ~= 'table' or type(v2) ~= 'table' then return v2 end
+
+			for k, _ in pairs(v1) do
+				if v2[k] == nil then v1[k] = nil end
+			end
+			for k, v in pairs(v2) do
+				-- prevent stack overflow
+				if v ~= v2 then v1[k] = extend(v1[k], v) end
+			end
+			return v1
+		end
+		package.loaded[path] = extend(old, res)
 	end
 
 	if vim.startswith(path, 'nerdcontrast') then -- determine code origin

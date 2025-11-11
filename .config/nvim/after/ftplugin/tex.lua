@@ -41,10 +41,8 @@ withMod('syntax-tree-surfer', function(sts)
 	map('n', 'gtf', sts.list { 'begin', 'end' }, { buffer = bid })
 end)
 
-if vim.g.loaded then
-	if vim.g.loaded['tex'] then return end
-	vim.g.loaded['tex'] = true
-end
-vim.g.loaded = { ['tex'] = true }
+if not vim.g.loaded then vim.g.loaded = {} end
+if vim.g.loaded['tex'] then return end
+vim.g.loaded['tex'] = true
 
 withMod('mylsp', function(ml) ml.setup 'texlab' end)

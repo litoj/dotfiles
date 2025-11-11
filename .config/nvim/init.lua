@@ -24,6 +24,13 @@ function _G.withMod(mod, cb)
 	end
 end
 
+-- determine whether to disable some functionality
+local f = io.open '/sys/class/power_supply/BAT0/status'
+vim.g.features_level = (os.getenv 'USER' ~= 'root' and 1 or 0) -- only for unprivileged user
+	+ (f and f:read '*l' ~= 'Discharging' and 2 or 0) -- only when plugged in
+	+ (exists(os.getenv 'HOME' .. '/Documents/work') and 4 or 0) -- only on the main system
+if f then f:close() end
+
 if not exists(lazypath) then
 	vim.fn.system {
 		'git',

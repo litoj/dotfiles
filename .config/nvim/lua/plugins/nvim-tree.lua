@@ -65,7 +65,7 @@ function M.config()
 			map({ 'cd', 'O', '<S-CR>' }, api.tree.change_root_to_node)
 			map('<A-i>', api.node.show_info_popup)
 			map('S', function()
-				local cwd = vim.fn.getcwd()
+				local cwd = vim.loop.cwd()
 				vim.api.nvim_set_current_dir(
 					vim.api.tree.get_node_under_cursor().absolute_path:match '(.+/)'
 				)

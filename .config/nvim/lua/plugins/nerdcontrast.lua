@@ -5,7 +5,7 @@ function M.config()
 		export = true,
 		light = { opacity = 'ff' },
 		dark = { opacity = 'dd' },
-		theme = { override = { StatusLine = 'Bg0' } },
+		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue' } },
 	}
 	-- Dark/Light theme toggle
 	map('n', ' mt', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)

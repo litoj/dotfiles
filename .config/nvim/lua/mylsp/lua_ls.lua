@@ -1,7 +1,7 @@
 return {
 	settings = {
 		Lua = { -- https://luals.github.io/wiki/settings/
-			completion = { autoRequire = false, showParams = true, callSnippet = 'Disable' },
+			completion = { autoRequire = false, showParams = true, callSnippet = 'Replace' },
 			format = {
 				enable = false, -- TODO: try to switch
 				defaultConfig = {

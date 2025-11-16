@@ -24,7 +24,7 @@ function M.config()
 	}
 
 	local mts = require 'manipulator.ts'
-	local mn = require 'manipulator.manipulate'
+	local mr = require 'manipulator.region'
 	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>')
 
 	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>')
@@ -37,6 +37,7 @@ function M.config()
 		local cur = mts.current { v_partial = 0 }
 		cur:move { dst = cur:next() }
 	end)
+	map({ '', 'i' }, '<A-x>', function() mts.current({ v_partial = 0 }):move() end)
 	-- TODO: when working well make this into <C-l>
 	map({ '', 'i' }, '<C-A-L>', function() mts.current({ v_modes = {} }):next():jump(true) end)
 	-- TODO: why does this always jump up
@@ -60,6 +61,44 @@ function M.config()
 	map('x', '.', function() mts.current():parent():select() end)
 	map('x', 'n', function() mts.current():next('path'):select() end)
 	map('x', 'N', function() mts.current():prev('path'):select() end)
+	map(
+		'',
+		'gnf',
+		function()
+			mts
+				.current()
+				:next_in_graph({
+					allow_child = true,
+					types = {
+						'function',
+						'arrow_function',
+						'function_definition',
+						'function_declaration',
+						'method_declaration',
+					},
+				})
+				:jump(false)
+		end
+	)
+	map(
+		'',
+		'gpf',
+		function()
+			mts
+				.current()
+				:prev_in_graph({
+					allow_child = true,
+					types = {
+						'function',
+						'arrow_function',
+						'function_definition',
+						'function_declaration',
+						'method_declaration',
+					},
+				})
+				:jump(true)
+		end
+	)
 
 	local last = {}
 	local function list(dst)

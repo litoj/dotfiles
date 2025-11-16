@@ -43,7 +43,7 @@ bindsym --to-code {
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
 	$Mod+7 exec $lof 'swaymsg mode \$Media' '[workspace="$wMedia" app_id=gimp|mpv|darktable]'
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
-	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'
+	$Mod+9 exec $lof 'prismlauncher --launch HermitCrafted' '[title="^(Minecraft|Prism Launcher).*"]'
 }
 mode $Msg {
 	bindsym {
@@ -310,8 +310,6 @@ mode $Exit {
 # Extra functions |
 #-----------------+
 
-set $mpv playerctl --player=mpv
-set $info $mpv metadata --format
 bindsym {
 # Screenshot
 # my pc has PrintScreen as Fn+s
@@ -365,7 +363,11 @@ bindsym {
 	Shift+KP_Divide exec $signal vol toggle
 	Shift+KP_Multiply exec $signal mic toggle
 	$Alt+KP_Divide exec $signal wp
-
+}
+set $mpv playerctl --player=mpv
+set $info $mpv metadata --format
+set $mpvFile $info '{{xesam:url}}' | sed -e 's,file://,,' -e 's,+,%2b,' | urlencode -d
+bindsym {
 # Media management
 	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
@@ -374,12 +376,9 @@ bindsym {
 	$Mod+m exec mom -play
 	$Mod+Shift+m exec mom -play -r
 	$Mod+$Alt+m exec mom -play -ra3s +l
-	$Mod+Ctrl+$Alt+m exec mom -play "$($info\
-		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*$,\1,')"
-	$Mod+Ctrl+$Alt+Shift+m exec mom -play "$($info\
-		'{{xesam:url}}' | urlencode -d | sed 's,file://\(.*/\)[^/]*/[^/$,\1,')"
-	$Mod+Ctrl+m exec xterm ranger --selectfile="$($info\
-		'{{xesam:url}}' | urlencode -d | sed 's,file://,,')"
+	$Mod+Ctrl+$Alt+m exec mom -play "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+$Alt+Shift+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]*/[^/]*$,\1,')"
+	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpvFile)"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15
 	XF86AudioPlay exec $mpv play-pause
 	KP_Subtract exec playerctl -a play-pause

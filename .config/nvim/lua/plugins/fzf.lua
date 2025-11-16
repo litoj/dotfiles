@@ -36,20 +36,25 @@ function M.config()
 	vim.lsp.buf.references = fzf.lsp_references
 	vim.lsp.buf.implementation = fzf.lsp_implementations
 
-	map('n', 'gD', fzf.lsp_declarations)
-	map('n', 'gd', fzf.lsp_definitions)
+	local function withBackJump(fn)
+		return function()
+			require('manipulator.region').current():mark 'd'
+			fn()
+		end
+	end
+	map('n', 'gD', withBackJump(fzf.lsp_declarations))
+	map('n', 'gd', withBackJump(fzf.lsp_definitions))
 
 	map('n', ' pf', fzf.files)
 	map('n', ' pg', fzf.live_grep_native)
 	map('n', ' po', function() fzf.oldfiles { cwd_only = true } end)
 	-- map('n', ' ps', fzf.lsp_live_workspace_symbols)
-	map('n', ' pd', fzf.diagnostics_workspace) -- list diagnostics
+	map('n', ' pd', withBackJump(fzf.diagnostics_workspace)) -- list diagnostics
 	map('n', ' cl', function() fzf.files { cwd = vim.fn.expand '%:h' } end) -- current list
 	map('n', ' bl', fzf.buffers) -- buffers list
 	map('n', ' of', fzf.oldfiles)
 	map('n', ' ql', fzf.quickfix) -- quickfix list
-	map({ '', 'i' }, '<C-/>', fzf.blines)
-	map({ '', 'i' }, '<C-f>', fzf.blines)
+	map({ '', 'i' }, '<C-f>', withBackJump(fzf.blines))
 	map('n', ' mc', fzf.highlights) -- my colors
 end
 return M

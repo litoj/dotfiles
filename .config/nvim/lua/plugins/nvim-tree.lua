@@ -32,12 +32,8 @@ function M.config()
 		on_attach = function(bufnr)
 			-- vim.wo.wrap = true
 			local function map(keys, fn)
-				if type(keys) == 'table' then
-					for _, key in pairs(keys) do
-						vim.keymap.set('n', key, fn, { buffer = bufnr, nowait = true })
-					end
-				else
-					vim.keymap.set('n', keys, fn, { buffer = bufnr, nowait = true })
+				for _, key in ipairs(keys[1] and keys or { keys }) do
+					vim.keymap.set('n', key, fn, { buffer = bufnr, nowait = true })
 				end
 			end
 			map({ 'h', '<Left>' }, api.tree.change_root_to_parent)
@@ -49,9 +45,12 @@ function M.config()
 				api.node.navigate.parent()
 				api.node.navigate.sibling.next()
 			end)
+
+			map('<Tab>', api.node.open.preview)
+			map({ 'E', '+' }, api.tree.expand_all)
 			map('-', api.node.navigate.parent_close)
-			map('+', api.tree.expand_all)
 			map('_', api.tree.collapse_all)
+
 			map({ '<C-h>', '<BS>' }, api.tree.toggle_hidden_filter)
 			map('<C-g>', api.tree.toggle_gitignore_filter)
 			map('<F5>', api.tree.reload)
@@ -78,7 +77,7 @@ function M.config()
 		end,
 	}
 
-	map('n', '<A-Tab>', api.tree.open)
+	map('n', '<A-Tab>', function() api.tree.open { find_file = true } end)
 	local file = vim.api.nvim_buf_get_name(0)
 	if vim.fn.isdirectory(file) == 1 then
 		vim.api.nvim_set_current_dir(file)

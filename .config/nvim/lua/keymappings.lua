@@ -123,17 +123,67 @@ map('n', 'S', '<Cmd>term<CR>a')
 map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')
 map('n', ' mm', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
+--[[
+```lua
+function io.popen(prog: string, mode?: "r"|"w")
+  -> file*?
+  2. errmsg: string?
+```
+
+---
+
+
+Starts program prog in a separated process.
+
+[View documents](http://www.lua.org/manual/5.4/manual.html#pdf-io.popen)
+
+
+```lua
+mode:
+    | "r" -- Read data from this program by `file`.
+    | "w" -- Write data to this program by `file`.
+```
+
+|||
+```lua
+function io.popen(prog = '', mode = nil|"r"|"w") end
+  =-> file?
+  2. errmsg = ''|nil
+```
+
+Starts program prog in a separated process.
+[View documents](http://www.lua.org/manual/5.4/manual.html#pdf-io.popen)
+```lua
+mode|"r" --- Read data from this program by `file`.    | "w" --- Write data to this program by `file`.
+```
+]]
+map('n', ' mg', function()
+	local handle = io.popen 'git rev-parse --abbrev-ref HEAD 2> /dev/null'
+	local branch = handle:read('*a'):gsub('%s+', '')
+	handle:close()
+	local remote_handle = io.popen 'git config --get remote.origin.url 2> /dev/null'
+	local remote_url = remote_handle:read('*a'):gsub('%s+', '')
+	remote_handle:close()
+	if branch == '' or remote_url == '' then
+		print 'invalid git state - no branch or remote'
+		return
+	end
+
+	-- convert git url to https url
+	local https_url = remote_url:gsub(':', '/'):gsub('^git@', 'https://'):gsub('%.git$', '')
+	local full_url = https_url .. '/tree/' .. branch
+	print(full_url)
+	vim.ui.open(full_url)
+end)
 map('n', ' ml', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
 
 	---@generic A:any[]
-	---@param cfg {iterations?:integer, duration?:number, warmup_s?:number, args?:A[]|fun(i:integer):(A), methods?:table<string,fun(...:A)>, return_results?:boolean}
+	---@param cfg {iterations?:integer, duration?:number, warmup_s?:number, args?:A|fun(i:integer):(A), methods?:table<string,fun(...:A)>, return_results?:boolean}
 	function _G.bench(cfg)
 		local gen = type(cfg.args) == 'function' and cfg.args
-			or (
-				cfg.args and function(i) return cfg.args[i % #cfg.args + 1] end or function() return {} end
-			)
+			or (cfg.args and function() return cfg.args end or function() return {} end)
 		local methods = cfg.methods
 
 		local iterations = cfg.iterations

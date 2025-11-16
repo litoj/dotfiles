@@ -182,6 +182,7 @@ basicsBundle=(
 	nm-connection-editor
 	nmap
 	npm
+	ntfs-3g
 	openssh
 	otf-font-awesome
 	otf-overpass

@@ -84,14 +84,14 @@ function M.config()
 				size = 0.25,
 				position = 'right',
 			},
-			{
+			--[[ {
 				elements = {
 					{ id = 'console', size = 0.5 },
-					{ id = 'repl', size = 0.5 },
+					-- { id = 'repl', size = 0.5 },
 				},
 				size = 0.2,
 				position = 'bottom',
-			},
+			}, ]]
 		},
 		mappings = {
 			expand = { '<RightMouse>', 'o', '<CR>', '<Left>', 'l' },

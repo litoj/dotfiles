@@ -1,6 +1,6 @@
-local map = require 'fthelper' {
-	'c',
+if vim.bo.bufhidden ~= '' then return end
 
+local map = require 'fthelper' {
 	mylsp = function(ml) ml.setup 'clangd' end,
 
 	dap = function(dap)
@@ -37,9 +37,9 @@ map(
 	{ 'n', 'i' },
 	'<A-B>',
 	"<C-s><Cmd>!make debug||gcc -Wall -pedantic -g -fsanitize=address,leak,undefined -DDEBUG '%:p' -o '%:r'.out<CR>",
-	{ buffer = true, remap = true }
+	{ remap = true }
 )
-map({ 'n', 'i' }, '<A-T>', "<C-s><Cmd>!cd '%:h' && make test<CR>", { buffer = true, remap = true })
+map({ 'n', 'i' }, '<A-T>', "<C-s><Cmd>!cd '%:h' && make test<CR>", { remap = true })
 map({ 'n', 'i' }, '<A-M>', "<Cmd>w|!cd '%:h' && make all<CR>")
 
 map({ 'n', 'i' }, '<A-R>', function()

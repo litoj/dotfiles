@@ -1,6 +1,6 @@
-local map = require 'fthelper' {
-	'rust',
+if vim.bo.bufhidden ~= '' then return end
 
+local map = require 'fthelper' {
 	mylsp = function(ml) ml.setup('rust_analyzer', {}) end,
 
 	dap = function(dap)

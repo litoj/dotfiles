@@ -1,23 +1,4 @@
 return {
-	--[[ {
-		'RaafatTurki/hex.nvim',
-		ft = { 'hex', 'xxd' },
-		config = function()
-			local h = require 'hex'
-			h.setup()
-			require 'autocommands'('FileType', 'set ft=xxd', 'hex')
-			require 'autocommands'('FileType', function()
-				h.dump()
-				map({ 'n', 'i' }, '<C-h>', h.toggle, { buffer = true })
-			end, 'xxd')
-		end,
-	}, ]]
-	--[[ {
-		'nvzone/typr',
-		dependencies = 'nvzone/volt',
-		opts = {},
-		cmd = { 'Typr', 'TyprStats' },
-	}, ]]
 	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
@@ -33,7 +14,7 @@ return {
 		'folke/lazydev.nvim',
 		dependencies = {
 			'nvim-lspconfig',
-			'jbyuki/one-small-step-for-vimkind', -- for lua debugging from separate instance
+			{ 'jbyuki/one-small-step-for-vimkind', version = 'main' }, -- for lua debugging from separate instance
 		},
 		ft = 'lua',
 		config = function()

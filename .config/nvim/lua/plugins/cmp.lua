@@ -19,7 +19,7 @@ local src = {
 
 	path = { name = 'path', group_index = 2, max_item_count = 10 },
 
-	lsp = { name = 'nvim_lsp', group_index = 2, max_item_count = 30, priority = 2 },
+	lsp = { name = 'nvim_lsp', group_index = 2, max_item_count = 300, priority = 2 },
 	snip = { name = 'luasnip', group_index = 2, keyword_length = 3, max_item_count = 5 },
 
 	buf = { name = 'buffer', group_index = 3, max_item_count = 20 },

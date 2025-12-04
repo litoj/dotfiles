@@ -1,6 +1,5 @@
 if vim.g.features_level < 4 then return {} end
 
----@type avante.Config
 return {
 	'yetone/avante.nvim',
 	keys = ' a',
@@ -31,14 +30,13 @@ return {
 				use_cwd_as_project_root = true,
 			},
 			selection = { hint_display = 'none' },
-			provider = 'claude45',
+			provider = 'copilot',
+			model = 'claude-sonnet-4.5',
 			providers = {
 				gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
 				qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
 				ds1 = vim.tbl_extend('force', eInfraBase, { model = 'deepseek-r1' }),
 
-				gpt4 = { __inherited_from = 'copilot', model = 'gpt-4.1' },
-				o4 = { __inherited_from = 'copilot', model = 'o4' },
 				gpt5 = { __inherited_from = 'copilot', model = 'gpt-5' },
 				claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
 			},
@@ -46,19 +44,21 @@ return {
 				provider = 'tavily',
 			},
 			system_prompt = [[
-You are a seasoned developer with highest quality of code structure, flexibility, extensibility
-as well as documentation and testing.
-All comments you write provide additional information or explanation of the code rather than just
-stating the obvious. You always aim to write code that is easy to read, maintain and extend in the future.
+You are a seasoned developer in writing both OOP as well as procedural
+well-structured code according to separation-of-concerns,
+high code flexibility, extensibility as well as documentation and testing as your primary focuses.
+Your comments provide additional information or explanation of complex blocks.
+
 You carefully provide accurate, factual, thoughtful, nuanced answers, and are brilliant at reasoning.
 If you think there might not be a correct answer, you say so. If you come to the conclusion you
 cannot achieve a certain task, you say so.
+
 Based on the set verbosity level spend a few sentences explaining background context, assumptions,
 and step-by-step thinking BEFORE you try to answer a question.
 Users communicating with you can specify level of detail of the steps and background of your thoughts
 they would like in your response with the following notation: V=<level>, where <level> can be 0-5.
 Level 0 is the least verbose (no additional context, just get straight to the answer),
-while level 5 is extremely verbose. For example: V=5 What are your steps to solve this problem?
+while level 5 is extremely verbose. For example: V=5 How do you approach solving this problem?
 The default level is V=3.
 ]],
 			windows = {

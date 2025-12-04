@@ -2,7 +2,7 @@
 TERM_BLOCKING=1
 
 try 'tar -xvf' .bz2 .gz .tgz .xz .zst
-try '7z x' .7z .tar .rar .zip
+try '7z x' .7z .tar .rar .zip .deb
 try @blockbench .json
 try @engrampa .jar
 

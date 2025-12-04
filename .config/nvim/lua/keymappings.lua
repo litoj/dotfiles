@@ -77,6 +77,7 @@ map('', '<C-k>', '<C-u>zz')
 map('', '<C-j>', '<C-d>zz')
 map('', '<C-A-k>', '<C-y>')
 map('', '<C-A-j>', '<C-e>')
+map('', 'g;', 'g;zz')
 map({ 'i', 't' }, '<C-k>', '<C-o><C-u><C-o>zz')
 map({ 'i', 't' }, '<C-j>', '<C-o><C-d><C-o>zz')
 map({ '', '!', 't' }, '<C-h>', '<C-Left>')
@@ -110,10 +111,12 @@ map('n', ' h', '<Cmd>vsplit<CR>')
 -- reload
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
 map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
--- search into quickfix list
-map('n', ' qc', '<Cmd>cclose<CR>')
+-- search with centering
 map('n', 'n', 'nzz')
 map('n', 'N', 'Nzz')
+-- quickfix list
+map('n', ' qc', '<Cmd>cclose<CR>')
+map('n', ' qo', '<Cmd>copen<CR>')
 
 -- Extra
 map('n', '|', '&')
@@ -123,45 +126,12 @@ map('n', 'S', '<Cmd>term<CR>a')
 map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')
 map('n', ' mm', function() vim.wo.conceallevel = (vim.wo.conceallevel + 2) % 4 end)
---[[
-```lua
-function io.popen(prog: string, mode?: "r"|"w")
-  -> file*?
-  2. errmsg: string?
-```
-
----
-
-
-Starts program prog in a separated process.
-
-[View documents](http://www.lua.org/manual/5.4/manual.html#pdf-io.popen)
-
-
-```lua
-mode:
-    | "r" -- Read data from this program by `file`.
-    | "w" -- Write data to this program by `file`.
-```
-
-|||
-```lua
-function io.popen(prog = '', mode = nil|"r"|"w") end
-  =-> file?
-  2. errmsg = ''|nil
-```
-
-Starts program prog in a separated process.
-[View documents](http://www.lua.org/manual/5.4/manual.html#pdf-io.popen)
-```lua
-mode|"r" --- Read data from this program by `file`.    | "w" --- Write data to this program by `file`.
-```
-]]
 map('n', ' mg', function()
 	local handle = io.popen 'git rev-parse --abbrev-ref HEAD 2> /dev/null'
+	local remote_handle = io.popen 'git config --get remote.origin.url 2> /dev/null'
+	if not remote_handle or not handle then return end
 	local branch = handle:read('*a'):gsub('%s+', '')
 	handle:close()
-	local remote_handle = io.popen 'git config --get remote.origin.url 2> /dev/null'
 	local remote_url = remote_handle:read('*a'):gsub('%s+', '')
 	remote_handle:close()
 	if branch == '' or remote_url == '' then
@@ -175,89 +145,11 @@ map('n', ' mg', function()
 	print(full_url)
 	vim.ui.open(full_url)
 end)
+
 map('n', ' ml', function() -- load and execute lua code in current buffer
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = name:gsub('.-/lua/(.+)%.lua', '%1', 1):gsub('/init$', '', 1):gsub('/', '.')
-
-	---@generic A:any[]
-	---@param cfg {iterations?:integer, duration?:number, warmup_s?:number, args?:A|fun(i:integer):(A), methods?:table<string,fun(...:A)>, return_results?:boolean}
-	function _G.bench(cfg)
-		local gen = type(cfg.args) == 'function' and cfg.args
-			or (cfg.args and function() return cfg.args end or function() return {} end)
-		local methods = cfg.methods
-
-		local iterations = cfg.iterations
-		local dur = cfg.duration or (not iterations and 5 / #vim.tbl_keys(methods))
-		cfg.warmup_s = cfg.warmup_s or 1
-
-		local results = {}
-		local s = os.time()
-
-		local i = 0
-		while os.time() - s < cfg.warmup_s do
-			local args = gen(i)
-			for _, f in ipairs(methods) do
-				f(unpack(args))
-			end
-			i = i + 1
-		end
-
-		for name, fn in pairs(methods) do
-			if iterations then
-				s = os.clock()
-
-				for i = 1, iterations do
-					fn(unpack(gen(i)))
-				end
-
-				results[name] = os.clock() - s
-			elseif dur then
-				local i = 1
-				s = os.time()
-
-				while os.time() - s < dur do
-					fn(unpack(gen(i)))
-					i = i + 1
-				end
-
-				results[name] = i - 1
-			end
-		end
-
-		if cfg.return_results then
-			return results
-		else
-			local log = {}
-			local length, num_len, extreme = 0, 0, iterations and math.huge or 0
-			for name, result in pairs(results) do
-				if #name > length then length = #name end
-				local nl = math.floor(math.log10(result)) + 1
-				if nl > num_len then num_len = nl end
-				if iterations then
-					if result < extreme then extreme = result end
-				else
-					if result > extreme then extreme = result end
-				end
-			end
-
-			local fmt = '%'
-				.. length
-				.. 's | %'
-				.. (iterations and (tostring(num_len * 1000) .. 'd ms') or (tostring(num_len) .. 'd runs'))
-				.. ' | %6.2f%% perf'
-
-			for name, result in pairs(results) do
-				log[#log + 1] = string.format(
-					fmt,
-					name,
-					result,
-					100 * (iterations and extreme / result or result / extreme)
-				)
-			end
-			table.sort(log)
-			vim.notify(table.concat(log, '\n'), vim.log.levels.INFO)
-		end
-	end
+	require 'bench' -- load benchmarking function for testing
 
 	local res = loadstring(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'))()
 	local old = package.loaded[path]
@@ -279,7 +171,8 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 		package.loaded[path] = extend(old, res)
 	end
 
-	if vim.startswith(path, 'nerdcontrast') then -- determine code origin
+	-- plugin-specific reloading
+	if vim.startswith(path, 'nerdcontrast') then -- nerdcontrast.nvim
 		local nc = require 'nerdcontrast'
 		if path:match '%.palette%.' then
 			nc.setConfig { [vim.o.bg] = { palette = { base = res } } }
@@ -292,14 +185,14 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 			end
 			nc.hi(res)
 		end
-	elseif vim.startswith(path, 'reform') then
+	elseif vim.startswith(path, 'reform') then -- reform.nvim
 		if not path:find 'util' then
 			local reform = require 'reform'
 			reform.setup(path == 'reform' and old.config or reform.config)
 		else
 			res.debug = old.debug
 		end
-	elseif vim.startswith(path, 'plugins') then
+	elseif vim.startswith(path, 'plugins') then -- lazy.nvim
 		if type(res[1]) == 'string' then res = { res } end
 		for _, cfg in ipairs(res) do
 			if type(cfg.config) == 'function' then cfg.config(nil, cfg.opts) end

@@ -1,6 +1,6 @@
-local map = require 'fthelper' {
-	'lua',
+if vim.bo.bufhidden ~= '' then return end
 
+local map = require 'fthelper' {
 	-- mylsp = function(ml) ml.setup 'lua_ls' end, -- handled by lazydev.nvim
 
 	dap = function(dap)

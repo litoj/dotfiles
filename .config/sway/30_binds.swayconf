@@ -41,7 +41,7 @@ bindsym --to-code {
 	$Mod+3 exec xterm
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
-	$Mod+7 exec $lof 'swaymsg mode \$Media' '[workspace="$wMedia" app_id=gimp|mpv|darktable]'
+	$Mod+7 mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
 	$Mod+9 exec $lof 'prismlauncher --launch HermitCrafted' '[title="^(Minecraft|Prism Launcher).*"]'
 }
@@ -278,6 +278,7 @@ bindsym --release {
 	KP_Insert exec $dpmsOff
 	Shift+KP_Insert output $d1 toggle
 }
+bindsym $Mod+p mode default, output * pos 0 0
 mode $Exit {
 	bindsym {
 		c mode default, reload
@@ -285,7 +286,10 @@ mode $Exit {
 		a mode default, exec $signal cpu Auto
 		w mode default, exec $signal cpu Schedutil
 		t mode default, exec $signal cpu Test
+
+# NOTE: presentation / screen duplication mode
 		$Alt+p mode default, output * pos 0 0
+
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
 		--release $Alt+d mode default, exec $lid mode

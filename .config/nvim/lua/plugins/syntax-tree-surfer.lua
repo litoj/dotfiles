@@ -1,6 +1,6 @@
 local M = { 'litoj/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
-	local sts = require 'syntax-tree-surfer'
+	--[[ local sts = require 'syntax-tree-surfer'
 	sts.setup {
 		highlight_group = 'Search',
 		left_hand_side = 'qwertasdfgzxcvb12345QWERTASDFGZXCVB!@#$%',
@@ -21,118 +21,58 @@ function M.config()
 			variable_declaration = '',
 			parameter_declaration = '',
 		},
-	}
+	} ]]
 
-	local mts = require 'manipulator.ts'
-	local mr = require 'manipulator.region'
-	map({ 'n', 'i' }, '<A-S>', '<Cmd>STSSwapOrHold<CR>')
+	local mcp = require 'manipulator.call_path'
+	local mts = mcp.tsregion
 
-	map({ 'n', 'i' }, '<A-L>', '<Cmd>STSSwapDownNormal<CR>')
-	map({ 'n', 'i' }, '<A-H>', '<Cmd>STSSwapUpNormal<CR>')
-	map({ '', 'i' }, '<C-S-H>', function()
-		local cur = mts.current { v_partial = 0 }
-		cur:move { dst = cur:prev() }
-	end)
-	map({ '', 'i' }, '<C-S-L>', function()
-		local cur = mts.current { v_partial = 0 }
-		cur:move { dst = cur:next() }
-	end)
-	map({ '', 'i' }, '<A-x>', function() mts.current({ v_partial = 0 }):move() end)
+	local tsm = mts({ v_partial = 0 }).queue_or_run
+	map({ '', 'i' }, '<A-x>', tsm({ cursor_with = 'dst' }).fn)
+	map({ '', 'i' }, '<A-H>', tsm.prev.queue_or_run.fn)
+	map({ '', 'i' }, '<A-L>', tsm.next.queue_or_run.fn)
+
 	-- TODO: when working well make this into <C-l>
-	map({ '', 'i' }, '<C-A-L>', function() mts.current({ v_modes = {} }):next():jump(true) end)
-	-- TODO: why does this always jump up
-	map({ '', 'i' }, '<C-A-H>', function() mts.current({ v_modes = {} }):prev():jump() end)
+	local tsj = mts['&1'].jump['*1']
+	map({ '', 'i' }, '<C-A-H>', tsj.prev_in_graph.fn)
+	map({ '', 'i' }, '<C-A-K>', tsj.prev('path').fn)
+	map({ '', 'i' }, '<C-A-L>', mts.next('path'):jump({ end_ = true }).fn)
 
-	map('x', '<A-J>', '<Cmd>STSSwapNextVisual<CR>')
-	map('x', '<A-K>', '<Cmd>STSSwapPrevVisual<CR>')
+	local tss = mts['&1'].select['*1'] -- sets the ptr, final method, and edits back at the ptr
+	map({ '', 'i' }, '<A-s>', tss.fn)
+	-- equiv to function() ts.current():parent():select() end
+	map({ '', 'i' }, '<A-p>', tss.parent.fn)
 
-	map({ '', 'i' }, '<A-s>', function() mts.current({ v_modes = { v = true } }):select(true) end)
-	map({ '', 'i' }, '<A-p>', function() mts.current():parent():select() end)
+	map('x', 'H', tss.prev.fn)
+	map('x', 'J', tss.closer_edge_child.fn)
+	map('x', 'K', tss.parent.fn)
+	map('x', 'L', tss.next.fn)
 
-	map('x', 'H', '<Cmd>STSSelectPrevSiblingNode<CR>')
-	map('x', 'J', '<Cmd>STSSelectChildNode<CR>')
-	map('x', 'K', '<Cmd>STSSelectParentNode<CR>')
-	map('x', 'L', '<Cmd>STSSelectNextSiblingNode<CR>')
-
-	map('x', 'P', function() mts.current():parent():select() end)
-	map('x', 'i', function() mts.current():closer_edge_child():select() end)
+	map('x', 'P', tss.parent.fn)
+	map('x', 'i', tss.closer_edge_child.fn)
 	-- TODO: add fallback selector for largest non-space object
-	map('x', ',', function() mts.current():closer_edge_child():select() end)
-	map('x', '.', function() mts.current():parent():select() end)
-	map('x', 'n', function() mts.current():next('path'):select() end)
-	map('x', 'N', function() mts.current():prev('path'):select() end)
-	map(
-		'',
-		'gnf',
-		function()
-			mts
-				.current()
-				:next_in_graph({
-					allow_child = true,
-					types = {
-						'function',
-						'arrow_function',
-						'function_definition',
-						'function_declaration',
-						'method_declaration',
-					},
-				})
-				:jump(false)
-		end
-	)
-	map(
-		'',
-		'gpf',
-		function()
-			mts
-				.current()
-				:prev_in_graph({
-					allow_child = true,
-					types = {
-						'function',
-						'arrow_function',
-						'function_definition',
-						'function_declaration',
-						'method_declaration',
-					},
-				})
-				:jump(true)
-		end
-	)
+	map('x', ',', tss.closer_edge_child.fn)
+	map('x', '.', tss.parent.fn)
+	map('x', 'n', tss.next('path').fn)
+	map('x', 'N', tss.prev('path').fn)
+	map('x', '<A-n>', tss.next_in_graph.fn)
+	map('x', '<A-N>', tss.prev_in_graph.fn)
 
-	local last = {}
-	local function list(dst)
-		return function()
-			last = dst
-			sts.fzf_jump(dst)
-		end
-	end
-	map('n', 'gtv', list { 'variable_declaration', 'parameter_declaration', 'field' })
-	map('n', 'gtc', list { 'function_call', 'call_expression', 'return_statement' })
-	local function goTo(dst, fwd, s)
-		return function()
-			last = dst
-			sts.filtered_jump(dst, fwd, s)
-		end
-	end
-	-- jumps of the same kind as the previous one we used
-	map('n', 'gtt', function() sts.fzf_jump(last) end)
-	map({ 'n', 'i' }, '<A-n>', function() sts.filtered_jump(last, true) end)
-	map({ 'n', 'i' }, '<A-N>', function() sts.filtered_jump(last, false) end)
+	local root = tsj.get_all
 	local function mapAll(key, dst, opts)
 		opts = opts and { desc = opts }
-		map('n', 'gt' .. key, list(dst), opts)
-		map('n', '[' .. key, goTo(dst, false), opts)
-		map('n', ']' .. key, goTo(dst, true), opts)
+		map('n', 'gt' .. key, root({ types = dst }).fn, opts)
+		map('n', '[' .. key, tsj:prev_in_graph({ types = dst }).fn, opts)
+		map('n', ']' .. key, tsj:next_in_graph({ types = dst }).fn, opts)
 	end
-	sts.list = list
-	sts.goTo = goTo
-	sts.mapAll = mapAll
 	mapAll('f', {
 		'function',
-		'arrow_function', --[[ 'function_definition', ]]
+		'arrow_function',
+		'function_definition',
+		'function_declaration',
 		'method_declaration',
 	}, 'jump to functions')
+	mapAll('c', { 'function_call', 'call_expression', 'return_statement' })
+	mapAll('v', { 'variable_declaration', 'parameter_declaration', 'field' })
 	mapAll('s', {
 		'if_statement',
 		'elseif_statement',

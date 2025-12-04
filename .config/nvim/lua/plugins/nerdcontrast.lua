@@ -3,13 +3,18 @@ function M.config()
 	vim.o.bg = exists '/tmp/my/day' and 'light' or 'dark'
 	require('nerdcontrast').setup {
 		export = true,
-		light = { opacity = 'ff' },
+		light = {
+			opacity = 'ff',
+			palette = { override = { Bg1 = { bg = '#f5f5f5' }, Bg2 = {
+				bg = '#ffffff',
+			} } },
+		},
 		dark = { opacity = 'dd' },
 		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue' } },
 	}
 	-- Dark/Light theme toggle
 	map('n', ' mt', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)
-	map('n', '<Leader>mb', function()
+	map('n', ' mb', function()
 		local matcher = {
 			luapat = '(#[a-z0-9]+)',
 			use = function(match) vim.api.nvim_set_hl(0, 'Normal', { bg = match }) end,
@@ -20,14 +25,19 @@ function M.config()
 			},
 		}
 		require('reform.util').apply_matcher(matcher, ev)
-	end)
+	end, { desc = 'update bg colour to the one under cursor' })
+	map('n', ' mT', function()
+		local nc = require 'nerdcontrast'
+		local theme = nc.config[vim.go.background].theme == 'nc_christmas' and 'nc' or 'nc_christmas'
+		nc.setup { theme = theme }
+	end, { desc = 'toggle theme between nc and nc_christmas' })
 end
 
 return {
 	M,
 	{
 		'catgoose/nvim-colorizer.lua',
-		keys = ' c',
+		keys = ' mC',
 		opts = {
 			user_default_options = {
 				names = false,
@@ -49,7 +59,7 @@ return {
 			local c = require 'colorizer'
 			local custom = opts.user_default_options.names_custom
 			c.setup(opts)
-			map('n', '<Leader>c', function()
+			map('n', '<Leader>mC', function()
 				local state = opts.user_default_options.mode
 				local modes = { 'foreground', 'background', 'off' }
 				for i, v in ipairs(modes) do

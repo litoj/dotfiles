@@ -1,3 +1,5 @@
+if vim.bo.bufhidden ~= '' then return end
+
 if not vim.bo.modifiable then return end
 vim.bo.expandtab = true
 vim.bo.tabstop = 2

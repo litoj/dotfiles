@@ -29,7 +29,10 @@ function M.config()
 				--colors=path:fg:green --colors=match:fg:red -e]],
 		},
 		lsp = { jump1 = true, ignore_current_line = true },
-		oldfiles = { stat_file = exists },
+		oldfiles = { stat_file = exists, include_current_session = true },
+		previewers = {
+			builtin = { syntax_limit_b = 204800 },
+		},
 	}
 
 	vim.lsp.buf.document_symbol = fzf.lsp_document_symbols

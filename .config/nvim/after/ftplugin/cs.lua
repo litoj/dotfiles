@@ -1,3 +1,5 @@
+if vim.bo.bufhidden ~= '' then return end
+
 local runcfg = {
 	env = 'ASPNETCORE_ENVIRONMENT=Development',
 	args = {
@@ -34,8 +36,6 @@ local function getProjCfg(path)
 end
 
 local map = require 'fthelper' {
-	'cs',
-
 	mylsp = function(ml) ml.setup 'omnisharp' end,
 
 	dap = function(dap)

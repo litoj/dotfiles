@@ -15,11 +15,7 @@ modmap {
 		map('n', ']s', tsn({ types = { 'begin' } }).fn)
 		map('n', '[s', tsp({ types = { 'begin' } }).fn)
 		local pick = nj['&1']:pick({ picker = 'fzf-lua' })['*1']
-		map( -- TODO: allow collect from root -> root method to tsregion
-			'n',
-			'gts',
-			pick:collect(mcp():next_in_graph(chaps), mcp():prev_in_graph(chaps)).fn
-		)
+		map('n', 'gts', pick:collect(mcp():next_in_graph(chaps), mcp():prev_in_graph(chaps)).fn)
 		map('n', 'gtf', pick:get_all({ types = { 'begin' } }).fn)
 		local envMatcher = mcp.tsregion({ types = { 'begin', 'end' } }):parent()
 		map(

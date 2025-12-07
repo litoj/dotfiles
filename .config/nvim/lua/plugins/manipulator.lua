@@ -1,4 +1,4 @@
-local M = { 'litoj/syntax-tree-surfer', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
+local M = { 'litoj/manipulator.nvim', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
 	--[[ local sts = require 'syntax-tree-surfer'
 	sts.setup {
@@ -31,11 +31,11 @@ function M.config()
 	map({ '', 'i' }, '<A-H>', tsm.prev.queue_or_run.fn)
 	map({ '', 'i' }, '<A-L>', tsm.next.queue_or_run.fn)
 
-	-- TODO: when working well make this into <C-l>
-	local tsj = mts['&1'].jump['*1']
-	map({ '', 'i' }, '<C-A-H>', tsj.prev_in_graph.fn)
-	map({ '', 'i' }, '<C-A-K>', tsj.prev('path').fn)
-	map({ '', 'i' }, '<C-A-L>', mts.next('path'):jump({ end_ = true }).fn)
+	local tsj = mts({ insert_fixer = '[, )]' })['&1'].jump['&$']['*1']
+	map({ '', 'i' }, '<C-h>', tsj.prev_in_graph.fn)
+	map({ '', 'i' }, '<C-l>', tsj.next_in_graph.fn)
+	map({ '', 'i' }, '<C-A-H>', tsj.prev('path').fn)
+	map({ '', 'i' }, '<C-A-L>', tsj.next('path')['*$']({ end_ = true }).fn)
 
 	local tss = mts['&1'].select['*1'] -- sets the ptr, final method, and edits back at the ptr
 	map({ '', 'i' }, '<A-s>', tss.fn)
@@ -60,7 +60,7 @@ function M.config()
 	local root = tsj.get_all
 	local function mapAll(key, dst, opts)
 		opts = opts and { desc = opts }
-		map('n', 'gt' .. key, root({ types = dst }).fn, opts)
+		map('n', 'gt' .. key, root({ types = dst }):pick({ picker = 'fzf-lua' }).fn, opts)
 		map('n', '[' .. key, tsj:prev_in_graph({ types = dst }).fn, opts)
 		map('n', ']' .. key, tsj:next_in_graph({ types = dst }).fn, opts)
 	end

@@ -278,7 +278,6 @@ bindsym --release {
 	KP_Insert exec $dpmsOff
 	Shift+KP_Insert output $d1 toggle
 }
-bindsym $Mod+p mode default, output * pos 0 0
 mode $Exit {
 	bindsym {
 		c mode default, reload

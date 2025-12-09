@@ -21,7 +21,7 @@ wp() {
 					fi
 					nodes["${BASH_REMATCH[3]}"]="${BASH_REMATCH[2]};$type"
 					if [[ ${BASH_REMATCH[1]} == \* ]]; then
-						def[$type]=${BASH_REMATCH[3]}
+						def["$type"]=${BASH_REMATCH[3]}
 					fi
 				elif [[ ${line:3} =~ ^([A-Z][a-z]+)s ]]; then
 					[[ $BASH_REMATCH == Streams ]] && break
@@ -37,7 +37,7 @@ wp() {
 		if [[ $arg ]]; then
 			glob=$arg
 		else
-			glob=${def[sink]:-${def[source]}}
+			glob=${def['sink']:-${def['source']}}
 			glob=$(printf '%s\n' "${!nodes[@]}" | rofi -dmenu -i -p "Audio (${glob%% *})")
 		fi
 		if [[ $glob ]]; then
@@ -48,29 +48,39 @@ wp() {
 			done
 		fi
 	fi
-	msg="Sink: ${def[sink]:=Echo Sink}\nSource: ${def[source]:=Echo Source}"
+	msg="Sink: ${def['sink']:=Echo Sink}\nSource: ${def['source']:=Echo Source}"
 
-	if ! [[ ${nodes[${def[sink]}]} && ${nodes[${def[source]}]} ]]; then
+	if ! [[ ${nodes["${def['sink']}"]} && ${nodes["${def['source']}"]} ]]; then
 		notify-send -u critical -t 2000 'Audio Err' "$msg"
 		exit 1
 	fi
 
 	notify-send -t 1500 "Audio ${glob:-Default}" "$msg"
-	wpctl set-default ${nodes[${def[sink]}]%;*}
-	wpctl set-default ${nodes[${def[source]}]%;*}
-	[[ ${def[sink]} == Echo* ]] && def[sink]='Builtin Sink'
-	[[ ${def[source]} == Echo* ]] && def[source]='Builtin Source'
-	echo "${nodes[${def[sink]}]%;*} ${nodes[${def[source]}]%;*}" >/tmp/my/wp
+	wpctl set-default ${nodes["${def['sink']}"]%;*}
+	wpctl set-default ${nodes["${def['source']}"]%;*}
+	[[ ${def['sink']} == Echo* ]] && def['sink']='Builtin Sink'
+	[[ ${def['source']} == Echo* ]] && def['source']='Builtin Source'
+	echo "${nodes["${def['sink']}"]%;*} ${nodes["${def['source']}"]%;*}" >/tmp/my/wp
 	pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
 }
 
 cpu() {
-	[[ -f /bin/cpupower-gui ]] || return
 	# from ../cpupower_gui/
-	local profile=$1 state
-	declare -A urgency=([Auto]=low [Schedutil]=critical)
-	cpupower-gui pr $profile &>/dev/null &&
-		notify-send -t 1000 -h string:synchronous:battery -u ${urgency[$profile]:-normal} " $profile"
+	local profile=$1
+	if [[ -f /bin/cpupower-gui ]]; then
+		cpupower-gui pr $profile &>/dev/null
+	fi
+
+	local power_profiles=($(</sys/firmware/acpi/platform_profile_choices))
+	declare -A power_map=(['Auto']=1 ['Schedutil']=-1 ['Test']=-1)
+	local power_profile=${power_profiles[${power_map["$profile"]:-${2:-0}}]}
+	if [[ $power_profile ]]; then
+		echo "$power_profile" | sudo tee /sys/firmware/acpi/platform_profile &>/dev/null
+	fi
+
+	declare -A urgency_map=(['Auto']=low ['Schedutil']=critical)
+	notify-send -t 1000 -h string:synchronous:battery -u "${urgency_map["$profile"]:-normal}" \
+		" $profile" "${power_profile:-no power profile}"
 }
 
 cpuByBattery() {
@@ -134,9 +144,7 @@ case "$1" in
 		pkill -RTMIN+11 i3blocks
 		;;
 	light)
-		light=$(backlight "$2" "$3")
-		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
-		pkill -RTMIN+12 i3blocks
+		"${0%/*}/backlight" "${@:2}"
 		;;
 	kb)
 		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
@@ -144,6 +152,6 @@ case "$1" in
 		notify-send -a signal -h string:synchronous:kb " $kb"
 		pkill -RTMIN+13 i3blocks
 		;;
-	theme) ~/.config/i3blocks/clock $2 ;;
+	theme) "${0%/*}/clock" $2 ;;
 	*) "$@" ;;
 esac

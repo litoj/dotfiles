@@ -150,7 +150,7 @@ basicsBundle=(
 	bashmount
 	bat
 	bat-extras
-	booster
+	booster # don't forget about amd/intel-ucode
 	downgrade
 	dragon-drop
 	dunst
@@ -171,7 +171,7 @@ basicsBundle=(
 	libva-mesa-driver
 	linux-firmware-amdgpu
 	linux-firmware-intel
-	#linux-firmware-mediatek
+	linux-firmware-mediatek
 	man-db
 	man-pages
 	mpv-mpris # use pyenv with 2.7 with autosub to generate decent subtitles for any audio
@@ -232,11 +232,7 @@ installBasics() {
 	exec sudo systemctl enable NetworkManager ufw acpid
 	exec sudo mkdir -p /etc/acpi/events
 
-	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/ && {
-		sudo rm /usr/local/bin/${0##*/}
-		exec sudo gcc -O3 -flto -march=native other/backlight.c -o /usr/local/bin/backlight
-		exec sudo chmod +s /usr/local/bin/backlight
-	}
+	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/
 }
 
 guisBundle=(

@@ -1,6 +1,67 @@
 #!/usr/bin/bash
-if [[ $button && $button != 2 ]]; then
-	((button == 1 || button == 4)) && backlight + 10 > /dev/null || backlight - 10 > /dev/null
-fi
+light() {
+	local device=(/sys/class/backlight/*)
+	local scale=$(<$device/scale) # non-linear
+	declare -i max=$(<$device/max_brightness) now=$(<$device/brightness)
+	declare -i min_threshold=max*4/100 max_threshold=max*99/100
+	local oper=${1::1}
 
-echo " $(backlight)%"
+	if [[ $oper == 'v' ]]; then
+		if [[ $scale == 'non-linear' ]]; then
+			((now = now * 2 / 3 - 1))
+		else
+			now+=-1
+		fi
+
+		((now > max_threshold)) && now=max_threshold
+	elif [[ $oper == '^' ]]; then
+		if [[ $scale == 'non-linear' ]]; then
+			((now = now * 3 / 2 + 3))
+		else
+			now+=1
+		fi
+
+		((now < min_threshold)) && now=min_threshold
+	else
+		local arg=${2:-${1:1}}
+		declare -i new=${arg:-0}*max/100
+		case "$oper" in
+			'+')
+				now+=new
+				((now < min_threshold)) && now=min_threshold
+				;;
+			'-')
+				now+=-new
+				((now > max_threshold)) && now=max_threshold
+				;;
+			'=') now=new ;;
+			*)
+				echo $((light = now * 100 / max))
+				return 0
+				;;
+		esac
+	fi
+	((now > max_threshold)) && now=max
+	((now < min_threshold)) && now=0
+
+	echo "$now" | sudo tee "$device/brightness" &>/dev/null
+	((light = now * 100 / max))
+
+	if [[ -z $button ]]; then # update the statusbar instance of itself
+		notify-send -a signal -h int:value:$light -h string:synchronous:light " $light%"
+		pkill -RTMIN+12 i3blocks
+		exit 0
+	else
+		echo "$light"
+	fi
+}
+
+if [[ $1 ]]; then
+	light "$@"
+elif [[ $button && $button != 2 ]]; then
+	#      1LMB RMB SU SD 6SL 7SR
+	btnmap=(_ ^ _ v +3 -3 -10 +10)
+	echo " $(light ${btnmap[$button]})%"
+else
+	echo " $(light)%"
+fi

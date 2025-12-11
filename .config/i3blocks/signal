@@ -64,25 +64,6 @@ wp() {
 	pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
 }
 
-cpu() {
-	# from ../cpupower_gui/
-	local profile=$1
-	if [[ -f /bin/cpupower-gui ]]; then
-		cpupower-gui pr $profile &>/dev/null
-	fi
-
-	local power_profiles=($(</sys/firmware/acpi/platform_profile_choices))
-	declare -A power_map=(['Auto']=1 ['Schedutil']=-1 ['Test']=-1)
-	local power_profile=${power_profiles[${power_map["$profile"]:-${2:-0}}]}
-	if [[ $power_profile ]]; then
-		echo "$power_profile" | sudo tee /sys/firmware/acpi/platform_profile &>/dev/null
-	fi
-
-	declare -A urgency_map=(['Auto']=low ['Schedutil']=critical)
-	notify-send -t 1000 -h string:synchronous:battery -u "${urgency_map["$profile"]:-normal}" \
-		" $profile" "${power_profile:-no power profile}"
-}
-
 cpuByBattery() {
 	local profile
 	if ((!$#)); then
@@ -91,12 +72,12 @@ cpuByBattery() {
 		(($1)) && profile=Charging || profile=Discharging
 	fi
 	if [[ $profile != D* ]]; then
-		profile=Schedutil
+		profile=Auto
 		pkill -f 'bash hibernateDelayed.sh'
 	else
 		profile=Powersave
 	fi
-	cpu "$profile"
+	"${0%/*}/cpu" "$profile"
 
 	sleep 1 && pkill -RTMIN+14 i3blocks # update battery status
 }
@@ -143,9 +124,9 @@ case "$1" in
 		fi
 		pkill -RTMIN+11 i3blocks
 		;;
-	light)
-		"${0%/*}/backlight" "${@:2}"
-		;;
+	light) "${0%/*}/backlight" "${@:2}" ;;
+	battery) "${0%/*}/battery" "${@:2}" ;;
+	cpu) "${0%/*}/cpu" "${@:2}" ;;
 	kb)
 		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
 		swaymsg input type:keyboard xkb_switch_layout next

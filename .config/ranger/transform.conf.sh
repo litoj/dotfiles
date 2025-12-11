@@ -26,7 +26,7 @@ case "$KIND" in
 		}
 		try @rawToJPG .RAF
 
-		try 'mom -R --' +image .jpeg .jpg
+		try 'mom rename --' +image .jpeg .jpg +video
 		;;
 esac
 

@@ -1,15 +1,38 @@
 #!/usr/bin/bash
-# CPU usage script
-# FontAwesome icons fitting:  
+
+profile() {
+	# from ../cpupower_gui/
+	local profile=$1
+	if [[ -f /bin/cpupower-gui ]]; then
+		cpupower-gui pr $profile &>/dev/null
+	fi
+
+	local file=/sys/firmware/acpi/platform_profile
+	local power_profiles=($(<"${file}_choices"))
+	declare -A power_map=(['Auto']=1 ['Schedutil']=-1 ['Test']=-1)
+	local power_profile=${power_profiles[${power_map["$profile"]:-${2:-0}}]}
+	if [[ $power_profile ]]; then
+		echo "$power_profile" | sudo tee "$file" &>/dev/null
+	fi
+
+	declare -A urgency_map=(['Auto']=low ['Schedutil']=critical)
+	notify-send -t 1000 -h string:synchronous:cpu_profile -u "${urgency_map["$profile"]:-normal}" \
+		" $profile" "${power_profile:-no power profile}"
+}
+
+if [[ $1 ]]; then
+	profile "$1"
+	exit 0
+fi
 
 while read -ra line; do
 	[[ ${line[0]} == '%Cpu(s):' ]] && PCT=$(bc <<< \
 		"scale=1;${line[1]/,/.}+${line[3]/,/.}+${line[5]/,/.}") && break
-done <<< "$(top -bn 1)"
+done <<<"$(top -bn 1)"
 
 PCT=${PCT/#./0.}
 
-TEXT=" <b>$PCT%</b>"
+TEXT=" <b>$PCT%</b>" # FontAwesome icons fitting:  
 echo "$TEXT
 $TEXT"
 ~/.config/i3blocks/colorcode $((100 - ${PCT%.*}))

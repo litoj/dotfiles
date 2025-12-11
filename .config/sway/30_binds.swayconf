@@ -302,9 +302,7 @@ mode $Exit {
 		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
-		b mode default, exec xterm sudo bash -c \
-			'f=/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode && echo $((($(cat \
-			$f)+1)%2)) > $f && (($(cat $f)==0)) && echo Full Charge || echo Conservation mode && sleep 1'
+		b mode default, exec $signal battery conservative
 		Escape mode default
 	}
 }

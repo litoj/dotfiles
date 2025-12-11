@@ -40,7 +40,8 @@ if [[ ${MINIMAL/true/1} -eq 0 ]]; then
 
 	# cpu-specific ucode + options
 	if grep -i amd /proc/cpuinfo &>/dev/null; then
-		kcmd+=" amd_pstate=active amdgpu.gpu_recovery=1 amdgpu.cwsr_enable=0" # amd_pstate.shared_mem=1
+		kcmd+=" amd_pstate=active"
+		kcmd+=" amdgpu.cwsr_enable=0 amdgpu.gpu_recovery=1 amdgpu.job_hang_limit=1 amdgpu.sched_policy=1 amdgpu.halt_if_hws_hang=1"
 		[[ -f /boot/amd-ucode.img ]] && kcmd+=' initrd=\amd-ucode.img'
 	else
 		[[ -f /boot/intel-ucode.img ]] && kcmd+=' initrd=\intel-ucode.img'

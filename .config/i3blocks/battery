@@ -1,9 +1,47 @@
 #!/usr/bin/bash
+
+charge_limit() {
+	local CHECK_FILE=/tmp/my/conservative_bat_manual
+	if [[ $2 == auto* ]]; then
+		[[ -f $CHECK_FILE ]] && return 0 # not overriding user decission
+	else
+		touch "$CHECK_FILE"
+	fi
+
+	# alt path: /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+	local file=(/sys/class/power_supply/*/extensions/*/conservation_mode)
+	declare -i now=$(<"$file")
+	local new
+	case "$1" in
+		'toggle' | 'tgl' | '') ((new = (now + 1) % 2)) ;;
+		'conservative' | 60) new=1 ;;
+		'full' | 100) new=0 ;;
+	esac
+
+	if [[ $new ]]; then
+		((new)) && local args=(-u normal '60% Max Charge') || local args=(-u critical 'Full Charge')
+		if ((now == new)); then
+			[[ $2 == auto* ]] && return 0
+			args+=('(Already active)')
+		else
+			echo "$new" | sudo tee "$file" >/dev/null
+		fi
+		notify-send -t 1000 "${args[@]}"
+	fi
+}
+
+if [[ $1 ]]; then
+	[[ $2 ]] && charge_limit "$@" || charge_limit "$1" manual
+	exit 0
+elif [[ $button == 3 ]]; then
+	charge_limit toggle manual
+fi
+
 bat=(/sys/class/power_supply/BAT*)
-read STATUS < "$bat/status"
-read ENERGY_NOW < "$bat/energy_now"
-read POWER_NOW < "$bat/power_now"
-read CAPACITY < "$bat/capacity"
+read STATUS <"$bat/status"
+read ENERGY_NOW <"$bat/energy_now"
+read POWER_NOW <"$bat/power_now"
+read CAPACITY <"$bat/capacity"
 
 if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then
 	echo " $CAPACITY%"
@@ -16,7 +54,12 @@ else
 		D*)
 			USAGE=$((POWER_NOW / 100000))
 			if ((CAPACITY > 40)); then
-				((CAPACITY > 80)) && TEXT= || { ((CAPACITY > 60)) && TEXT= || TEXT=; }
+				if ((CAPACITY > 80)); then
+					TEXT=
+				else
+					((CAPACITY > 60)) && TEXT= || TEXT=
+					charge_limit conservative auto
+				fi
 			elif ((CAPACITY > 25)); then
 				TEXT=
 			elif ((CAPACITY > 20)); then
@@ -31,7 +74,12 @@ else
 			;;
 		C*)
 			TEXT= USAGE=$((POWER_NOW / 100000))
-			((CAPACITY >= 80)) && bad=1
+			if ((CAPACITY >= 80)); then
+				charge_limit conservative auto
+				bad=1
+			elif ((CAPACITY >= 50)); then
+				charge_limit full auto
+			fi
 			;;
 		F*) TEXT= ;;
 		*) TEXT= ;;

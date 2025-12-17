@@ -163,6 +163,7 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export GRADLE_USER_HOME=$cache/gradle GOPATH=$cache/go
 	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
+	export TEXMFHOME=$cache/texlive2020
 	export QT_QPA_PLATFORMTHEME=qt5ct RADV_PERFTEST=video_decode
 	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
 	export PATH="$HOME/.pyenv/shims:$PATH"

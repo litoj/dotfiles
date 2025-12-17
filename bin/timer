@@ -1,54 +1,88 @@
 #!/usr/bin/bash
 
-rep=${REPORTFILE:-$HOME/Documents/school/Bakal/workreport.md}
-
-sumWeek() {
-	sed 's/^[^=]*= \([0-9.]\+\)/= \1/;s/;[^=]*= \([0-9.]\+\)/\n= \1/g' "$rep" |
-		awk '/^[0-9]/ || /[WM]/ {x=0}; /^=/  {x+=+$2}; END {print x}'
-}
-
-sumMonth() {
-	awk '/^[0-9]/ || /M/ {x=0}; /W/ {x+=$3}; END {print x}' "$rep"
-}
-
-sumAll() {
-	local week=$(sumWeek) month=$(sumMonth) pastMonths=$(
-		awk '/M/ {x+=$3}; END {print x}' "$rep"
-	)
-	bc <<<"scale=2;$week+$month+$pastMonths"
-}
-
-if [[ -z $1 ]]; then
-	sumAll
-	exit
-fi
-
-start=$(date +%H:%M)
-"$@"
-((SECONDS < 5)) && exit
-dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
-
-last=$(tail -n 1 "$rep")
-read today < <(date +%e)
-if [[ $last == *[^=]" $today."* ]]; then # append to current day
-	head -n -1 "$rep" >/tmp/wrep
-	echo "$last; $dur" >>/tmp/wrep
-	mv /tmp/wrep "$rep"
+if [[ -d $REPORTFILE ]]; then
+	rep=${REPORTFILE}/workreport.md
+elif [[ -z $REPORTFILE ]]; then
+	echo 'REPORTFILE variable is not set'
+	exit 1
 else
-	last="${last/. */}"
-	last=${last#*- }
-
-	thisMonth=$(date +%m) # expecting same month from prev year to have been summed (no 1y gap)
-	newMonth=$(awk "BEGIN {x=1} /^$thisMonth/ {x=0}; /M$thisMonth/ {x=1}; END {print x}" "$rep")
-	thisWeek=$(date +%W)
-
-	if ((newMonth || last < today - $(date +%u))); then # sum up past day
-		echo "- W$thisWeek: $(sumWeek)" >>"$rep"
-	fi
-	if ((newMonth)); then # month
-		echo "- M$thisMonth: $(sumMonth)" >>"$rep"
-		date +%m. >>"$rep" # mark beginning of current month
-	fi
-
-	echo "  - $today. $dur" >>"$rep"
+	rep=$REPORTFILE
 fi
+
+TERM_DAY=$(head -n 1 "$rep")
+if [[ $TERM_DAY =~ ^TERM_DAY=([1-9][0-9]*)$ ]]; then
+	declare -i TERM_DAY=${BASH_REMATCH[1]}
+else
+	echo "'TERM_DAY=xx' must be the first line in the report file to identify the sum-up period in the month"
+	exit 1
+fi
+# TODO: allow sum count to a specific date, currently 18
+
+# sums time since last match of SEP_COND (separator awk condition)
+splitTimes() {
+	sed 's/^[^=]*= \([0-9.]\+\)/= \1/;s/;[^=]*= \([0-9.]\+\)/\n= \1/g' "$rep"
+}
+sumLast() {
+	splitTimes | awk "$SEP_COND"' {x=0}; /^=/  {x+=$2}; END {print x}'
+}
+sumWeek() {
+	SEP_COND='/^- W/' sumLast
+}
+
+sumTerm() {
+	SEP_COND='/^- T/' sumLast
+}
+
+local last=(
+	$(awk '/^[0-9]/ {m=$1}; /^ *- [0-9]/ {d=$2}; END{print m" "d}' "$rep")
+)
+last[0]=${last[0]%.}
+last[1]=${last[1]%.}
+declare -ai new=($(date +"%m %d"))
+
+isNewWeek() {
+	declare -i yearLast=$(date +%Y)
+	((new < last)) && yearLast+=-1
+	local lastWeek=$(date -d "$year-${last[0]}-${last[1]}" +%W)
+	lastWeek=${lastWeek#0}
+	declare -i newWeek=$(date +%W)
+	if ((lastWeek != 0 || newWeek != 52)); then # date treats leftover days in January as 0th week
+		((newWeek != lastWeek))
+	fi
+}
+
+isNewTerm() {
+	((new < last)) && local new=($((new[0] + 12)) ${new[1]})
+	if ((new > last)); then
+		((new > last + 1 || last[1] < TERM_DAY || new[1] >= TERM_DAY))
+	else
+		((last[1] < TERM_DAY && new[1] >= TERM_DAY))
+	fi
+}
+
+runAndTime() {
+	start=$(date +%H:%M)
+	"$@"
+	((SECONDS < 60)) && exit
+	dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
+
+	if ((last[0] == new[0] && last[1] == new[1])); then # append to current day
+		head -n -1 "$rep" >/tmp/wrep
+		echo "${last[1]}.; $dur" >>/tmp/wrep
+		mv /tmp/wrep "$rep"
+	else
+
+		isNewWeek "${new[@]}" && echo "- W$(date +%W): $(sumWeek)" >>"$rep"
+		isNewTerm "${new[@]}" && echo "- T${new}: $(sumTerm)" >>"$rep"
+		((last != new)) && echo "${new}." >>"$rep" # mark beginning of current month
+
+		echo "  - ${new[1]}. $dur" >>"$rep" # add time for new day
+	fi
+}
+
+case "$1" in
+	all) SEP_COND='0' sumLast ;;
+	week) sumWeek ;;
+	term) sumTerm ;;
+	*) runAndTime "$@" ;;
+esac

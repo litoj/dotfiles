@@ -77,7 +77,7 @@ else
 			if ((CAPACITY >= 80)); then
 				charge_limit conservative auto
 				bad=1
-			elif ((CAPACITY >= 50)); then
+			elif ((CAPACITY <= 50)); then
 				charge_limit full auto
 			fi
 			;;

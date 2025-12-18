@@ -6,7 +6,7 @@ function M.config()
 		alpha.start()
 
 		vim.bo.bufhidden = nil
-		-- TODO: this fails with bg tasks making windows (spinner)
+		-- FIXME: this fails with bg tasks making windows (spinner)
 		_G.protectWindow = #vim.api.nvim_list_wins() > 1
 
 		require 'autocommands'('BufLeave', function(state)
@@ -124,6 +124,7 @@ function M.config()
 				{ 'dn', '~/Documents/personal/nvim/' },
 				{ 'nn', '~/Documents/personal/nvim/nerdcontrast.nvim/lua/nerdcontrast/' },
 				{ 'nr', '~/Documents/personal/nvim/reform.nvim/' },
+				{ 'nm', '~/Documents/personal/nvim/manipulator.nvim/lua/manipulator/'}
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },

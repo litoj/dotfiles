@@ -1,5 +1,6 @@
 local M = { 'litoj/manipulator.nvim', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
+	require('manipulator').setup()
 	--[[ local sts = require 'syntax-tree-surfer'
 	sts.setup {
 		highlight_group = 'Search',

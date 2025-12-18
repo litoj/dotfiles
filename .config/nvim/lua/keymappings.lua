@@ -22,21 +22,59 @@ map('i', '<S-Enter>', '<C-o>o')
 map('i', '<C-Enter>', '<C-o>O')
 map('i', '<A-Enter>', '<C-o>md<C-o>O<C-o>`d')
 map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
-map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg('/', 1), 'n', false) end)
-map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg('+', 1), 'n', false) end)
+map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg '/', 'n', false) end)
+map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg '+', 'n', false) end)
 -- Clipboard management
+local function gen_paste(after)
+	return function()
+		local reg = vim.v.register
+		local text = vim.fn.getreg(reg)
+		local type = vim.fn.getregtype(reg)
+		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
+		local mode = vim.fn.mode()
+		local following = after
+		if mode == 'i' and type == 'v' then
+			after = false
+		elseif mode ~= 'i' and mode ~= 'n' then -- all visual modes
+			vim.cmd [[normal! "dd]]
+			if mode == 'v' and type == 'v' then
+				vim.cmd.normal 'h'
+				if not after then after = true end
+			elseif mode == 'V' then
+				type = 'V'
+				after = false
+				_G.line = math.min(vim.fn.getpos('v')[2], vim.fn.getpos('.')[2])
+			end
+		end
+		vim.api.nvim_put(vim.fn.getreg(reg, 1, 1), type, after, following)
+		if type == 'V' then
+			if after then
+				if mode == 'i' then
+					vim.api.nvim_input '<left>'
+				else
+					vim.cmd.normal 'h'
+				end
+			elseif mode == 'V' then
+				vim.fn.setpos('.', { 0, _G.line, 1 })
+				_G.line = nil
+				if following then
+					vim.cmd.normal '$' -- works only on first try, idk why
+				else
+					vim.cmd.normal '^'
+				end
+			end
+		end
+	end
+end
+map({ '', 'i' }, '<C-v>', gen_paste(true))
+map({ '', 'i' }, '<C-S-V>', gen_paste(false))
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')
 map('i', '<C-x>', '<C-o>dd')
 map('n', '<C-c>', 'Y', { silent = true })
 map('x', '<C-c>', 'y', { silent = true })
 map('i', '<C-c>', '<C-o>Y', { silent = true })
-map('i', '<C-v>', '<C-o>p')
 map('i', '<A-V>', '<C-r>"')
-map('i', '<C-S-V>', '<C-o>gP')
-map('n', '<C-v>', 'p')
-map('v', '<C-v>', '"ddP')
-map('v', '<C-S-V>', '"ddp')
 map('', 'c', '"dc') -- breaks avante ca (change accept)
 -- Deleting text
 map('i', '<C-d>', '<C-o>"ddd')

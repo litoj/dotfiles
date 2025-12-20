@@ -43,7 +43,7 @@ read ENERGY_NOW <"$bat/energy_now"
 read POWER_NOW <"$bat/power_now"
 read CAPACITY <"$bat/capacity"
 
-if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then
+if [[ -z $STATUS || $POWER_NOW -lt 1000000 ]]; then # when charging at 0 rate = conservation mode
 	echo " $CAPACITY%"
 else
 	((TIME = ENERGY_NOW * 60 / POWER_NOW))
@@ -58,7 +58,6 @@ else
 					TEXT=
 				else
 					((CAPACITY > 60)) && TEXT= || TEXT=
-					charge_limit conservative auto
 				fi
 			elif ((CAPACITY > 25)); then
 				TEXT=
@@ -77,11 +76,15 @@ else
 			if ((CAPACITY >= 80)); then
 				charge_limit conservative auto
 				bad=1
-			elif ((CAPACITY <= 50)); then
+			elif ((CAPACITY >= 50 && CAPACITY < 55)); then
 				charge_limit full auto
 			fi
 			;;
-		F*) TEXT= ;;
+		F*)
+			TEXT=
+			rm /tmp/my/conservative_bat_manual &>/dev/null
+			charge_limit conservative auto
+			;;
 		*) TEXT= ;;
 	esac
 	echo "$TEXT $CAPACITY%${USAGE:+/$((USAGE / 10)).${USAGE:0-1}W} $TIME"

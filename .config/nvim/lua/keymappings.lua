@@ -27,54 +27,42 @@ map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg '+', 'n', false
 -- Clipboard management
 local function gen_paste(after)
 	return function()
-		local reg = vim.v.register
-		local text = vim.fn.getreg(reg)
-		local type = vim.fn.getregtype(reg)
-		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
+		local type = vim.fn.getregtype(vim.v.register)
+		if type == '\0225' then
+			vim.api.nvim_input('"' .. vim.v.register .. (after and 'p' or 'P'))
+			return
+		end
+
+		local r, is_visual = require('manipulator.region').current { insert_fixer = false }
 		local mode = vim.fn.mode()
-		local following = after
-		if mode == 'i' and type == 'v' then
-			after = false
-		elseif mode ~= 'i' and mode ~= 'n' then -- all visual modes
-			vim.cmd [[normal! "dd]]
-			if mode == 'v' and type == 'v' then
-				vim.cmd.normal 'h'
-				if not after then after = true end
-			elseif mode == 'V' then
-				type = 'V'
-				after = false
-				_G.line = math.min(vim.fn.getpos('v')[2], vim.fn.getpos('.')[2])
-			end
+		local text = vim.fn.getreg(vim.v.register)
+		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
+		if type == 'V' then text = text:gsub('\n$', '') end
+
+		if is_visual then
+			vim.fn.setreg('d', r:get_text(), type)
+			vim.api.nvim_feedkeys('\027', 'n', false)
+			if mode == 'v' then r = r:paste { text = '' } end
 		end
-		vim.api.nvim_put(vim.fn.getreg(reg, 1, 1), type, after, following)
-		if type == 'V' then
-			if after then
-				if mode == 'i' then
-					vim.api.nvim_input '<left>'
-				else
-					vim.cmd.normal 'h'
-				end
-			elseif mode == 'V' then
-				vim.fn.setpos('.', { 0, _G.line, 1 })
-				_G.line = nil
-				if following then
-					vim.cmd.normal '$' -- works only on first try, idk why
-				else
-					vim.cmd.normal '^'
-				end
-			end
-		end
+
+		r = r:paste {
+			text = text,
+			linewise = type == 'V',
+			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
+		}
+		r:jump { end_ = type == 'v' and #r:get_lines() == 1 and (after or mode == 'n') }
 	end
 end
 map({ '', 'i' }, '<C-v>', gen_paste(true))
 map({ '', 'i' }, '<C-S-V>', gen_paste(false))
+map('n', '<A-S-V>', '<C-S-V>')
+map('i', '<A-S-V>', '<C-o>v')
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')
 map('i', '<C-x>', '<C-o>dd')
 map('n', '<C-c>', 'Y', { silent = true })
 map('x', '<C-c>', 'y', { silent = true })
 map('i', '<C-c>', '<C-o>Y', { silent = true })
-map('i', '<A-V>', '<C-r>"')
 map('', 'c', '"dc') -- breaks avante ca (change accept)
 -- Deleting text
 map('i', '<C-d>', '<C-o>"ddd')
@@ -133,6 +121,7 @@ map({ 'i', 't' }, '<C-Up>', '<PageUp><C-o>M')
 map({ 'i', 't' }, '<C-Down>', '<PageDown><C-o>M')
 
 -- Window actions
+map({ 'n', 'i' }, '<C-Tab>', '<Cmd>tabnext<CR>')
 -- focus
 map('n', '<A-h>', '<C-w>h')
 map('n', '<A-j>', '<C-w>j')

@@ -10,4 +10,6 @@ map i recolor
 map p print
 map <Left> navigate previous
 map <BackSpace> navigate previous
+map <S-Space> navigate previous
 map <Right> navigate next
+map <Space> navigate next

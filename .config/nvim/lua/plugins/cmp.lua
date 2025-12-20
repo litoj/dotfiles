@@ -16,13 +16,12 @@ local src = {
 	calc = { name = 'calc', group_index = 1 },
 	font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
 	latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+	path = { name = 'path', group_index = 1 },
 
-	path = { name = 'path', group_index = 2, max_item_count = 10 },
+	lsp = { name = 'nvim_lsp', group_index = 2, priority = 2 },
+	snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
 
-	lsp = { name = 'nvim_lsp', group_index = 2, max_item_count = 300, priority = 2 },
-	snip = { name = 'luasnip', group_index = 2, keyword_length = 3, max_item_count = 5 },
-
-	buf = { name = 'buffer', group_index = 3, max_item_count = 20 },
+	buf = { name = 'buffer', group_index = 3 },
 }
 
 function M.config()
@@ -181,7 +180,7 @@ function M.config()
 			keyword_length = 2,
 			autocomplete = false,
 		},
-		performance = { max_view_entries = 50, throttle = 1, fetching_timeout = 1 },
+		performance = { max_view_entries = 100, throttle = 1, fetching_timeout = 1 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
@@ -221,10 +220,10 @@ M = {
 
 -- add AI plugins when plugged in and on the main pc
 if vim.g.features_level >= 7 then
-	src.copilot = { name = 'copilot', group_index = 2, trigger_characters = {} }
+	src.copilot = { name = 'copilot', group_index = 3, trigger_characters = {} }
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
-		dependencies = { { 'litoj/cmp-copilot', opts = { update_on_keypress = false } } },
+		dependencies = { { 'litoj/cmp-copilot', opts = { update_on_keypress = true } } },
 		event = 'LspAttach',
 		opts = {
 			panel = { enabled = false },

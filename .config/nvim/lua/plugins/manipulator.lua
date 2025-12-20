@@ -27,18 +27,18 @@ function M.config()
 	local mcp = require 'manipulator.call_path'
 	local mts = mcp.tsregion
 
-	local tsm = mts({ v_partial = 0 }).queue_or_run
-	map({ '', 'i' }, '<A-x>', tsm({ cursor_with = 'dst' }).fn)
-	map({ '', 'i' }, '<A-H>', tsm.prev.queue_or_run.fn)
-	map({ '', 'i' }, '<A-L>', tsm.next.queue_or_run.fn)
+	local tsq = mts({ v_partial = 0 }).queue_or_run
+	map({ '', 'i' }, '<A-x>', tsq({ cursor_with = 'dst' }).fn)
+	map({ '', 'i' }, '<A-H>', tsq.prev.queue_or_run.fn)
+	map({ '', 'i' }, '<A-L>', tsq.next.queue_or_run.fn)
 
-	local tsj = mts({ insert_fixer = '[, )]' })['&1'].jump['&$']['*1']
+	local tsj = mts({ insert_fixer = '[, )]' })['&1'].jump['&$']['*1']:next_with_count 'fallback'
 	map({ '', 'i' }, '<C-h>', tsj.prev_in_graph.fn)
 	map({ '', 'i' }, '<C-l>', tsj.next_in_graph.fn)
 	map({ '', 'i' }, '<C-A-H>', tsj.prev('path').fn)
 	map({ '', 'i' }, '<C-A-L>', tsj.next('path')['*$']({ end_ = true }).fn)
 
-	local tss = mts['&1'].select['*1'] -- sets the ptr, final method, and edits back at the ptr
+	local tss = mts['&1'].select['*1']:next_with_count 'fallback'
 	map({ '', 'i' }, '<A-s>', tss.fn)
 	-- equiv to function() ts.current():parent():select() end
 	map({ '', 'i' }, '<A-p>', tss.parent.fn)

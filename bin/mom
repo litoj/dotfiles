@@ -940,17 +940,13 @@ play() {
 	((daemonize > 0)) && cmd+=(--no-terminal)
 	if [[ $randomizer == [ad]* ]]; then
 		exec "${cmd[@]}" && if ((loop > 0)); then
-			local args=($ACTION) i=${#playParams[@]}
-			for ((i = ${#playParams[@]} - 8; i >= 0; i -= 4)); do
-				args+=("${!playParams[i]}")
-			done
-			args+=("${src[@]}")
+			local args=($ACTION -l -r$randomizer "${src[@]}")
 
 			if ((daemonize > 0)); then # daemonized by launching the same cmd, but in the bg
-				exec "$0" "${args[@]}" \&
+				exec "$0" "${args[@]}" -d \&
 				disown
 			else
-				call "${args[@]}"
+				call "${args[@]}" +d
 			fi
 		fi
 	else

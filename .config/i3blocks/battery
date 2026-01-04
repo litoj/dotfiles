@@ -52,7 +52,7 @@ else
 	TIME="$((TIME / 60)):$M"
 	case "$STATUS" in
 		D*)
-			USAGE=$((POWER_NOW / 100000))
+			USAGE=$((POWER_NOW / 100000)) # units: 100 mW
 			if ((CAPACITY > 40)); then
 				if ((CAPACITY > 80)); then
 					TEXT=
@@ -72,11 +72,12 @@ else
 			fi
 			;;
 		C*)
-			TEXT= USAGE=$((POWER_NOW / 100000))
+			TEXT=
+			USAGE=$((POWER_NOW / 100000)) # units: 100 mW
 			if ((CAPACITY >= 80)); then
 				charge_limit conservative auto
 				bad=1
-			elif ((CAPACITY >= 50 && CAPACITY < 55)); then
+			elif ((CAPACITY >= 54 && CAPACITY < 60 && USAGE > 100)); then
 				charge_limit full auto
 			fi
 			;;

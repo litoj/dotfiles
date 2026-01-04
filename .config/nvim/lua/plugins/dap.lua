@@ -76,10 +76,10 @@ function M.config()
 		layouts = {
 			{
 				elements = {
-					{ id = 'scopes', size = 0.45 },
-					{ id = 'watches', size = 0.35 },
+					{ id = 'scopes', size = 0.62 },
+					{ id = 'watches', size = 0.2 },
 					{ id = 'stacks', size = 0.1 },
-					{ id = 'breakpoints', size = 0.1 },
+					{ id = 'breakpoints', size = 0.08 },
 				},
 				size = 0.25,
 				position = 'right',

@@ -190,6 +190,7 @@ basicsBundle=(
 	p7zip
 	pacman-contrib
 	pipewire-audio
+	pipewire-jack
 	pipewire-pulse # for firefox and pulsemixer
 	pulsemixer
 	python-pynvim

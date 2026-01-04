@@ -23,7 +23,7 @@ return function(onetimetbl)
 	local ft = vim.bo.ft
 	if onetimetbl and not loaded[ft] then
 		loaded[ft] = true
-		modmap(onetimetbl)
+		modmap(onetimetbl, activeBuf)
 	end
 
 	return bufmap, modmap

@@ -96,7 +96,7 @@ Alt+e=exec nohup xterm ranger --selectfile='%' &>/dev/null
 Ctrl+e=exec xdg-open -c ~/.config/ranger/edit.conf.sh '%'
 Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Shift+b=exec cp '%' ~/Pictures/screen/
-Delete=exec bash -c 'mkdir -p /tmp/my/trash && x="%" && mv "$x" "/tmp/my/trash/${x##*/}"'
+Delete=exec bash -c 'x="%" && which trash && trash "$x" || mv "$x" "/tmp/my/trash/${x##*/}"'
 
 [keys.gallery]
 # too fast -> scroll only horizontally
@@ -110,7 +110,7 @@ h=step_left
 j=step_down
 k=step_up
 l=step_right
-Delete=exec bash -c 'mkdir -p /tmp/my/trash && x="%" && mv "$x" "/tmp/my/trash/${x##*/}"'
+Delete=exec bash -c 'x="%" && which trash && trash "$x" || mv "$x" "/tmp/my/trash/${x##*/}"'
 x=skip_file
 
 Alt+f=exec dragon-drop -x -T '%'

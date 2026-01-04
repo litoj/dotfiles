@@ -180,7 +180,7 @@ function M.config()
 			keyword_length = 2,
 			autocomplete = false,
 		},
-		performance = { max_view_entries = 100, throttle = 1, fetching_timeout = 1 },
+		performance = { max_view_entries = 300, throttle = 1, fetching_timeout = 1 },
 		window = {
 			completion = { col_offset = -3, side_padding = 0 },
 			documentation = { border = 'rounded', winhighlight = '' },
@@ -199,10 +199,7 @@ function M.config()
 			src.latex,
 		},
 	})
-	cmp.setup.filetype(
-		{ 'lua' },
-		{ sources = { src.calc, src.path, src.lsp, src.font, src.copilot } }
-	)
+	cmp.setup.filetype({ 'lua' }, { sources = { src.calc, src.path, src.lsp, src.font } })
 
 	cmp.setup.cmdline(':', {
 		sources = { { name = 'cmdline', group_index = 0 }, src.path, src.latex, src.buf },
@@ -224,7 +221,7 @@ if vim.g.features_level >= 7 then
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
 		dependencies = { { 'litoj/cmp-copilot', opts = { update_on_keypress = true } } },
-		event = 'LspAttach',
+		ft = { 'python', 'cs', 'vue' },
 		opts = {
 			panel = { enabled = false },
 			suggestion = {
@@ -238,14 +235,14 @@ if vim.g.features_level >= 7 then
 			},
 			filetypes = {
 				['*'] = false,
-				c = true,
-				cpp = true,
+				-- c = true,
+				-- cpp = true,
 				cs = true,
 				javascript = true,
 				javascriptreact = true,
-				lua = true,
+				-- lua = true,
 				python = true,
-				sh = true,
+				-- sh = true,
 				typescript = true,
 				typescriptreact = true,
 				vue = true,

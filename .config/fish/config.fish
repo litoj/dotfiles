@@ -53,24 +53,24 @@ bind \e\[1\;5C clear # nvim leonerd vtty encoding
 bind \b backward-kill-word
 bind \e\[3\;5~ kill-word
 
-set fish_color_normal normal
-set fish_color_command blue
-set fish_color_param brcyan
-set fish_color_cwd_root 
-set fish_color_operator red
-set fish_color_redirection red
-set fish_color_end red
-set fish_color_quote yellow
-set fish_color_escape cc6415
-set fish_color_comment grey
-set fish_color_autosuggestion grey
-set fish_pager_color_description magenta
-set fish_pager_color_prefix brcyan --bold
-set fish_pager_color_completion grey
-set fish_pager_color_progress green --bold
-set fish_color_search_match --bold --background=222222
-set fish_color_redirection brmagenta
-set fish_color_error brred
+set --global fish_color_normal normal
+set --global fish_color_command blue
+set --global fish_color_param brcyan
+set --global fish_color_cwd_root 
+set --global fish_color_operator red
+set --global fish_color_redirection red
+set --global fish_color_end red
+set --global fish_color_quote yellow
+set --global fish_color_escape cc6415
+set --global fish_color_comment grey
+set --global fish_color_autosuggestion grey
+set --global fish_pager_color_description magenta
+set --global fish_pager_color_prefix brcyan --bold
+set --global fish_pager_color_completion grey
+set --global fish_pager_color_progress green --bold
+set --global fish_color_search_match --bold --background=222222
+set --global fish_color_redirection brmagenta
+set --global fish_color_error brred
 
 alias ls='eza --icons'
 alias lt='eza --icons -T -L'
@@ -145,10 +145,6 @@ abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | 
 abbr efig   'efivar -p -n (efivar -l | grep "")'
 abbr gefi   'cd /sys/firmware/efi/efivars/'
 abbr mefi   'chattr -i'
-
-function fish_user_key_bindings
-	fzf_key_bindings
-end
 
 if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export (ssh-agent | sed -n 's/^\([^ ]*\);.*/\1/p')

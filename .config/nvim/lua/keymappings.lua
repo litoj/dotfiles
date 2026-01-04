@@ -25,38 +25,7 @@ map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
 map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg '/', 'n', false) end)
 map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg '+', 'n', false) end)
 -- Clipboard management
-local function gen_paste(after)
-	return function()
-		local type = vim.fn.getregtype(vim.v.register)
-		if type == '\0225' then
-			vim.api.nvim_input('"' .. vim.v.register .. (after and 'p' or 'P'))
-			return
-		end
-
-		local r, is_visual = require('manipulator.region').current { insert_fixer = false }
-		local mode = vim.fn.mode()
-		local text = vim.fn.getreg(vim.v.register)
-		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
-		if type == 'V' then text = text:gsub('\n$', '') end
-
-		if is_visual then
-			vim.fn.setreg('d', r:get_text(), type)
-			vim.api.nvim_feedkeys('\027', 'n', false)
-			if mode == 'v' then r = r:paste { text = '' } end
-		end
-
-		r = r:paste {
-			text = text,
-			linewise = type == 'V',
-			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
-		}
-		r:jump { end_ = type == 'v' and #r:get_lines() == 1 and (after or mode == 'n') }
-	end
-end
-map({ '', 'i' }, '<C-v>', gen_paste(true))
-map({ '', 'i' }, '<C-S-V>', gen_paste(false))
-map('n', '<A-S-V>', '<C-S-V>')
-map('i', '<A-S-V>', '<C-o>v')
+-- NOTE: C-v mappings in ./plugins/manipulator.lua
 map('n', '<C-x>', 'dd')
 map('x', '<C-x>', 'd')
 map('i', '<C-x>', '<C-o>dd')

@@ -157,15 +157,14 @@ define() {
 		elif [[ ${!opt} ]]; then
 			if [[ ${opt,,} == *loglvl && ${!opt} == [A-Za-z]* && ! ${LOG_LEVELS["${!opt,,}"]} ]]; then
 				SCRIPT_OPTS["$opt"]=${LOG_LEVELS['info']}
-				log Warn ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS["$opt"]}]}'
+				log Error ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS["$opt"]}]}'
   Available are: ${LOG_NAMES[*]}"
-				continue
-			fi
-
-			if [[ ${!opt} == -* ]]; then # subtract negative numbers
-				((SCRIPT_OPTS["$opt"] += ${!opt}))
-			else # set positive numbers or strings
-				SCRIPT_OPTS["$opt"]=${LOG_LEVELS["${!opt,,}"]:-${!opt}}
+			else
+				if [[ ${!opt} == -* ]]; then # subtract negative numbers
+					((SCRIPT_OPTS["$opt"] += ${!opt}))
+				else # set positive numbers or strings
+					SCRIPT_OPTS["$opt"]=${LOG_LEVELS["${!opt,,}"]:-${!opt}}
+				fi
 			fi
 		fi
 		unset "$opt" # to not parse multiopt twice (logLvl as both param and arg)
@@ -179,7 +178,7 @@ exitFn() {
 		if [[ $i ]]; then
 			printActionParams "${ACTION%%[[]*}" 1 $((i / 4))
 		else
-			call help -p "$ACTION"
+			call help -p -- "$ACTION"
 		fi
 	fi
 	[[ $(jobs -p) ]] && kill -- -$$ || exit $1
@@ -215,7 +214,7 @@ declare -A COLORS=(
 	[bold]=1 [italic]=3 [underline]=4 [reverse]=7 [strike]=9
 	[nobold]=22 [noitalic]=23 [nounderline]=24 [noreverse]=27 [nostrike]=29
 	# log level colors
-	[quiet]=0 [error]=31 [warn]=33 [info]=32 [verbose]=35 [debug]=37 [trace]=90
+	[quiet]=0 [fatal]=91 [error]=31 [warn]=33 [info]=32 [verbose]=35 [debug]=37 [trace]=90
 	# theme colors
 	[oper]=31 [delim]=91 [bool]=34 [var]=32 [param]=96 [str]=33 [num]=95 [def]=3 # def=define
 )
@@ -917,7 +916,6 @@ printActionConfig() {
 
 actionInfo help '?' '' ''
 actionInfo help 'h' '[?/h]elp' 'display this help'
-ACTION_INFO['?']=help
 helpParams=(
 	legend 'l?' '' 'Show legend for param notation'
 	matchexpr 'm?' '' 'Show expression for argument matching'
@@ -946,7 +944,7 @@ help() {
     - orderless (aside of repeated uses)
   options/named params: [o]ption + suffix + type suffix (or [a]option or []option)
     - short names can be chained with argument as last: `-aoOarg` (also `+aoOarg`)
-		- `+` sets option to false / adds negative value (`+lll` → logLvl+=-3)
+    - `+` sets option to false / adds negative value (`+lll` → logLvl+=-3)
     - suffix:
       - `!`,`+`: required × `?`,`*`: optional
       - `?`,`!`: single use × `*`,`+`: multiple uses/values accepted

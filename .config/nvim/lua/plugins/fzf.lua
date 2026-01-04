@@ -41,7 +41,7 @@ function M.config()
 
 	local function withBackJump(fn)
 		return function()
-			require('manipulator.region').current():mark 'g'
+			require('manipulator.region').current():mark 'd'
 			fn()
 		end
 	end

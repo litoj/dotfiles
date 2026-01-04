@@ -52,7 +52,7 @@ require('lazy').setup {
 	},
 	lockfile = vim.fn.stdpath 'state' .. '/lazy-lock.json',
 	performance = {
-		cache = { enabled = false },
+		cache = { enabled = true },
 		rtp = {
 			disabled_plugins = {
 				'gzip',

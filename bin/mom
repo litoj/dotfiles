@@ -52,14 +52,16 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 				ffprobe "$cmd" |& grep 'Audio: aac' -q && local ext=m4a || local ext=opus
 				exec mv -f "$cmd" "$file"
 
-				((metadata >= 0)) && cmd=(mv) || cmd=(call edit +c --delete-src)
 				cmd+=("$file")
-				[[ -d $dst ]] && cmd+=("${dst%/}/$(
+				[[ -d $dst ]] && dst="${dst%/}/$(
 					sed -e 's/\(.* -\) \1/\1/' -e 's/^NA - //' -e 's/ [([].*[])]//g' \
 						-e 's/\(.*\) by \(.*\)\(\.\w\+\)$/\2 - \1\3/' <<<"${file:${#prefix}}"
-				)") || cmd+=("${dst%.*}.$ext")
-
-				exec "${cmd[@]}"
+				)" || dst="${dst%.*}.$ext"
+				if ((metadata >= 0)); then
+					exec mv "$file" "$dst"
+				else
+					NO_CONFIG=0 call edit --delete-src --no-metadata "$file" --dst="$dst"
+				fi
 			}
 		}
 		ACTION+="['$src']" isolated
@@ -758,6 +760,7 @@ subtitlesParams=(
 	vid '$?' "${MIME_TYPES['video']}" 'Source video file (default=first of `*.mp4`,`*.mkv`)'
 	dst '$?' '$d$D\.mkv' 'Output file (default=`$vid.mkv`)')
 # subtitle format from windows transcoding using `enca` package
+# for scale/speed/alignment adjustment use `ffmpeg -itsscale 1.001 -i *.srt -c copy out.srt`
 subtitles() {
 	if [[ -z $subs ]]; then
 		local subs=(*.srt)
@@ -858,99 +861,108 @@ playParams=(
 	randomizer 'r?' '((a([0-9]*)|d([0-9]*)(:[0-9]+)?)s?)?'
 	'(default=false) true=mpv --shuffle; a<f>= <f> picks per artist/final dir;
        d<n>:<f>= <n> final dir picks, <f> picks per dir, *`s` for --shuffle after picks'
+	kill 'k?' '' 'Should all previous players be killed (default=true)'
 	src '$+' '$e' 'Play files or dirs')
 declare -A playBuilder=([src]=pickSong)
 play() {
 	local daemonize=${daemonize:-${SCRIPT_OPTS[guiPicker]}}
 	local playlistFile=/tmp/mom-$ACTION
 	local cmd=(mpv --no-audio-display --playlist="$playlistFile")
-	exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
+	((kill >= 0)) && exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
 
 	[[ -f $playlistFile ]] && exec rm "$playlistFile"
 
 	declare -i files
-	local tmp
-	for tmp in "${src[@]}"; do
-		if [[ -f $tmp ]]; then
-			[[ $tmp == /* ]] || tmp=$PWD/$tmp
-			exec echo "$tmp" \>\> "$playlistFile"
+	local srcF
+	for srcF in "${src[@]}"; do
+		if [[ -f $srcF ]]; then
+			[[ $srcF == /* ]] || srcF=$PWD/$srcF # make absolute path
+			exec echo "$srcF" \>\> "$playlistFile"
 			((files += 1))
+		elif [[ -d $srcF ]]; then
+			[[ $randomizer != [da]* ]] && exec fd '' -tf -tl "$srcF" \>\> "$playlistFile"
+		else
+			log Error "Invalid src path: \"$srcF\""
 		fi
 	done
 
-	((loop > 0 || loop == 0 && files <= 1)) && cmd+=(--loop-playlist)
-	# expand the directory, if it was the only file arg
-	[[ -f $src && $files == 1 ]] && src=${src%/*} cmd+=(--playlist-start=0)
+	if [[ $files == 1 && -f $src ]]; then # expand the directory, if it was the only file arg
+		cmd+=(--playlist-start=0)
+		src=${src%/*}
+		[[ $randomizer != [da]* ]] && exec fd '' -tf -tl "$src" \>\> "$playlistFile"
+	fi
 
-	((files <= 1)) && for tmp in "${src[@]}"; do
-		[[ $tmp == /* ]] || tmp=$PWD/$tmp
-		if [[ $randomizer == [da]* ]]; then
-			local artistDirs=() d f
-			while read -r d; do  # filter out dirs with no files
-				for f in "$d"/*; do # ensure the folder has files to play
+	if [[ $files -le 1 && $randomizer == [da]* ]]; then # directory processing
+		local artistDirs=() d f
+		for tmp in "${src[@]}"; do
+			[[ -f $srcF ]] && continue
+			[[ $srcF == /* ]] || srcF=$PWD/$srcF
+			while read -r d; do # filter out dirs with no files
+				for f in "$d"/*; do
 					if [[ -f $f ]]; then
 						artistDirs+=("$d")
 						break
 					fi
 				done
-			done < <(fd '' -Lt d "$tmp")
-			[[ $artistDirs ]] || artistDirs=("$tmp")
+			done < <(
+				echo "$srcF"
+				fd '' -Lt d "$srcF" | sort -R
+			)
+		done
 
-			local matcher="${MIME_TYPES['audio']}" # for pickFromDir argMatch tests
-			# uses $perDir
-			function pickFromDir() {
-				local validPicks=() pick
-				for pick in "$@"; do # filter out directories
-					if argMatch "$pick"; then
-						validPicks+=("$pick")
-					fi
-				done
-				declare -i len=${#validPicks[@]}
-
-				if ((perDir >= len)); then
-					echo "$@" | exec sort -R \>\> "$playlistFile"
-					return
-				fi
-				declare -i cnt=$perDir pick
-				while ((cnt--)); do
-					exec echo "${validPicks[RANDOM % len]}" \>\> "$playlistFile"
-				done
-			}
-
-			if [[ $randomizer == d* ]]; then
-				[[ $randomizer =~ ^d([0-9]*)(:([0-9]+))?s?$ ]]
-				declare -i fileCnt=${#artistDirs[@]} n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
-				while ((n-- > 0)); do
-					pickFromDir "${artistDirs[RANDOM % fileCnt]%/}"/*
-				done
-			else # randomizer == a*
-				[[ $randomizer =~ ^a([0-9]*)s?$ ]]
-				declare -i perDir=${BASH_REMATCH[1]:-1}
-				for d in "${artistDirs[@]}"; do
-					pickFromDir "${d%/}"/*
-				done
-			fi
-		elif [[ -d $tmp ]]; then
-			exec fd -tf -tl '' "$tmp" \>\> "$playlistFile"
+		[[ $randomizer =~ ^[da]([0-9]*)(:([0-9]+))?s?$ ]]
+		if [[ $randomizer == d* ]]; then
+			declare -i n=${BASH_REMATCH[1]:-1} perDir=${BASH_REMATCH[3]:-1}
 		else
-			exec echo "$tmp" \>\> "$playlistFile"
+			declare -i n=${#artistDirs[@]} perDir=${BASH_REMATCH[1]:-1}
 		fi
-	done
-	[[ $randomizer == *s || $randomizer -gt 0 ]] &&
-		cmd+=(--shuffle) || cmd+=(--playlist-start=0)
 
-	if ((daemonize <= 0)); then
-		exec "${cmd[@]}"
+		local matcher="${MIME_TYPES['audio']}"
+		while ((n-- > 0)); do
+			declare -i picked=0
+			while read -r f; do
+				if argMatch "$f"; then
+					exec echo "$f" \>\> "$playlistFile"
+					(((picked += 1) < perDir)) || break
+				fi
+			done < <(fd '' -Lt f --max-depth=1 "${artistDirs[n]}" | sort -R)
+		done
+		unset matcher
+	fi
+
+	if [[ $randomizer == *s || $randomizer -gt 0 ]]; then
+		mv "$playlistFile" '/tmp/test'
+		sort -R -u '/tmp/test' >"$playlistFile"
+		rm '/tmp/test'
+	fi
+
+	((loop == 0)) && ((loop = (files <= 1) * 2 - 1))
+	((daemonize > 0)) && cmd+=(--no-terminal)
+	if [[ $randomizer == [ad]* ]]; then
+		exec "${cmd[@]}" && if ((loop > 0)); then
+			local args=($ACTION) i=${#playParams[@]}
+			for ((i = ${#playParams[@]} - 8; i >= 0; i -= 4)); do
+				args+=("${!playParams[i]}")
+			done
+			args+=("${src[@]}")
+
+			if ((daemonize > 0)); then # daemonized by launching the same cmd, but in the bg
+				exec "$0" "${args[@]}" \&
+				disown
+			else
+				call "${args[@]}"
+			fi
+		fi
 	else
-		cmd+=(--no-terminal)
-		if [[ $NO_LOOP -gt 0 && ($randomizer == [ad]*[^s] || $randomizer == [ad]) ]]; then
-			exec "${cmd[@]}" && exec "$0" $ACTION -L --randomizer=$randomizer "${src[@]}" &
-		else # for whatever reason cmds launched via terminal, but from desktop ignore disown
+		((loop > 0)) && cmd+=(--loop-playlist)
+		if ((daemonize > 0)); then
 			log Verbose && log Verbose " \$> ${cmd[*]} &"
 			nohup "${cmd[@]}" &>/dev/null &
-			disown
+			disown # for whatever reason cmds launched via terminal, but from desktop ignore disown
+			sleep 1
+		else
+			exec "${cmd[@]}"
 		fi
-		sleep 1
 	fi
 	exec rm "$playlistFile"
 }

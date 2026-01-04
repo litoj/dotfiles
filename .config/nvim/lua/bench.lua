@@ -16,7 +16,8 @@ function _G.bench(cfg)
 	while os.time() - s < cfg.warmup_s do
 		local args = gen(i)
 		for _, f in ipairs(methods) do
-			f(unpack(args))
+			local ok, err = pcall(f, unpack(args))
+			if not ok then error(err .. vim.inspect(args)) end
 		end
 		i = i + 1
 	end
@@ -29,7 +30,7 @@ function _G.bench(cfg)
 				fn(unpack(gen(i)))
 			end
 
-			results[name] = (os.clock() - s)*1000
+			results[name] = (os.clock() - s) * 1000
 		elseif dur then
 			local i = 1
 			s = os.time()

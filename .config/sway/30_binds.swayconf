@@ -263,7 +263,7 @@ bindsym --to-code {
 #--------------+
 
 set $dpmsOff pkill -USR1 swayidle
-set $Exit "C: D: Q: S: H: P: R: Esc:"
+set $Exit "C: D: Q: S: H: P: R: Esc: B:BIOS"
 bindsym {
 	$Mod+o bar mode toggle
 	XF86RefreshRateToggle exec cpupower-gui
@@ -287,7 +287,7 @@ mode $Exit {
 		t mode default, exec $signal cpu Test
 
 # NOTE: presentation / screen duplication mode
-		$Alt+p mode default, output * pos 0 0
+		$Alt+p mode default, output * pos 0 0, output '$d1' res 1920x1600
 
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
@@ -302,6 +302,7 @@ mode $Exit {
 		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
+		Shift+b exit, exec systemctl reboot --firmware-setup
 		b mode default, exec $signal battery conservative
 		Escape mode default
 	}
@@ -374,11 +375,11 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -play
+	$Mod+m exec mom -play +l
 	$Mod+Shift+m exec mom -play -r
-	$Mod+$Alt+m exec mom -play -ra3s +l
-	$Mod+Ctrl+$Alt+m exec mom -play "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
-	$Mod+Ctrl+$Alt+Shift+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]*/[^/]*$,\1,')"
+	$Mod+$Alt+m exec mom -play -ra3s
+	$Mod+Ctrl+$Alt+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+$Alt+Shift+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpvFile)"
 	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15
 	XF86AudioPlay exec $mpv play-pause

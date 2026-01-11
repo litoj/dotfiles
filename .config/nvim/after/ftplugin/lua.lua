@@ -1,6 +1,6 @@
 if vim.bo.bufhidden ~= '' then return end
 
-local map = require 'fthelper' {
+local map = require('fthelper').once {
 	-- mylsp = function(ml) ml.setup 'lua_ls' end, -- handled by lazydev.nvim
 
 	dap = function(dap)
@@ -19,3 +19,4 @@ local map = require 'fthelper' {
 }
 
 map('n', '<F18>', function() require('osv').launch { port = 8086, delay_frozen = 100 } end)
+vim.fn.matchadd('Label', [[--\zs #\+ ]])

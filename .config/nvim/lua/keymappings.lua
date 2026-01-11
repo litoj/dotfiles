@@ -1,9 +1,9 @@
 -- Text management
 map({ '', 'i' }, '<C-s>', '<Cmd>w<CR>')
 map({ 'n', 'i' }, '<A-S-Up>', '<Cmd>m-2<CR>')
-map({ 'n', 'i' }, '<A-K>', '<Cmd>m-2<CR>')
+map({ 'n', 'i' }, '<A-S-K>', '<Cmd>m-2<CR>')
 map({ 'n', 'i' }, '<A-S-Down>', '<Cmd>m+<CR>')
-map({ 'n', 'i' }, '<A-J>', '<Cmd>m+<CR>')
+map({ 'n', 'i' }, '<A-S-J>', '<Cmd>m+<CR>')
 map('n', '<C-S-Up>', 'md"dY"dp`d')
 map('n', '<C-S-k>', 'md"dY"dp`d')
 map('i', '<C-S-Up>', '<C-c>md"dY"dp`da')
@@ -110,14 +110,10 @@ map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
 -- search with centering
 map('n', 'n', 'nzz')
 map('n', 'N', 'Nzz')
--- quickfix list
-map('n', ' qc', '<Cmd>cclose<CR>')
-map('n', ' qo', '<Cmd>copen<CR>')
 
 -- Extra
-map('n', '|', '&')
 map('n', ' /', '<Cmd>noh<CR>') -- clears all highlights/searches
-map('n', '<A-C>', '<Cmd>Inspect<CR>')
+map('n', '<A-S-C>', '<Cmd>Inspect<CR>')
 map('n', 'S', '<Cmd>term<CR>a')
 map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')

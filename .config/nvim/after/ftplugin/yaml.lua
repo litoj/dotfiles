@@ -1,3 +1,4 @@
+vim.bo.expandtab = true
 local function enter_or_list()
 	local line =
 		vim.api.nvim_buf_get_lines(0, vim.fn.line '.' - 1, -1, false)[1]:match '^%s*%d*[%d%-—.)]+.?'
@@ -24,4 +25,3 @@ local function enter_or_list()
 end
 
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
-map('i', '<S-Enter>', '<End><Enter>', { buffer = true, remap = true })

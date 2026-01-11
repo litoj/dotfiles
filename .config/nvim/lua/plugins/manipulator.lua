@@ -1,28 +1,5 @@
 local M = { 'litoj/manipulator.nvim', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
 function M.config()
-	--[[ local sts = require 'syntax-tree-surfer'
-	sts.setup {
-		highlight_group = 'Search',
-		left_hand_side = 'qwertasdfgzxcvb12345QWERTASDFGZXCVB!@#$%',
-		right_hand_side = '[poiu\';lkjh/.,mny-0987{POIU":LKJH?><MNY_)(*&',
-		icon_dictionary = {
-			if_statement = '󰨚',
-			else_clause = '󰨚',
-			else_statement = '󰨚',
-			elseif_statement = '󰨚',
-			switch_statement = '󰨚',
-			case_statement = '󰨚',
-			for_statement = '󰑖',
-			while_statement = '󰑖',
-			do_statement = '󰑖',
-			['function'] = '󰊕',
-			function_definition = '󰊕',
-			arrow_function = '󰊕',
-			variable_declaration = '',
-			parameter_declaration = '',
-		},
-	} ]]
-
 	local MODS = require 'manipulator.range_mods'
 	local m = require 'manipulator'
 	m.setup {
@@ -31,7 +8,8 @@ function M.config()
 			pick = { picker = 'fzf-lua' },
 		},
 		region = {
-			select = { linewise_end = '^,?%s*$' }, -- TODO: custom extender, not even fully linewise - opposite of trimmed -> extended?
+			-- TODO: custom extender, not even fully linewise - opposite of trimmed -> extended?
+			select = { linewise_end = '^,?%s*$' },
 			current = { rangemod = { MODS.trimmed }, trimm_end = '%s*$' },
 		},
 		ts = {
@@ -69,8 +47,151 @@ function M.config()
 	}
 
 	local mcp = m.call_path
-	local mts = mcp.ts
+	local mts = mcp.ts.current
 
+	map(
+		{ '', 'i' },
+		'<C-S-/>',
+		mts[function(r)
+			r:highlight()
+			print { type = r:__tostring(), range = r.range, cursor = m.region.current().range }
+			vim.defer_fn(function() r:highlight() end, 100)
+		end].fn
+	)
+
+	local tsq = mts({ on_partial = '.' })['&1'].queue_or_swap['*1']
+	map(
+		{ 'v' },
+		'<A-S-J>', -- TODO: cut&paste, not swap
+		mcp.region.queue_or_swap:with_count(function(reg)
+			local r = reg.range
+			return setmetatable(
+				{ buf = 0, range = { r[3] + 1, 0, r[3] + 1, vim.v.maxcol } },
+				getmetatable(reg)
+			)
+		end).queue_or_swap.dot_fn
+	)
+	map({ '', 'i' }, '<A-x>', tsq.fn)
+	map(
+		{ '', 'i' },
+		'<A-S-H>',
+		tsq:queue_or_swap({ hl_group = '' }):with_count('prev_sibling').dot_fn
+	)
+	map(
+		{ '', 'i' },
+		'<A-S-L>',
+		tsq:queue_or_swap({ hl_group = '' }):with_count('next_sibling').dot_fn
+	)
+
+	local tsj =
+		mts({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:with_count 'on_next'
+	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
+	map({ '', 'i' }, '<C-l>', tsj.next.fn)
+	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
+	map({ '', 'i' }, '<C-A-l>', tsj:next('path')['*$']({ end_ = true }).fn)
+	map(
+		{ '', 'i' },
+		'<C-p>',
+		tsj
+			:collect(mcp(m.ts.class)[MODS.until_new_pos]('parent', false, {
+				types = { ['*'] = false, 'declaration$', 'definition$', 'statement$' },
+			}))
+			:pick({ picker = 'native' }).fn
+	)
+
+	local tss_doc = mts['&1']:select('with_docs')['*1']:with_count 'on_next'
+	map({ '', 'i' }, '<A-s>', tss_doc.fn)
+	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
+	map(
+		{ '', 'i' },
+		'<A-m>',
+		tss_doc:with({ types = { inherit = true, do_statement = false } }):collect('parent'):at(-1).fn
+	) -- master node
+
+	map('', ' qa', mts.add_to_qf.fn)
+	map('n', ' qo', '<Cmd>copen<CR>')
+	map('n', ' qc', '<Cmd>cclose<CR>')
+	map('n', ' [Q', '<Cmd>colderCR>')
+	map('n', ' ]Q', '<Cmd>cnewerCR>')
+	map('n', ' qn', '<Cmd>cexpr ""<CR>')
+	map('', ' la', mts.add_to_ll.fn)
+	map('n', ' lo', '<Cmd>lopen<CR>')
+	map('n', ' lc', '<Cmd>lclose<CR>')
+	map('n', ' [L', '<Cmd>lolderCR>')
+	map('n', ' ]L', '<Cmd>lnewerCR>')
+	map('n', ' ln', '<Cmd>lexpr ""<CR>')
+
+	local tss = mts['&1'].select['*1']:with_count 'on_next'
+
+	map('x', 'J', tss.child('closer_edge').fn)
+	map('x', 'K', tss.parent.fn)
+	map('x', 'H', tss.prev_sibling.fn)
+	map('x', 'L', tss.next_sibling.fn)
+
+	map('x', 'P', tss.parent.fn)
+	map('x', 'i', tss.child('closer_edge').fn)
+	map('x', 'n', tss.next('path').fn)
+	map('x', 'N', tss.prev('path').fn)
+	map('x', '<A-n>', tss.next.fn)
+	map('x', '<A-S-N>', tss.prev.fn)
+
+	local batch = {
+		picked = {
+			'n',
+			'gt?',
+			function(x, cfg)
+				return x:collect(mcp():next(cfg), mcp():prev(vim.deepcopy(cfg, true))).pick.fn
+			end,
+		},
+		upper = { 'n', 'gu?', function(x, cfg) return x[MODS.until_new_pos]('parent', false, cfg) end },
+		prev = { 'n', { 'gp?' } },
+		next = { 'n', { 'gn?' } },
+	}
+	m.ts.config.presets.last_types = m.ts.config
+	local function mapAll(category, types, opts)
+		local key = types and category:sub(1, 1) or ''
+		local map_j = tsj[function(x)
+			m.ts.config.presets.last_types = { types = types }
+			return x
+		end]
+		local cfg = { types = types }
+		opts = opts or {}
+		for name, a in pairs(batch) do
+			local action = m.batch.action_to_fn(a[3] or name, vim.deepcopy(cfg, true))(map_j)
+			if type(action) ~= 'function' then action = action.dot_fn end
+
+			opts.desc = ('jump to %s %s'):format(name, category)
+			for _, bind in ipairs(type(a[2]) == 'table' and a[2] or { a[2] }) do
+				map(a[1], bind:gsub('%?', key), action, opts)
+			end
+		end
+	end
+	-- NOTE: dirty workaround to allow filetypes to make their own mappings
+	require('plugins.manipulator').mapAll = mapAll
+
+	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
+	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
+	mapAll('TS node', nil)
+	mapAll('function', {
+		'function',
+		'arrow_function',
+		'function_definition',
+		'function_declaration',
+		'method_declaration',
+	})
+	mapAll('call', { 'function_call', 'call_expression', 'return_statement' })
+	mapAll('var', { 'variable_declaration', 'parameter_declaration', 'field' })
+	mapAll('switch', {
+		'if_statement',
+		'elseif_statement',
+		'else_clause',
+		'else_statement',
+		'switch_statement',
+		'case_statement',
+	})
+	mapAll('loop', { 'for_statement', 'while_statement', 'do_statement' })
+
+	-- NOTE: overriding default paste behaviour to be better suited for insert mode
 	local function paste(after)
 		local type = vim.fn.getregtype(vim.v.register)
 		if type:sub(1, 1) == '\022' then
@@ -107,108 +228,5 @@ function M.config()
 	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
 	map({ '', 'i' }, '<C-S-V>', mcp:new(false)[paste].fn)
 	map('n', '<A-S-V>', '<C-S-V>') -- remap overriden keybind for visual block mode
-
-	map(
-		{ '', 'i' },
-		'<C-S-/>',
-		mts.current[function(r)
-			r:highlight()
-			print { type = r:__tostring(), range = r.range, cursor = m.region.current().range }
-			vim.defer_fn(function() r:highlight() end, 100)
-		end].fn
-	)
-
-	local tsq = mts({ on_partial = '.' })['&1'].queue_or_swap['*1']
-	map(
-		{ 'v' },
-		'<A-S-J>', -- TODO: cut&paste, not swap
-		mcp.region.queue_or_swap:with_count(function(reg)
-			local r = reg.range
-			return setmetatable(
-				{ buf = 0, range = { r[3] + 1, 0, r[3] + 1, vim.v.maxcol } },
-				getmetatable(reg)
-			)
-		end).queue_or_swap.dot_fn
-	)
-	map({ '', 'i' }, '<A-x>', tsq.fn)
-	map({ '', 'i' }, '<A-H>', tsq:queue_or_swap({ hl_group = '' }):with_count('prev_sibling').dot_fn)
-	map({ '', 'i' }, '<A-L>', tsq:queue_or_swap({ hl_group = '' }):with_count('next_sibling').dot_fn)
-
-	local tsj =
-		mts({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:with_count 'on_next'
-	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
-	map({ '', 'i' }, '<C-l>', tsj.next.fn)
-	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
-	map({ '', 'i' }, '<C-A-l>', tsj:next('path')['*$']({ end_ = true }).fn)
-
-	local tss_doc = mts['&1']:select('with_docs')['*1']:with_count 'on_next'
-	map({ '', 'i' }, '<A-s>', tss_doc.fn)
-	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
-	map(
-		{ '', 'i' },
-		'<C-p>',
-		tss_doc
-			:collect(
-				mcp
-					:new(m.ts.class)
-					:parent { types = { ['*'] = false, 'declaration$', 'definition$', 'statement$' } }
-			)
-			:reverse()
-			:pick({ picker = 'native' }).fn
-	)
-	map(
-		{ '', 'i' },
-		'<A-m>',
-		tss_doc:with({ types = { inherit = true, do_statement = false } }):collect('parent'):at(-1).fn
-	) -- master node
-
-	local tss = mts['&1'].select['*1']:with_count 'on_next'
-
-	map('x', 'J', tss:child('closer_edge').fn)
-	map('x', 'K', tss.parent.fn)
-	map('x', 'H', tss.prev_sibling.fn)
-	map('x', 'L', tss.next_sibling.fn)
-
-	map('x', 'P', tss.parent.fn)
-	map('x', 'i', tss:child('closer_edge').fn)
-	-- TODO: add fallback selector for largest non-space object
-	map('x', 'n', tss.next('path').fn)
-	map('x', 'N', tss.prev('path').fn)
-	map('x', '<A-n>', tss.next.fn)
-	map('x', '<A-N>', tss.prev.fn)
-
-	m.ts.config.presets.last_types = m.ts.config
-	local function mapAll(key, dst, opts)
-		opts = type(opts) == 'string' and { desc = opts } or opts
-		local cfg = { types = dst, save_as = 'last_types' }
-		map('n', 'gt' .. key, tsj:collect(mcp():next(cfg), mcp():prev(cfg)).pick.fn, opts)
-		-- map('n', 'gt' .. key, tsj.get_all(cfg).pick.fn, opts)
-		map('n', 'gp' .. key, tsj:parent(cfg).fn, opts)
-		map('n', '[' .. key, tsj:prev(cfg).dot_fn, opts)
-		map('n', ']' .. key, tsj:next(cfg).dot_fn, opts)
-	end
-	-- NOTE: dirty workaround to allow filetypes to make their own mappings
-	require('plugins.manipulator').mapAll = mapAll
-
-	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
-	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
-	mapAll('f', {
-		'function',
-		'arrow_function',
-		'function_definition',
-		'function_declaration',
-		'method_declaration',
-	}, 'jump to functions')
-	mapAll('c', { 'function_call', 'call_expression', 'return_statement' })
-	mapAll('v', { 'variable_declaration', 'parameter_declaration', 'field' })
-	mapAll('s', {
-		'if_statement',
-		'elseif_statement',
-		'else_clause',
-		'else_statement',
-		'switch_statement',
-		'case_statement',
-	}, 'jump to switches / conditionals')
-	mapAll('l', { 'for_statement', 'while_statement', 'do_statement' }, 'jump to loops')
 end
 return M

@@ -1,6 +1,6 @@
 -- loaded on first opening of a js/ts file only
 
-withMod('dap', function(dap)
+require('fthelper').withMod('dap', function(dap)
 	local dapcfg = {
 		--[[ {
 			type = 'pwa-node',
@@ -17,7 +17,7 @@ withMod('dap', function(dap)
 			processId = function()
 				return require('dap.utils').pick_process { filter = '^%S*node.*--inspect' }
 			end,
-			cwd = vim.loop.cwd(),
+			cwd = vim.uv.cwd(),
 			sourceMaps = true,
 		},
 		{
@@ -40,7 +40,7 @@ withMod('dap', function(dap)
 					end)
 				end) ]]
 			end,
-			webRoot = vim.loop.cwd(),
+			webRoot = vim.uv.cwd(),
 			protocol = 'inspector',
 			sourceMaps = true,
 			userDataDir = false,

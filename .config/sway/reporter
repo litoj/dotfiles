@@ -1,12 +1,12 @@
 #!/usr/bin/bash
 
-if [[ -d $REPORTFILE ]]; then
-	rep=${REPORTFILE}/workreport.md
-elif [[ -z $REPORTFILE ]]; then
-	echo 'REPORTFILE variable is not set'
+if [[ -d $REPORT_TO ]]; then
+	rep=${REPORT_TO}/workreport.md
+elif [[ -z $REPORT_TO ]]; then
+	echo 'REPORT_TO variable is not set'
 	exit 1
 else
-	rep=$REPORTFILE
+	rep=$REPORT_TO
 fi
 
 TERM_DAY=$(head -n 1 "$rep")
@@ -33,7 +33,7 @@ sumTerm() {
 	SEP_COND='/^- T/' sumLast
 }
 
-local last=(
+last=(
 	$(awk '/^[0-9]/ {m=$1}; /^ *- [0-9]/ {d=$2}; END{print m" "d}' "$rep")
 )
 last[0]=${last[0]%.}

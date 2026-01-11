@@ -1,14 +1,14 @@
 if vim.bo.bufhidden ~= '' then return end
 
-local map, modmap = require 'fthelper' {
+local map, modmap = require('fthelper').once {
 	mylsp = function(ml) ml.setup 'texlab' end,
 }
 
 modmap {
 	['manipulator.call_path'] = function(mcp, buf)
 		local mapAll = require('plugins.manipulator').mapAll
-		mapAll('c', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
-		mapAll('f', { 'begin' }, { buffer = buf, desc = 'jump to begin block' })
+		mapAll('chapter', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
+		mapAll('figure block', { 'begin' }, { buffer = buf })
 		local envMatcher = mcp.ts({ types = { 'begin', 'end' } }):parent()
 		map(
 			{ 'n', 'i' },

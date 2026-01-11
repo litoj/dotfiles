@@ -9,11 +9,9 @@ local runcfg = {
 	},
 }
 
+local fth = require 'fthelper'
 local function getProjCfg(path)
-	local csproj = vim.fs.find(
-		function(name) return vim.endswith(name, '.csproj') end,
-		{ path = path or vim.api.nvim_buf_get_name(0), upward = true }
-	)[1]
+	local csproj = fth.findUpFile(path or vim.fn.bufname(0), '.*%.csproj')
 	local dir = csproj:match '.+/'
 	local label = csproj:match '([^/]+)%.csproj$'
 
@@ -35,7 +33,7 @@ local function getProjCfg(path)
 	}
 end
 
-local map = require 'fthelper' {
+local map = fth.once {
 	mylsp = function(ml) ml.setup 'omnisharp' end,
 
 	dap = function(dap)
@@ -162,8 +160,8 @@ function proj.test(cfg, debug)
 end
 
 for bind, name in pairs {
-	['<A-R>'] = 'run',
-	['<A-D>'] = 'debug',
+	['<A-S-R>'] = 'run',
+	['<A-S-D>'] = 'debug',
 	['<F18>'] = 'debug',
 	['<A-t>'] = 'test',
 } do
@@ -175,6 +173,6 @@ for bind, name in pairs {
 end
 map(
 	{ 'n', 'i' },
-	'<A-T>',
+	'<A-S-T>',
 	coroutine.wrap(function() proj.test(getProjCfg(pickProj 'Debug test'), true) end)
 )

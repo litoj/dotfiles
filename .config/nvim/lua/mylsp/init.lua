@@ -75,14 +75,24 @@ setup 'vue_ls'
 
 -- Lsp diagnostic
 map('n', '<A-d>', vim.diagnostic.open_float)
-map('i', '<A-d>s', vim.diagnostic.open_float)
+map('i', '<A-d><A-d>', vim.diagnostic.open_float)
 map('n', '[d', function() vim.diagnostic.jump { count = -1, float = true } end)
 map('n', ']d', function() vim.diagnostic.jump { count = 1, float = true } end)
--- Lsp code helpers gd,gr... in ../plugins/fzf.lua
+
+-- Remove default mappings to give space for `gr` as direct references
+vim.keymap.del('', 'gra')
+vim.keymap.del('', 'grn')
+vim.keymap.del('', 'gri')
+vim.keymap.del('', 'grt')
+vim.keymap.del('', 'grr')
+
 map('n', 'gt', vim.lsp.buf.type_definition)
+-- wrapped to use fzf implementation
+map('n', 'gD', function() vim.lsp.buf.declaration() end)
+map('n', 'gd', function() vim.lsp.buf.definition() end)
 map('n', 'gr', function() vim.lsp.buf.references() end)
 map({ 'n', 'i' }, '<A-i>', function() vim.lsp.buf.hover { border = 'rounded' } end)
-map('i', '<A-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
+map('i', '<A-S-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 map({ 'n', 'i' }, '<C-i>', vim.lsp.buf.document_highlight)
 map({ 'n', 'i' }, '<C-S-I>', vim.lsp.buf.clear_references)
 map({ 'n', 'i' }, '<A-c>', vim.lsp.buf.code_action)
@@ -90,7 +100,7 @@ map({ 'n', 'i' }, '<F2>', vim.lsp.buf.rename)
 map({ 'n', 'i' }, '<C-r>', vim.lsp.buf.rename)
 map(
 	{ 'n', 'i' },
-	'<A-F>',
+	'<A-S-F>',
 	function()
 		vim.lsp.buf.format {
 			tabSize = vim.bo.tabstop,

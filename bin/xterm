@@ -1,6 +1,0 @@
-#!/usr/bin/bash
-if [[ -e /tmp/my/day ]]; then
-	foot -dnone -c ~/.config/foot/light.ini "$@" &
-else
-	foot -dnone "$@" &
-fi

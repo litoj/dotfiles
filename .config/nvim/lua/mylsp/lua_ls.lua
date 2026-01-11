@@ -27,4 +27,5 @@ return {
 			},
 		},
 	},
+	root_markers = { 'lua', 'after' },
 }

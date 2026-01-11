@@ -7,6 +7,7 @@ setTheme() {
 	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc >/tmp/my/gtk2rc
 	ln -sf ~/.config/qt6ct/colors/$1.conf /tmp/my/qt
 	ln -sf ~/.config/rofi/$1.rasi /tmp/my/rofi
+	ln -sf ~/.config/foot/$1.ini /tmp/my/foot
 
 	shopt -s nullglob
 	local todo=(/dev/pts/*)

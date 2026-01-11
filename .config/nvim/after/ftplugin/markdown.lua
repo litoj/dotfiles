@@ -1,6 +1,5 @@
 if vim.bo.bufhidden ~= '' then return end
 
-if not vim.bo.modifiable then return end
 vim.bo.expandtab = true
 vim.bo.tabstop = 2
 vim.bo.shiftwidth = 2
@@ -30,8 +29,7 @@ local function enter_or_list()
 end
 
 map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
-map('i', '<S-Enter>', '<End><Enter>', { buffer = true, remap = true })
-map('n', '<A-R>', '<Cmd>MarpToggle<CR><CR>')
+map('n', '<A-S-R>', '<Cmd>MarpToggle<CR><CR>')
 map(
 	{ 'n', 'i' },
 	'<A-r>',
@@ -40,7 +38,7 @@ map(
 )
 map(
 	{ 'n', 'i' },
-	'<A-B>',
+	'<A-S-B>',
 	'<C-s><Cmd>!pandoc --pdf-engine=pdfroff "%:p" -o "%:r.pdf" && zathura "%:r.pdf" &<CR><CR>',
 	{ buffer = true, remap = true }
 )
@@ -76,8 +74,8 @@ local function genForNW(str)
 		end,
 	}
 end
-map('i', '<C-b>', genForNW '**', opt)
-map('i', '<C-I>', genForNW '_', opt)
+map('i', '<C-S-B>', genForNW '**', opt)
+map('i', '<C-S-I>', genForNW '_', opt)
 local tabmap
 map('i', '<Tab>', function()
 	if not tabmap then

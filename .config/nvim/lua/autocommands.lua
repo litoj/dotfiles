@@ -8,23 +8,23 @@ local function au(ev, cb, extra)
 	local opts = { group = group }
 	opts[type(extra) == 'number' and 'buffer' or (type(extra) == 'boolean' and 'once' or 'pattern')] =
 		extra
+	---@diagnostic disable-next-line: assign-type-mismatch
 	opts[type(cb) == 'string' and 'command' or 'callback'] = cb
 	vau(ev, opts)
-end
-
-local function withFile(dir, name)
-	while not exists(dir .. name) do
-		dir = dir:gsub('[^/]+/$', '')
-		if dir == '/' then return end
-	end
-	return dir
 end
 
 local fakeUpdate = false
 local function validUpdate(s)
 	return exists(s.file) and vim.bo[s.buf].modifiable or vim.startswith(s.file, 'term://')
 end
+local fth = require 'fthelper'
 local cwdEnabled = true
+local cwdMap = {
+	fallback = { 'README.md', 'package.json', '.git/' },
+	ft_default = { '.*/src/' },
+	lua = { 'lua/', 'after/' },
+	cs = { '%.csproj$', '%.sln$' },
+}
 local function setCWD(s)
 	if not (cwdEnabled and validUpdate(s)) then return end
 	if fakeUpdate then
@@ -40,16 +40,15 @@ local function setCWD(s)
 
 	local path = s.file:gsub('[^/]+$', '')
 
-	dir = path:match '.*/src/' or path:match '.*/lua/'
-
-	if not dir then
-		for _, key in ipairs { 'README.md', 'package.json', '.git/' } do
-			dir = withFile(path, key)
+	for _, map in ipairs { cwdMap[s.file:match '[^.]*$'] or cwdMap.ft_default, cwdMap.fallback } do
+		for _, key in ipairs(map) do
+			dir = fth.findDir(path, key)
 			if dir then break end
 		end
+		if dir then break end
 	end
-
 	dir = dir or path
+
 	vim.b[s.buf].cwd = dir
 	vim.api.nvim_set_current_dir(dir)
 end
@@ -66,19 +65,14 @@ local function setIndentMarks(state)
 end
 au('BufRead', setIndentMarks)
 
-au(
-	'TextYankPost',
-	vim.version().minor > 10 and function() vim.hl.on_yank { higroup = 'Search', timeout = 50 } end
-		or function() require('vim.highlight').on_yank { higroup = 'Search', timeout = 50 } end
-)
+au('TextYankPost', function() vim.hl.on_yank { higroup = 'Search', timeout = 50 } end)
 au('FileType', 'nnoremap <buffer> q <Cmd>close<CR>', { 'qf', 'help', 'man' })
-au('Filetype', 'setlocal expandtab', { 'yaml' })
 au('FileType', function()
 	for _, key in ipairs { 'p', 'r', 'e', 's', 'f', 'd', 'x', 'b', 'l', 'r', 't', 'm' } do
-		vim.keymap.set('n', key, 'ciw' .. key .. '<Esc>', { silent = true, buffer = true })
+		vim.keymap.set('n', key, 'ciw' .. key .. '<Esc>j', { silent = true, buffer = true })
 	end
 end, 'gitrebase')
-au('TermOpen', function(state)
+au('TermOpen', function()
 	vim.opt_local.nu = false
 	vim.opt_local.rnu = false
 end)

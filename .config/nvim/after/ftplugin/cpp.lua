@@ -1,6 +1,6 @@
 if vim.bo.bufhidden ~= '' then return end
 
-local map = require 'fthelper' {
+local map = require('fthelper').once {
 	mylsp = function(ml) ml.setup 'clangd' end,
 
 	dap = function(dap)
@@ -26,13 +26,13 @@ map({ 'n', 'i' }, '<A-r>', '<Cmd>w|!compiler %:p<CR><CR>')
 map({ 'n', 'i' }, '<C-s>', "<Cmd>w|!rm '%:r'.o '%:r'.out<CR><CR>")
 map(
 	{ 'n', 'i' },
-	'<A-B>',
+	'<A-S-B>',
 	'<C-s><Cmd>!make debug||g++ -std=c++17 -Wall -pedantic -g -fsanitize=address,leak -DDEBUG %:p -o %:p:r.out<CR>',
 	{ remap = true }
 )
-map({ 'n', 'i' }, '<A-M>', '<Cmd>w|!cd %:h && make<CR>')
+map({ 'n', 'i' }, '<A-S-M>', '<Cmd>w|!cd %:h && make<CR>')
 
-map({ 'n', 'i' }, '<A-R>', function()
+map({ 'n', 'i' }, '<A-S-R>', function()
 	local name = vim.api.nvim_buf_get_name(0)
 	local out = name:gsub('%.cpp$', '.out')
 	if not exists(out) then vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end

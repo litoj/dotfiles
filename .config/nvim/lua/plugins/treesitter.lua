@@ -2,24 +2,17 @@ local M = {
 	'nvim-treesitter/nvim-treesitter',
 	build = ':TSUpdate',
 	dependencies = {
-		'JoosepAlviste/nvim-ts-context-commentstring',
 		{
 			'nvim-treesitter/nvim-treesitter-context',
 			opts = {
 				on_attach = function(buf)
 					if ({ markdown = 1 })[vim.bo[buf].ft] then return false end
-					map(
-						'n',
-						'gR',
-						require('treesitter-context').go_to_context,
-						{ buffer = buf, silent = true }
-					)
 					return true
 				end,
 			},
 		},
 	},
-	event = 'VeryLazy',
+	lazy = false,
 }
 function M.config()
 	---@diagnostic disable-next-line: missing-fields

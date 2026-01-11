@@ -234,6 +234,7 @@ installBasics() {
 	exec sudo mkdir -p /etc/acpi/events
 
 	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/
+	exec sudo ln -s /usr/bin/foot /usr/local/bin/xterm
 }
 
 guisBundle=(

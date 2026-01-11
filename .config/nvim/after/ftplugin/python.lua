@@ -1,6 +1,6 @@
 if vim.bo.bufhidden ~= '' then return end
 
-local map, modmap = require 'fthelper' {
+local map, modmap = require 'fthelper'.once {
 	mylsp = function(ml) ml.setup 'pyright' end,
 
 	dap = function(_) require('dap-python').setup 'python3' end,

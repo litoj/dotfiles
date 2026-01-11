@@ -199,7 +199,15 @@ function M.config()
 			src.latex,
 		},
 	})
-	cmp.setup.filetype({ 'lua' }, { sources = { src.calc, src.path, src.lsp, src.font } })
+	cmp.setup.filetype({ 'lua' }, {
+		sources = {
+			src.calc,
+			src.path,
+			src.lsp,
+			src.font,
+			{ name = 'lazydev', group_index = 0 },
+		},
+	})
 
 	cmp.setup.cmdline(':', {
 		sources = { { name = 'cmdline', group_index = 0 }, src.path, src.latex, src.buf },
@@ -221,7 +229,7 @@ if vim.g.features_level >= 7 then
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
 		dependencies = { { 'litoj/cmp-copilot', opts = { update_on_keypress = true } } },
-		ft = { 'python', 'cs', 'vue' },
+		ft = { 'python', 'vue' },
 		opts = {
 			panel = { enabled = false },
 			suggestion = {

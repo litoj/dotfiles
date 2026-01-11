@@ -145,6 +145,7 @@ abbr efil   'for var in (efivar -l); efivar -p -n $var | grep "Name" -A7; end | 
 abbr efig   'efivar -p -n (efivar -l | grep "")'
 abbr gefi   'cd /sys/firmware/efi/efivars/'
 abbr mefi   'chattr -i'
+abbr od     'od -xc --endian big -N 100'
 
 if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export (ssh-agent | sed -n 's/^\([^ ]*\);.*/\1/p')
@@ -161,9 +162,9 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
 	export TEXMFHOME=$cache/texlive2020
 	export QT_QPA_PLATFORMTHEME=qt5ct RADV_PERFTEST=video_decode
-	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11"
+	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland"
 	export PATH="$HOME/.pyenv/shims:$PATH"
-	WLR_RENDERER=vulkan sway < /dev/null # to disable stdin and not cause term apps to open in tty
+	WLR_RENDERER=vulkan sway &>/dev/null < /dev/null # to disable stdin and not cause term apps to open in tty
 	killall -15 ssh-agent
 else if status --is-interactive && test -f .python-version -o -f ../.python-version
 	pyenv init - | source

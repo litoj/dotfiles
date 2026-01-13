@@ -5,13 +5,11 @@ try 'mpv --no-audio-display' +audio .m3u .m4a .mp3 .opus
 try '@mpv --no-terminal' +video .VOB
 # try @geeqie .RAF
 imgFallback() {
-	BLOCKING=1
-	# try @imv-dir +image
 	if (($# > 1)); then
 		try '@swayimg -c list.all=no' +image
 	else
 		try @swayimg +image
-	fi || try @geeqie +image
+	fi
 }
 try @imgFallback +image
 try @engrampa .7z .bz2 .gz .rar .tar .tgz .xz .zip .zst

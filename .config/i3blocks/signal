@@ -64,13 +64,15 @@ wp() {
 	pkill -RTMIN+10 i3blocks && pkill -RTMIN+11 i3blocks
 }
 
-cpuByBattery() {
+checkPower() {
 	local profile
 	if ((!$#)); then
 		read profile </sys/class/power_supply/BAT0/status
+		[[ $profile == Charging ]] && "${0%/*}/battery" full auto
 	else
 		(($1)) && profile=Charging || profile=Discharging
 	fi
+
 	if [[ $profile != D* ]]; then
 		profile=Auto
 		pkill -f 'bash hibernateDelayed.sh'
@@ -84,7 +86,7 @@ cpuByBattery() {
 
 load() {
 	killall acpi_listen
-	cpuByBattery
+	checkPower
 	wp detect
 
 	local old
@@ -99,8 +101,8 @@ load() {
 			jack/head*) pkill -RTMIN+10 i3blocks ;;
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
 			# plugging in emmits the *1 event twice
-			ac_adapter*) [[ ${line:0-1} == 0 ]] || read -r line && cpuByBattery ${line:0-1} ;;
-			button/lid*open) sleep 1 && cpuByBattery ;;
+			ac_adapter*) [[ ${line:0-1} == 0 ]] || read -r line && checkPower ${line:0-1} ;;
+			button/lid*open) sleep 1 && checkPower ;;
 		esac
 	done < <(acpi_listen)
 }

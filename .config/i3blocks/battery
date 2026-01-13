@@ -14,7 +14,7 @@ charge_limit() {
 	local new
 	case "$1" in
 		'toggle' | 'tgl' | '') ((new = (now + 1) % 2)) ;;
-		'conservative' | 60) new=1 ;;
+		'conservative' | 'limit' | 80) new=1 ;;
 		'full' | 100) new=0 ;;
 	esac
 
@@ -31,7 +31,7 @@ charge_limit() {
 }
 
 if [[ $1 ]]; then
-	[[ $2 ]] && charge_limit "$@" || charge_limit "$1" manual
+	charge_limit "$1" "${2:-manual}"
 	exit 0
 elif [[ $button == 3 ]]; then
 	charge_limit toggle manual
@@ -77,8 +77,6 @@ else
 			if ((CAPACITY >= 80)); then
 				charge_limit conservative auto
 				bad=1
-			elif ((CAPACITY >= 54 && CAPACITY < 60 && USAGE > 100)); then
-				charge_limit full auto
 			fi
 			;;
 		F*)

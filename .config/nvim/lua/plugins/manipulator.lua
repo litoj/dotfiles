@@ -1,4 +1,11 @@
-local M = { 'litoj/manipulator.nvim', dependencies = 'nvim-treesitter', event = 'VeryLazy' }
+local M = {
+	'litoj/manipulator.nvim',
+	dependencies = {
+		'nvim-treesitter',
+		'nvim-treesitter/nvim-treesitter-textobjects',
+	},
+	event = 'VeryLazy',
+}
 function M.config()
 	local MODS = require 'manipulator.range_mods'
 	local m = require 'manipulator'
@@ -13,7 +20,7 @@ function M.config()
 			current = { rangemod = { MODS.trimmed }, trimm_end = '%s*$' },
 		},
 		ts = {
-			presets = {
+			presets = { -- TODO: create MOD for lookahead+lookbehind
 				with_docs = {
 					types = {
 						inherit = 'with_docs',
@@ -63,7 +70,7 @@ function M.config()
 	map(
 		{ 'v' },
 		'<A-S-J>', -- TODO: cut&paste, not swap
-		mcp.region.queue_or_swap:with_count(function(reg)
+		mcp.region.queue_or_swap:on_short_motion(function(reg)
 			local r = reg.range
 			return setmetatable(
 				{ buf = 0, range = { r[3] + 1, 0, r[3] + 1, vim.v.maxcol } },
@@ -75,16 +82,15 @@ function M.config()
 	map(
 		{ '', 'i' },
 		'<A-S-H>',
-		tsq:queue_or_swap({ hl_group = '' }):with_count('prev_sibling').dot_fn
+		tsq:queue_or_swap({ hl_group = '' }):repeatable('prev_sibling').dot_fn
 	)
 	map(
 		{ '', 'i' },
 		'<A-S-L>',
-		tsq:queue_or_swap({ hl_group = '' }):with_count('next_sibling').dot_fn
+		tsq:queue_or_swap({ hl_group = '' }):repeatable('next_sibling').dot_fn
 	)
 
-	local tsj =
-		mts({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:with_count 'on_next'
+	local tsj = mts({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
 	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
 	map({ '', 'i' }, '<C-l>', tsj.next.fn)
 	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
@@ -99,7 +105,7 @@ function M.config()
 			:pick({ picker = 'native' }).fn
 	)
 
-	local tss_doc = mts['&1']:select('with_docs')['*1']:with_count 'on_next'
+	local tss_doc = mts['&1']:select('with_docs')['*1']:repeatable()
 	map({ '', 'i' }, '<A-s>', tss_doc.fn)
 	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
 	map(
@@ -113,15 +119,17 @@ function M.config()
 	map('n', ' qc', '<Cmd>cclose<CR>')
 	map('n', ' [Q', '<Cmd>colderCR>')
 	map('n', ' ]Q', '<Cmd>cnewerCR>')
+	map('n', ' qx', '<Cmd>cexpr ""<CR>')
 	map('n', ' qn', '<Cmd>cexpr ""<CR>')
 	map('', ' la', mts.add_to_ll.fn)
 	map('n', ' lo', '<Cmd>lopen<CR>')
 	map('n', ' lc', '<Cmd>lclose<CR>')
 	map('n', ' [L', '<Cmd>lolderCR>')
 	map('n', ' ]L', '<Cmd>lnewerCR>')
+	map('n', ' lx', '<Cmd>lexpr ""<CR>')
 	map('n', ' ln', '<Cmd>lexpr ""<CR>')
 
-	local tss = mts['&1'].select['*1']:with_count 'on_next'
+	local tss = mts['&1'].select['*1']:repeatable()
 
 	map('x', 'J', tss.child('closer_edge').fn)
 	map('x', 'K', tss.parent.fn)
@@ -154,7 +162,7 @@ function M.config()
 			m.ts.config.presets.last_types = { types = types }
 			return x
 		end]
-		local cfg = { types = types }
+		local cfg = types and types[1] and { types = types } or types or {}
 		opts = opts or {}
 		for name, a in pairs(batch) do
 			local action = m.batch.action_to_fn(a[3] or name, vim.deepcopy(cfg, true))(map_j)
@@ -172,6 +180,8 @@ function M.config()
 	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
 	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
 	mapAll('TS node', nil)
+	-- TODO: make this possible (filter captures in direction etc.)
+	-- mapAll('function', { query = 'textobjects', types = { 'function.outer' } })
 	mapAll('function', {
 		'function',
 		'arrow_function',

@@ -39,8 +39,8 @@ map('n', '<C-d>', '"ddd')
 map('i', '<A-d>', '<C-o>"dd') -- overrides lsp diagnostic
 map('i', '<A-d>b', '<Esc>"ddbi<Del>')
 map('i', '<A-d>B', '<Esc>"ddBi<Del>')
-map('v', '<Delete>', '"dd')
-map('n', '<Delete>', '"_dl')
+map('', '<Delete>', '"dd')
+map('', 'x', 'd')
 -- gui-like remap
 map('c', '<C-BS>', '<C-w>')
 map('i', '<C-BS>', '<C-w>')

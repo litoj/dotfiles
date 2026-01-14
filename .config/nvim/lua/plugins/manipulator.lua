@@ -7,7 +7,7 @@ local M = {
 	event = 'VeryLazy',
 }
 function M.config()
-	local MODS = require 'manipulator.range_mods'
+	local RM = require 'manipulator.range_mods'
 	local m = require 'manipulator'
 	m.setup {
 		-- debug = 3,
@@ -17,7 +17,7 @@ function M.config()
 		region = {
 			-- TODO: custom extender, not even fully linewise - opposite of trimmed -> extended?
 			select = { linewise_end = '^,?%s*$' },
-			current = { rangemod = { MODS.trimmed }, trimm_end = '%s*$' },
+			current = { rangemod = { RM.trimmed }, trimm_end = '%s*$' },
 		},
 		ts = {
 			presets = { -- TODO: create MOD for lookahead+lookbehind
@@ -99,7 +99,7 @@ function M.config()
 		{ '', 'i' },
 		'<C-p>',
 		tsj
-			:collect(mcp(m.ts.class)[MODS.until_new_pos]('parent', false, {
+			:collect(mcp(m.ts.class)[RM.until_new_pos]('parent', false, {
 				types = { ['*'] = false, 'declaration$', 'definition$', 'statement$' },
 			}))
 			:pick({ picker = 'native' }).fn
@@ -131,66 +131,97 @@ function M.config()
 
 	local tss = mts['&1'].select['*1']:repeatable()
 
-	map('x', 'J', tss.child('closer_edge').fn)
-	map('x', 'K', tss.parent.fn)
-	map('x', 'H', tss.prev_sibling.fn)
-	map('x', 'L', tss.next_sibling.fn)
+	-- TODO: combine this with g or sth for jumping + forward and backward
+	map({ 'x', 'o' }, 'J', tss.child('closer_edge').fn)
+	map({ 'x', 'o' }, 'K', tss.parent.fn)
+	map({ 'x', 'o' }, 'H', tss.prev_sibling.fn)
+	map({ 'x', 'o' }, 'L', tss.next_sibling.fn)
 
-	map('x', 'P', tss.parent.fn)
-	map('x', 'i', tss.child('closer_edge').fn)
-	map('x', 'n', tss.next('path').fn)
-	map('x', 'N', tss.prev('path').fn)
-	map('x', '<A-n>', tss.next.fn)
-	map('x', '<A-S-N>', tss.prev.fn)
+	map({ 'x', 'o' }, 'P', tss.parent.fn)
+	map({ 'x', 'o' }, 'n', tss.next('path').fn)
+	map({ 'x', 'o' }, 'N', tss.prev('path').fn)
+	map({ 'x', 'o' }, '<A-n>', tss.next.fn)
+	map({ 'x', 'o' }, '<A-S-N>', tss.prev.fn)
 
-	local batch = {
+	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
+	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
+	local opj = tsj:new(nil, { call = { on_no_fn = 'extend-prev' } })
+	local operators = {
+		{
+			lhs = function(m, c) return (m:match '[%[%]]' and '' or 'g') .. m .. c end,
+			rhs = opj,
+			desc = 'jump to',
+			map_as = 'dot_fn',
+		},
+		{
+			lhs = function(m, c) return m:match '[^%[%]]' and ('g' .. m:upper() .. c) end, -- no ''/[/]
+			rhs = opj['&1']['*$']({ end_ = true })['*1'],
+			desc = 'jump to end of',
+			map_as = 'dot_fn',
+		},
+		select = {
+			mode = { 'o', 'x' },
+			lhs = function(m, c) return m:match '[^%[%]]' and '' .. m .. c end, -- no ''/[/]
+			rhs = tss,
+		},
+	}
+	local moves = {
 		picked = {
-			'n',
-			'gt?',
-			function(x, cfg)
+			lhs = 't',
+			rhs = function(x, cfg)
 				return x:collect(mcp():next(cfg), mcp():prev(vim.deepcopy(cfg, true))).pick.fn
 			end,
 		},
-		upper = { 'n', 'gu?', function(x, cfg) return x[MODS.until_new_pos]('parent', false, cfg) end },
-		prev = { 'n', { 'gp?' } },
-		next = { 'n', { 'gn?' } },
+		upper = { rhs = function(x, cfg) return x[RM.until_new_pos]('parent', false, cfg) end },
+		prev = { lhs = { '[', 'p' } },
+		next = { lhs = { ']', 'n' } },
+		active = { rhs = function(x, cfg) return x(cfg) end },
 	}
 	m.ts.config.presets.last_types = m.ts.config
-	local function mapAll(category, types, opts)
-		local key = types and category:sub(1, 1) or ''
-		local map_j = tsj[function(x)
-			m.ts.config.presets.last_types = { types = types }
-			return x
-		end]
-		local cfg = types and types[1] and { types = types } or types or {}
-		opts = opts or {}
-		for name, a in pairs(batch) do
-			local action = m.batch.action_to_fn(a[3] or name, vim.deepcopy(cfg, true))(map_j)
-			if type(action) ~= 'function' then action = action.dot_fn end
+	local function mapAll(c_name, mapper_cfg_or_types, map_opts)
+		local cat = mapper_cfg_or_types
+		if cat[1] then cat = { opts = { types = cat } } end
 
-			opts.desc = ('jump to %s %s'):format(name, category)
-			for _, bind in ipairs(type(a[2]) == 'table' and a[2] or { a[2] }) do
-				map(a[1], bind:gsub('%?', key), action, opts)
+		local function fill_info(name, x)
+			x.lhs = x.lhs or name:sub(1, 1)
+			x.rhs = x.rhs or name
+			x.desc = x.desc or name
+		end
+
+		fill_info(c_name, cat)
+		if type(cat.opts) == 'table' then cat.opts.save_as = 'last_types' end
+		map_opts = type(map_opts) == 'table' and map_opts or { desc = map_opts }
+
+		for o_name, op in pairs(operators) do
+			fill_info(o_name, op)
+
+			-- operator can filter which mappings will get created and which won't
+			local lhs = type(op.lhs) == 'function' and op.lhs
+				or function(m, c) return op.lhs .. m .. c end
+
+			for m_name, move in pairs(moves) do
+				fill_info(m_name, move)
+
+				local rhs = m.batch.action_to_fn(move.rhs, vim.deepcopy(cat.opts, true))(op.rhs)
+				if type(rhs) ~= 'function' then rhs = rhs[op.map_as or 'fn'] end
+
+				for _, m_lhs in ipairs(type(move.lhs) == 'table' and move.lhs or { move.lhs }) do
+					local lhs = lhs(m_lhs, cat.lhs)
+					if lhs then
+						map_opts.desc = ('%s %s %s'):format(op.desc, move.desc, cat.desc)
+						map(op.mode or '', lhs, rhs, map_opts)
+					end
+				end
 			end
 		end
 	end
 	-- NOTE: dirty workaround to allow filetypes to make their own mappings
 	require('plugins.manipulator').mapAll = mapAll
 
-	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
-	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
-	mapAll('TS node', nil)
-	-- TODO: make this possible (filter captures in direction etc.)
-	-- mapAll('function', { query = 'textobjects', types = { 'function.outer' } })
-	mapAll('function', {
-		'function',
-		'arrow_function',
-		'function_definition',
-		'function_declaration',
-		'method_declaration',
-	})
+	mapAll('filtered node', { lhs = 'L', opts = 'last_types' })
+	mapAll('function', { opts = { query = 'textobjects', types = { 'function.outer' } } })
 	mapAll('call', { 'function_call', 'call_expression', 'return_statement' })
-	mapAll('var', { 'variable_declaration', 'parameter_declaration', 'field' })
+	mapAll('var', { 'variable_declaration', 'parameter_declaration' })
 	mapAll('switch', {
 		'if_statement',
 		'elseif_statement',
@@ -236,7 +267,6 @@ function M.config()
 		r:jump { end_ = type == 'v' and (after or mode == 'n') }
 	end
 	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
-	map({ '', 'i' }, '<C-S-V>', mcp:new(false)[paste].fn)
-	map('n', '<A-S-V>', '<C-S-V>') -- remap overriden keybind for visual block mode
+	map('i', '<C-S-V>', mcp:new(false)[paste].fn)
 end
 return M

@@ -1,9 +1,12 @@
 #!/usr/bin/bash
 
+bat=(/sys/class/power_supply/BAT*)
+
 charge_limit() {
 	local CHECK_FILE=/tmp/my/conservative_bat_manual
 	if [[ $2 == auto* ]]; then
-		[[ -f $CHECK_FILE ]] && return 0 # not overriding user decission
+		# not overriding user decission or when system is already charged
+		[[ -f $CHECK_FILE || $(<"$bat/power_now") == 0 ]] && return 0
 	else
 		touch "$CHECK_FILE"
 	fi
@@ -37,7 +40,6 @@ elif [[ $button == 3 ]]; then
 	charge_limit toggle manual
 fi
 
-bat=(/sys/class/power_supply/BAT*)
 read STATUS <"$bat/status"
 read ENERGY_NOW <"$bat/energy_now"
 read POWER_NOW <"$bat/power_now"

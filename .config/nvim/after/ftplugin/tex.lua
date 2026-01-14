@@ -9,7 +9,7 @@ modmap {
 		local mapAll = require('plugins.manipulator').mapAll
 		mapAll('chapter', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
 		mapAll('figure block', { 'begin' }, { buffer = buf })
-		local envMatcher = mcp.ts({ types = { 'begin', 'end' } }):parent()
+		local envMatcher = mcp.ts.current({ types = { 'begin', 'end' } }):parent()
 		map(
 			{ 'n', 'i' },
 			'<F2>',

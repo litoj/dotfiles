@@ -281,11 +281,11 @@ mode $Exit {
 		c mode default, reload
 		e mode default, exec $signal cpu Powersave
 		a mode default, exec $signal cpu Auto
-		w mode default, exec $signal cpu Schedutil
+		w mode default, exec $signal cpu Performance
 		t mode default, exec $signal cpu Test
 
 # NOTE: presentation / screen duplication mode
-		$Alt+p mode default, output * pos 0 0, output '$d1' res 1920x1600
+		$Alt+p mode default, output * pos 0 0, output '$d1' res 1920x1080
 
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle
@@ -301,7 +301,7 @@ mode $Exit {
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
 		Shift+b exit, exec systemctl reboot --firmware-setup
-		b mode default, exec $signal battery conservative
+		b mode default, exec $signal battery toggle
 		Escape mode default
 	}
 }

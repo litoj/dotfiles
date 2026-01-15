@@ -150,7 +150,8 @@ basicsBundle=(
 	bashmount
 	bat
 	bat-extras
-	booster # don't forget about amd/intel-ucode
+	booster # NOTE: don't forget about amd/intel-ucode
+	cpupower
 	downgrade
 	dragon-drop
 	dunst
@@ -238,7 +239,6 @@ installBasics() {
 }
 
 guisBundle=(
-	cpupower-gui
 	gimp
 	prismlanucher
 	scrcpy

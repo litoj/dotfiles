@@ -74,8 +74,8 @@ local function genForNW(str)
 		end,
 	}
 end
-map('i', '<C-S-B>', genForNW '**', opt)
-map('i', '<C-S-I>', genForNW '_', opt)
+map('i', '<C-b>', genForNW '**', opt)
+map('i', '<C-I>', genForNW '_', opt)
 local tabmap
 map('i', '<Tab>', function()
 	if not tabmap then

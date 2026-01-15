@@ -1,21 +1,27 @@
 #!/usr/bin/bash
-
 profile() {
 	# from ../cpupower_gui/
 	local profile=$1
-	if [[ -f /bin/cpupower-gui ]]; then
-		cpupower-gui pr $profile &>/dev/null
+	if [[ -f /bin/cpupower ]]; then
+		declare -A cpupower_map=(
+			['Performance']='1MHz 10GHz performance'
+			['Auto']='1MHz 10GHz powersave'
+			['Powersave']='1MHz 2.5GHz powersave'
+			['Test']='2.5GHz 2.5GHz performance'
+		)
+		local params=(${cpupower_map["$profile"]})
+		sudo cpupower frequency-set -d "${params[0]}" -u "${params[1]}" -g "${params[2]}" >/dev/null
 	fi
 
 	local file=/sys/firmware/acpi/platform_profile
 	local power_profiles=($(<"${file}_choices"))
-	declare -A power_map=(['Auto']=1 ['Schedutil']=-1 ['Test']=-1)
+	declare -A power_map=(['Auto']=1 ['Performance']=-1 ['Test']=-1)
 	local power_profile=${power_profiles[${power_map["$profile"]:-${2:-0}}]}
 	if [[ $power_profile ]]; then
 		echo "$power_profile" | sudo tee "$file" &>/dev/null
 	fi
 
-	declare -A urgency_map=(['Auto']=low ['Schedutil']=critical)
+	declare -A urgency_map=(['Auto']=low ['Performance']=critical)
 	notify-send -t 1000 -h string:synchronous:cpu_profile -u "${urgency_map["$profile"]:-normal}" \
 		" $profile" "${power_profile:-no power profile}"
 }

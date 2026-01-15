@@ -21,20 +21,18 @@ charge_limit() {
 		'full' | 100) new=0 ;;
 	esac
 
-	if [[ $new ]]; then
-		((new)) && local args=(-u normal '60% Max Charge') || local args=(-u critical 'Full Charge')
-		if ((now == new)); then
-			[[ $2 == auto* ]] && return 0
-			args+=('(Already active)')
-		else
-			echo "$new" | sudo tee "$file" >/dev/null
-		fi
-		notify-send -t 1000 "${args[@]}"
+	((new)) && local args=(-u normal '60% Max Charge') || local args=(-u critical 'Full Charge')
+	if ((now == new)); then
+		[[ $2 == auto* ]] && return 0
+		args+=('(Already active)')
+	else
+		echo "$new" | sudo tee "$file" >/dev/null
 	fi
+	notify-send -t 1000 "${args[@]}"
 }
 
 if [[ $1 ]]; then
-	charge_limit "$1" "${2:-manual}"
+	charge_limit "$@"
 	exit 0
 elif [[ $button == 3 ]]; then
 	charge_limit toggle manual
@@ -79,6 +77,8 @@ else
 			if ((CAPACITY >= 80)); then
 				charge_limit conservative auto
 				bad=1
+			elif ((CAPACITY >= 55 && CAPACITY <= 56 && USAGE > 10)); then
+				charge_limit full auto
 			fi
 			;;
 		F*)

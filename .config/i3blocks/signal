@@ -68,7 +68,6 @@ checkPower() {
 	local profile
 	if ((!$#)); then
 		read profile </sys/class/power_supply/BAT0/status
-		[[ $profile == Charging ]] && "${0%/*}/battery" full auto
 	else
 		(($1)) && profile=Charging || profile=Discharging
 	fi

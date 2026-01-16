@@ -36,7 +36,7 @@ function M.config()
 					select = {
 						rangemod = {
 							inherit = true,
-							function(ts) ---@param ts manipulator.TS
+							[5] = function(ts) ---@param ts manipulator.TS
 								if
 									ts.node
 									and ts.node:type() == 'assignment_statement'
@@ -117,15 +117,15 @@ function M.config()
 	map('', ' qa', mts.add_to_qf.fn)
 	map('n', ' qo', '<Cmd>copen<CR>')
 	map('n', ' qc', '<Cmd>cclose<CR>')
-	map('n', ' [Q', '<Cmd>colderCR>')
-	map('n', ' ]Q', '<Cmd>cnewerCR>')
+	map('n', '[Q', '<Cmd>colderCR>')
+	map('n', ']Q', '<Cmd>cnewerCR>')
 	map('n', ' qx', '<Cmd>cexpr ""<CR>')
 	map('n', ' qn', '<Cmd>cexpr ""<CR>')
 	map('', ' la', mts.add_to_ll.fn)
 	map('n', ' lo', '<Cmd>lopen<CR>')
 	map('n', ' lc', '<Cmd>lclose<CR>')
-	map('n', ' [L', '<Cmd>lolderCR>')
-	map('n', ' ]L', '<Cmd>lnewerCR>')
+	map('n', '[L', '<Cmd>lolderCR>')
+	map('n', ']L', '<Cmd>lnewerCR>')
 	map('n', ' lx', '<Cmd>lexpr ""<CR>')
 	map('n', ' ln', '<Cmd>lexpr ""<CR>')
 
@@ -138,13 +138,9 @@ function M.config()
 	map({ 'x', 'o' }, 'L', tss.next_sibling.fn)
 
 	map({ 'x', 'o' }, 'P', tss.parent.fn)
-	map({ 'x', 'o' }, 'n', tss.next('path').fn)
-	map({ 'x', 'o' }, 'N', tss.prev('path').fn)
-	map({ 'x', 'o' }, '<A-n>', tss.next.fn)
-	map({ 'x', 'o' }, '<A-S-N>', tss.prev.fn)
+	map('', '<A-n>', tss.next('path').fn)
+	map('', '<A-S-N>', tss.prev('path').fn)
 
-	map({ 'n', 'i' }, '<A-n>', tsj:next('last_types').dot_fn)
-	map({ 'n', 'i' }, '<A-S-N>', tsj:prev('last_types').dot_fn)
 	local opj = tsj:new(nil, { call = { on_no_fn = 'extend-prev' } })
 	local operators = {
 		{
@@ -176,6 +172,7 @@ function M.config()
 		prev = { lhs = { '[', 'p' } },
 		next = { lhs = { ']', 'n' } },
 		active = { rhs = function(x, cfg) return x(cfg) end },
+		inner = { rhs = function(x, cfg) return x(cfg):child { types = { 'block', 'chunk' } } end },
 	}
 	m.ts.config.presets.last_types = m.ts.config
 	local function mapAll(c_name, mapper_cfg_or_types, map_opts)
@@ -218,19 +215,13 @@ function M.config()
 	-- NOTE: dirty workaround to allow filetypes to make their own mappings
 	require('plugins.manipulator').mapAll = mapAll
 
-	mapAll('filtered node', { lhs = 'L', opts = 'last_types' })
+	mapAll('default node', { opts = 'last_types' })
 	mapAll('function', { opts = { query = 'textobjects', types = { 'function.outer' } } })
-	mapAll('call', { 'function_call', 'call_expression', 'return_statement' })
-	mapAll('var', { 'variable_declaration', 'parameter_declaration' })
-	mapAll('switch', {
-		'if_statement',
-		'elseif_statement',
-		'else_clause',
-		'else_statement',
-		'switch_statement',
-		'case_statement',
-	})
-	mapAll('loop', { 'for_statement', 'while_statement', 'do_statement' })
+	mapAll('parameter', { opts = { query = 'textobjects', types = { 'parameter.inner' } } })
+	mapAll('var', { '^variable_de', '^parameter_de' })
+	mapAll('assignment', { 'assignment_statement' })
+	mapAll('condition', { '^if', '^else', '^switch', '^case' })
+	mapAll('loop', { '^for', '^while', 'do_statement' })
 
 	-- NOTE: overriding default paste behaviour to be better suited for insert mode
 	local function paste(after)

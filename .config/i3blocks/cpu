@@ -6,7 +6,7 @@ profile() {
 		declare -A cpupower_map=(
 			['Performance']='1MHz 10GHz performance'
 			['Auto']='1MHz 10GHz powersave'
-			['Powersave']='1MHz 2.5GHz powersave'
+			['Powersave']='1MHz 3.2GHz powersave'
 			['Test']='2.5GHz 2.5GHz performance'
 		)
 		local params=(${cpupower_map["$profile"]})

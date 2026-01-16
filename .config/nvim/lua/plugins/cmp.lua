@@ -223,7 +223,7 @@ M = {
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
 }
 
--- add AI plugins when plugged in and on the main pc
+--[[ -- add AI plugins when plugged in and on the main pc
 if vim.g.features_level >= 7 then
 	src.copilot = { name = 'copilot', group_index = 3, trigger_characters = {} }
 	M[#M + 1] = {
@@ -257,5 +257,5 @@ if vim.g.features_level >= 7 then
 			},
 		},
 	}
-end
+end ]]
 return M

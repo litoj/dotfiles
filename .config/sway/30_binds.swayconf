@@ -285,7 +285,7 @@ mode $Exit {
 		t mode default, exec $signal cpu Test
 
 # NOTE: presentation / screen duplication mode
-		$Alt+p mode default, output * pos 0 0, output '$d1' res 1920x1080
+		$Alt+p mode default, output * pos 0 0, output * res 1920x1080
 
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle

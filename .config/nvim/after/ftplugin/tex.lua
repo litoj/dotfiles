@@ -17,14 +17,14 @@ modmap {
 				function(self)
 					local braceMatch = { inherit = false, types = { curly_group_text = true } }
 					local o = self.range
-					self:child({ types = { text = true } }, 0):paste({ text = '' }):jump { insert = true }
+					self:child(0, { types = { text = true } }):paste({ text = '' }):jump { insert = true }
 
 					require 'autocommands'('CursorMovedI', function()
 						local new = envMatcher:exec()
 						local nr = new.range
 						if new.buf == self.buf and nr[1] == o[1] and nr[2] == o[2] and nr[3] == o[3] then
 							-- get last child = 'end' and paste into the braces the text of 'begin'
-							new:child(braceMatch, -1):paste { text = new:child(braceMatch, 0):get_text() }
+							new:child(-1, braceMatch):paste { text = new:child(0, braceMatch):get_text() }
 						else
 							return true
 						end

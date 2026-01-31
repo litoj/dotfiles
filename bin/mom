@@ -143,7 +143,7 @@ $(print "<e> to pick --end")
 $(print "<f> to pick --fadeout")
 $(print "<Shift+F> to pick --fadeoutEnd")
 $(print "<v> to pick --volume")
-$(print "<Enter> to quit")" --script="$pickerFile"
+$(print "<Enter> to confirm and quit")" --script="$pickerFile"
 		)
 
 		while mpv "${_opts[@]}" "${src[@]}"; do
@@ -368,6 +368,7 @@ edit() { # TODO: use picker only
 				log Error ": Invalid --volume=$v - either dB or LUFS"
 			fi
 
+			# NOTE: always adjust the volume when already converting the filetype anyway (src!=opus)
 			if [[ $v == 0 || $src == *.opus ]] && (($(bc <<<"${v#-} < ${volumeTolerance:-0.4}"))); then
 				log Info ".volume = 1 (differs by ${v}dB from target)"
 				v=1

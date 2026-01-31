@@ -9,7 +9,7 @@ local M = {
 function M.config()
 	local RM = require 'manipulator.range_mods'
 	local m = require 'manipulator'
-	m.setup {
+	m.setup { -- TODO: make input window repeatable (macro renaming)
 		-- debug = 3,
 		batch = {
 			pick = { picker = 'fzf-lua' },

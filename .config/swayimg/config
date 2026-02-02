@@ -18,12 +18,14 @@ status_timeout=1
 antialiasing=none
 window=#000000
 background=#101010
-border=#bb33aa
-shadow=#00000000
+border_color=#bb33aa
+border_width=10
 size=500
-fill=no
-select=#bb33aa
-cache=0
+selected_scale=1,2
+aspect=keep
+cache=8
+preload=yes
+pstore=no
 
 [keys.viewer]
 x=skip_file
@@ -98,7 +100,23 @@ Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Shift+b=exec cp '%' ~/Pictures/screen/
 Delete=exec bash -c 'x="%" && which trash && trash "$x" || mv "$x" "/tmp/my/trash/${x##*/}"'
 
+Ctrl+f=exec EDIT_PRESET=editFixManualFL pem -e -x -c dummy "%"
+Ctrl+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Ctrl+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
+Ctrl+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
+Ctrl+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
+Ctrl+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
+Ctrl+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
+
 [keys.gallery]
+Ctrl+f=exec EDIT_PRESET=editFixManualFL pem -e -x -c dummy "%"
+Ctrl+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Ctrl+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
+Ctrl+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
+Ctrl+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
+Ctrl+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
+Ctrl+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
+
 # too fast -> scroll only horizontally
 ScrollLeft=none
 ScrollRight=none

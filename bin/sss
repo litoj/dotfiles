@@ -108,7 +108,7 @@ defineParams=(
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker failed instead of exiting'
-	configPicker 'C?' '' 'Run a config picker when actionConfigMap is defined'
+	configPicker 'C?' '' 'Use config from `<ACTION>_PRESET` or pick one from `<action>Presets` map'
 	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
 	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
 	tmpLogLvl 'L?' '([0-9]+|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
@@ -705,11 +705,15 @@ call() { # for script usage - calling actions like itself with cli, without exte
 # run a command in parallel/background
 # often used in a loop to call a custom fn and call `wait` after the loop
 runJob() {
-	local jobs
-	while jobs=($(jobs -p)) && ((${#jobs[@]} >= SCRIPT_OPTS['jobs'])); do
-		wait -n
-	done
-	IS_JOB=1 "$@" &
+	local max=${SCRIPT_OPTS['jobs']}
+	if ((max == 1)); then
+		"$@"
+	else
+		while (($(jobs -p | wc -l) >= max)); do
+			wait -n
+		done
+		IS_JOB=1 "$@" &
+	fi
 }
 
 # run given fn=$1 $#-1-times with $2... as arg for the first run etc.
@@ -1031,10 +1035,19 @@ determinePicker() {
 #######################################
 pickFromList() {
 	declare -n _dst=$1 choiceList
-	((SCRIPT_OPTS['guiPicker'] > 0)) && local _cmd=(rofi -dmenu -p) || local _cmd=(fzf --prompt)
-	if [[ $2 == ?[+*] ]]; then
-		((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
+	if ((SCRIPT_OPTS['guiPicker'] > 0)); then
+		local _cmd=(rofi -dmenu -p)
+	else
+		set -- "${@:1:3}" "$4: "
+		_cmd() {
+			fzf --print-query --prompt "$@" | tail -n1
+		}
+		local _cmd=(_cmd)
 	fi
+	# not using multiselect of the selectors to make it easier to check correctness and keep order
+	# if [[ $2 == ?[+*] ]]; then
+	# ((SCRIPT_OPTS['guiPicker'] > 0)) && _cmd+=(-multi-select) || _cmd+=(-m)
+	# fi
 
 	while :; do
 		local _pick=
@@ -1143,6 +1156,15 @@ pickFilesOrDir() {
 # $1=pickVar, $3=presetMap, $4=Prompt message
 pickConfig() {
 	declare -n _choice=$1
+
+	local override=${ACTION^^}_PRESET
+	if [[ ${!override} ]]; then
+		_choice=${!override}
+		declare -p "${_choice}" &>/dev/null
+		return $?
+	fi
+
+
 	declare -n presetMap=$3
 	if ((${SCRIPT_OPTS['configPicker']} <= 0 || !${#presetMap[@]})); then
 		_choice=${ACTION}Config
@@ -1150,6 +1172,7 @@ pickConfig() {
 	fi
 
 	presetMap['default']=${ACTION}Config
+
 	local pre=/tmp/mom-$ACTION preset
 	for preset in "${!presetMap[@]}"; do # prepare preview data
 		declare -n arr=${presetMap["$preset"]}

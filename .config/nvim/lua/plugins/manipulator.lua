@@ -54,19 +54,19 @@ function M.config()
 	}
 
 	local mcp = m.call_path
-	local mts = mcp.ts.current
+	local ctc = mcp.ts.current -- callpath ts current
 
 	map(
 		{ '', 'i' },
 		'<C-S-/>',
-		mts[function(r)
+		ctc[function(r)
 			r:highlight()
 			print { type = r:__tostring(), range = r.range, cursor = m.region.current().range }
 			vim.defer_fn(function() r:highlight() end, 100)
 		end].fn
 	)
 
-	local tsq = mts({ on_partial = '.' })['&1'].queue_or_swap['*1']
+	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
 	map(
 		{ 'v' },
 		'<A-S-J>', -- TODO: cut&paste, not swap
@@ -90,7 +90,7 @@ function M.config()
 		tsq:queue_or_swap({ hl_group = '' }):repeatable('next_sibling').dot_fn
 	)
 
-	local tsj = mts({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
+	local tsj = ctc({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
 	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
 	map({ '', 'i' }, '<C-l>', tsj.next.fn)
 	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
@@ -105,7 +105,7 @@ function M.config()
 			:pick({ picker = 'native' }).fn
 	)
 
-	local tss_doc = mts['&1']:select('with_docs')['*1']:repeatable()
+	local tss_doc = ctc['&1']:select('with_docs')['*1']:repeatable()
 	map({ '', 'i' }, '<A-s>', tss_doc.fn)
 	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
 	map(
@@ -114,14 +114,14 @@ function M.config()
 		tss_doc:with({ types = { inherit = true, do_statement = false } }):collect('parent'):at(-1).fn
 	) -- master node
 
-	map('', ' qa', mts.add_to_qf.fn)
+	map('', ' qa', ctc.add_to_qf.fn)
 	map('n', ' qo', '<Cmd>copen<CR>')
 	map('n', ' qc', '<Cmd>cclose<CR>')
 	map('n', '[Q', '<Cmd>colderCR>')
 	map('n', ']Q', '<Cmd>cnewerCR>')
 	map('n', ' qx', '<Cmd>cexpr ""<CR>')
 	map('n', ' qn', '<Cmd>cexpr ""<CR>')
-	map('', ' la', mts.add_to_ll.fn)
+	map('', ' la', ctc.add_to_ll.fn)
 	map('n', ' lo', '<Cmd>lopen<CR>')
 	map('n', ' lc', '<Cmd>lclose<CR>')
 	map('n', '[L', '<Cmd>lolderCR>')
@@ -129,7 +129,7 @@ function M.config()
 	map('n', ' lx', '<Cmd>lexpr ""<CR>')
 	map('n', ' ln', '<Cmd>lexpr ""<CR>')
 
-	local tss = mts['&1'].select['*1']:repeatable()
+	local tss = ctc['&1'].select['*1']:repeatable()
 
 	-- TODO: combine this with g or sth for jumping + forward and backward
 	map({ 'x', 'o' }, 'J', tss.child('closer_edge').fn)
@@ -231,7 +231,7 @@ function M.config()
 			return
 		end
 
-		local r, is_visual = m.region.current { end_shift_ptn = '' }
+		local r, is_visual = m.region.current { shift_mode = false }
 		local mode = vim.fn.mode()
 		local text = vim.fn.getreg(vim.v.register)
 		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
@@ -255,7 +255,7 @@ function M.config()
 			linewise = type == 'V',
 			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
 		}
-		r:jump { end_ = type == 'v' and (after or mode == 'n') }
+		r:jump { inherit = false, end_ = type == 'v' and (after or mode == 'n') }
 	end
 	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
 	map('i', '<C-S-V>', mcp:new(false)[paste].fn)

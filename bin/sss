@@ -411,11 +411,7 @@ main() {
 	trap 'runExitFn' EXIT
 
 	# load default config
-	local realOpt=${SCRIPT_OPTS['optArgPicker']}
-	SCRIPT_OPTS[optArgPicker]=0
-	[[ $NO_CONFIG ]] || call define --config 3>&2
-	SCRIPT_OPTS[optArgPicker]=$realOpt
-	unset realOpt
+	[[ $NO_CONFIG ]] || config=1 define 3>&2
 
 	if ((CLI_MODE > 0)); then
 		while (($#)); do

@@ -1,5 +1,5 @@
 executeConfig=(
-	--basename '2024-05'
+	--after '2024-02-27'
 )
 
 categorizeConfig=(

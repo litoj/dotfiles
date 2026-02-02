@@ -41,10 +41,12 @@ executeParams=(
 	forEach 'e?' "${REGEX['var']}" 'Which function to execute (default: `forEach`);
       passes in the filename as $1, exif as var,
       $forEach is usually set by one of the builder actions'
-	basename 'n?' ".*" 'Require filename to be alphabetically after given name'
-	condition 'c!' "$(printf "%s|" "${FILTERS[@]}").* ().*"
+	after 'a?' ".*" 'Require filename to be alphabetically after given string'
+	before 'b?' ".*" 'Require filename to be alphabetically before given string'
+	condition 'c!' "$(printf "%s|" "${FILTERS[@]}").+"
 	'Filter fn for what to parse with $forEach
-      use a predefined filter, or pass in the fn code via `declare -f` (use getExif() "$1" <query>)
+      use a predefined filter, pass in the fn name as defined in your config,
+      or pass in the full function code via `declare -f` (use getExif() "$1" <query>)
       it should create an $exif array with all used exif data - provides data to $forEach'
 	finally 'f?' "${REGEX['var']}" 'What to run on the output of all the processed files (default: finally)'
 	src '$*' '$e' 'Where to look for the files to process (default: .)'
@@ -55,12 +57,13 @@ execute() {
 
 	local condition=$condition
 	if [[ $condition == *'()'* ]]; then
-		eval "$condition"
+		exec eval "$condition"
 		condition=${condition/ */}
-	else
+	elif declare -f "${condition}Filter" &>/dev/null; then
 		condition=${condition}Filter
+	elif ! declare -f "$condition" &>/dev/null; then
+		log Error ".condition: Function $condition() not defined"
 	fi
-	declare -f $condition &>/dev/null || log Error ".condition: Function $condition() not defined"
 
 	if [[ $finally ]]; then
 		declare -f $finally &>/dev/null || log Error ".finally: Function $finally() not defined"
@@ -81,9 +84,10 @@ execute() {
 	else
 		local getSrc=(fd -L -t f -e jxl -e avif -e jpg -e raf '' "${src[@]}")
 	fi
+	local before=${before:-'~'} # last printable char from ascii as default
 	while read -r f; do
 		# skip photos from before I got a camera
-		[[ ${f##*/} > $basename ]] && runJob runner
+		[[ ${f##*/} > $after && ${f##*/} < $before ]] && runJob runner
 	done < <("${getSrc[@]}") | "$finally"
 }
 
@@ -134,7 +138,7 @@ editParams=(
 	tags 't+' "${REGEX['var']}" 'List of tags to edit'
 	values 'v*' '.*' 'List of values or references to what value to set the respective tags to;
       terminate them with `$` to ensure the picker will not default to other choices,
-			lead and terminate with `$` to call a fn - $1=filename (value like `$transformFn$`)'
+      lead and terminate with `$` to call a fn - $1=filename (value like `$transformFn$`)'
 )
 edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirming each image)
 	TAGS=("${tags[@]}")
@@ -152,7 +156,7 @@ edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirmi
 				value=${VALUES[i]}
 			fi
 
-			if [[ $value != $def ]]; then
+			if [[ $value && $value != $def ]]; then
 				if [[ $value == '$'?*'$' ]]; then # call a custom fn to retrieve the value
 					value=$(${value//'$'/} "$1")
 				elif [[ $value == *'$'?* ]]; then # reference pattern string

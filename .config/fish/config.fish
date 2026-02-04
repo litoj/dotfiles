@@ -131,7 +131,7 @@ abbr nip    "netstat -utnp &| tail -n +4 | sed 's/ \+/ /g' | cut -d' ' -f1,5,6,7
 abbr iwre   'rfkill block wlan && rfkill unblock wlan && sudo ip link set wlo1 up && sudo systemctl restart NetworkManager'
 # shows connected devices
 abbr con    'arp -a'
-abbr sync   'rsync -rltvuP --exclude="Music/Father/" --delete ~/Pictures ~/Music /run/media/$USER/Elements/zaloha/linux/'
+abbr sync   'rsync -rltvuP --exclude="Music/Father/" --exclude="Pictures/Darktable/" --delete ~/Pictures ~/Music /run/media/$USER/Elements/zaloha/linux/'
 abbr sand   'adb push --sync ~/Pictures/sdcard/Pictures /sdcard/ && adb push --sync ~/Music/Songs /sdcard/Music/'
 abbr ap     'adb push --sync'
 abbr revsync   'rsync -rltvuP /run/media/$USER/Elements/zaloha/linux/Pictures ~'

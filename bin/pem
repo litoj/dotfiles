@@ -2,36 +2,39 @@
 
 . sss
 
-# NOTES:
-# for architecture just use 9mm and correct lines in post
-# Used FL: 12, 16-17, 22-30, 33-45, 55-70, 90, 100, 110, 135-200
-
 SSS_OPTS[about]='PEM - Photo Exif Manipulation
 A builder with various predefined filters by exif data
 and various actions to execute on the filtered files'
 
-# get exiftool query specified by $query/$2 on file $1
+# get exiftool query specified by $query on the $f
 getExif() {
-	exiftool -n -p "${2:-query}" "$1" 2>/dev/null
+	exiftool -n -p "$query" "$f" 2>/dev/null
 }
+
+# expects vars: $query/$extra - queries, $f - filename (required)
+# sets $exif=()
+setExif() {
+	exif=($(query="$query $extra" getExif))
+}
+# expects vars: $pre/$post/$extra - queries, $f - filename (required)
+# sets $exif=(), flIdx
+exifWithFl() {
+	query="$pre "'${FocalLength;$_=int($_)}'" $post" setExif
+	[[ $pre ]] && local preSpace="${pre//[^ ]/} "
+	declare -gi flIdx=${#preSpace}
+}
+
 dummyFilter() {
 	:
 }
-focalLengthFilter() {
-	exif=($(getExif "$1" '${FocalLength; $_ = int($_)}'))
-	# skip photos from a phone
-	((exif >= 8))
-}
-flWithRatingFilter() {
-	exif=($(getExif "$1" '${FocalLength; $_ = int($_)} $Rating'))
-	# skip photos from a phone
-	((exif >= 8))
+
+flFilter() {
+	# skip photos from a phone and undefined
+	exifWithFl && ((exif[flIdx] >= 8))
 }
 
 flNoApFilter() {
-	exif=($(getExif "$1" '${FocalLength; $_ = int($_)} $FNumber'))
-	# skip photos from a phone
-	[[ $exif -ge 8 && ${exif[1]} != [0-9]* ]]
+	post="\$FNumber $post" flFilter && [[ ${exif[flIdx + 1]} != [0-9]* ]]
 }
 
 FILTERS=($(declare -f | sed -n 's/^\(\w*\)Filter ()\s$/\1/p'))
@@ -39,15 +42,16 @@ FILTERS=($(declare -f | sed -n 's/^\(\w*\)Filter ()\s$/\1/p'))
 actionInfo execute x 'e[x]ecute' 'filter photos using a custom filter and execute a custom fn on them'
 executeParams=(
 	forEach 'e?' "${REGEX['var']}" 'Which function to execute (default: `forEach`);
-      passes in the filename as $1, exif as var,
+      passes in the filename as $f, exif as var,
       $forEach is usually set by one of the builder actions'
 	after 'a?' ".*" 'Require filename to be alphabetically after given string'
 	before 'b?' ".*" 'Require filename to be alphabetically before given string'
 	condition 'c!' "$(printf "%s|" "${FILTERS[@]}").+"
 	'Filter fn for what to parse with $forEach
       use a predefined filter, pass in the fn name as defined in your config,
-      or pass in the full function code via `declare -f` (use getExif() "$1" <query>)
-      it should create an $exif array with all used exif data - provides data to $forEach'
+      or pass in the full function code via `declare -f`
+      it should create an $exif array with all used exif data - provides data to $forEach
+      - use `query=xxx setExif` or `pre=xxx post=yyy exifWithFl` or any of the filters'
 	finally 'f?' "${REGEX['var']}" 'What to run on the output of all the processed files (default: finally)'
 	src '$*' '$e' 'Where to look for the files to process (default: .)'
 )
@@ -74,7 +78,7 @@ execute() {
 	fi
 
 	local f
-	runner() { "$condition" "$f" && "$forEach" "$f"; }
+	runner() { "$condition" && "$forEach"; }
 	if [[ -f $src ]]; then
 		local getSrc
 		for getSrc in "${src[@]}"; do
@@ -99,13 +103,13 @@ categorize() {
 	exec mkdir -p "$dst"
 	DST=$dst
 	forEach() {
-		local flPath="$DST/$exif"
-		exec mkdir -p $flPath
-		exec ln -s "$PWD/$1" "$flPath/${1##*/}"
+		local path="$DST/$exif"
+		exec mkdir -p $path
+		exec ln -s "$PWD/$f" "$path/${f##*/}"
 	}
 }
 
-actionInfo stats 'display statistics of given exif parameter (sorts by the first exif value)'
+actionInfo stats 'display statistics of given exif parameter (sorts and groups by the first exif value)'
 stats() {
 	forEach() { echo "${exif[@]}"; }
 	finally() { sort -n | uniq -c; }
@@ -114,15 +118,23 @@ stats() {
 actionInfo ratedStats 'display statistics of photos to their overal rating per focal length'
 ratedStatsParams=(
 	key 'k?' '[1-4](,[1-4])*' 'Sort by which key(s) (columns: focalLength count ratingSum ratio)'
+	skipUndef 's?' '' 'Should we skip images without Rating or count them as 0 (default)'
 )
 ratedStats() {
-	forEach() { echo "${exif[@]}"; }
+	if ((skipUndef > 0)); then
+		forEach() { [[ ${exif[-1]} == R? ]] && echo "${exif[@]::${#exif[@]}-1}" "${exif[-1]#R}"; }
+	else
+		forEach() {
+			[[ ${exif[-1]} == R ]] && exif[-1]=0 || exif[-1]=${exif[-1]#R}
+			echo "${exif[@]}"
+		}
+	fi
 	finally() {
 		declare -ai counts ratings
 		local exif
 		while read -ra exif; do
 			counts[$exif]+=1
-			ratings[$exif]+=${exif[1]:-0}
+			ratings[$exif]+=${exif[-1]}
 		done
 
 		local fl
@@ -130,7 +142,7 @@ ratedStats() {
 			printf "%3d %4d %4d %3d%%\n" "$fl" "${counts[$fl]}" "${ratings[$fl]}" "$((20 * ${ratings[$fl]} / ${counts[$fl]}))"
 		done | sort -n -k "${key:-1}"
 	}
-	call execute -c flWithRating
+	extra='R$Rating' call execute -c fl
 }
 
 actionInfo edit 'set value of given tag on filtered files'
@@ -149,7 +161,7 @@ edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirmi
 		declare -i len=${#TAGS[@]}
 		for ((i = 0; i < len; i++)); do
 			local tag=${TAGS[i]}
-			local def=("$(getExif "$1" "\$$tag")")
+			local def=("$(query="\$$tag" getExif)")
 			if [[ -z ${VALUES[i]} ]]; then
 				choiceList=def pickFromList value 'v!' '.+' "Set \$${tag}"
 			else
@@ -158,14 +170,14 @@ edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirmi
 
 			if [[ $value && $value != $def ]]; then
 				if [[ $value == '$'?*'$' ]]; then # call a custom fn to retrieve the value
-					value=$(${value//'$'/} "$1")
+					value=$(${value//'$'/})
 				elif [[ $value == *'$'?* ]]; then # reference pattern string
-					value="$(getExif "$1" "$value")"
+					value="$(query="$value" getExif)"
 				else
 					value="${value%'$'}"
 				fi
 
-				exec exiftool -$tag="$value" -overwrite_original_in_place "$1"
+				exec exiftool -$tag="$value" -overwrite_original_in_place "$f"
 			fi
 		done
 	}

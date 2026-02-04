@@ -1156,7 +1156,7 @@ rename() {
 				exiftool "$src" -d "$dateFormat" -p "$exif" -if "$(
 					echo "$exif" | sed 's/^[^$]*//;s/\(\$\w\+\)[^$]*/\1 and /g;s/ and $//'
 				)" 2>/dev/null
-			) && [[ $name ]]
+			) && name=${name//\//|} && [[ $name ]]
 		} || { # date fallback (for images); relies on datetime being the only exif var
 			[[ $dateFallback -ge 0 && $exif =~ ^[^$]*\$DateTimeOriginal[^$]*$ ]] && {
 				name="${exif/'$DateTimeOriginal'*/}$(

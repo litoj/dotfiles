@@ -21,7 +21,8 @@ case "$KIND" in
 				local name=${f##*/}
 				local out="$base/${name%.*}.jpg"
 				magick "$f" "$out"
-				exiftool -TagsFromFile "$f" -all:all -overwrite_original "$out"
+				exiftool -TagsFromFile "$f" -all:all -overwrite_original_in_place "$out" &>/dev/null
+				echo "JPG stored as $out"
 			done
 		}
 		try @rawToJPG .RAF

@@ -49,7 +49,7 @@ OPENSCAD_COLORSCHEME="${RNGR_OPENSCAD_COLORSCHEME:-Tomorrow Night}"
 
 imageExif() {
 	exiftool "$FILE_PATH" |
-		awk '/^(Rating|Bright|Raw Exposure Bias|Exposure (Time|Comp)|F Number|Focal Length.*\(|ISO)/' |
+		awk '/^(Rating|Bright|Exposure (Time|Comp)|F Number|Focal Length.*\(|ISO)/' |
 		sort
 	exit 5
 }

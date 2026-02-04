@@ -28,7 +28,6 @@ preload=yes
 pstore=no
 
 [keys.viewer]
-x=skip_file
 Shift+Space=prev_file
 BackSpace=prev_file
 p=prev_file
@@ -39,6 +38,8 @@ comma=prev_file
 period=next_file
 Shift+h=prev_file
 Shift+l=next_file
+
+x=skip_file
 Shift+n=next_dir
 Alt+p=prev_dir
 Shift+p=prev_dir;prev_dir;next_dir
@@ -87,8 +88,8 @@ Shift+r=rotate_left
 d=info
 u=antialiasing mks13
 Shift+u=antialiasing none
-g=mode
-Tab=mode
+g=mode gallery
+Tab=mode gallery
 F5=reload
 
 b=exec ~/.config/sway/custombg '%'
@@ -100,26 +101,29 @@ Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Shift+b=exec cp '%' ~/Pictures/screen/
 Delete=exec bash -c 'x="%" && which trash && trash "$x" || mv "$x" "/tmp/my/trash/${x##*/}"'
 
-Ctrl+f=exec EDIT_PRESET=editFixManualFL pem -e -x -c dummy "%"
-Ctrl+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
-Ctrl+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
-Ctrl+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
-Ctrl+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
-Ctrl+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
-Ctrl+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
+Ctrl+f=exec EDIT_PRESET=editFixManualFl pem -e -x -c dummy "%"
+Alt+grave=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Alt+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Alt+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
+Alt+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
+Alt+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
+Alt+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
+Alt+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
 
 [keys.gallery]
-Ctrl+f=exec EDIT_PRESET=editFixManualFL pem -e -x -c dummy "%"
-Ctrl+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
-Ctrl+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
-Ctrl+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
-Ctrl+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
-Ctrl+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
-Ctrl+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
+Ctrl+f=exec EDIT_PRESET=editFixManualFl pem -e -x -c dummy "%"
+Alt+grave=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Alt+0=exec pem -e -t Rating -v 0 -x -c dummy "%"
+Alt+1=exec pem -e -t Rating -v 1 -x -c dummy "%"
+Alt+2=exec pem -e -t Rating -v 2 -x -c dummy "%"
+Alt+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
+Alt+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
+Alt+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
 
 # too fast -> scroll only horizontally
 ScrollLeft=none
 ScrollRight=none
+
 ScrollUp=step_left
 Shift+dScrollUp=step_up
 ScrollDown=step_right
@@ -128,6 +132,11 @@ h=step_left
 j=step_down
 k=step_up
 l=step_right
+a=step_left
+s=step_down
+w=step_up
+d=step_right
+
 Delete=exec bash -c 'x="%" && which trash && trash "$x" || mv "$x" "/tmp/my/trash/${x##*/}"'
 x=skip_file
 
@@ -136,9 +145,9 @@ Alt+e=exec xterm ranger --selectfile='%'
 Ctrl+e=exec gimp '%'
 Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 
-Tab=mode
-Space=mode
-g=mode
+Tab=mode viewer
+Space=mode viewer
+g=mode viewer
 
 [font]
 size=15

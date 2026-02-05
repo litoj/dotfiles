@@ -131,7 +131,6 @@ function M.config()
 
 	local tss = ctc['&1'].select['*1']:repeatable()
 
-	-- TODO: combine this with g or sth for jumping + forward and backward
 	map({ 'x', 'o' }, 'J', tss.child('closer_edge').fn)
 	map({ 'x', 'o' }, 'K', tss.parent.fn)
 	map({ 'x', 'o' }, 'H', tss.prev_sibling.fn)

@@ -58,7 +58,7 @@ function M.config()
 			nls.builtins.formatting.clang_format.with {
 				filetypes = { 'c', 'cpp', 'java' },
 				extra_args = function(client)
-					if exists(client.cwd .. '/.clang_format') then return { '--style', 'file' } end
+					if exists(client.cwd .. '/.clang-format') then return { '--style', 'file' } end
 					return {
 						'--style',
 						string.format( --RemoveBracesLLVM: true,

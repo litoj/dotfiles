@@ -13,6 +13,7 @@ antialiasing=none
 show=no
 info_timeout=0
 status_timeout=1
+exiftool_args= -ExposureTime -ISO -FNumber -FocalLength -Rating
 
 [gallery]
 antialiasing=none
@@ -23,8 +24,8 @@ border_width=10
 size=500
 selected_scale=1,2
 aspect=keep
-cache=8
-preload=yes
+cache=0
+preload=no
 pstore=no
 
 [keys.viewer]

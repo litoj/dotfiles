@@ -8,18 +8,18 @@ and various actions to execute on the filtered files'
 
 # get exiftool query specified by $query on the $f
 getExif() {
-	exiftool -n -p "$query" "$f" 2>/dev/null
+	exiftool -n -p "${1:-$query}" "$f" 2>/dev/null
 }
 
 # expects vars: $query/$extra - queries, $f - filename (required)
 # sets $exif=()
 setExif() {
-	exif=($(query="$query $extra" getExif))
+	exif=($(getExif "${1:-$query} $extra"))
 }
 # expects vars: $pre/$post/$extra - queries, $f - filename (required)
 # sets $exif=(), flIdx
-exifWithFl() {
-	query="$pre "'${FocalLength;$_=int($_)}'" $post" setExif
+exifWithIntFl() {
+	setExif "$pre "'${FocalLength;$_=int($_)}'" $post"
 	[[ $pre ]] && local preSpace="${pre//[^ ]/} "
 	declare -gi flIdx=${#preSpace}
 }
@@ -30,7 +30,7 @@ dummyFilter() {
 
 flFilter() {
 	# skip photos from a phone and undefined
-	exifWithFl && ((exif[flIdx] >= 8))
+	exifWithIntFl && ((exif[flIdx] >= 8))
 }
 
 flNoApFilter() {
@@ -51,7 +51,7 @@ executeParams=(
       use a predefined filter, pass in the fn name as defined in your config,
       or pass in the full function code via `declare -f`
       it should create an $exif array with all used exif data - provides data to $forEach
-      - use `query=xxx setExif` or `pre=xxx post=yyy exifWithFl` or any of the filters'
+      - use `setExif <query>` or `pre=<> post=<> exifWithIntFl` or any of the filters'
 	finally 'f?' "${REGEX['var']}" 'What to run on the output of all the processed files (default: finally)'
 	src '$*' '$e' 'Where to look for the files to process (default: .)'
 )
@@ -89,10 +89,14 @@ execute() {
 		local getSrc=(fd -L -t f -e jxl -e avif -e jpg -e raf '' "${src[@]}")
 	fi
 	local before=${before:-'~'} # last printable char from ascii as default
-	while read -r f; do
-		# skip photos from before I got a camera
-		[[ ${f##*/} > $after && ${f##*/} < $before ]] && runJob runner
-	done < <("${getSrc[@]}") | "$finally"
+	{
+		while read -r f; do
+			# skip photos from before I got a camera
+			[[ ${f##*/} > $after && ${f##*/} < $before ]] && runJob runner
+		done < <("${getSrc[@]}")
+
+		wait
+	} | "$finally"
 }
 
 actionInfo categorize 'sort all files into folders by the first `exif` value from the filter'

@@ -4,7 +4,7 @@ return {
 	'yetone/avante.nvim',
 	keys = ' a',
 	build = 'make',
-	enabled = false,
+	-- enabled = false,
 	dependencies = {
 		'nvim-lua/plenary.nvim',
 		'MunifTanjim/nui.nvim',

@@ -701,15 +701,10 @@ call() { # for script usage - calling actions like itself with cli, without exte
 # run a command in parallel/background
 # often used in a loop to call a custom fn and call `wait` after the loop
 runJob() {
-	local max=${SCRIPT_OPTS['jobs']}
-	if ((max == 1)); then
-		"$@"
-	else
-		while (($(jobs -p | wc -l) >= max)); do
-			wait -n
-		done
-		IS_JOB=1 "$@" &
-	fi
+	while (($(jobs -p | wc -l) >= SCRIPT_OPTS['jobs'])); do
+		wait -n
+	done
+	IS_JOB=1 "$@" &
 }
 
 # run given fn=$1 $#-1-times with $2... as arg for the first run etc.
@@ -1159,7 +1154,6 @@ pickConfig() {
 		declare -p "${_choice}" &>/dev/null
 		return $?
 	fi
-
 
 	declare -n presetMap=$3
 	if ((${SCRIPT_OPTS['configPicker']} <= 0 || !${#presetMap[@]})); then

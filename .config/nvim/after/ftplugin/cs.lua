@@ -10,7 +10,8 @@ local runcfg = {
 }
 
 local fth = require 'fthelper'
-local function getProjCfg(path)
+local proj = {}
+function proj.cfg(path)
 	local csproj = fth.findUpFile(path or vim.fn.bufname(0), '.*%.csproj')
 	local dir = csproj:match '.+/'
 	local label = csproj:match '([^/]+)%.csproj$'
@@ -50,7 +51,7 @@ local map = fth.once {
 				env = runcfg.env,
 				args = runcfg.args,
 				program = function()
-					local cfg = getProjCfg()
+					local cfg = proj.cfg()
 					if not cfg then return dap.ABORT end
 
 					vim.api.nvim_set_current_dir(cfg.dir)
@@ -84,40 +85,44 @@ end
 map({ 'n', 'i' }, '<A-b>', function() build(false) end)
 map({ 'n', 'i' }, '<A-r>', function() build(true) end)
 
-local function findUp(ext)
-	return vim.fs.find(
-		function(name) return vim.endswith(name, ext) end,
-		{ path = vim.api.nvim_buf_get_name(0), upward = true }
-	)[1]
-end
-
--- requires coroutine
-local function pickProj(prompt)
-	local root = findUp('.sln'):match '.+/'
+--- requires coroutine
+---@param sources 'src'|'test'|'{src,test}'
+function proj.pick(prompt, sources)
+	local root = fth.findDir(nil, '.sln$')
 	if root == '' then return vim.notify 'No solution file found' end
 
-	local projects = vim.split(vim.fn.glob(root .. '{src,test}/*/'), '\n', { plain = true })
+	local projects = vim.split(vim.fn.glob(root .. sources .. '/*/'), '\n', { plain = true })
 	if #projects == 0 or projects[1] == '' then return vim.notify 'No projects found' end
-	table.insert(projects, 1, findUp('.csproj'):match '.+/')
+	table.insert(projects, 1, fth.findDir(nil, '.csproj$'))
 
 	local _, pos = vim.ui.select(
 		vim.tbl_map(function(v) return v:match '([^/]+)/$' end, projects),
 		{ prompt = prompt or 'Pick project' }
 	)
-	return projects[pos]
+	return proj.cfg(projects[pos])
 end
 
-local proj = {}
-function proj.runInDir(cfg)
-	vim.cmd.term(table.concat({
-		'cd',
-		cfg.dir,
-		'&&',
-		cfg.cmd,
-	}, ' '))
-end
+function proj.run_cfg(cfg) vim.cmd.term(table.concat({ 'cd', cfg.dir, '&&', cfg.cmd }, ' ')) end
 
-function proj.run(cfg)
+function proj.debug_cfg(cfg) vim.notify 'Load dap first to enable debugging (set a breakpoint).' end
+
+fth.withMod('dap', function(dap)
+	function proj.debug_cfg(cfg)
+		cfg.cmd = cfg.cmd:gsub('dotnet ', 'VSTEST_HOST_DEBUG=1 dotnet ')
+		local bufnr = vim.api.nvim_get_current_buf()
+		proj.run_cfg(cfg)
+
+		vim.defer_fn(function()
+			vim.api.nvim_set_current_buf(bufnr)
+			dap.continue()
+		end, 3000)
+	end
+end)
+
+function proj.run()
+	local cfg = proj.pick('run project', 'src')
+	if not cfg then return end
+
 	vim.cmd.term(table.concat({
 		'cd',
 		cfg.dir,
@@ -128,51 +133,47 @@ function proj.run(cfg)
 	}, ' '))
 end
 
-function proj.debugCfg(cfg)
-	cfg.cmd = cfg.cmd:gsub('dotnet ', 'VSTEST_HOST_DEBUG=1 dotnet ')
-	local bufnr = vim.api.nvim_get_current_buf()
-	proj.runInDir(cfg)
+function proj.debug()
+	local cfg = proj.pick('debug project', '{src,test}')
+	if not cfg then return end
 
-	vim.defer_fn(function()
-		local dap = require 'dap'
-		vim.api.nvim_set_current_buf(bufnr)
-		dap.continue()
-	end, 3000)
-end
-
-function proj.debug(cfg)
 	cfg.cmd = table.concat({
 		'dotnet',
-		cfg.dir:match '[tT]est' and 'test' or 'run --project',
+		cfg.dir:match 'test' and 'test' or 'run --project',
 		cfg.csproj,
 	}, ' ')
-	proj.debugCfg(cfg)
+	proj.debug_cfg(cfg)
 end
 
-function proj.test(cfg, debug)
+function proj.test(debug)
+	local cfg = proj.pick('debug project', 'test')
+	if not cfg then return end
+
+	local filter = vim.ui.input { prompt = 'DisplayName filter' }
+	if not filter then return end
 	cfg.cmd = table.concat({
 		'dotnet',
 		'test -v detailed',
 		cfg.dll,
-		'--filter DisplayName~' .. vim.ui.input { prompt = 'DisplayName filter' },
+		filter ~= '' and '--filter DisplayName~' .. filter or nil,
 	}, ' ')
-	proj[debug and 'debugCfg' or 'runInDir'](cfg)
+	if debug then
+		proj.debug_cfg(cfg)
+	else
+		proj.run_cfg(cfg)
+	end
 end
+
+function proj.debug_test() proj.test(true) end
 
 for bind, name in pairs {
 	['<A-S-R>'] = 'run',
 	['<A-S-D>'] = 'debug',
 	['<F18>'] = 'debug',
 	['<A-t>'] = 'test',
+	['<A-S-T>'] = 'debug_test',
 } do
-	map(
-		{ 'n', 'i' },
-		bind,
-		coroutine.wrap(function() proj[name](getProjCfg(pickProj(name .. ' project'))) end)
-	)
+	map({ 'n', 'i' }, bind, function()
+		coroutine.wrap(function() proj[name]() end)()
+	end)
 end
-map(
-	{ 'n', 'i' },
-	'<A-S-T>',
-	coroutine.wrap(function() proj.test(getProjCfg(pickProj 'Debug test'), true) end)
-)

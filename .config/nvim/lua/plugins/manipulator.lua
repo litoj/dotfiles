@@ -17,7 +17,12 @@ function M.config()
 		region = {
 			-- TODO: custom extender, not even fully linewise - opposite of trimmed -> extended?
 			select = { linewise_end = '^,?%s*$' },
-			current = { rangemod = { RM.trimmed }, trimm_end = '%s*$' },
+			current = {
+				rangemod = { RM.pos_shift, RM.trimmed },
+				trimm_end = '%s*$',
+				shift_modes = { i = true, n = true },
+				shift_by_luapat = '^%s+',
+			},
 		},
 		ts = {
 			presets = { -- TODO: create MOD for lookahead+lookbehind
@@ -29,6 +34,11 @@ function M.config()
 						'^case_',
 						'^while_',
 						'^for_',
+					},
+					next_sibling = {
+						types = {
+							'comment',
+						},
 					},
 				},
 
@@ -67,7 +77,7 @@ function M.config()
 	)
 
 	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
-	map(
+	--[[ map(
 		{ 'v' },
 		'<A-S-J>', -- TODO: cut&paste, not swap
 		mcp.region.queue_or_swap:on_short_motion(function(reg)
@@ -77,7 +87,7 @@ function M.config()
 				getmetatable(reg)
 			)
 		end).queue_or_swap.dot_fn
-	)
+	) ]]
 	map({ '', 'i' }, '<A-x>', tsq.fn)
 	map(
 		{ '', 'i' },
@@ -91,8 +101,8 @@ function M.config()
 	)
 
 	local tsj = ctc({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
-	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
-	map({ '', 'i' }, '<C-l>', tsj.next.fn)
+	map({ '', 'i' }, '<C-S-H>', tsj.prev.fn)
+	map({ '', 'i' }, '<C-S-L>', tsj.next.fn)
 	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
 	map({ '', 'i' }, '<C-A-l>', tsj:next('path')['*$']({ end_ = true }).fn)
 	map(
@@ -149,7 +159,7 @@ function M.config()
 			map_as = 'dot_fn',
 		},
 		{
-			lhs = function(m, c) return m:match '[^%[%]]' and ('g' .. m:upper() .. c) end, -- no ''/[/]
+			lhs = function(m, c) return m:match '[%[%]]' and (m .. c:upper()) or ('g' .. m:upper() .. c) end,
 			rhs = opj['&1']['*$']({ end_ = true })['*1'],
 			desc = 'jump to end of',
 			map_as = 'dot_fn',
@@ -185,7 +195,9 @@ function M.config()
 		end
 
 		fill_info(c_name, cat)
-		if type(cat.opts) == 'table' then cat.opts.save_as = 'last_types' end
+		if type(cat.opts) == 'table' and cat.opts.save_as ~= false then
+			cat.opts.save_as = 'last_types'
+		end
 		map_opts = type(map_opts) == 'table' and map_opts or { desc = map_opts }
 
 		for o_name, op in pairs(operators) do
@@ -214,7 +226,8 @@ function M.config()
 	-- NOTE: dirty workaround to allow filetypes to make their own mappings
 	require('plugins.manipulator').mapAll = mapAll
 
-	mapAll('default node', { opts = 'last_types' })
+	mapAll('saved node', { opts = 'last_types' })
+	mapAll('node', { opts = { save_as = false } })
 	mapAll('function', { opts = { query = 'textobjects', types = { 'function.outer' } } })
 	mapAll('parameter', { opts = { query = 'textobjects', types = { 'parameter.inner' } } })
 	mapAll('var', { '^variable_de', '^parameter_de' })
@@ -222,7 +235,7 @@ function M.config()
 	mapAll('condition', { '^if', '^else', '^switch', '^case' })
 	mapAll('loop', { '^for', '^while', 'do_statement' })
 
-	-- NOTE: overriding default paste behaviour to be better suited for insert mode
+	-- overriding default paste behaviour to be better suited for insert mode
 	local function paste(after)
 		local type = vim.fn.getregtype(vim.v.register)
 		if type:sub(1, 1) == '\022' then

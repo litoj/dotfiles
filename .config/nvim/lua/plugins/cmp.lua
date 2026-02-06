@@ -76,11 +76,52 @@ function M.config()
 		return { i = exec, c = exec }
 	end
 
+	local kinds = require('cmp.types.lsp').CompletionItemKind
+	local cmpKindPref = {}
+	for i, k in ipairs {
+		kinds.Text,
+		kinds.Value,
+		kinds.Color,
+		kinds.File,
+		kinds.Folder,
+
+		kinds.Keyword,
+
+		kinds.Variable,
+		kinds.Property,
+		kinds.Field,
+
+		kinds.Snippet,
+
+		kinds.Method,
+		kinds.Function,
+		kinds.Constructor,
+
+		kinds.EnumMember,
+		kinds.Constant,
+		kinds.Module,
+
+		kinds.TypeParameter,
+		kinds.Enum,
+		kinds.Class,
+		kinds.Struct,
+		kinds.Interface,
+		kinds.Event,
+
+		kinds.Operator,
+		kinds.Reference, -- FIXME: what is this type?
+	} do
+		cmpKindPref[k] = i
+	end
 	local comparators = {
 		cmp.config.compare.offset,
 		src.copilot and require('cmp_copilot.comparators').score or cmp.config.compare.score,
 		-- cmp.config.compare.recently_used,
-		cmp.config.compare.kind,
+		function(e1, e2)
+			local a, b = cmpKindPref[e1:get_kind()], cmpKindPref[e2:get_kind()]
+			if a == b then return end
+			return a < b
+		end,
 		cmp.config.compare.length,
 	}
 

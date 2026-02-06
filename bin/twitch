@@ -100,7 +100,7 @@ if [[ -z $quality ]]; then
 	(($?)) && exit 0
 
 	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
-		quality=${presets[$quality]:-bv*[height=$quality]+ba,bv*[height=$quality],ba}
+		quality=${presets[$quality]:-bv*[height=$quality,ext=vp9],bv*[height=$quality]+ba,ba}
 
 	if [[ $url == *youtube.com/w* && $quality =~ ^(.*)(.ba)$ ]]; then
 		quality="${BASH_REMATCH[1]}${BASH_REMATCH[2]}" # add [ext=webm] for avoiding av1

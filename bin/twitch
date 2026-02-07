@@ -95,7 +95,7 @@ fi
 if [[ -z $quality ]]; then
 	qualOpts=(360 720 1440 best audio)
 	[[ $live ]] && qualOpts[0]=480
-	declare -A presets=([best]="bv*+ba" [audio]="ba")
+	declare -A presets=([best]="bv*[vcodec!*=av]+ba" [audio]="ba")
 	quality=$(printf '%s\n' ${qualOpts[@]} | rofi -dmenu -p Quality)
 	(($?)) && exit 0
 

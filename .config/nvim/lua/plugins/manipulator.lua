@@ -1,3 +1,5 @@
+---@class plugins.manipulator
+---@field mapAll fun(c_name:string, mapper_cfg_or_types:ManipMapCfg.Cat|manipulator.Enabler,map_opts?:vim.keymap.set.Opts)
 local M = {
 	'litoj/manipulator.nvim',
 	dependencies = {
@@ -6,6 +8,7 @@ local M = {
 	},
 	event = 'VeryLazy',
 }
+
 function M.config()
 	local RM = require 'manipulator.range_mods'
 	local m = require 'manipulator'
@@ -66,28 +69,7 @@ function M.config()
 	local mcp = m.call_path
 	local ctc = mcp.ts.current -- callpath ts current
 
-	map(
-		{ '', 'i' },
-		'<C-S-/>',
-		ctc[function(r)
-			r:highlight()
-			print { type = r:__tostring(), range = r.range, cursor = m.region.current().range }
-			vim.defer_fn(function() r:highlight() end, 100)
-		end].fn
-	)
-
 	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
-	--[[ map(
-		{ 'v' },
-		'<A-S-J>', -- TODO: cut&paste, not swap
-		mcp.region.queue_or_swap:on_short_motion(function(reg)
-			local r = reg.range
-			return setmetatable(
-				{ buf = 0, range = { r[3] + 1, 0, r[3] + 1, vim.v.maxcol } },
-				getmetatable(reg)
-			)
-		end).queue_or_swap.dot_fn
-	) ]]
 	map({ '', 'i' }, '<A-x>', tsq.fn)
 	map(
 		{ '', 'i' },
@@ -109,20 +91,19 @@ function M.config()
 		{ '', 'i' },
 		'<C-p>',
 		tsj
-			:collect(mcp(m.ts.class)[RM.until_new_pos]('parent', false, {
-				types = { ['*'] = false, 'declaration$', 'definition$', 'statement$' },
-			}))
+			:collect(mcp(m.ts.class):parent { types = { 'declaration$', 'definition$', 'statement$' } })
 			:pick({ picker = 'native' }).fn
+	)
+	-- for debugging - lists all parent nodes in the tree
+	map(
+		{ '', 'i' },
+		'<C-S-P>',
+		tsj:collect(mcp(m.ts.class):parent { types = { ['*'] = true } }):pick({ picker = 'native' }).fn
 	)
 
 	local tss_doc = ctc['&1']:select('with_docs')['*1']:repeatable()
 	map({ '', 'i' }, '<A-s>', tss_doc.fn)
 	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
-	map(
-		{ '', 'i' },
-		'<A-m>',
-		tss_doc:with({ types = { inherit = true, do_statement = false } }):collect('parent'):at(-1).fn
-	) -- master node
 
 	map('', ' qa', ctc.add_to_qf.fn)
 	map('n', ' qo', '<Cmd>copen<CR>')
@@ -151,6 +132,19 @@ function M.config()
 	map('', '<A-S-N>', tss.prev('path').fn)
 
 	local opj = tsj:new(nil, { call = { on_no_fn = 'extend-prev' } })
+	---@class ManipMapCfg
+	---@field lhs? string|string[] if not specified, the first letter of the index of this cfg is used
+	---@field rhs? manipulator.Batch.Action
+	---@field desc? string if not specified, the index of this cfg is used
+
+	---@class ManipMapCfg.Cat: ManipMapCfg
+	---@field opts? manipulator.TS.QueryOpts
+
+	---@class ManipMapCfg.Op: ManipMapCfg
+	---@field lhs fun(move:string, category:string): string
+	---@field map_as 'fn'|'dot_fn'|'op_fn'
+
+	---@type table<string|integer,ManipMapCfg.Op>
 	local operators = {
 		{
 			lhs = function(m, c) return (m:match '[%[%]]' and '' or 'g') .. m .. c end,
@@ -168,8 +162,10 @@ function M.config()
 			mode = { 'o', 'x' },
 			lhs = function(m, c) return m:match '[^%[%]]' and '' .. m .. c end, -- no ''/[/]
 			rhs = tss,
+			map_as = 'fn',
 		},
 	}
+	---@type table<string,ManipMapCfg>
 	local moves = {
 		picked = {
 			lhs = 't',
@@ -184,6 +180,7 @@ function M.config()
 		inner = { rhs = function(x, cfg) return x(cfg):child { types = { 'block', 'chunk' } } end },
 	}
 	m.ts.config.presets.last_types = m.ts.config
+	---@param mapper_cfg_or_types ManipMapCfg.Cat|manipulator.Enabler
 	local function mapAll(c_name, mapper_cfg_or_types, map_opts)
 		local cat = mapper_cfg_or_types
 		if cat[1] then cat = { opts = { types = cat } } end
@@ -195,10 +192,8 @@ function M.config()
 		end
 
 		fill_info(c_name, cat)
-		if type(cat.opts) == 'table' and cat.opts.save_as ~= false then
-			cat.opts.save_as = 'last_types'
-		end
-		map_opts = type(map_opts) == 'table' and map_opts or { desc = map_opts }
+		if cat.opts.save_as ~= false then cat.opts.save_as = 'last_types' end
+		map_opts = type(map_opts) == 'table' and map_opts or (map_opts and error()) or {}
 
 		for o_name, op in pairs(operators) do
 			fill_info(o_name, op)
@@ -211,7 +206,7 @@ function M.config()
 				fill_info(m_name, move)
 
 				local rhs = m.batch.action_to_fn(move.rhs, vim.deepcopy(cat.opts, true))(op.rhs)
-				if type(rhs) ~= 'function' then rhs = rhs[op.map_as or 'fn'] end
+				if type(rhs) ~= 'function' then rhs = rhs[op.map_as] end
 
 				for _, m_lhs in ipairs(type(move.lhs) == 'table' and move.lhs or { move.lhs }) do
 					local lhs = lhs(m_lhs, cat.lhs)
@@ -226,10 +221,10 @@ function M.config()
 	-- NOTE: dirty workaround to allow filetypes to make their own mappings
 	require('plugins.manipulator').mapAll = mapAll
 
-	mapAll('saved node', { opts = 'last_types' })
+	mapAll('saved node', { opts = { save_as = false, inherit = 'last_types' } })
 	mapAll('node', { opts = { save_as = false } })
-	mapAll('function', { opts = { query = 'textobjects', types = { 'function.outer' } } })
-	mapAll('parameter', { opts = { query = 'textobjects', types = { 'parameter.inner' } } })
+	mapAll('function', { opts = { query = 'textobjects', types = { '@function.outer' } } })
+	mapAll('parameter', { opts = { query = 'textobjects', types = { '@parameter.inner' } } })
 	mapAll('var', { '^variable_de', '^parameter_de' })
 	mapAll('assignment', { 'assignment_statement' })
 	mapAll('condition', { '^if', '^else', '^switch', '^case' })

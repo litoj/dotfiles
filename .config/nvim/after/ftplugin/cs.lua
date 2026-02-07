@@ -1,5 +1,7 @@
 if vim.bo.bufhidden ~= '' then return end
 
+vim.wo.foldlevel = 1
+
 local runcfg = {
 	env = 'ASPNETCORE_ENVIRONMENT=Development',
 	args = {
@@ -34,7 +36,7 @@ function proj.cfg(path)
 	}
 end
 
-local map = fth.once {
+local map, modmap = fth.once {
 	mylsp = function(ml) ml.setup 'omnisharp' end,
 
 	dap = function(dap)
@@ -73,6 +75,17 @@ local map = fth.once {
 				end,
 			},
 		}
+	end,
+}
+
+modmap {
+	['manipulator.call_path'] = function(mcp, buf)
+		local mapAll = require('plugins.manipulator').mapAll
+		mapAll(
+			'docs',
+			{ opts = { langs = false, query = [[(comment)+ @docs]], types = { '@docs' } } },
+			{ buffer = buf }
+		)
 	end,
 }
 

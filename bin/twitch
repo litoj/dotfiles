@@ -95,19 +95,15 @@ fi
 if [[ -z $quality ]]; then
 	qualOpts=(360 720 1440 best audio)
 	[[ $live ]] && qualOpts[0]=480
-	declare -A presets=([best]="bv*+ba" [360]="bv*[height=360],ba" [audio]="ba")
+	declare -A presets=([best]="bv*+ba" [audio]="ba")
 	quality=$(printf '%s\n' ${qualOpts[@]} | rofi -dmenu -p Quality)
 	(($?)) && exit 0
 
 	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
-		quality=${presets[$quality]:-bv*[height=$quality,ext=vp9],bv*[height=$quality]+ba,ba}
-
-	if [[ $url == *youtube.com/w* && $quality =~ ^(.*)(.ba)$ ]]; then
-		quality="${BASH_REMATCH[1]}${BASH_REMATCH[2]}" # add [ext=webm] for avoiding av1
-	fi
+		quality=${presets[$quality]:-bv*[height=$quality][vcodec!*=av],ba}
 fi
 
-mpv --ytdl-format="$quality" --no-terminal "$url" &
+mpv --ytdl-format="$quality" "$url" --no-terminal &
 params="[pid=$!]"' floating enable, sticky enable, border pixel $border, resize set 648 368, focus'
 declare -i max=10 i=0
 while ! swaymsg "$params" &>/dev/null && ((++i < max)); do

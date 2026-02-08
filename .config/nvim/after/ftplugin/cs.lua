@@ -1,5 +1,7 @@
 if vim.bo.bufhidden ~= '' then return end
 
+vim.bo.formatoptions = vim.bo.formatoptions .. 'cro'
+
 local runcfg = {
 	env = 'ASPNETCORE_ENVIRONMENT=Development',
 	args = {
@@ -33,6 +35,18 @@ function proj.cfg(path)
 		dll = dll,
 	}
 end
+
+vim.api.nvim_create_autocmd({ 'InsertLeave' }, {
+	buffer = 0,
+	callback = function(s)
+		local clients = vim.lsp.get_clients { name = 'roslyn' }
+		if not clients or #clients == 0 then return end
+		if #clients > 1 then vim.notify 'Multiple Roslyn clients!' end
+
+		local params = { textDocument = vim.lsp.util.make_text_document_params(s.buf) }
+		clients[1]:request('textDocument/diagnostic', params, nil, s.buf)
+	end,
+})
 
 local map, modmap = fth.once {
 	mylsp = function(ml) ml.setup 'roslyn_ls' end,
@@ -188,3 +202,37 @@ for bind, name in pairs {
 		coroutine.wrap(function() proj[name]() end)()
 	end)
 end
+
+map('n', '<A-y>', function()
+	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]
+	if not client then return end
+
+	local m = require 'manipulator'
+	local pos = m.ts.current { types = { 'declaration$' } }
+	local r = pos.range
+	local indent = m.Range.get_text { r[1], 0, r[1], r[2] - 1 }
+	pos = pos:paste {
+		text = indent .. '///',
+		mode = 'before',
+		linewise = true,
+	}
+	pos:jump { end_ = true, start_insert = true }
+
+	local params = {
+		_vs_textDocument = { uri = vim.uri_from_bufnr(0) },
+		_vs_position = { line = pos.range[3], character = pos.range[4] + 1 },
+		_vs_ch = '/',
+		_vs_options = {
+			tabSize = vim.bo.tabstop,
+			insertSpaces = vim.bo.expandtab,
+		},
+	}
+
+	client:request('textDocument/_vs_onAutoInsert', params, function(err, result, _)
+		if err or not result then return end
+
+		-- remove indent, because vim is stupid and prepends it to the snippet
+		local text = string.gsub(result._vs_textEdit.newText, indent, '')
+		vim.snippet.expand(text)
+	end, 0)
+end)

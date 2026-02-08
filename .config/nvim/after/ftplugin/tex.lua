@@ -18,9 +18,8 @@ modmap {
 
 			b:highlight 'Visual'
 
-			b.range[2] = b.range[2] + 1
-			b:jump()
-			vim.cmd.startinsert()
+			b.range[2] = b.range[2] + 1 -- after the curly brace
+			b:jump { start_insert = true }
 			o[4] = 4 -- make the environment block be selectable by range - ignore end env name
 
 			local group = vim.api.nvim_create_augroup('env-sync', {})

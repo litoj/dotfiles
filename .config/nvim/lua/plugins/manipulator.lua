@@ -12,6 +12,7 @@ local M = {
 function M.config()
 	local RM = require 'manipulator.range_mods'
 	local m = require 'manipulator'
+	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })
 	m.setup { -- TODO: make input window repeatable (macro renaming)
 		-- debug = 3,
 		batch = {

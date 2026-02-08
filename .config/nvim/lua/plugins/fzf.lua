@@ -50,7 +50,7 @@ function M.config()
 	map('n', ' pd', fzf.diagnostics_workspace) -- list diagnostics
 	map('n', ' bl', fzf.buffers)
 	map({ '', 'i' }, '<C-f>', fzf.blines)
-	map('n', ' mc', fzf.highlights) -- my colors
+	map('n', ' mC', fzf.highlights) -- my colors
 	map('n', ' ql', fzf.quickfix)
 	map('n', ' ll', fzf.loclist)
 end

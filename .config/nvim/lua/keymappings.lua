@@ -113,7 +113,6 @@ map('n', 'N', 'Nzz')
 
 -- Extra
 map('n', ' /', '<Cmd>noh<CR>') -- clears all highlights/searches
-map('n', '<A-S-C>', '<Cmd>Inspect<CR>')
 map('n', 'S', '<Cmd>term<CR>a')
 map('n', 'cd', '<Cmd>cd %:h<CR>')
 map('', '<C-t>', '<Cmd>tabnew %<CR>')

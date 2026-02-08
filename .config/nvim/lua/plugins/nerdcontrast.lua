@@ -13,7 +13,7 @@ function M.config()
 		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue', Parameter = 'FgGreen' } },
 	}
 	-- Dark/Light theme toggle
-	map('n', ' mt', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)
+	map('n', ' mn', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)
 	map('n', ' mb', function()
 		local matcher = {
 			luapat = '(#[a-z0-9]+)',
@@ -31,6 +31,7 @@ function M.config()
 		local theme = nc.config[vim.go.background].theme == 'nc_christmas' and 'nc' or 'nc_christmas'
 		nc.setup { theme = theme }
 	end, { desc = 'toggle theme between nc and nc_christmas' })
+	map('n', ' mt', '<Cmd>Inspect<CR>', { desc = ':Inspect' })
 end
 
 return {
@@ -59,7 +60,7 @@ return {
 			local c = require 'colorizer'
 			local custom = opts.user_default_options.names_custom
 			c.setup(opts)
-			map('n', '<Leader>mC', function()
+			map('n', ' mC', function()
 				local state = opts.user_default_options.mode
 				local modes = { 'foreground', 'background', 'off' }
 				for i, v in ipairs(modes) do

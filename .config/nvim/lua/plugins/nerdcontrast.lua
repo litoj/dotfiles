@@ -10,7 +10,7 @@ function M.config()
 			} } },
 		},
 		dark = { opacity = 'dd' },
-		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue' } },
+		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue', Parameter = 'FgGreen' } },
 	}
 	-- Dark/Light theme toggle
 	map('n', ' mt', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)

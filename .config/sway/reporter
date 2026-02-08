@@ -39,7 +39,8 @@ last=(
 last[0]=${last[0]%.} # month
 last[1]=${last[1]%.} # day
 last[2]=$(date +%Y)  # year
-declare -ai last new=($(date +"%m %d"))
+new=($(date +"%m %d"))
+declare -ai last new=(${new[0]#0} ${new[1]#0})
 ((new < last)) && ((last[2] += -1))
 lastDate="${last[2]}-${last[0]}-${last[1]}"
 

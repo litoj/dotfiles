@@ -460,13 +460,13 @@ parseAction() {
 	local i=-4 posArg= # not `declare -i` to keep unset values as ""
 
 	# distinguish options and args
-	declare -A opts=()  # opt names → param map idx
-	declare -Ai args=() # idx → usage cnt
+	declare -A opts=([h]=help [help]=help) # opt names → param map idx + special 'help' injection
+	declare -Ai args=()                    # idx → usage cnt
 	while (((i += 4) < sigN)); do
 		local sign=${sigs[i + 1]}
 		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
 		[[ $sign != '$'? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
-		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # '_'=no short, '$'=arg
+		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # NOTE: '_'=no short, '$'=arg
 		[[ $sign == ?[+!] || $sign == '$'? ]] && posArg=${posArg:-$i} args[$i]=0
 	done
 	declare -i posArg="${posArg:-$sigN}"
@@ -512,6 +512,7 @@ parseAction() {
 			fi
 
 			local i='' optCnt=+ tmpArr=
+			# NOTE: here is the list of prefixes acting as toggles
 			if [[ $# -ne $actionArgFromEnd &&
 				$1 =~ ^(${SSS_OPTS['optionPrefix']})(no-|disable-|enable-)?([^- ][^= ]+)(=.*)?$ ]] && {
 				tmpArr=("${BASH_REMATCH[@]}")
@@ -532,6 +533,9 @@ parseAction() {
 				shift
 			fi
 		fi
+
+		# quick way to get help for any action
+		[[ $i == help ]] && actions="$ACTION" help && exit 0
 
 		if [[ $i ]]; then # set option / named parameter
 			local varName=${sigs[$i]//-/_} matcher=${sigs[i + 2]}
@@ -659,7 +663,7 @@ parseAction() {
 		(($# < actionArgFromEnd)) && break # stop after chain started by action (not option)
 	done
 
-	i=$firstArg-4
+	[[ $i != ? ]] && i=$firstArg-4
 	unset actionArgFromEnd posArg firstArg opts tmpArr _varName
 
 	while (((i += 4) < sigN)); do
@@ -928,7 +932,11 @@ help() {
 		local default=true
 		((SCRIPT_OPTS[cli] > 0)) && print "${SSS_OPTS[about]}"
 	fi
-	((legend > 0)) && print 'Legend:
+	[[ $default && ${#actions[@]} -gt 9 ]]
+	declare -i params="${params:-$?}"
+
+	if ((legend > 0)); then
+		print 'Legend:
   action: [a]ction
     - short name: in brackets if exists
       - in CLI prefix with `-`, not necessary in TUI
@@ -957,9 +965,7 @@ help() {
       - $F: ensure file can exist at user input, ends with RE
       - $+: existing input file mime type starts with RE
       - $|: fallback simple input regex'
-
-	[[ $default && ${#actions[@]} -gt 9 ]]
-	declare -i params="${params:-$?}"
+	fi
 
 	((${#actions[@]} > 1)) && print 'Actions:' || print 'Action:'
 	local act fmt
@@ -991,6 +997,10 @@ help() {
 			print "  No help for unknown action '${_act:-$act}'"
 		fi
 	done
+
+	if [[ -z $matchexpr || -z $params ]]; then
+		print 'For more details, run help with -pm.'
+	fi
 }
 
 actionInfo quit 'exit the tui' # also called when exiting the cli

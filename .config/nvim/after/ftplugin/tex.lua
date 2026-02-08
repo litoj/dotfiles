@@ -5,33 +5,42 @@ local map, modmap = require('fthelper').once {
 }
 
 modmap {
-	['manipulator.call_path'] = function(mcp, buf)
+	['manipulator'] = function(m, buf) ---@param m manipulator
 		local mapAll = require('plugins.manipulator').mapAll
 		mapAll('chapter', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
 		mapAll('figure block', { 'begin' }, { buffer = buf })
-		local envMatcher = mcp.ts.current({ types = { 'begin', 'end' } }):parent()
-		map(
-			{ 'n', 'i' },
-			'<F2>',
-			envMatcher[
-				function(self)
-					local braceMatch = { inherit = false, types = { curly_group_text = true } }
-					local o = self.range
-					self:child(0, { types = { text = true } }):paste({ text = '' }):jump { insert = true }
+		map({ 'n', 'i' }, '<F2>', function()
+			local self = m.ts.current({ types = { 'begin', 'end' } }):parent()
+			if not self or not self.range then return end
+			local opts = { inherit = false, types = { curly_group_text = true } }
+			local o = self.range
+			local b = self:child(0, opts):paste { text = '{}' }
 
-					require 'autocommands'('CursorMovedI', function()
-						local new = envMatcher:exec()
-						local nr = new.range
-						if new.buf == self.buf and nr[1] == o[1] and nr[2] == o[2] and nr[3] == o[3] then
-							-- get last child = 'end' and paste into the braces the text of 'begin'
-							new:child(-1, braceMatch):paste { text = new:child(0, braceMatch):get_text() }
-						else
-							return true
-						end
-					end)
-				end
-			].fn
-		)
+			b:highlight 'Visual'
+
+			b.range[2] = b.range[2] + 1
+			b:jump()
+			vim.cmd.startinsert()
+			o[4] = 4 -- make the environment block be selectable by range - ignore end env name
+
+			local group = vim.api.nvim_create_augroup('env-sync', {})
+			vim.api.nvim_create_autocmd({ 'CursorMovedI', 'CursorMoved' }, {
+				group = group,
+				callback = function(s)
+					b = m.ts.current { types = { curly_group_text = true } } or ''
+					self = m.ts.get(o) or ''
+					local e = self:child(-1, opts) or ''
+					if not b.range or s.event == 'CursorMoved' then
+						self:child(0, opts):highlight(false)
+						e:highlight(false)
+						vim.api.nvim_del_augroup_by_id(group)
+						return
+					end
+
+					e:paste({ text = b:get_text() }):highlight 'Visual'
+				end,
+			})
+		end)
 	end,
 }
 

@@ -98,7 +98,9 @@ function M.config()
 	map(
 		{ '', 'i' },
 		'<C-S-P>',
-		tsj:collect(mcp(m.ts.class):parent { types = { ['*'] = true } }):pick({ picker = 'native' }).fn
+		tsj
+			:collect({ include_src = true }, mcp(m.ts.class):parent { types = { ['*'] = true } })
+			:pick({ picker = 'native' }).fn
 	)
 
 	local tss_doc = ctc['&1']:select('with_docs')['*1']:repeatable()

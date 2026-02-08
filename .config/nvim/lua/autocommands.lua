@@ -57,7 +57,7 @@ au('BufLeave', function(s) fakeUpdate = not validUpdate(s) end)
 map('n', ' md', function() cwdEnabled = not cwdEnabled end, { desc = 'toggle cwd changing' })
 
 local function setIndentMarks(state)
-	vim.opt_local.lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks
+	vim.wo[0][0].lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks
 	local f = state.file
 	if f:find('.git/', 1, true) or f:find '^/tmp' or f:find('.cache/', 1, true) then
 		vim.bo[state.buf].undofile = false -- Temp-file cleanliness
@@ -73,8 +73,8 @@ au('FileType', function()
 	end
 end, 'gitrebase')
 au('TermOpen', function()
-	vim.opt_local.nu = false
-	vim.opt_local.rnu = false
+	vim.wo[0][0].nu = false
+	vim.wo[0][0].rnu = false
 end)
 
 local function hiNotes()

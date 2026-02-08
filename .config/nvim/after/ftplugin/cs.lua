@@ -1,7 +1,5 @@
 if vim.bo.bufhidden ~= '' then return end
 
-vim.wo.foldlevel = 1
-
 local runcfg = {
 	env = 'ASPNETCORE_ENVIRONMENT=Development',
 	args = {
@@ -37,7 +35,7 @@ function proj.cfg(path)
 end
 
 local map, modmap = fth.once {
-	mylsp = function(ml) ml.setup 'omnisharp' end,
+	mylsp = function(ml) ml.setup 'roslyn_ls' end,
 
 	dap = function(dap)
 		dap.adapters.netcoredbg = {

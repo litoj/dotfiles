@@ -203,6 +203,33 @@ for bind, name in pairs {
 	end)
 end
 
+map('i', '<A-y>', function()
+	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]
+	if not client then return end
+
+	local m = require 'manipulator'
+	local r = m.region.current().range
+	local indent = r:get_line():match '^%s*'
+
+	local params = {
+		_vs_textDocument = { uri = vim.uri_from_bufnr(0) },
+		_vs_position = { line = r[3], character = r[4] + 1 },
+		_vs_ch = r:__add({ 0, 0, 0, 2 }):get_text(),
+		_vs_options = {
+			tabSize = vim.bo.tabstop,
+			insertSpaces = vim.bo.expandtab,
+		},
+	}
+
+	client:request('textDocument/_vs_onAutoInsert', params, function(err, result, _)
+		if err or not result then return end
+
+		-- remove indent, because vim is stupid and prepends it to the snippet
+		local text = string.gsub(result._vs_textEdit.newText, indent, '')
+		vim.snippet.expand(text)
+	end, 0)
+end, { desc = 'manually trigger a snippet hidden in the server' })
+
 map('n', '<A-y>', function()
 	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]
 	if not client then return end

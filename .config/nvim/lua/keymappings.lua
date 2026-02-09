@@ -75,8 +75,8 @@ map('', '<C-A-j>', '<C-e>')
 map('', 'g;', 'g;zz')
 map({ 'i', 't' }, '<C-k>', '<C-o><C-u><C-o>zz')
 map({ 'i', 't' }, '<C-j>', '<C-o><C-d><C-o>zz')
-map({ '', 'i', 't' }, '<C-h>', '<C-Left>') -- replaced with manipulator.nvim
-map({ '', 'i', 't' }, '<C-l>', '<C-Right>')
+map({ '', 'i', 't' }, '<C-S-H>', '<C-Left>') -- replaced with manipulator.nvim
+map({ '', 'i', 't' }, '<C-S-L>', '<C-Right>')
 map({ '!', 't' }, '<C-S-H>', '<C-o>B')
 map({ '!', 't' }, '<C-S-L>', '<C-o>W')
 map({ '!', 't' }, '<A-h>', '<Left>')
@@ -199,6 +199,7 @@ map('n', ' ml', function() -- load and execute lua code in current buffer
 	end
 end)
 
+map('i', '<A-S-.>', function() return (' '):rep(vim.bo.shiftwidth) end, { expr = true })
 map('x', '<Tab>', function() -- simple indentation changer ('>' cancels visual mode)
 	local from, to = vim.fn.line 'v', vim.api.nvim_win_get_cursor(0)[1]
 	if from > to then

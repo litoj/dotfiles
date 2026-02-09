@@ -39,7 +39,7 @@ end
 vim.api.nvim_create_autocmd({ 'InsertLeave' }, {
 	buffer = 0,
 	callback = function(s)
-		local clients = vim.lsp.get_clients { name = 'roslyn' }
+		local clients = vim.lsp.get_clients { name = 'roslyn_ls' }
 		if not clients or #clients == 0 then return end
 		if #clients > 1 then vim.notify 'Multiple Roslyn clients!' end
 
@@ -174,13 +174,13 @@ function proj.test(debug)
 	local cfg = proj.pick('debug project', 'test')
 	if not cfg then return end
 
-	local filter = vim.ui.input { prompt = 'DisplayName filter' }
+	local filter = vim.ui.input { prompt = 'Testname contains literal' }
 	if not filter then return end
 	cfg.cmd = table.concat({
 		'dotnet',
 		'test -v detailed',
 		cfg.dll,
-		filter ~= '' and '--filter DisplayName~' .. filter or nil,
+		filter ~= '' and '--filter "DisplayName~' .. filter .. '"' or nil,
 	}, ' ')
 	if debug then
 		proj.debug_cfg(cfg)

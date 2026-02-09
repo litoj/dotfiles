@@ -8,10 +8,21 @@ local M = {
 	},
 	event = 'VeryLazy',
 }
+--[[
+TODO: test why prev() from getEntity jumps to start
+{
+            throw new BadRequestException(e);
+        }
+    }
 
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesDefaultResponseType]
+    public async Task<ActionResult<IEnumerable<TestTermResponse>>> GetEntity()
+]]
 function M.config()
-	local RM = require 'manipulator.range_mods'
 	local m = require 'manipulator'
+	local RM = m.RM
 	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })
 	m.setup { -- TODO: make input window repeatable (macro renaming)
 		-- debug = 3,
@@ -29,6 +40,19 @@ function M.config()
 			},
 		},
 		ts = {
+			select = {
+				rangemod = { inherit = true, [5] = RM.autopar, [6] = RM.autopar },
+				autopar_current = {
+					'assignment_statement', --lua
+					'variable_declarator', -- C#
+					'variable_declaration', -- C#
+				},
+				autopar_parent = {
+					'variable_declaration', --lua, C#
+					'local_declaration_statement', -- C#
+				},
+			},
+
 			presets = { -- TODO: create MOD for lookahead+lookbehind
 				with_docs = {
 					types = {
@@ -46,21 +70,19 @@ function M.config()
 					},
 				},
 
-				lua = {
-					select = {
-						rangemod = {
-							inherit = true,
-							[5] = function(ts) ---@param ts manipulator.TS
-								if
-									ts.node
-									and ts.node:type() == 'assignment_statement'
-									and ts.node:parent():type() == 'variable_declaration'
-								then
-									return ts:parent().range
-								end
-								return ts.range
-							end,
-						},
+				c_sharp = {
+					types = {
+						inherit = true,
+						'modifier',
+						'implicit_type',
+						'list$',
+						'prefix_unary_expression',
+						'member_access_expression',
+						'throw_statement',
+					},
+
+					sibling = {
+						types = { inherit = true, 'method_declaration' },
 					},
 				},
 			},
@@ -84,8 +106,8 @@ function M.config()
 	)
 
 	local tsj = ctc({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
-	map({ '', 'i' }, '<C-S-H>', tsj.prev.fn)
-	map({ '', 'i' }, '<C-S-L>', tsj.next.fn)
+	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
+	map({ '', 'i' }, '<C-l>', tsj.next.fn)
 	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
 	map({ '', 'i' }, '<C-A-l>', tsj:next('path')['*$']({ end_ = true }).fn)
 	map(
@@ -99,7 +121,7 @@ function M.config()
 	map(
 		{ '', 'i' },
 		'<C-S-P>',
-		tsj
+		ctc
 			:collect({ include_src = true }, mcp(m.ts.class):parent { types = { ['*'] = true } })
 			:pick({ picker = 'native' }).fn
 	)
@@ -144,13 +166,19 @@ function M.config()
 	---@field opts? manipulator.TS.QueryOpts
 
 	---@class ManipMapCfg.Op: ManipMapCfg
-	---@field lhs fun(move:string, category:string): string
+	---@field lhs fun(move:string, category:string): string|false?
 	---@field map_as 'fn'|'dot_fn'|'op_fn'
 
 	---@type table<string|integer,ManipMapCfg.Op>
 	local operators = {
 		{
-			lhs = function(m, c) return (m:match '[%[%]]' and '' or 'g') .. m .. c end,
+			lhs = function(m, c)
+				if m:match '[%[%]]' then
+					if c == 'd' then return false end -- do not override [d, ]d diagnostic mappings
+					return m .. c
+				end
+				return 'g' .. m .. c
+			end,
 			rhs = opj,
 			desc = 'jump to',
 			map_as = 'dot_fn',
@@ -164,7 +192,7 @@ function M.config()
 		select = {
 			mode = { 'o', 'x' },
 			lhs = function(m, c) return m:match '[^%[%]]' and '' .. m .. c end, -- no ''/[/]
-			rhs = tss,
+			rhs = tss_doc,
 			map_as = 'fn',
 		},
 	}
@@ -201,10 +229,6 @@ function M.config()
 		for o_name, op in pairs(operators) do
 			fill_info(o_name, op)
 
-			-- operator can filter which mappings will get created and which won't
-			local lhs = type(op.lhs) == 'function' and op.lhs
-				or function(m, c) return op.lhs .. m .. c end
-
 			for m_name, move in pairs(moves) do
 				fill_info(m_name, move)
 
@@ -212,7 +236,8 @@ function M.config()
 				if type(rhs) ~= 'function' then rhs = rhs[op.map_as] end
 
 				for _, m_lhs in ipairs(type(move.lhs) == 'table' and move.lhs or { move.lhs }) do
-					local lhs = lhs(m_lhs, cat.lhs)
+					-- operator can filter which mappings will or won't get created, and how
+					local lhs = op.lhs(m_lhs, cat.lhs)
 					if lhs then
 						map_opts.desc = ('%s %s %s'):format(op.desc, move.desc, cat.desc)
 						map(op.mode or '', lhs, rhs, map_opts)

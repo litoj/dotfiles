@@ -79,7 +79,7 @@ function M.config()
 	local kinds = require('cmp.types.lsp').CompletionItemKind
 	local cmpKindPref = {}
 	for i, k in ipairs {
-		kinds.Text,
+		kinds.Text, -- includes calc, latex_symbols and other sources
 		kinds.Value,
 		kinds.Color,
 		kinds.File,
@@ -115,8 +115,8 @@ function M.config()
 	end
 	local comparators = {
 		cmp.config.compare.offset,
-		src.copilot and require('cmp_copilot.comparators').score or cmp.config.compare.score,
-		-- cmp.config.compare.recently_used,
+		-- src.copilot and require('cmp_copilot.comparators').score or cmp.config.compare.score,
+		cmp.config.compare.recently_used,
 		function(e1, e2)
 			local a, b = cmpKindPref[e1:get_kind()], cmpKindPref[e2:get_kind()]
 			if a == b then return end
@@ -126,6 +126,19 @@ function M.config()
 	}
 
 	cmp.setup {
+		formatting = {
+			fields = { 'kind', 'abbr' },
+			format = function(entry, item)
+				item.kind = ({
+					calc = ' 󰃬 ',
+					buffer = '  ',
+					latex_symbols = '  ',
+					nerdfont = '  ',
+				})[entry.source.name] or kind_icons[item.kind]
+				item.abbr = item.abbr:sub(item.abbr:sub(1, 1) == ' ' and 2 or 1, 30)
+				return item
+			end,
+		},
 		snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
 		mapping = {
 			['<C-b>'] = cmp.mapping(cmp.mapping.scroll_docs(-4), { 'i', 'c' }),
@@ -203,19 +216,6 @@ function M.config()
 			['<C-3>'] = select(3),
 			['<C-4>'] = select(4),
 			['<C-5>'] = select(5),
-		},
-		formatting = {
-			fields = { 'kind', 'abbr' },
-			format = function(entry, item)
-				item.kind = ({
-					calc = ' 󰃬 ',
-					buffer = '  ',
-					latex_symbols = '  ',
-					nerdfont = '  ',
-				})[entry.source.name] or kind_icons[item.kind]
-				item.abbr = item.abbr:sub(item.abbr:sub(1, 1) == ' ' and 2 or 1, 30)
-				return item
-			end,
 		},
 		completion = {
 			keyword_length = 2,

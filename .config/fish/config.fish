@@ -93,13 +93,14 @@ end
 abbr jctl   'journalctl -p 3 -b'
 
 # pacman
-set pp "fzf -m --preview-window=wrap --preview 'paru --color=always -Sii {1}'" # package preview
-abbr psi    "paru -S (paru -Slq | $pp)" # search install
-abbr pif    "paru -Ql (paru -Qq | $pp)" # list installed files
-abbr pir    "paru -Rscn (paru -Qq | $pp)" # installed remove - only dependencies
-abbr piu    "paru -Rscn (paru -Qttq | $pp)" # installed uninstall - only dependents-less / roots
-abbr pou    "paru -Rscn (paru -Qtqd)" # orphans remove
-abbr pis    "paru -S (paru -Qq | $pp)" # installed search and sync
+set --global pm paru
+set pp "fzf -m --preview-window=wrap --preview '\$pm --color=always -Sii {1}'" # package preview
+abbr psi    "\$pm -S (\$pm -Slq | $pp)" # search install
+abbr pif    "\$pm -Ql (\$pm -Qq | $pp)" # list installed files
+abbr pir    "\$pm -Rscn (\$pm -Qq | $pp)" # installed remove - only dependencies
+abbr piu    "\$pm -Rscn (\$pm -Qttq | $pp)" # installed uninstall - only dependents-less / roots
+abbr pou    "\$pm -Rscn (\$pm -Qtqd)" # orphans remove
+abbr pis    "\$pm -S (\$pm -Qq | $pp)" # installed search and sync
 
 # navigation
 abbr ...    'cd ../..'

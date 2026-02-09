@@ -214,7 +214,7 @@ basicsBundle=(
 	pipewire-pulse # for firefox and pulsemixer
 	pulsemixer
 	python-pynvim
-	ranger
+	ranger-git
 	ripgrep
 	rofi
 	slurp

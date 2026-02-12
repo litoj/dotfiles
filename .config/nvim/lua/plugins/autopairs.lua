@@ -10,7 +10,7 @@ function M.config()
 		fast_wrap = {
 			map = '<A-w>',
 			chars = { '{', '[', '(', '"', "'", '`' },
-			pattern = '[\'")>%]},]',
+			pattern = '[ ,]',
 			end_key = '$',
 			before_key = 'q',
 			after_key = 'e',

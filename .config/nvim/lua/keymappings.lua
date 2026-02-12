@@ -23,7 +23,11 @@ map('i', '<C-Enter>', '<C-o>O')
 map('i', '<A-Enter>', '<C-o>md<C-o>O<C-o>`d')
 map('i', '<A-S-Enter>', '<C-o><C-o>mdo<C-o>`d')
 map('c', '<C-/>', function() vim.api.nvim_feedkeys(vim.fn.getreg '/', 'n', false) end)
-map('c', '<C-v>', function() vim.api.nvim_feedkeys(vim.fn.getreg '+', 'n', false) end)
+map(
+	'c',
+	'<C-v>',
+	function() vim.api.nvim_feedkeys(vim.inspect(vim.fn.getreg '+'):sub(2, -2), 'n', false) end
+)
 -- Clipboard management
 -- NOTE: C-v mappings in ./plugins/manipulator.lua
 map('n', '<C-x>', 'dd')

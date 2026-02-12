@@ -8,18 +8,6 @@ local M = {
 	},
 	event = 'VeryLazy',
 }
---[[
-TODO: test why prev() from getEntity jumps to start
-{
-            throw new BadRequestException(e);
-        }
-    }
-
-    [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult<IEnumerable<TestTermResponse>>> GetEntity()
-]]
 function M.config()
 	local m = require 'manipulator'
 	local RM = m.RM
@@ -30,7 +18,6 @@ function M.config()
 			pick = { picker = 'fzf-lua' },
 		},
 		region = {
-			-- TODO: custom extender, not even fully linewise - opposite of trimmed -> extended?
 			select = { linewise_end = '^,?%s*$' },
 			current = {
 				rangemod = { RM.pos_shift, RM.trimmed },
@@ -78,11 +65,19 @@ function M.config()
 						'list$',
 						'prefix_unary_expression',
 						'member_access_expression',
-						'throw_statement',
+						throw_statement = false,
 					},
 
-					sibling = {
-						types = { inherit = true, 'method_declaration' },
+					in_graph = {
+						types = {
+							'identifier',
+							'string_literal',
+							throw_statement = false,
+							return_statement = false,
+							expression_statement = false,
+							local_declaration_statement = false,
+							'_statement$',
+						},
 					},
 				},
 			},
@@ -105,7 +100,7 @@ function M.config()
 		tsq:queue_or_swap({ hl_group = '' }):repeatable('next_sibling').dot_fn
 	)
 
-	local tsj = ctc({ end_shift_ptn = '[, )]$', src = '.' })['&1'].jump['&$']['*1']:repeatable()
+	local tsj = ctc({ src = '.' })['&1'].jump['&$']['*1']:repeatable()
 	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
 	map({ '', 'i' }, '<C-l>', tsj.next.fn)
 	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)

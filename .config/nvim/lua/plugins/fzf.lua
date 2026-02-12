@@ -52,7 +52,7 @@ function M.config()
 	map('n', ' bf', function() fzf.files { cwd = vim.fn.expand '%:h' } end) -- files from buffer's dir
 	map('n', ' bg', function() fzf.live_grep_native { cwd = vim.fn.expand '%:h' } end)
 	map({ '', 'i' }, '<C-f>', fzf.blines)
-	map('n', ' mC', fzf.highlights) -- my colors
+	map('n', ' mc', fzf.highlights) -- my colors
 	map('n', ' ql', fzf.quickfix)
 	map('n', ' ll', fzf.loclist)
 end

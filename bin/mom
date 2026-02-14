@@ -158,19 +158,22 @@ $(print "<Enter> to confirm and quit")" --script="$pickerFile"
 	DEFAULT_VALUE=${!1:-${DEFAULT_VALUE:-0}}
 	declare -n arr=$1
 
-	local line var
+	local line file
 	declare -A fileMappings
 	while read -r line; do # filter values for variable in question ($1)
-		var=${line%%=*}
-		[[ $var == "$1" ]] || continue
+		[[ ${line%%=*} == "$1" ]] || continue
 		line=${line#*=}
+		file=${line#*=}
+		file=$(absolutePath "$file")
 
-		fileMappings["${line#*=}"]=${line%%=*}
+		fileMappings["$file"]=${line%%=*}
 	done <"$MPV_PICKER_PICK_PATH"
 
 	arr=()
-	for line in "${src[@]}"; do
-		arr+=("${fileMappings["$line"]:-$DEFAULT_VALUE}")
+	for file in "${src[@]}"; do
+		file=$(absolutePath "$file")
+		arr+=("${fileMappings["$file"]:-$DEFAULT_VALUE}")
+		log Debug ".$1[\"${file##*/}\"] <mpvPicker>= '${arr[-1]}'"
 	done
 	declare +n arr
 }
@@ -354,14 +357,22 @@ edit() { # TODO: use picker only
 
 		local v=${volume[i]:-${volume:-1}}
 		if [[ $v == -* ]]; then
+			local vol_cmd=(ffmpeg -hide_banner -i "$src")
+			[[ $s != 0 ]] && vol_cmd+=(-ss $s)
+			if [[ $fade != 0 ]]; then
+				vol_cmd+=(-to $fade)
+			elif [[ $e != 0 ]]; then
+				vol_cmd+=(-to $e)
+			fi
+
 			if [[ $v == *dB ]]; then
 				v=$(
-					ffmpeg -hide_banner -i "$src" -af volumedetect -f null - |&
+					"${vol_cmd[@]}" -af volumedetect -f null - |&
 						sed -En "s,.*mean_volume: -([0-9.]+) dB,${v%dB}+\1,p" | bc
 				)
 			elif [[ $v == *LUFS ]]; then
 				v=$(
-					ffmpeg -hide_banner -i "$src" -af loudnorm=print_format=summary -f null - |&
+					"${vol_cmd[@]}" -af loudnorm=print_format=summary -f null - |&
 						sed -En "s,Input Integrated:.*-([0-9.]+) LUFS,${v%LUFS}+\1,p" | bc
 				) # currently we only change measurement method, not adaptation method (loudnorm)
 			else
@@ -1101,7 +1112,7 @@ renameConfig=(
 	format='$f^VID[^ .]*.mp4:$CreateDate'
 	format=${MIME_TYPES['image']}:'$DateTimeOriginal'
 	fallback=${MIME_TYPES['video']}:'s,\., ,g;s,^(.*/)?(.*) ([0-9]{4}) .*$,\1\3 \2,' # movies
-	fallback=${MIME_TYPES['audio']}:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+|.*-) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
+	fallback=${MIME_TYPES['audio']}:'s,.*/([A-Z][a-z]+( \w+)+).*/([0-9.]+[ -]*) ([^_/]+)(_[0-9]*)?$,\1 - \4,'
 	fallback=${MIME_TYPES['image']}:'s,IMG-(....)(..)(..)-(WA....)$,\1-\2-\3_\4,'
 	dateFormat='%Y-%m-%d_%H%M%S'
 )

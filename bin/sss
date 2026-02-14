@@ -773,6 +773,10 @@ getFreePath() {
 	echo "$text"
 }
 
+absolutePath() {
+	[[ $1 == /* ]] && echo "$1" || echo "$PWD/$1"
+}
+
 declare -A REGEX=(
 	[var]='[A-Za-z_][0-9A-Za-z_]*' [dashvar]='[A-Za-z_][0-9A-Za-z_-]*'
 	[const]='[A-Z_][0-9A-Z_]*' [domain]='[a-z0-9]+\.[0-9a-z.]+'

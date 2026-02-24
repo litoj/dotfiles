@@ -339,6 +339,7 @@ logVar() { # TODO: pretty print format for arrays
 
 # Supports simple redirection ... '>'/'>>' 'path' with logging + '&' for bg process
 exec() {
+	[[ $1 == rm && -f /usr/bin/trash ]] && set -- trash "${@:2}"
 	log Verbose && log Verbose " \$> $*"
 	((SCRIPT_OPTS['dryRun'] > 0)) && return
 	# cannot use eval because args lose quotes

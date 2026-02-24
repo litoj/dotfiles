@@ -36,7 +36,7 @@ IMAGE_CACHE_PATH="${4}" # Full path that should be used to cache image preview
 PV_IMAGE_ENABLED="${5}" # 'True' if image previews are enabled, 'False' otherwise.
 
 FILE_EXTENSION="${FILE_PATH##*.}"
-FILE_EXTENSION_LOWER="$(printf "%s" "${FILE_EXTENSION}" | tr '[:upper:]' '[:lower:]')"
+FILE_EXTENSION_LOWER="${FILE_EXTENSION,,}"
 
 ## Settings
 HIGHLIGHT_SIZE_MAX=262143 # 256KiB
@@ -53,6 +53,8 @@ imageExif() {
 		sort
 	exit 5
 }
+
+bat=(bat --color=always --style=plain --tabs 2)
 
 handle_extension() {
 	case "${FILE_EXTENSION_LOWER}" in
@@ -112,7 +114,7 @@ handle_extension() {
 			;;
 		## JSON
 		json | mcmeta | ts | js)
-			bat --color=always --tabs 2 --style="plain" -- "${FILE_PATH}" && exit 5
+			"${bat[@]}" -- "${FILE_PATH}" && exit 5
 			JQ_COLORS="0;34:0;34:0;34:0;95:0;33:0;31:0;31" jq -C . "${FILE_PATH}" && exit 5
 			;;
 		ipynb)
@@ -123,15 +125,15 @@ handle_extension() {
 		## Direct Stream Digital/Transfer (DSDIFF) and wavpack aren't detected
 		## by file(1).
 		dff | dsf | wv | wvc | html | htm | xhtml)
-			bat --color=always --tabs 2 --style="plain" -- "${FILE_PATH}" && exit 5
+			"${bat[@]}" -- "${FILE_PATH}" && exit 5
 			mediainfo "${FILE_PATH}" && exit 5
 			exiftool "${FILE_PATH}" && exit 5
 			;; # Continue with next handler on failure
 		config | conf | cfg | sln)
-			bat --color=always --tabs 2 -l cfg --style="plain" -- "${FILE_PATH}" && exit 5
+			"${bat[@]}" -l cfg -- "${FILE_PATH}" && exit 5
 			;;
 		csproj)
-			bat --color=always --tabs 2 -l xml --style="plain" -- "${FILE_PATH}" && exit 5
+			"${bat[@]}" -l xml -- "${FILE_PATH}" && exit 5
 			;;
 	esac
 }
@@ -143,54 +145,23 @@ handle_image() {
 	## will be used.
 	local DEFAULT_SIZE="1280x720"
 
-	local mimetype="${1}"
-	case "${mimetype}" in
+	case "$MIMETYPE" in
 		## SVG
 		image/svg+xml | image/svg)
 			magick -- "${FILE_PATH}" "${IMAGE_CACHE_PATH}" && exit 6
 			exit 1
 			;;
 
-		## DjVu
-		# image/vnd.djvu)
-		#     ddjvu -format=tiff -quality=90 -page=1 -size="${DEFAULT_SIZE}" \
-		#           - "${IMAGE_CACHE_PATH}" < "${FILE_PATH}" \
-		#           && exit 6 || exit 1;;
+		image/x-fuji-raf)
+			(($(stat -c %Y "${FILE_PATH}") > $(date +%s))) && touch -m "${FILE_PATH}"
+			exiftool -b -PreviewImage "${FILE_PATH}" -W "${IMAGE_CACHE_PATH}" && exit 6
+			imageExif
+			;;
 
 		## Image
 		image/*)
-			if [[ $mimetype == image/x-fuji-raf ]]; then
-				exiftool -b -PreviewImage "${FILE_PATH}" -W "${IMAGE_CACHE_PATH}" && exit 6
-				imageExif
-			fi
-
-			# local orientation
-			# orientation="$(identify -format '%[EXIF:Orientation]\n' -- "${FILE_PATH}")"
-			# ## If orientation data is present and the image actually
-			# ## needs rotating ("1" means no rotation)...
-			# if [[ -n $orientation && $orientation != 1 ]]; then
-			# 	## ...auto-rotate the image according to the EXIF data.
-			# 	magick -- "${FILE_PATH}" -auto-orient "${IMAGE_CACHE_PATH}" && exit 6
-			# fi
-
-			## `w3mimgdisplay` will be called for all images (unless overridden
-			## as above), but might fail for unsupported types.
 			exit 7
 			;;
-
-		## Video
-		# video/*)
-		#     # Get embedded thumbnail
-		#     ffmpeg -i "${FILE_PATH}" -map 0:v -map -0:V -c copy "${IMAGE_CACHE_PATH}" && exit 6
-		#     # Get frame 10% into video
-		#     ffmpegthumbnailer -i "${FILE_PATH}" -o "${IMAGE_CACHE_PATH}" -s 0 && exit 6
-		#     exit 1;;
-
-		# Audio
-		# audio/*)
-		#     # Get embedded thumbnail
-		#     ffmpeg -i "${FILE_PATH}" -map 0:v -map -0:V -c copy \
-		#       "${IMAGE_CACHE_PATH}" && exit 6;;
 
 		# PDF
 		application/pdf)
@@ -203,73 +174,16 @@ handle_image() {
 				exit 6 || exit 1
 			;;
 
-		## ePub, MOBI, FB2 (using Calibre)
-		# application/epub+zip|application/x-mobipocket-ebook|\
-		# application/x-fictionbook+xml)
-		#     # ePub (using https://github.com/marianosimone/epub-thumbnailer)
-		#     epub-thumbnailer "${FILE_PATH}" "${IMAGE_CACHE_PATH}" \
-		#         "${DEFAULT_SIZE%x*}" && exit 6
-		#     ebook-meta --get-cover="${IMAGE_CACHE_PATH}" -- "${FILE_PATH}" \
-		#         >/dev/null && exit 6
-		#     exit 1;;
+			## ePub, MOBI, FB2 (using Calibre)
+			# application/epub+zip|application/x-mobipocket-ebook|\
+			# application/x-fictionbook+xml)
+			#     # ePub (using https://github.com/marianosimone/epub-thumbnailer)
+			#     epub-thumbnailer "${FILE_PATH}" "${IMAGE_CACHE_PATH}" \
+			#         "${DEFAULT_SIZE%x*}" && exit 6
+			#     ebook-meta --get-cover="${IMAGE_CACHE_PATH}" -- "${FILE_PATH}" \
+			#         >/dev/null && exit 6
+			#     exit 1;;
 
-		## Font
-		application/font* | application/*opentype)
-			preview_png="/tmp/$(basename "${IMAGE_CACHE_PATH%.*}").png"
-			if fontimage -o "${preview_png}" \
-				--pixelsize "120" \
-				--fontname \
-				--pixelsize "80" \
-				--text "  ABCDEFGHIJKLMNOPQRSTUVWXYZ  " \
-				--text "  abcdefghijklmnopqrstuvwxyz  " \
-				--text "  0123456789.:,;(*!?') ff fl fi ffi ffl  " \
-				--text "  The quick brown fox jumps over the lazy dog.  " \
-				"${FILE_PATH}"; then
-				convert -- "${preview_png}" "${IMAGE_CACHE_PATH}" &&
-					rm "${preview_png}" &&
-					exit 6
-			else
-				exit 1
-			fi
-			;;
-
-			## Preview archives using the first image inside.
-			## (Very useful for comic book collections for example.)
-			# application/zip|application/x-rar|application/x-7z-compressed|\
-			#     application/x-xz|application/x-bzip2|application/x-gzip|application/x-tar)
-			#     local fn=""; local fe=""
-			#     local zip=""; local rar=""; local tar=""; local bsd=""
-			#     case "${mimetype}" in
-			#         application/zip) zip=1 ;;
-			#         application/x-rar) rar=1 ;;
-			#         application/x-7z-compressed) ;;
-			#         *) tar=1 ;;
-			#     esac
-			#     { [ "$tar" ] && fn=$(tar --list --file "${FILE_PATH}"); } || \
-			#     { fn=$(bsdtar --list --file "${FILE_PATH}") && bsd=1 && tar=""; } || \
-			#     { [ "$rar" ] && fn=$(unrar lb -p- -- "${FILE_PATH}"); } || \
-			#     { [ "$zip" ] && fn=$(zipinfo -1 -- "${FILE_PATH}"); } || return
-			#
-			#     fn=$(echo "$fn" | python -c "from __future__ import print_function; \
-			#             import sys; import mimetypes as m; \
-			#             [ print(l, end='') for l in sys.stdin if \
-			#               (m.guess_type(l[:-1])[0] or '').startswith('image/') ]" |\
-			#         sort -V | head -n 1)
-			#     [ "$fn" = "" ] && return
-			#     [ "$bsd" ] && fn=$(printf '%b' "$fn")
-			#
-			#     [ "$tar" ] && tar --extract --to-stdout \
-			#         --file "${FILE_PATH}" -- "$fn" > "${IMAGE_CACHE_PATH}" && exit 6
-			#     fe=$(echo -n "$fn" | sed 's/[][*?\]/\\\0/g')
-			#     [ "$bsd" ] && bsdtar --extract --to-stdout \
-			#         --file "${FILE_PATH}" -- "$fe" > "${IMAGE_CACHE_PATH}" && exit 6
-			#     [ "$bsd" ] || [ "$tar" ] && rm -- "${IMAGE_CACHE_PATH}"
-			#     [ "$rar" ] && unrar p -p- -inul -- "${FILE_PATH}" "$fn" > \
-			#         "${IMAGE_CACHE_PATH}" && exit 6
-			#     [ "$zip" ] && unzip -pP "" -- "${FILE_PATH}" "$fe" > \
-			#         "${IMAGE_CACHE_PATH}" && exit 6
-			#     [ "$rar" ] || [ "$zip" ] && rm -- "${IMAGE_CACHE_PATH}"
-			#     ;;
 	esac
 
 	case "${FILE_EXTENSION_LOWER}" in
@@ -278,28 +192,6 @@ handle_image() {
 			imageExif && exit 5
 			;;
 	esac
-
-	# openscad_image() {
-	#     TMPPNG="$(mktemp -t XXXXXX.png)"
-	#     openscad --colorscheme="${OPENSCAD_COLORSCHEME}" \
-	#         --imgsize="${OPENSCAD_IMGSIZE/x/,}" \
-	#         -o "${TMPPNG}" "${1}"
-	#     mv "${TMPPNG}" "${IMAGE_CACHE_PATH}"
-	# }
-
-	# case "${FILE_EXTENSION_LOWER}" in
-	#     ## 3D models
-	#     ## OpenSCAD only supports png image output, and ${IMAGE_CACHE_PATH}
-	#     ## is hardcoded as jpeg. So we make a tempfile.png and just
-	#     ## move/rename it to jpg. This works because image libraries are
-	#     ## smart enough to handle it.
-	#     csg|scad)
-	#         openscad_image "${FILE_PATH}" && exit 6
-	#         ;;
-	#     3mf|amf|dxf|off|stl)
-	#         openscad_image <(echo "import(\"${FILE_PATH}\");") && exit 6
-	#         ;;
-	# esac
 }
 
 handle_mime() {
@@ -361,14 +253,6 @@ handle_mime() {
 			exit 2
 			;;
 
-		## DjVu
-		image/vnd.djvu)
-			## Preview as text conversion (requires djvulibre)
-			djvutxt "${FILE_PATH}" | fmt -w "${PV_WIDTH}" && exit 5
-			exiftool "${FILE_PATH}" && exit 5
-			exit 1
-			;;
-
 		## Image
 		image/*)
 			## Preview as text conversion
@@ -403,5 +287,3 @@ fi
 handle_extension
 handle_mime "${MIMETYPE}"
 handle_fallback
-
-exit 1

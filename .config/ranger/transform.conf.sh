@@ -9,7 +9,12 @@ case "$KIND" in
 		}
 		try @toCommonAudio +audio .opus .flac .wav
 		# extract image previews
-		try 'exiftool -b -W %d%f.%s -previewimage' .RAF
+		rawPreview() {
+			local base=/tmp/raw_preview
+			mkdir -p "$base"
+			exiftool -b -W $base/%f.%s -previewimage "$@"
+		}
+		try @rawPreview .RAF
 		# resize images with config picker
 		try 'mom -DC resize --rename --' +image .jpeg .jpg .png .webp .tiff .bmp
 		;;

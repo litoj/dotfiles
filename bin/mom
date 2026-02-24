@@ -146,7 +146,12 @@ $(print "<v> to pick --volume")
 $(print "<Enter> to confirm and quit")" --script="$pickerFile"
 		)
 
-		while mpv "${_opts[@]}" "${src[@]}"; do
+		while :; do
+			if ! mpv "${_opts[@]}" "${src[@]}"; then
+				rm "$pickerFile"
+				return 1
+			fi
+
 			[[ -f $MPV_PICKER_PICK_PATH ]] && break
 			echo 'You must use the keybindings to set the values'
 		done
@@ -266,7 +271,7 @@ editParams=(
 	src '$+' "${MIME_TYPES['audio']}" 'File to cut/convert'
 	start 's*' "${REGEX['timestamp']}" 'Start time (default=0)'
 	fadeout 'f*' "${REGEX['timestamp']}" 'Fadeout start time, or seconds from the end'
-	fadeoutPadding 'p?' '[0-9]+(\.[0-9]+)?' 'Shorten fadeout to fit this much silence (default=4)'
+	fadeoutPadding 'p?' "${REGEX['ufloat']}" 'Shorten fadeout to fit this much silence (default=4)'
 	fadeoutEnd 'F*' "${REGEX['timestamp']}"
 	'End of fadeout, or fadeout duration, priority: -e > -F > -p'
 	end 'e*' "${REGEX['timestamp']}" 'End time, or seconds from the end (default=0)'
@@ -282,7 +287,10 @@ edit() { # TODO: use picker only
 
 	if ((pickAll > 0)); then
 		[[ $volume ]] || declare -a volume
-		mpvVolumePicker volume || return 1
+		if ! mpvVolumePicker volume; then
+			rm -f "$MPV_PICKER_PICK_PATH"
+			return 1
+		fi
 
 		local opt
 		for opt in start fadeout fadeoutEnd end; do
@@ -332,7 +340,7 @@ edit() { # TODO: use picker only
 			fi
 
 			if [[ $fade != 0 ]]; then
-				# NOTE: fade in seconds is calculated FROM the new --end
+				# NOTE: fade given in seconds is calculated FROM the new --end
 				[[ $fade == *:* ]] && fade=$(timeToSeconds $fade) || fade=$(bc <<<"$endSeconds-$fade")
 
 				local fE=${fadeoutEnd[i]}
@@ -346,7 +354,6 @@ edit() { # TODO: use picker only
 					[[ $fE == .* ]] && fE=0$fE
 
 					[[ ${end[i]:-0} == 0 ]] && e=$(bc <<<"$fade+$fE+$fP")
-					[[ $e == .* ]] && e=0$e
 				fi
 
 				cmd+=(-af afade=out:st=$fade:d=$fE)
@@ -362,7 +369,7 @@ edit() { # TODO: use picker only
 			if [[ $fade != 0 ]]; then
 				vol_cmd+=(-to $fade)
 			elif [[ $e != 0 ]]; then
-				vol_cmd+=(-to $e)
+				vol_cmd+=(-to $(bc <<<"$endSeconds-$fP"))
 			fi
 
 			if [[ $v == *dB ]]; then

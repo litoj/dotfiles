@@ -1,9 +1,8 @@
 return {
 	on_attach = function(client)
-		local fname = client.root_dir .. '/.python-version'
-		local f = io.open(fname, 'r')
+		local f = io.open('.python-version', 'r')
 		if not f then
-			vim.notify(fname .. ' not found', vim.log.levels.WARN)
+			vim.notify('./.python-version not found', vim.log.levels.WARN)
 			return
 		end
 

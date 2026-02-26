@@ -31,15 +31,15 @@ return {
 				use_cwd_as_project_root = true,
 			},
 			selection = { hint_display = 'none' },
-			provider = 'copilot',
+			provider = 'claude45',
 			model = 'claude-sonnet-4.5',
 			providers = {
-				gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
-				qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
-				ds1 = vim.tbl_extend('force', eInfraBase, { model = 'deepseek-r1' }),
+				-- gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
+				-- qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
+				-- ds1 = vim.tbl_extend('force', eInfraBase, { model = 'deepseek-r1' }),
 
 				gpt5 = { __inherited_from = 'copilot', model = 'gpt-5' },
-				claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
+				claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.6' },
 			},
 			web_search_engine = {
 				provider = 'tavily',
@@ -69,9 +69,9 @@ The default level is V=3.
 			},
 			mappings = {
 				diff = {
-					ours = '<leader>r', -- reject
-					theirs = '<leader>t',
-					all_theirs = '<leader>A',
+					ours = '<leader>ao ', -- reject
+					theirs = '<leader>ac',
+					all_theirs = '<leader>aA',
 					both = 'cb',
 					cursor = 'cc',
 					next = ']D',
@@ -95,7 +95,6 @@ The default level is V=3.
 		end, 'AvanteInput')
 
 		map('n', '<Leader>ax', '<Cmd>AvanteClear<CR>')
-		map('n', '<Leader>ac', '<Cmd>AvanteChat<CR>')
 		map('n', '<Leader>aa', function() -- needed only for non-floating ask
 			if not a.get() then
 				api.ask()

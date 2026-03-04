@@ -91,7 +91,7 @@ sysFiles() {
 		fi
 
 		log Verbose ' - Setting timezone'
-		exec sudo ln -sf /usr/share/zoneinfo-leaps/"$timezone" /etc/localtime
+		exec sudo ln -sf /usr/share/zoneinfo/"$timezone" /etc/localtime
 	fi
 
 	declare -A regexes=()

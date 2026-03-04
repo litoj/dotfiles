@@ -58,7 +58,7 @@ Shift+ScrollLeft=step_left 5
 Shift+ScrollDown=step_down 5
 Shift+ScrollUp=step_up 5
 Shift+ScrollRight=step_right 5
-Shift+k=zoom keep;zoom 48
+Shift+k=zoom keep;zoom 35
 Alt+a=zoom keep
 i=zoom +10
 Up=zoom +10
@@ -122,13 +122,13 @@ Alt+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
 Alt+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
 
 # too fast -> scroll only horizontally
-ScrollLeft=none
-ScrollRight=none
+ScrollLeft=step_left
+ScrollRight=step_right
 
-ScrollUp=step_left
-Shift+dScrollUp=step_up
-ScrollDown=step_right
-Shift+ScrollDown=step_down
+ScrollUp=step_up
+Shift+ScrollUp=step_left
+ScrollDown=step_down
+Shift+ScrollDown=step_right
 h=step_left
 j=step_down
 k=step_up

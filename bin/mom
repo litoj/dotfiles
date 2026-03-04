@@ -367,7 +367,7 @@ edit() { # TODO: use picker only
 			local vol_cmd=(ffmpeg -hide_banner -i "$src")
 			[[ $s != 0 ]] && vol_cmd+=(-ss $s)
 			if [[ $fade != 0 ]]; then
-				vol_cmd+=(-to $fade)
+				vol_cmd+=(-to $(bc <<<"$fade+$fE"))
 			elif [[ $e != 0 ]]; then
 				vol_cmd+=(-to $(bc <<<"$endSeconds-$fP"))
 			fi

@@ -11,7 +11,7 @@ get_ws() {
 get_parent_win_ws() { # ranger runs inside a terminal windowa or neovim
 	declare -i id=$1
 	local ws
-	while [[ -z $ws ]] ; do
+	while [[ -z $ws && $id -gt 1 ]] ; do
 		id=$(ps -o ppid= "$id")
 		ws=$(get_ws "$id")
 	done

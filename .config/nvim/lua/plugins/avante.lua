@@ -29,10 +29,11 @@ return {
 					str_replace = true,
 				} ]],
 				use_cwd_as_project_root = true,
+				enable_token_counting = false,
 			},
 			selection = { hint_display = 'none' },
 			provider = 'claude45',
-			model = 'claude-sonnet-4.5',
+			model = 'claude-sonnet-4.6',
 			providers = {
 				-- gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
 				-- qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),

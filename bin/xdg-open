@@ -6,7 +6,9 @@ LC_ALL=C
 
 if [[ $1 == open-sh://* ]]; then # for YT-to-external browser redirect
 	arg=${1#open-sh://}
-	set "${arg/\/\//:\/\/}" # firefox doesn't pass through ':' in the url path
+	# firefox doesn't pass through ':' in the url path
+	[[ $arg == *:* ]] || arg=${arg/\/\//'://'}
+	set "$arg"
 fi
 
 [[ $1 == file://* ]] && arg=$(echo -n "${1#file://}" | urlencode -d) || arg=("$@")

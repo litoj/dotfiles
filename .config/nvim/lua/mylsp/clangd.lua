@@ -1,6 +1,9 @@
 return { -- https://clangd.llvm.org/config
 	format = false,
 	capabilities = { positionEncodings = { 'utf-8' } },
+	init_options = {
+		fallbackFlags = { '--std=c++20' },
+	},
 	cmd = {
 		'clangd',
 		'--background-index',

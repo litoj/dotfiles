@@ -253,6 +253,7 @@ function M.config()
 	mapAll('condition', { '^if', '^else', '^switch', '^case' })
 	mapAll('loop', { '^for', '^while', 'do_statement' })
 
+	-- TODO: fix pasting insert at EOL
 	-- overriding default paste behaviour to be better suited for insert mode
 	local function paste(after)
 		local type = vim.fn.getregtype(vim.v.register)

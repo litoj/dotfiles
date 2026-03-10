@@ -2,6 +2,11 @@
 all=yes
 order=numeric
 
+[font]
+size=15
+color=#ffffff
+shadow=#101010ff
+
 [viewer]
 window=#000000
 history=5
@@ -67,7 +72,6 @@ Down=zoom -10
 a=zoom 100
 f=zoom fill
 Shift+f=zoom fit
-MouseMiddle=zoom +100
 1=zoom +100
 2=zoom keep; zoom 200
 5=zoom 50
@@ -121,13 +125,7 @@ Alt+3=exec pem -e -t Rating -v 3 -x -c dummy "%"
 Alt+4=exec pem -e -t Rating -v 4 -x -c dummy "%"
 Alt+5=exec pem -e -t Rating -v 5 -x -c dummy "%"
 
-# too fast -> scroll only horizontally
-ScrollLeft=step_left
-ScrollRight=step_right
-
-ScrollUp=step_up
 Shift+ScrollUp=step_left
-ScrollDown=step_down
 Shift+ScrollDown=step_right
 h=step_left
 j=step_down
@@ -149,8 +147,3 @@ Shift+e=exec mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/
 Tab=mode viewer
 Space=mode viewer
 g=mode viewer
-
-[font]
-size=15
-color=#ffffff
-shadow=#101010ff

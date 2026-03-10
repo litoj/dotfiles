@@ -149,9 +149,10 @@ ratedStats() {
 	extra='R$Rating' call execute -c fl
 }
 
-actionInfo edit 'set value of given tag on filtered files'
+actionInfo edit 'set value of given tag on filtered files; prefer using exiftool directly if you
+know the value you want to set'
 editParams=(
-	tags 't+' "${REGEX['var']}" 'List of tags to edit'
+	tags 't+' "[0-9A-Za-z_:]*" 'List of tags to edit (i.e. Rating, IFD0:Rating, all:Rating, etc.)'
 	values 'v*' '.*' 'List of values or references to what value to set the respective tags to;
       terminate them with `$` to ensure the picker will not default to other choices,
       lead and terminate with `$` to call a fn - $1=filename (value like `$transformFn$`)'
@@ -163,6 +164,7 @@ edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirmi
 		local value defaults=()
 
 		declare -i len=${#TAGS[@]}
+		local cmd=(exiftool -overwrite_original_in_place)
 		for ((i = 0; i < len; i++)); do
 			local tag=${TAGS[i]}
 			local def=("$(query="\$$tag" getExif)")
@@ -181,9 +183,13 @@ edit() { # TODO: add a visual filter (opens swayimg with a shortcut for confirmi
 					value="${value%'$'}"
 				fi
 
-				exec exiftool -$tag="$value" -overwrite_original_in_place "$f"
+				cmd+=("-$tag=$value")
 			fi
 		done
+
+		if [[ ${cmd[-1]} == *=* ]]; then # at least one tag set
+			exec "${cmd[@]}" "$f"
+		fi
 	}
 }
 

@@ -886,7 +886,7 @@ declare -A playBuilder=([src]=pickSong)
 play() {
 	local daemonize=${daemonize:-${SCRIPT_OPTS[guiPicker]}}
 	local playlistFile=/tmp/mom-$ACTION
-	local cmd=(mpv --no-audio-display --playlist="$playlistFile")
+	local cmd=(mpv --playlist="$playlistFile")
 	((kill >= 0)) && exec pkill -f "${cmd[*]}" >/dev/null # ensure only one music instance is running
 
 	[[ -f $playlistFile ]] && exec rm "$playlistFile"

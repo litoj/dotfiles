@@ -374,8 +374,8 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -play +l
-	$Mod+Shift+m exec mom -play -r
+	$Mod+m exec mom -play -r
+	$Mod+Shift+m exec mom -play +l
 	$Mod+$Alt+m exec mom -play -ra3s
 	$Mod+Ctrl+$Alt+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+$Alt+Shift+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"

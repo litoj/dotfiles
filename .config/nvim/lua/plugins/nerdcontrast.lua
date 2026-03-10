@@ -26,12 +26,12 @@ function M.config()
 		}
 		require('reform.util').apply_matcher(matcher, ev)
 	end, { desc = 'update bg colour to the one under cursor' })
-	map('n', ' mT', function()
+	map('n', ' mt', function()
 		local nc = require 'nerdcontrast'
 		local theme = nc.config[vim.go.background].theme == 'nc_christmas' and 'nc' or 'nc_christmas'
 		nc.setup { theme = theme }
 	end, { desc = 'toggle theme between nc and nc_christmas' })
-	map('n', ' mt', '<Cmd>Inspect<CR>', { desc = ':Inspect' })
+	map('n', ' mi', '<Cmd>Inspect<CR>', { desc = ':Inspect' })
 end
 
 return {

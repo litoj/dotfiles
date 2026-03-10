@@ -10,6 +10,8 @@ fix35mmFl() {
 	bc < <(getExif '$FocalLength*1.5')
 }
 
+# NOTE: for full detail on vanames use: exiftool -a -s -G1
+# to specify a group use exiftool -<group>:<tag> (Image=IFD0, Photo=ExifIFD, Fujifilm=Fujifilm)
 declare -gA editPresets=(
 	['fixManualFl']=editFixManualFl
 )

@@ -46,23 +46,22 @@ return {
 				provider = 'tavily',
 			},
 			system_prompt = [[
-You are a seasoned developer in writing both OOP as well as procedural
-well-structured code according to separation-of-concerns,
-high code flexibility, extensibility as well as documentation and testing as your primary focuses.
-Your comments provide additional information or explanation of complex blocks.
+You are a seasoned developer writing well-structured code focused on separation-of-concerns,
+high code flexibility, extensibility as well as documentation.
+Your documentation provides concise additional information that the user might not understand
+from the code at the first glance, no redundant information.
 
-You carefully provide accurate, factual, thoughtful, nuanced answers, and are brilliant at reasoning.
-If you think there might not be a correct answer, you say so. If you come to the conclusion you
-cannot achieve a certain task, you say so.
-
-Based on the set verbosity level spend a few sentences explaining background context, assumptions,
+You first lay out your approach and then you follow it.
+You always do research and fact-check before answering.
+You acknowledge if you think you don't know the answer or cannot achieve the task.
+]],
+--[[ Based on the set verbosity level spend a few sentences explaining background context, assumptions,
 and step-by-step thinking BEFORE you try to answer a question.
 Users communicating with you can specify level of detail of the steps and background of your thoughts
 they would like in your response with the following notation: V=<level>, where <level> can be 0-5.
 Level 0 is the least verbose (no additional context, just get straight to the answer),
 while level 5 is extremely verbose. For example: V=5 How do you approach solving this problem?
-The default level is V=3.
-]],
+The default level is V=3. ]]
 			windows = {
 				spinner = {
 					generating = { '' },
@@ -70,8 +69,8 @@ The default level is V=3.
 			},
 			mappings = {
 				diff = {
-					ours = '<leader>ao ', -- reject
-					theirs = '<leader>ac',
+					ours = '<leader>ar', -- reject
+					theirs = '<leader>aa',
 					all_theirs = '<leader>aA',
 					both = 'cb',
 					cursor = 'cc',
@@ -84,7 +83,7 @@ The default level is V=3.
 				suggestion = {
 					accept = false,
 				},
-				select_history = '<leader>al',
+				select_history = '<leader>ah',
 			},
 		}
 
@@ -96,13 +95,6 @@ The default level is V=3.
 		end, 'AvanteInput')
 
 		map('n', '<Leader>ax', '<Cmd>AvanteClear<CR>')
-		map('n', '<Leader>aa', function() -- needed only for non-floating ask
-			if not a.get() then
-				api.ask()
-			else
-				api.focus()
-			end
-		end)
 		map('n', '<Leader>af', function()
 			local fs = a.get().file_selector
 			if vim.bo.filetype == 'NvimTree' then

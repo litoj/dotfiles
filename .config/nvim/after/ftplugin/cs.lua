@@ -170,17 +170,13 @@ function proj.debug()
 	proj.debug_cfg(cfg)
 end
 
-function proj.test(debug)
-	local cfg = proj.pick('debug project', 'test')
-	if not cfg then return end
-
-	local filter = vim.ui.input { prompt = 'Testname contains literal' }
-	if not filter then return end
+function proj.run_test(cfg, debug, name_contains)
 	cfg.cmd = table.concat({
 		'dotnet',
 		'test -v detailed',
 		cfg.dll,
-		filter ~= '' and '--filter "DisplayName~' .. filter .. '"' or nil,
+		name_contains and name_contains ~= '' and '--filter "DisplayName~' .. name_contains .. '"'
+			or nil,
 	}, ' ')
 	if debug then
 		proj.debug_cfg(cfg)
@@ -189,19 +185,30 @@ function proj.test(debug)
 	end
 end
 
-function proj.debug_test() proj.test(true) end
+function proj.test()
+	local cfg = proj.pick('debug project', 'test')
+	if not cfg then return end
 
-for bind, name in pairs {
-	['<A-S-R>'] = 'run',
-	['<A-S-D>'] = 'debug',
-	['<F18>'] = 'debug',
-	['<A-t>'] = 'test',
-	['<A-S-T>'] = 'debug_test',
-} do
-	map({ 'n', 'i' }, bind, function()
-		coroutine.wrap(function() proj[name]() end)()
-	end)
+	local filter = vim.ui.input { prompt = 'Testname contains literal' }
+	if not filter then return end
+	proj.run_test(cfg, false, filter)
 end
+
+map('n', '<A-t>', function() coroutine.wrap(proj.test)() end)
+map('n', '<A-S-R>', function() coroutine.wrap(proj.run)() end)
+map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
+map('n', '<F18>', function() coroutine.wrap(proj.debug)() end)
+
+local function test_method(debug)
+	local cfg = proj.cfg(fth.findDir(nil, '.csproj$'))
+	local ts = require('manipulator').ts
+	local fn = ts.current({ types = { 'method_declaration' } }):child('name'):get_text()
+	local class = ts.current({ types = { 'class_declaration' } }):child('name'):get_text()
+
+	proj.run_test(cfg, debug, class .. '.' .. fn)
+end
+map('n', 't', test_method)
+map('n', '<A-S-T>', function() test_method(true) end)
 
 map('i', '<A-y>', function()
 	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]

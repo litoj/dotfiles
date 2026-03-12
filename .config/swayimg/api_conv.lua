@@ -7,9 +7,9 @@
 --   swayimg.foo.get_bar()           -> swi.foo.bar         (property read)
 --   swayimg.foo.set_bar(v)          -> swi.foo.bar = v     (property write)
 --   swayimg.foo.enable_bar(v)       -> swi.foo.bar = v     (boolean property write)
---   swayimg.foo.open(dir)           -> swi.foo.select(dir) (viewer/slideshow rename)
---   swayimg.foo.current_image()     -> swi.foo.get_current_image()
 --   swayimg.foo.on_change_image(fn) -> swi.foo.on_image_change(fn)
+--   swayimg.foo.on_key/on_mouse     -> swi.foo.map(bind,fn_or_shcmd)
+--   swayimg.foo.current_image()     -> swi.imagelist.get_current() (+ separate for v/s mode)
 --------------------------------------------------------------------------------
 
 local _s = swayimg -- local reference; avoids repeated global lookups
@@ -25,6 +25,7 @@ local _s = swayimg -- local reference; avoids repeated global lookups
 --   2. overrides.foo.get()         -> custom getter result
 --   3. api.foo      (function)     -> returned as-is
 --   4. api.get_foo()               -> auto-getter result
+--   5. self._foo                   -> cached value of the last set (for where getters dont exist)
 --
 -- WRITE t.foo = val
 --   1. overrides.foo.set(val)      -> custom setter
@@ -35,77 +36,128 @@ local _s = swayimg -- local reference; avoids repeated global lookups
 --   function            -> callable alias exposed on read (renamed method)
 --   { get?, set? }      -> explicit getter / setter closures
 -------------------------------------------------------------------------------
-local function proxy(api, overrides)
+---@param name string
+local function proxy(name, overrides)
+	local api = _s[name]
 	overrides = overrides or {}
 	return setmetatable({}, {
-		__index = function(_, idx)
-			local ov = overrides[idx]
-			if ov ~= nil then
-				if type(ov) == 'function' then return ov end
-				if ov.get then return ov.get() end
-				return nil
+		__index = function(self, idx)
+			local v = overrides[idx]
+			if v then
+				if type(v) == 'function' then return v end
+				if v.get then return v.get() end
 			end
-			local v = api[idx]
-			if type(v) == 'function' then return v end
-			local getter = api['get_' .. idx]
-			if getter then return getter() end
+
+			v = api[idx]
+			if v ~= nil then return v end -- directly forward access to the old api
+
+			v = api['get_' .. idx]
+			if v then return v() end -- idiomatic getter
+
+			v = rawget(self, '_' .. idx)
+			if v ~= nil then return v end -- read local copy of the last set value
+
+			error('invalid request of field: swi.' .. name .. '.' .. idx)
 		end,
-		__newindex = function(_, idx, val)
+
+		__newindex = function(self, idx, val)
 			local ov = overrides[idx]
-			if ov ~= nil and type(ov) == 'table' and ov.set then
+			if type(ov) == 'table' and ov.set then
 				ov.set(val)
-				return
+			else
+				local fn = api[(type(val) == 'boolean' and 'enable_' or 'set_') .. idx]
+				if not fn then error('invalid attempt to set field: swi.' .. name .. '.' .. idx) end
+
+				fn(val)
 			end
-			if type(val) == 'boolean' then
-				local fn = api['enable_' .. idx]
-				if fn then
-					fn(val)
-					return
-				end
-			end
-			local fn = api['set_' .. idx]
-			if fn then fn(val) end
+
+			rawset(self, '_' .. idx, val) -- set in case a getter isn't available
 		end,
 	})
 end
 
--------------------------------------------------------------------------------
--- viewer_overrides(v) -> table
---
--- Both viewer and slideshow share the same set of renamed methods.
--- Accepts the concrete sub-API table so each proxy closes over the right fns.
--------------------------------------------------------------------------------
-local function viewer_overrides(v)
+local function gen_unhookable(fn_name, api)
+	local hooks = {}
+	local initiated
+	return function(fn)
+		if not initiated then
+			local function master_hook()
+				local i = #hooks
+				while i > 0 do
+					if hooks[i]() then table.remove(hooks, i) end
+					i = i - 1
+				end
+			end
+
+			if not api then
+				swi.gallery[fn_name](master_hook)
+				swi.viewer[fn_name](master_hook)
+				swi.slideshow[fn_name](master_hook)
+			else
+				api[fn_name](master_hook)
+			end
+			initiated = true
+		end
+		hooks[#hooks + 1] = fn
+	end
+end
+local function mode_overrides(api)
 	return {
-		select = v.open, -- open(dir) -> select(dir)
-		get_current_image = v.current_image, -- current_image() -> get_current_image()
-		on_image_change = v.on_change_image, -- on_change_image(fn) -> on_image_change(fn)
+		on_image_change = gen_unhookable('on_change_image', api),
+		on_signal = gen_unhookable('on_signal', api),
+
+		get_current_image = function()
+			local img = api.current_image()
+			img.marked = img.mark
+			return img
+		end,
+		mark_current_image = _s.imagelist.mark,
+		switch_image = api.select,
 	}
 end
+local function viewer_overrides(api)
+	local o = mode_overrides(api)
+	o.switch_image = api.open
+	o.scale_centered = api.set_abs_scale
+	o.image_scale = {
+		set = function(x)
+			if type(x) == 'string' then
+				api.set_fix_scale(x)
+			else
+				api.set_abs_scale(x)
+			end
+		end,
+		get = api.get_scale,
+	}
+	o.image_pos = {
+		set = function(x)
+			if type(x) == 'string' then
+				api.set_fix_position(x)
+			else
+				api.set_abs_position(x)
+			end
+		end,
+		get = api.get_position,
+	}
+	return o
+end
 
--------------------------------------------------------------------------------
--- swi: root of the redesigned API
---
--- Sub-tables are eagerly constructed proxies.
--- Top-level properties fall through to the __index / __newindex metamethods
--- below, which mirror the same proxy convention applied to the root `swayimg`
--- table.
--------------------------------------------------------------------------------
+---@type swi
 _G.swi = setmetatable({
+	on_window_resize = gen_unhookable 'on_window_resize',
 
-	---------------------------------------------------------------------------
-	-- Image list
-	-- All properties map via the generic set_/enable_ pattern:
-	--   .order, .reverse, .recursive, .adjacent
-	---------------------------------------------------------------------------
-	imagelist = proxy(_s.imagelist),
+	imagelist = proxy('imagelist', {
+		get = function()
+			local list = _s.imagelist.get()
+			for _, img in ipairs(list) do
+				img.marked = img.mark
+			end
+			return list
+		end,
+	}),
 
-	---------------------------------------------------------------------------
-	-- Text overlay layer
-	-- .visible is special: boolean -> show()/hide(), number -> set_timer(s)
-	---------------------------------------------------------------------------
-	text = proxy(_s.text, {
-		visible = {
+	text = proxy('text', {
+		allowed = {
 			set = function(val)
 				if type(val) == 'number' then
 					_s.text.set_timer(val)
@@ -116,63 +168,32 @@ _G.swi = setmetatable({
 				end
 			end,
 		},
+		-- set_status lives at the swayimg root in the legacy API, not under swayimg.text
+		set_status = _s.set_status,
 	}),
 
-	---------------------------------------------------------------------------
-	-- Viewer mode
-	---------------------------------------------------------------------------
-	viewer = proxy(_s.viewer, viewer_overrides(_s.viewer)),
-
-	---------------------------------------------------------------------------
-	-- Slideshow mode (same overrides as viewer; .timeout is handled
-	-- automatically via the get_timeout() / set_timeout() auto-mapping)
-	---------------------------------------------------------------------------
-	slideshow = proxy(_s.slideshow, viewer_overrides(_s.slideshow)),
-
-	---------------------------------------------------------------------------
-	-- Gallery mode
-	---------------------------------------------------------------------------
-	gallery = proxy(_s.gallery, {
-		get_current_image = _s.gallery.current_image,
-		on_image_change = _s.gallery.on_change_image,
-	}),
+	viewer = proxy('viewer', viewer_overrides(_s.viewer)),
+	slideshow = proxy('slideshow', viewer_overrides(_s.slideshow)),
+	gallery = proxy('gallery', mode_overrides(_s.gallery)),
 }, {
-	---------------------------------------------------------------------------
-	-- Top-level property reads.
-	-- Direct functions (exit, set_mode, get_mode, ...) are returned as-is.
-	-- Properties with a getter (window_size, mouse_pos) are auto-called.
-	---------------------------------------------------------------------------
-	__index = function(_, idx)
+	__index = function(self, idx)
 		local v = _s[idx]
-		if v then return v end
-		local getter = _s['get_' .. idx]
-		if getter then return getter() end
-		error('invalid request of field: ' .. idx)
+		if v then return v end -- directly forward access to the old api
+
+		v = _s['get_' .. idx]
+		if v ~= nil then return v() end -- idiomatic getter
+
+		v = rawget(self, '_' .. idx)
+		if v ~= nil then return v end -- read local copy of the last set value
+
+		error('invalid request of field: swi.' .. idx)
 	end,
 
-	---------------------------------------------------------------------------
-	-- Top-level property writes.
-	-- Special cases that don't fit the generic set_/enable_ pattern:
-	--   window_size: setter takes two positional args; unpack from tuple
-	--   fullscreen:  old API only has toggle_fullscreen(), no set variant
-	---------------------------------------------------------------------------
-	__newindex = function(_, idx, val)
-		if idx == 'window_size' then
-			_s.set_window_size(val[1], val[2])
-			return
-		end
-		if idx == 'fullscreen' then -- TODO: we need a proper setter and a getter
-			_s.toggle_fullscreen()
-			return
-		end
-		if type(val) == 'boolean' then
-			local fn = _s['enable_' .. idx]
-			if fn then
-				fn(val)
-				return
-			end
-		end
-		local fn = _s['set_' .. idx]
-		if fn then fn(val) end
+	__newindex = function(self, idx, val)
+		local fn = _s[(type(val) == 'boolean' and 'enable_' or 'set_') .. idx]
+		if not fn then error('invalid attempt to set field: swi.' .. idx) end
+
+		fn(val)
+		rawset(self, '_' .. idx, val) -- set in case a getter isn't available
 	end,
 })

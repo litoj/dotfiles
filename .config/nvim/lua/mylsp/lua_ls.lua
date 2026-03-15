@@ -11,7 +11,7 @@ local profiles = {
 	swayimg = {
 		runtime = { version = 'Lua 5.4' },
 		workspace = {
-			library = { '/usr/share/swayimg/swayimg.lua' },
+			library = { '/usr/share/swayimg/swayimg.lua', os.getenv'HOME'..'/.config/swayimg/api.lua' },
 		},
 	},
 }

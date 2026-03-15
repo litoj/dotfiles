@@ -14,10 +14,8 @@ do
 	amap({ 'q', '<Esc>' }, function() swi.exit(0) end)
 
 	-- ### Settings toggle
-	swi.antialiasing = false
 	amap('u', function() swi.antialiasing = not swi.antialiasing end)
-	t.allowed = false
-	amap('i', function() t.allowed = not t.allowed end)
+	amap('i', function() t.enabled = not t.enabled end)
 	amap('m', h.toggle_mark)
 
 	local function gen_rating(r)
@@ -50,10 +48,13 @@ do
 		'<A-s>',
 		function() h.exec('dragon-drop -x -a "' .. table.concat(h.get_marked(), '" "') .. '"') end
 	)
-	gmap(
-		'<S-Del>',
-		function() h.exec('$(which trash || echo rm) "' .. table.concat(h.get_marked(), '" "') .. '"') end
-	)
+	gmap('<S-Del>', function()
+		local marked = h.get_marked()
+		h.exec('$(which trash || echo rm) "' .. table.concat(marked, '" "') .. '"')
+		for _, f in ipairs(marked) do
+			l.remove(f)
+		end
+	end)
 end
 
 -- ## Slideshow
@@ -92,12 +93,12 @@ do
 	vmap('<Home>', h.vgo.first)
 	vmap('<End>', h.vgo.last)
 	vmap('c', function()
-		local px, py = unpack(swi.get_mouse_pos())
-		v.scale_centered(v.image_scale * 1.1, px, py)
+		local p = swi.get_mouse_pos()
+		v.scale_centered(v.scale * 1.1, p.x, p.y)
 	end)
 	vmap('<S-c>', function()
-		local px, py = unpack(swi.get_mouse_pos())
-		v.scale_centered(v.image_scale / 1.1, px, py)
+		local p = swi.get_mouse_pos()
+		v.scale_centered(v.scale / 1.1, p.x, p.y)
 	end)
 
 	vmap('h', h.vgo.left(5))
@@ -114,40 +115,40 @@ do
 
 	--- ### Scaling
 	vmap('s', function()
-		v.image_scale = 'fill'
+		v.scale = 'fill'
 		v.default_scale = 'fill'
 	end)
 	vmap('<S-s>', function()
-		v.image_scale = 'fit'
+		v.scale = 'fit'
 		v.default_scale = 'fit'
 	end)
 	vmap('<A-s>', function()
-		v.image_scale = 'optimal'
+		v.scale = 'optimal'
 		v.default_scale = 'optimal'
 	end)
 	vmap('<S-a>', function()
-		v.image_scale = 'real'
+		v.scale = 'real'
 		v.default_scale = 'real'
 	end)
-	vmap('a', function() v.image_scale = 1 end)
+	vmap('a', function() v.scale = 1 end)
 	vmap('<A-a>', function() v.default_scale = 'keep' end)
 	vmap('<S-k>', function()
-		v.image_scale = 0.35
+		v.scale = 0.35
 		v.default_scale = 'keep'
 	end)
-	vmap('f', function() v.image_scale = 'fill' end)
-	vmap('<S-f>', function() v.image_scale = 'fit' end)
-	vmap('<Up>', function() v.image_scale = v.image_scale * 1.1 end)
-	vmap('<Down>', function() v.image_scale = v.image_scale / 1.1 end)
-	vmap('1', function() v.image_scale = v.image_scale * 2 end)
+	vmap('f', function() v.scale = 'fill' end)
+	vmap('<S-f>', function() v.scale = 'fit' end)
+	vmap('<Up>', function() v.scale = v.scale * 1.1 end)
+	vmap('<Down>', function() v.scale = v.scale / 1.1 end)
+	vmap('1', function() v.scale = v.scale * 2 end)
 	vmap('2', function()
-		v.image_scale = 2
+		v.scale = 2
 		v.default_scale = 'keep'
 	end)
-	vmap('4', function() v.image_scale = 4 end)
-	vmap('5', function() v.image_scale = 0.5 end)
-	vmap({ '<S-o>', '<S-_>', '=', '<S-+>' }, function() v.image_scale = v.image_scale * 1.1 end)
-	vmap({ 'o', '-' }, function() v.image_scale = v.image_scale / 1.1 end)
+	vmap('4', function() v.scale = 4 end)
+	vmap('5', function() v.scale = 0.5 end)
+	vmap({ '<S-o>', '<S-_>', '=', '<S-+>' }, function() v.scale = v.scale * 1.1 end)
+	vmap({ 'o', '-' }, function() v.scale = v.scale / 1.1 end)
 
 	vmap('b', [[~/.config/sway/custombg '%']])
 	vmap('<S-b>', [[cp '%' ~/Pictures/screen/]])

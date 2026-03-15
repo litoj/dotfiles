@@ -36,7 +36,7 @@ end
 
 function M.exec(cmd)
 	-- TODO: how to make stderr appear? 2>&1 doesn't work
-	cmd = cmd:gsub('([^%%])%%([^%%])', '%1' .. swi[swi.mode].get_current_image().path .. '%2')
+	cmd = cmd:gsub('([^%%])%%([^%%])', '%1' .. swi[swi.mode].get_image().path .. '%2')
 	local p = io.popen(cmd, 'r')
 	if not p then error('invalid command: ' .. cmd) end
 	local out = p:read '*a'
@@ -53,12 +53,7 @@ function M.map(bind, cb, api)
 	end
 
 	for _, b in ipairs(type(bind) == 'table' and bind or { bind }) do
-		b = transform_key(b)
-		if b:match 'Mouse' or b:match 'Scroll' then
-			api.on_mouse(b, cb)
-		else
-			api.on_key(b, cb)
-		end
+		api.map(transform_key(b), cb)
 	end
 end
 
@@ -69,6 +64,12 @@ function M.step(x, y)
 	v.set_abs_position(px - math.floor(w * x / 100), py - math.floor(h * y / 100))
 end
 
+local meta = {
+	__index = function(tbl, dir)
+		tbl[dir] = function() tbl.dir(dir) end
+		return tbl[dir]
+	end,
+}
 M.vgo = {
 	dir = v.switch_image,
 	left = function(p)
@@ -84,14 +85,8 @@ M.vgo = {
 		return function() M.step(0, p) end
 	end,
 }
-M.ggo = { dir = g.switch_image }
-local meta = {
-	__index = function(tbl, dir)
-		tbl[dir] = function() tbl.dir(dir) end
-		return tbl[dir]
-	end,
-}
 setmetatable(M.vgo, meta)
+M.ggo = { dir = g.switch_image }
 setmetatable(M.ggo, meta)
 
 local last_size = 0
@@ -100,7 +95,7 @@ local mark_hooks = {}
 function M.get_marked()
 	local marked = {}
 	for _, v in ipairs(l.get()) do
-		if v.marked then marked[#marked + 1] = v.path end
+		if v.mark then marked[#marked + 1] = v.path end
 	end
 	return marked
 end

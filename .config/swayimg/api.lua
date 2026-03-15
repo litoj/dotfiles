@@ -4,19 +4,10 @@
 -- Main application class
 --------------------------------------------------------------------------------
 
----@alias appmode_t
----| "viewer"    # Image viewer mode
----| "slideshow" # Slide show mode
----| "gallery"   # Gallery mode
-
 ---Main application class.
 ---@class swi
 ---@field mode appmode_t Which mode is the application in
 ---@field title string Window title text
----@field fulscreen boolean Is the application in fullscreen mode
----Mouse button for drag-and-drop to external apps.
----Configurable only at startup.
----@field drag_button string
 ---@field antialiasing boolean Enable/disable antialiasing
 ---Enable or disable window decoration (title, border, buttons).
 ---Available only in Wayland, the corresponding protocol must be
@@ -28,14 +19,25 @@
 ---Sway and Hyprland compositors only.
 ---By default enabled in Sway and disabled in other compositors.
 ---@field overlay boolean
+---Set mouse button used for drag-and-drop image file to external apps. (`MouseRight` etc.)
+---Configurable only at startup.
+---@field dnd_button string
 swi = {}
 
 ---Exit from application.
 ---@param code? integer Program exit code, `0` by default
 function swi.exit(code) end
 
+---Get mouse pointer coordinates.
+---@return { x :integer, y: integer } # Coordinates of the mouse pointer
+function swi.get_mouse_pos() end
+
+---Toggle full screen mode.
+---@return boolean # True if full screen is enabled
+function swi.toggle_fullscreen() end
+
 ---Get application window size.
----@return {[1]:integer,[2]:integer} # (width, height) window size in pixels
+---@return { width: integer, height: integer } # Window size in pixels
 function swi.get_window_size() end
 
 ---Set application window size.
@@ -43,42 +45,17 @@ function swi.get_window_size() end
 ---@param height integer Height of the window in pixels
 function swi.set_window_size(width, height) end
 
----Get mouse pointer coordinates.
----@return {[1]:integer,[2]:integer} # (x,y) coordinates of the mouse
-function swi.get_mouse_pos() end
-
----Set the initialization completion handler.
----Called after all subsystems have been initialized.
----@param fn fun() Initialization completion callback
-function swi.on_initialized(fn) end
-
 ---Add a callback function called when main window is resized.
----@param fn fun() Handler
+---@param fn fun():(boolean?) Handler, return true to unregister
 function swi.on_window_resize(fn) end
 
---------------------------------------------------------------------------------
--- Image entry
---------------------------------------------------------------------------------
-
----A single image entry from the image list. READONLY object
----@class image_entry
----@field index integer Index in the image list
----@field path string Absolute path to the image file
----@field size integer File size in bytes
----@field mtime string File modification time
----@field marked boolean Whether the image is marked
+---Add a callback function called when all subsystems have been initialized.
+---@param fn fun():(boolean?) Handler, return true to unregister
+function swi.on_initialized(fn) end
 
 --------------------------------------------------------------------------------
 -- Image list
 --------------------------------------------------------------------------------
-
----@alias order_t
----| "none"    # Unsorted (system-dependent)
----| "alpha"   # Lexicographic sort: 1,10,2,20,a,b,c
----| "numeric" # Numeric sort: 1,2,3,10,100,a,b,c
----| "mtime"   # Modification time sort
----| "size"    # Size sort
----| "random"  # Random order
 
 ---Image list
 ---@class swi.imagelist
@@ -89,11 +66,11 @@ function swi.on_window_resize(fn) end
 swi.imagelist = {}
 
 ---Get size of image list.
----@return number # Number of entries in the image list
+---@return integer # Number of entries in the image list
 function swi.imagelist.size() end
 
 ---Get list of all entries in the image list.
----@return image_entry[] # Array with all entries
+---@return swayimg.entry[] # Array with all entries
 function swi.imagelist.get() end
 
 ---Add entry to the image list.
@@ -110,23 +87,28 @@ function swi.imagelist.remove(path) end
 
 ---Text overlay layer.
 ---@class swi.text
----When should the text layer be visible(regardless of active mode).
----Boolean to toggle or a float to display it for x seconds after image change.
----@field allowed boolean|number
+---Should displaying the text layer be allowed.
+---@see swi.text.is_visible
+---@see swi.text.timeout
+---@field enabled boolean
+---How long should the text layer be displayed for after switching to a different image.
+---Use 0 to make the layer permanently visible.
+---Requires the text layer to be enabled.
+---@field timeout number
 ---@field font string Font face name
 ---@field size integer Font size in pixels
 ---@field padding integer Padding from window edges in pixels
 ---@field foreground integer Foreground text color in ARGB format, e.g. `0xff00aa99`
 ---@field background integer Background text color in ARGB format, e.g. `0xff00aa99`
 ---@field shadow integer Shadow text color in ARGB format, e.g. `0xff00aa99`
----@field status_timer number Timeout in seconds after which the status message is hidden
+---@field status_timeout number Timeout in seconds after which the status message is hidden
 swi.text = {}
 
----Get immediate visibility state of the text layer
+---Get immediate visibility state of the text layer.
 ---@return boolean visible
 function swi.text.is_visible() end
 
----Show status message for the duration of `swi.text.status_timer` seconds.
+---Show status message for the duration of `swi.text.status_timeout` seconds.
 ---@param status string Status text to show
 function swi.text.set_status(status) end
 
@@ -134,27 +116,8 @@ function swi.text.set_status(status) end
 -- Base mode class
 --------------------------------------------------------------------------------
 
----Each string in array is a printable template. The template includes text and
----fields surrounded by curly braces. The following fields are supported:
----* `{name}`: File name of the currently viewed/selected image;
----* `{dir}`: Parent directory name of the currently viewed/selected image;
----* `{path}`: Absolute path to the currently viewed/selected image;
----* `{size}`: File size in bytes;
----* `{sizehr}`: File size in human-readable format;
----* `{time}`: File modification time;
----* `{format}`: Brief image format description;
----* `{scale}`: Current image scale in percent;
----* `{list.index}`: Current index of image in the image list;
----* `{list.total}`: Total number of files in the image list;
----* `{frame.width}`: Current frame width in pixels;
----* `{frame.height}`: Current frame height in pixels;
----* `{meta.*}`: Image meta info: EXIF, tags etc. List of available tags can be
----  found at [Exiv2 website](https://exiv2.org/tags.html) or printed using
----  utility exiv2: `exiv2 -pa photo.jpg`.
----@alias text_template_t string
-
 ---Base class providing text overlay layout fields shared by all display modes.
----@class mode_base
+---@class mode_base: swayimg_appmode
 ---@field text_tl text_template_t[] Text layer scheme for top-left corner
 ---@field text_tr text_template_t[] Text layer scheme for top-right corner
 ---@field text_bl text_template_t[] Text layer scheme for bottom-left corner
@@ -162,82 +125,19 @@ function swi.text.set_status(status) end
 ---@field mark_color integer Mark icon color in ARGB format
 local mode_base = {}
 
----Map a keyboard event to an action.
----@param bind string|string[] 1 or more mouse or keyboard events to map - `Alt+s`, etc.
+---Map a keyboard or mouse event to an action.
+---@param bind string 1 or more mouse or keyboard events to map - `Alt+s`, etc.
 ---@param cb fun() callback function to run
-function mode_base.on_key(bind, cb) end
-
----Map a mouse event to an action.
----@param bind string|string[] 1 or more mouse or keyboard events to map - `Ctrl+ScrollDown`, etc.
----@param cb fun() callback function to run
-function mode_base.on_mouse(bind, cb) end
-
----Remove all existing key/mouse/signal bindings.
-function mode_base.bind_reset() end
-
----Mark or unmark the current image.
----@param state? boolean Should the image be marked or not
-function mode_base.mark_current_image(state) end
-
----Add a callback function called when a new image is selected.
----@param fn fun() Handler
-function mode_base.on_image_change(fn) end
+function mode_base.map(bind, cb) end
 
 ---Bind the signal event to a handler.
 ---@param signal string Signal name (`USR1`, `USR2`, etc.)
----@param fn fun() Handler
+---@param fn fun():(boolean?) Handler, return true to unregister
 function mode_base.on_signal(signal, fn) end
 
 --------------------------------------------------------------------------------
 -- Viewer mode
 --------------------------------------------------------------------------------
-
----@alias vdir_t
----| "first" # First file in image list
----| "last" # Last file in image list
----| "next" # Next file
----| "prev" # Previous file
----| "next_dir" # First file in next directory
----| "prev_dir" # Last file in previous directory
----| "random" # Random file in image list
-
----@alias fixed_scale_t
----| "optimal" # 100% or less to fit to window
----| "width" # Fit image width to window width
----| "height" # Fit image height to window height
----| "fit" # Fit to window
----| "fill" # Crop image to fill the window
----| "real" # Real size (100%)
----| "keep" # Keep the same scale as for previously viewed image
-
----@alias fixed_position_t
----| "center" # Vertical and horizontal center of the window
----| "topcenter" # Top (vertical) and center (horizontal) of the window
----| "bottomcenter" # Bottom (vertical) and center (horizontal) of the window
----| "leftcenter" # Left (horizontal) and center (vertical) of the window
----| "rightcenter" # Right (horizontal) and center (vertical) of the window
----| "topleft" # Top left corner of the window
----| "topright" # Top right corner of the window
----| "bottomleft" # Bottom left corner of the window
----| "bottomright" # Bottom right corner of the window
-
----@alias rotation_t
----| 90 # 90 degrees
----| 180 # 180 degrees
----| 270 # 270 degrees
-
----@alias bkgmode_t
----| "extend" # Fill window with the current image and blur it
----| "mirror" # Fill window with the mirrored current image and blur it
----| "auto" # Fill the window background in `extend` or `mirror` mode depending on the image aspect ratio
-
----@class viewer.image_entry: image_entry
----@field width integer Current frame width in pixels
----@field height integer Current frame height in pixels
----@field format string Brief image format description
----Image meta information - `meta.Exif.Photo.ExposureTime` etc.
----see <https://exiv2.org/tags.html>
----@field [string] table<string,string>
 
 ---Configuration for the grid pattern to be displayed for transparent image bg.
 ---@class checkerboard
@@ -247,11 +147,11 @@ function mode_base.on_signal(signal, fn) end
 
 ---@class swi.viewer : mode_base
 ---@field default_scale fixed_scale_t Default scale applied to newly opened images
----@field image_scale fixed_scale_t|number Scale of the image as a preset or absolute value
----@field default_pos fixed_position_t Default position applied to newly opened images
+---@field scale fixed_scale_t|number Scale of the image as a preset or absolute value
+---@field default_position fixed_position_t Default position applied to newly opened images
 ---Position of the image relative to the position of the window.
 ---Example: ←↑ corner of the image is outside the window -> `x,y<0`
----@field image_pos fixed_position_t|{[1]:integer,[2]:integer}
+---@field position fixed_position_t|{x:integer,y:integer}
 ---@field window_background integer|bkgmode_t Window background: solid ARGB color or fill mode
 ---Background color or pattern for transparent images (ARGB)
 ---@field image_background integer|checkerboard
@@ -261,19 +161,40 @@ function mode_base.on_signal(signal, fn) end
 ---@field history_limit integer Number of previously viewed images to keep in cache
 swi.viewer = {}
 
----Go to the next file in the specified direction.
----@param direction vdir_t Next file direction
-function swi.viewer.switch_image(direction) end
-
----Get information about currently viewed image.
----@return viewer.image_entry # Currently viewed image entry
-function swi.viewer.get_current_image() end
-
 ---Set absolute image scale, scaling the change around a zoom center.
 ---@param scale number Absolute value (1.0 = 100%)
 ---@param x integer X coordinate of center point, empty for window center
 ---@param y integer Y coordinate of center point, empty for window center
 function swi.viewer.scale_centered(scale, x, y) end
+
+---Open the next file in the specified direction.
+---@param dir vdir_t Next file direction
+function swi.viewer.switch_image(dir) end
+
+---Get information about currently displayed image.
+---@return swayimg.image # Currently displayed image
+function swi.viewer.get_image() end
+
+---Reset position and scale to default values.
+---@see swayimg.viewer.set_default_scale
+---@see swayimg.viewer.set_default_position
+function swi.viewer.reset() end
+
+---Show next frame from multi-frame image (animation).
+---This function stops the animation.
+---@return integer # Index of the currently shown frame
+function swi.viewer.next_frame() end
+
+---Show previous frame from multi-frame image (animation).
+---This function stops the animation.
+---@return integer # Index of the currently shown frame
+function swi.viewer.prev_frame() end
+
+---Stop animation.
+function swi.viewer.animation_stop() end
+
+---Resume animation.
+function swi.viewer.animation_resume() end
 
 ---Flip image vertically.
 function swi.viewer.flip_vertical() end
@@ -285,60 +206,26 @@ function swi.viewer.flip_horizontal() end
 ---@param angle rotation_t Rotation angle
 function swi.viewer.rotate(angle) end
 
----Stop animation.
-function swi.viewer.animation_stop() end
-
----Resume animation.
-function swi.viewer.animation_resume() end
-
----Show next frame from multi-frame image (animation).
----This function also stops the animation.
----@see swi.viewer.animation_stop
----@see swi.viewer.animation_resume
----@return integer # Index of the currently shown frame
-function swi.viewer.next_frame() end
-
----Show previous frame from multi-frame image (animation).
----This function also stops the animation.
----@see swi.viewer.animation_stop
----@see swi.viewer.animation_resume
----@return integer # Index of the currently shown frame
-function swi.viewer.prev_frame() end
-
----Export currently viewed frame to PNG file.
----@param path string Path to file
+---Export currently displayed frame to PNG file.
+---@param path string Path to the file
 function swi.viewer.export(path) end
 
----Bind the mouse button to image drag operation.
----@param button string Button description, for example `MouseLeft`
-function swi.viewer.bind_drag(button) end
+---Add/replace/remove meta info for currently displayed image.
+---@param key string Meta key name
+---@param value string Meta value, empty value to remove the record
+function swi.viewer.set_meta(key, value) end
 
 --------------------------------------------------------------------------------
 -- Slide show mode
 --------------------------------------------------------------------------------
 
----@class swi.slideshow : viewer
+---@class swi.slideshow : swi.viewer
 ---@field timeout number Timeout in seconds after which the next image is opened
 swi.slideshow = {}
 
 --------------------------------------------------------------------------------
 -- Gallery mode
 --------------------------------------------------------------------------------
-
----@alias gdir_t
----| "first" # Select first thumbnail in image list
----| "last" # Select last thumbnail in image list
----| "up" # Select the thumbnail above the current one
----| "down" # Select the thumbnail below the current one
----| "left" # Select the thumbnail to the left of the current one
----| "right" # Select the thumbnail to the right of the current one
----| "pgup" # Select the thumbnail on the previous page
----| "pgdown" # Select the thumbnail on the next page
-
----@alias aspect_t
----| "fit" # Fit image into a square thumbnail
----| "fill" # Fill square thumbnail with the image
----| "keep" # Adjust thumbnail size to the aspect ratio of the image
 
 ---@class swi.gallery : mode_base
 ---@field aspect aspect_t Thumbnail aspect ratio
@@ -348,9 +235,9 @@ swi.slideshow = {}
 ---@field border_color integer Border color for the selected thumbnail in ARGB format
 ---@field selected_scale number Scale factor for the selected thumbnail (1.0 = 100%)
 ---@field selected_color integer Background color for the selected thumbnail in ARGB format
----@field background_color integer Background color for unselected thumbnails in ARGB format
+---@field unselected_color integer Background color for unselected thumbnails in ARGB format
 ---@field window_color integer Window background color in ARGB format
----@field cache_size integer Max number of thumbnails stored in memory cache
+---@field cache_limit integer Max number of thumbnails stored in memory cache
 ---@field preload boolean Preload invisible thumbnails
 ---@field pstore boolean Persistent storage for thumbnails
 ---@field pstore_path string Custom path to the directory for persistent thumbnail storage
@@ -361,5 +248,5 @@ swi.gallery = {}
 function swi.gallery.switch_image(dir) end
 
 ---Get information about currently selected image.
----@return image_entry # Currently selected image entry
-function swi.gallery.get_current_image() end
+---@return swayimg.entry # Currently selected image entry
+function swi.gallery.get_image() end

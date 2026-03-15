@@ -12,7 +12,7 @@ modmap {
 		map({ 'n', 'i' }, '<F2>', function()
 			local self = m.ts.current({ types = { 'begin', 'end' } }):parent()
 			if not self or not self.range then return end
-			local opts = { inherit = false, types = { curly_group_text = true } }
+			local opts = { inherit = false, types = { 'curly_group_text' } }
 			local o = self.range
 			local b = self:child(0, opts):paste { text = '{}' }
 
@@ -26,7 +26,7 @@ modmap {
 			vim.api.nvim_create_autocmd({ 'CursorMovedI', 'CursorMoved' }, {
 				group = group,
 				callback = function(s)
-					b = m.ts.current { types = { curly_group_text = true } } or ''
+					b = m.ts.current(opts) or ''
 					self = m.ts.get(o) or ''
 					local e = self:child(-1, opts) or ''
 					if not b.range or s.event == 'CursorMoved' then

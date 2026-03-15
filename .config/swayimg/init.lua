@@ -1,4 +1,4 @@
-require 'api'
+-- require 'api'
 require 'api_conv'
 _G.v = swi.viewer
 _G.g = swi.gallery
@@ -8,29 +8,24 @@ _G.t = swi.text
 _G.h = require 'helpers'
 
 v.default_scale = 'optimal'
-local primed = false
 swi.on_window_resize(function()
-	if not primed then
-		primed = true
-		return
-	end
-	v.image_scale = v.default_scale
-	return true
+	if swi.mode == 'viewer' then v.scale = v.default_scale end
 end)
 swi.on_initialized(function()
-	if l.size() == 1 then l.add(swi[swi.mode].get_current_image().path:match '.+/') end
+	if l.size() == 1 then l.add(swi[swi.mode].get_image().path:match '.+/') end
 end)
 require 'keymappings'
 
 swi.overlay = false
+swi.antialiasing = false
 l.order = 'alpha'
 -- t.font = 'Nova Square'
 t.shadow = 0xff101010
 t.foreground = 0xffffffff
 t.padding = 0
 t.size = 20
-t.status_timer = 2
--- s.text.visible = 0
+t.status_timeout = 2
+t.enabled = false
 
 v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
@@ -41,12 +36,12 @@ v.loop = true
 g.window_color = 0xff000000
 g.mark_color = 0xffff55ff
 g.border_size = 10
-g.background_color = 0xff101010
+g.unselected_color = 0xff101010
 g.border_color = 0xffbb33aa
 g.thumb_size = 500
 g.selected_scale = 1.2
 g.aspect = 'keep'
-g.cache_size = 10000
+g.cache_limit = 10000
 g.preload = true
 g.pstore = false
 
@@ -62,18 +57,19 @@ v.text_tr = { '{list.index}/{list.total}' }
 v.text_br = { '{scale}' }
 v.text_bl = {}
 v.on_image_change(function()
-	local i = v.get_current_image()
+	local i = v.get_image()
 	local t = {
 		'File: ' .. i.path:match '[^/]+$',
 		string.format('Size: %.1f MB', i.size / 1000000),
 		string.format('Res: %dx%d', i.width, i.height),
 	}
-	if i['meta.Exif.Image.ExifTag'] then
+	local m = i.meta
+	if m['Exif.Image.ExifTag'] then
 		local function fmt(name, val, default)
 			if val and val:match '%.' then
-				val = i[val] or default
+				val = m[val] or default
 			else
-				val = i['meta.Exif.Photo.' .. (val or name)] or default
+				val = m['Exif.Photo.' .. (val or name)] or default
 			end
 			if not val then return end
 

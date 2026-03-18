@@ -1,11 +1,23 @@
 ---@meta swi
 
+---Api conversion provider
+---@class api_conv
+---@field private _overrides (function|{get?:fun(self:api_conv):(unknown),set?:fun(val)})[]
+local api_conv = {}
+
+---Add a listener for setting a variable.
+---Only reacts to user setting the variable
+---@param idx string? name of the variable to listen for getting set
+--- - use `nil` to register for any variable change
+---@param cb fun(val,idx:string):(boolean?) Handler, return true to unregister
+function api_conv.on_set(idx, cb) end
+
 --------------------------------------------------------------------------------
 -- Main application class
 --------------------------------------------------------------------------------
 
 ---Main application class.
----@class swi
+---@class swi: api_conv
 ---@field mode appmode_t Which mode is the application in
 ---@field title string Window title text
 ---@field antialiasing boolean Enable/disable antialiasing
@@ -46,24 +58,28 @@ function swi.get_window_size() end
 function swi.set_window_size(width, height) end
 
 ---Add a callback function called when main window is resized.
----@param fn fun():(boolean?) Handler, return true to unregister
-function swi.on_window_resize(fn) end
+---@param cb fun():(boolean?) Handler, return true to unregister
+function swi.on_window_resize(cb) end
 
 ---Add a callback function called when all subsystems have been initialized.
----@param fn fun():(boolean?) Handler, return true to unregister
-function swi.on_initialized(fn) end
+---@param cb fun():(boolean?) Handler, return true to unregister
+function swi.on_initialized(cb) end
 
 --------------------------------------------------------------------------------
 -- Image list
 --------------------------------------------------------------------------------
 
 ---Image list
----@class swi.imagelist
+---@class swi.imagelist: api_conv
 ---@field order order_t Image list sort order
 ---@field reverse boolean Reverse the sort order
 ---@field recursive boolean Recursive directory reading
 ---@field adjacent boolean Open adjacent files from the same directory
 swi.imagelist = {}
+
+---Get current image entry (may or may not have loaded metadata)
+---@return swayimg.entry
+function swi.imagelist.get_current() end
 
 ---Get size of image list.
 ---@return integer # Number of entries in the image list
@@ -81,22 +97,40 @@ function swi.imagelist.add(path) end
 ---@param path string Path to remove
 function swi.imagelist.remove(path) end
 
+---Helper for working with marks on images
+---@class swi.imagelist.marked
+swi.imagelist.marked = {}
+
+---Get number of marked images.
+---@return integer
+function swi.imagelist.marked.size() end
+
+---Get list of all marked paths.
+---@return string[] paths of all marked images
+function swi.imagelist.marked.get() end
+
+---Toggle the marked state of the current entry.
+---@param state boolean|'toggle'
+---@param silent true? should the change call no hooks
+function swi.imagelist.marked.set_current(state, silent) end
+
+---Register a hook for changes in the number of marked images
+---@param cb fun(mark_count:integer):(boolean?) Handler, return true to unregister
+function swi.imagelist.marked.on_change(cb) end
+
 --------------------------------------------------------------------------------
 -- Text overlay layer
 --------------------------------------------------------------------------------
 
 ---Text overlay layer.
----@class swi.text
----Should displaying the text layer be allowed.
----@see swi.text.is_visible
----@see swi.text.timeout
----@field enabled boolean
----How long should the text layer be displayed for after switching to a different image.
----Use 0 to make the layer permanently visible.
----Requires the text layer to be enabled.
----@field timeout number
+---@class swi.text: api_conv
+---Should displaying the text layer be allowed,
+---and how long for (after switching to a different image).
+---Use `true` to disable timeout and permanently display, `false` to always hide, x for x seconds
+---@field enabled boolean|number
 ---@field font string Font face name
 ---@field size integer Font size in pixels
+---@field line_spacing number Factor of amount of space between lines (>0)
 ---@field padding integer Padding from window edges in pixels
 ---@field foreground integer Foreground text color in ARGB format, e.g. `0xff00aa99`
 ---@field background integer Background text color in ARGB format, e.g. `0xff00aa99`
@@ -117,7 +151,7 @@ function swi.text.set_status(status) end
 --------------------------------------------------------------------------------
 
 ---Base class providing text overlay layout fields shared by all display modes.
----@class mode_base: swayimg_appmode
+---@class mode_base: swayimg_appmode, api_conv
 ---@field text_tl text_template_t[] Text layer scheme for top-left corner
 ---@field text_tr text_template_t[] Text layer scheme for top-right corner
 ---@field text_bl text_template_t[] Text layer scheme for bottom-left corner
@@ -132,8 +166,8 @@ function mode_base.map(bind, cb) end
 
 ---Bind the signal event to a handler.
 ---@param signal string Signal name (`USR1`, `USR2`, etc.)
----@param fn fun():(boolean?) Handler, return true to unregister
-function mode_base.on_signal(signal, fn) end
+---@param cb fun():(boolean?) Handler, return true to unregister
+function mode_base.on_signal(signal, cb) end
 
 --------------------------------------------------------------------------------
 -- Viewer mode
@@ -166,6 +200,10 @@ swi.viewer = {}
 ---@param x integer X coordinate of center point, empty for window center
 ---@param y integer Y coordinate of center point, empty for window center
 function swi.viewer.scale_centered(scale, x, y) end
+
+---Get absolute image scale that the image is currently displayed at.
+---@return number
+function swi.viewer.get_abs_scale() end
 
 ---Open the next file in the specified direction.
 ---@param dir vdir_t Next file direction

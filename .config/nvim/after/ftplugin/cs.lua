@@ -14,11 +14,11 @@ local runcfg = {
 local fth = require 'fthelper'
 local proj = {}
 function proj.cfg(path)
-	local csproj = fth.findUpFile(path or vim.fn.bufname(0), '.*%.csproj')
+	local csproj = fth.findUpFile('.*%.csproj', path)
 	local dir = csproj:match '.+/'
 	local label = csproj:match '([^/]+)%.csproj$'
 
-	dir = vim.split(vim.fn.glob(dir .. 'bin/*/net*/'), '\n', { plain = true })
+	dir = fth.glob(dir .. 'bin/*/net*/')
 	dir = dir[#dir]
 	if dir == '' then return vim.notify 'No build dir found' end
 	if exists(dir .. 'linux-x64/') then dir = dir .. 'linux-x64/' end
@@ -113,12 +113,12 @@ map({ 'n', 'i' }, '<A-r>', function() build(true) end)
 --- requires coroutine
 ---@param sources 'src'|'test'|'{src,test}'
 function proj.pick(prompt, sources)
-	local root = fth.findDir(nil, '.sln$')
+	local root = fth.findDirOf '.sln$'
 	if root == '' then return vim.notify 'No solution file found' end
 
 	local projects = vim.split(vim.fn.glob(root .. sources .. '/*/'), '\n', { plain = true })
 	if #projects == 0 or projects[1] == '' then return vim.notify 'No projects found' end
-	table.insert(projects, 1, fth.findDir(nil, '.csproj$'))
+	table.insert(projects, 1, fth.findDirOf '.csproj$')
 
 	local _, pos = vim.ui.select(
 		vim.tbl_map(function(v) return v:match '([^/]+)/$' end, projects),
@@ -200,7 +200,7 @@ map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
 map('n', '<F18>', function() coroutine.wrap(proj.debug)() end)
 
 local function test_method(debug)
-	local cfg = proj.cfg(fth.findDir(nil, '.csproj$'))
+	local cfg = proj.cfg(fth.findDirOf '.csproj$')
 	local ts = require('manipulator').ts
 	local fn = ts.current({ types = { 'method_declaration' } }):child('name'):get_text()
 	local class = ts.current({ types = { 'class_declaration' } }):child('name'):get_text()

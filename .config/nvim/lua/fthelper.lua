@@ -8,29 +8,41 @@ function _G.exists(f)
 end
 
 ---@param dir? string defaults to buf parent dir
-function M.findUpFile(dir, luapat)
-	return vim.fs.find(
-		function(fname) return not not fname:find(luapat) end,
-		{ path = dir or vim.api.nvim_buf_get_name(0):match '.+/', upward = true }
-	)[1]
+function M.findUpFile(luapat, dir, allow_home)
+	dir = dir or vim.api.nvim_buf_get_name(0):match '.+/'
+
+	local file = true
+	if luapat:sub(-1) == '/' then
+		luapat = luapat:sub(1, -2)
+		file = false
+	end
+
+	dir = dir:gsub('/+$', '')
+	local end_at = not allow_home and os.getenv 'HOME'
+	while dir and dir ~= end_at do
+		for name, type in vim.fs.dir(dir) do
+			if file == (type == 'file') and name:find(luapat) then return dir .. '/' .. name end
+		end
+
+		dir = dir:match '^(.*)/'
+	end
 end
 
---- Find dir matching the luapat (if luapat ends with /)
---- or get dir of file `name` (if name is not a luapat or doesn't end with /)
+--- Find dir containing the given file matched by luapat
+--- (use '.*/' to get a directory that contains other directories)
 ---@param basedir? string defaults to buf parent dir
-function M.findDir(basedir, name)
+function M.findDirOf(luapat, basedir)
 	basedir = basedir or vim.api.nvim_buf_get_name(0):match '.+/'
-	if name:match '[^./%w_-]' then -- luapat
-		basedir = M.findUpFile(basedir, name)
-		if name:sub(-1) == '/' then return basedir end
-		return basedir and basedir:match '.+/'
-	end
 
-	while not exists(basedir .. name) do
-		basedir = basedir:gsub('[^/]+/$', '')
-		if basedir == '/' then return end
-	end
-	return basedir
+	basedir = M.findUpFile(luapat, basedir)
+	return basedir and basedir:match '.+/'
+end
+
+---@return string[]
+function M.glob(glob)
+	local ret = vim.split(vim.fn.glob(glob), '\n', { plain = true })
+	if ret[1] == '' then return {} end
+	return ret
 end
 
 ---@alias map fun(mode:string|string[],bind:string,action:string|function,opts?:vim.keymap.set.Opts)

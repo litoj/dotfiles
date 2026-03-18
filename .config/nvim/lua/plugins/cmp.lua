@@ -12,18 +12,6 @@ local M = {
 	},
 }
 
-local src = {
-	calc = { name = 'calc', group_index = 1 },
-	font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-	latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-	path = { name = 'path', group_index = 1 },
-
-	lsp = { name = 'nvim_lsp', group_index = 2, priority = 2 },
-	snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
-
-	buf = { name = 'buffer', group_index = 3 },
-}
-
 function M.config()
 	require('luasnip.loaders.from_vscode').lazy_load()
 	local kind_icons = {
@@ -85,8 +73,6 @@ function M.config()
 		kinds.File,
 		kinds.Folder,
 
-		kinds.Keyword,
-
 		kinds.Variable,
 		kinds.Property,
 		kinds.Field,
@@ -108,11 +94,31 @@ function M.config()
 		kinds.Interface,
 		kinds.Event,
 
+		kinds.Keyword,
 		kinds.Operator,
 		kinds.Reference, -- FIXME: what is this type?
 	} do
 		cmpKindPref[k] = i
 	end
+
+	local src = {
+		calc = { name = 'calc', group_index = 1 },
+		font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
+		path = { name = 'path', group_index = 1 },
+		lsp = {
+			name = 'nvim_lsp',
+			group_index = 2,
+			priority = 2,
+			entry_filter = (function(text_kind)
+				return function(e, ctx) return e:get_kind() ~= text_kind end
+			end)(kinds.Text),
+		},
+		snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
+
+		buf = { name = 'buffer', group_index = 3 },
+	}
+
 	local comparators = {
 		cmp.config.compare.offset,
 		-- src.copilot and require('cmp_copilot.comparators').score or cmp.config.compare.score,
@@ -219,7 +225,7 @@ function M.config()
 		},
 		completion = {
 			keyword_length = 2,
-			autocomplete = false,
+			autocomplete = { 'TextChanged' },
 		},
 		performance = { max_view_entries = 300, throttle = 1, fetching_timeout = 1 },
 		window = {

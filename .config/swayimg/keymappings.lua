@@ -1,22 +1,33 @@
 ---@param bind string|string[]
 ---@param cb string|function shellcmd to execute or callback
 local function amap(bind, cb)
-	h.map(bind, cb, v)
-	h.map(bind, cb, g)
-	h.map(bind, cb, s)
+	h.map(v, bind, cb)
+	h.map(g, bind, cb)
+	h.map(s, bind, cb)
 end
 
 -- ## Global
 do
 	-- TODO: what is freemove?
 	-- TODO: regulate the movement speed with a counter
-	amap('x', function() l.remove(swi[swi.mode].get_current_image().path) end)
+	amap('x', function() l.remove(h.current().path) end)
 	amap({ 'q', '<Esc>' }, function() swi.exit(0) end)
 
 	-- ### Settings toggle
-	amap('u', function() swi.antialiasing = not swi.antialiasing end)
+	amap('u', function()
+		swi.antialiasing = not swi.antialiasing
+		t.set_status('Antialiasing: ' .. tostring(swi.antialiasing))
+	end)
 	amap('i', function() t.enabled = not t.enabled end)
-	amap('m', h.toggle_mark)
+	amap('m', function() l.marked.set_current 'toggle' end)
+	amap('<C-=>', function()
+		t.size = t.size + 1
+		t.set_status('Font size: ' .. tostring(t.size))
+	end)
+	amap('<C-->', function()
+		t.size = t.size - 1
+		t.set_status('Font size: ' .. tostring(t.size))
+	end)
 
 	local function gen_rating(r)
 		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' "%" >/dev/null'
@@ -29,14 +40,15 @@ do
 	amap('Alt+5', gen_rating(5))
 	amap('<C-f>', [[EDIT_PRESET=editFixManualFl pem -e -x -c dummy "%"]])
 	amap('<Del>', [[x="%" && which trash && trash "$x" || mv "$x" /tmp/my/trash/]])
-	amap('<A-f>', [[dragon-drop -x -T '%']])
+	amap('<A-f>', [[dragon-drop -x -T %s]])
+	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
 end
 
 -- ## Gallery
 do
 	---@param bind string|string[]
 	---@param cb string|function shellcmd to execute or callback
-	local function gmap(bind, cb) h.map(bind, cb, g) end
+	local function gmap(bind, cb) h.map(g, bind, cb) end
 
 	gmap('g', function() swi.mode = 'viewer' end)
 
@@ -44,13 +56,18 @@ do
 	gmap({ 's', 'j' }, h.ggo.down)
 	gmap({ 'w', 'k' }, h.ggo.up)
 	gmap({ 'd', 'l', '<S-SMD>' }, h.ggo.right)
-	gmap(
-		'<A-s>',
-		function() h.exec('dragon-drop -x -a "' .. table.concat(h.get_marked(), '" "') .. '"') end
-	)
+	gmap('<A-s>', 'dragon-drop -x -a %s')
+	gmap(' ', function()
+		l.marked.set_current 'toggle'
+		h.ggo.right()
+	end)
+	gmap('<S- >', function()
+		l.marked.set_current 'toggle'
+		h.ggo.left()
+	end)
 	gmap('<S-Del>', function()
-		local marked = h.get_marked()
-		h.exec('$(which trash || echo rm) "' .. table.concat(marked, '" "') .. '"')
+		h.exec '$(which trash || echo rm) %s'
+		local marked = l.marked.get()
 		for _, f in ipairs(marked) do
 			l.remove(f)
 		end
@@ -61,7 +78,7 @@ end
 do
 	---@param bind string|string[]
 	---@param cb string|function shellcmd to execute or callback
-	local function smap(bind, cb) h.map(bind, cb, s) end
+	local function smap(bind, cb) h.map(s, bind, cb) end
 
 	local function stime(factor)
 		-- round to 1/x sec steps
@@ -70,12 +87,15 @@ do
 		t.set_status(string.format('Delay: %.2f s', factor))
 	end
 
-	amap('p', function()
-		swi.mode = 'slideshow'
-		stime(1)
+	amap('<S-p>', function()
+		if swi.mode == 'slideshow' then
+			swi.mode = 'viewer'
+		else
+			swi.mode = 'slideshow'
+			stime(1)
+		end
 	end)
 
-	smap('p', function() swi.mode = 'viewer' end)
 	smap({ '=', '<S-+>' }, function() stime(6 / 5) end)
 	smap('-', function() stime(5 / 6) end)
 end
@@ -84,12 +104,12 @@ end
 do
 	---@param bind string|string[]
 	---@param cb string|function shellcmd to execute or callback
-	local function vmap(bind, cb) h.map(bind, cb, v) end
+	local function vmap(bind, cb) h.map(v, bind, cb) end
 
 	vmap('g', function() swi.mode = 'gallery' end)
 
-	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>' }, h.vgo.prev)
-	vmap({ '<Space>', 'Right', 'period', '<S-l>' }, h.vgo.next)
+	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, h.vgo.prev)
+	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, h.vgo.next)
 	vmap('<Home>', h.vgo.first)
 	vmap('<End>', h.vgo.last)
 	vmap('c', function()
@@ -102,13 +122,13 @@ do
 	end)
 
 	vmap('h', h.vgo.left(5))
-	vmap('<SML>', h.vgo.left(2))
+	vmap('<S-SML>', h.vgo.left(2))
 	vmap('j', h.vgo.down(5))
-	vmap('<SMD>', h.vgo.down(2))
+	vmap('<S-SMD>', h.vgo.down(2))
 	vmap('k', h.vgo.up(5))
-	vmap('<SMU>', h.vgo.up(2))
+	vmap('<S-SMU>', h.vgo.up(2))
 	vmap('l', h.vgo.right(5))
-	vmap('<SMR>', h.vgo.right(2))
+	vmap('<S-SMR>', h.vgo.right(2))
 
 	vmap('r', function() v.rotate(90) end)
 	vmap('<S-r>', function() v.rotate(270) end)
@@ -127,7 +147,7 @@ do
 		v.default_scale = 'optimal'
 	end)
 	vmap('<S-a>', function()
-		v.scale = 'real'
+		v.scale = 1
 		v.default_scale = 'real'
 	end)
 	vmap('a', function() v.scale = 1 end)
@@ -138,22 +158,21 @@ do
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
-	vmap('<Up>', function() v.scale = v.scale * 1.1 end)
-	vmap('<Down>', function() v.scale = v.scale / 1.1 end)
-	vmap('1', function() v.scale = v.scale * 2 end)
+	vmap('<SMU>', function() v.scale = v.get_abs_scale() * 1.05 end)
+	vmap('<SMD>', function() v.scale = v.get_abs_scale() / 1.05 end)
+	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()
 		v.scale = 2
 		v.default_scale = 'keep'
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)
-	vmap({ '<S-o>', '<S-_>', '=', '<S-+>' }, function() v.scale = v.scale * 1.1 end)
-	vmap({ 'o', '-' }, function() v.scale = v.scale / 1.1 end)
+	vmap({ '<Up>', '=', '<S-+>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
+	vmap({ '<Down>', '-', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
 
-	vmap('b', [[~/.config/sway/custombg '%']])
-	vmap('<S-b>', [[cp '%' ~/Pictures/screen/]])
-	vmap('<A-S-s>', [[adb push '%' /storage/emulated/0/Download/]])
-	vmap('<A-e>', [[nohup xterm ranger --selectfile='%' &>/dev/null]])
-	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh '%']])
-	vmap('<S-e>', [[mkdir -p /tmp/img_export/ && cp '%' /tmp/img_export/]])
+	vmap('b', [[~/.config/sway/custombg %f]])
+	vmap('<S-b>', [[cp %f ~/Pictures/screen/]])
+	vmap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
+	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
+	vmap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
 end

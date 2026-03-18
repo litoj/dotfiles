@@ -4,7 +4,7 @@ TERM_BLOCKING=1
 try 'mpv --no-audio-display' +audio .m3u .m4a .mp3 .opus
 try '@mpv --no-terminal' +video .VOB
 # try @geeqie .RAF
-LC_ALL=C try @swayimg +image
+LC_COLLATE=C try @swayimg +image
 try @engrampa .7z .bz2 .gz .rar .tar .tgz .xz .zip .zst
 try @zathura .pdf
 try @transmission-gtk magnet:

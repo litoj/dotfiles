@@ -1,17 +1,28 @@
 local profiles = {
 	['/nvim'] = {
 		diagnostics = { globals = { 'vim' } },
+		workspace = {
+			library = {
+				'${3rd}/luv/library',
+			},
+		},
 	},
 	['%.config/nvim'] = {
 		workspace = {
-			library = { os.getenv 'HOME' .. '/.config/nvim/init.lua' },
+			library = {
+				os.getenv 'HOME' .. '/.config/nvim/init.lua',
+			},
 		},
 	},
 	-- swayimg Lua scripts (embeds PUC-Lua 5.4)
 	swayimg = {
 		runtime = { version = 'Lua 5.4' },
 		workspace = {
-			library = { '/usr/share/swayimg/swayimg.lua', os.getenv'HOME'..'/.config/swayimg/api.lua' },
+			library = {
+				'/usr/share/swayimg/swayimg.lua',
+				os.getenv 'HOME' .. '/.config/swayimg/api.lua',
+				os.getenv 'HOME' .. '/.config/swayimg/init.lua',
+			},
 		},
 	},
 }
@@ -19,14 +30,10 @@ local profiles = {
 return {
 	---@param client vim.lsp.Client
 	on_attach = function(client, _)
+		local u = require 'manipulator.utils'
 		for pattern, profile in pairs(profiles) do
 			if client.root_dir:find(pattern) then
-				if client.settings then
-					client.settings.Lua = vim.tbl_deep_extend('force', client.settings.Lua, profile)
-				else
-					client.config.settings =
-						vim.tbl_deep_extend('force', client.config.settings, { Lua = profile })
-				end
+				u.tbl_inner_extend('keep', (client.settings or client.config.settings).Lua, profile, true)
 			end
 		end
 	end,

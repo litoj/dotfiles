@@ -2,7 +2,7 @@ local group = vim.api.nvim_create_augroup('CfgAU', { clear = true })
 local vau = vim.api.nvim_create_autocmd
 
 ---@param ev string|string[]
----@param cb string|fun(state:{buf:number,event:string,file:string,group:number,id:number,match:string}):boolean?
+---@param cb string|fun(state:vim.api.keyset.create_autocmd.callback_args):boolean?
 ---@param extra? string|string[]|number|boolean pattern|buffer|once
 local function au(ev, cb, extra)
 	local opts = { group = group }
@@ -31,9 +31,13 @@ local function setCWD(s)
 		fakeUpdate = false
 		if vim.b[s.buf].cwd then return end
 	end
-	local dir = vim.b[s.buf].cwd or s.file:match 'term://(.+)//[0-9]+:'
+	local dir = vim.b[s.buf].cwd
+	if not dir then
+		dir = s.file:match 'term://(.+)//[0-9]+:'
+		if dir then dir = dir:gsub('^~', os.getenv 'HOME') end
+	end
+
 	if dir then
-		dir = dir:gsub('^~', os.getenv 'HOME')
 		vim.api.nvim_set_current_dir(dir)
 		return
 	end
@@ -42,7 +46,7 @@ local function setCWD(s)
 
 	for _, map in ipairs { cwdMap[s.file:match '[^.]*$'] or cwdMap.ft_default, cwdMap.fallback } do
 		for _, key in ipairs(map) do
-			dir = fth.findDir(path, key)
+			dir = fth.findDirOf(key, path)
 			if dir then break end
 		end
 		if dir then break end

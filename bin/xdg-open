@@ -3,6 +3,7 @@
 LC_ALL=C
 
 [[ $1 == -c ]] && CFG=$2 && shift 2 || CFG=${XDG_CONFIG_HOME-$HOME/.config}/open.conf.sh
+[[ $1 == -- ]] && shift 1
 
 if [[ $1 == open-sh://* ]]; then # for YT-to-external browser redirect
 	arg=${1#open-sh://}

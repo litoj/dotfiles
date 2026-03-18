@@ -34,9 +34,30 @@ local function transform_key(bind)
 	return bind
 end
 
+---@return swayimg.image|swayimg.entry
+function M.current() return swi[swi.mode].get_image() end
+
+-- TODO: how to make stderr appear? 2>&1 doesn't work
+---Execute a command + print its output.
+---Escape sequences:
+--- - `%`: current file unquoted
+--- - `%f`: current file quoted with singlequotes
+--- - `%s`: all marked files or current file quoted with singlequotes
+--- - `%%`: normal percentage sign (`%`)
+---@param cmd string
 function M.exec(cmd)
-	-- TODO: how to make stderr appear? 2>&1 doesn't work
-	cmd = cmd:gsub('([^%%])%%([^%%])', '%1' .. swi[swi.mode].get_image().path .. '%2')
+	cmd = cmd
+		:gsub('([^%%])%%f', function(a) return string.format("%s'%s'", a, M.current().path) end)
+		:gsub('([^%%])%%s', function(a)
+			local s = table.concat(l.marked.get(), "' '")
+			return string.format("%s'%s'", a, #s > 0 and s or M.current().path)
+		end)
+		:gsub(
+			'([^%%])%%([^%%])',
+			function(a, b) return string.format('%s%s%s', a, M.current().path, b) end
+		)
+		:gsub('%%%%', '%%')
+
 	local p = io.popen(cmd, 'r')
 	if not p then error('invalid command: ' .. cmd) end
 	local out = p:read '*a'
@@ -46,7 +67,7 @@ end
 
 ---@param bind string|string[]
 ---@param cb string|function shellcmd to execute or callback
-function M.map(bind, cb, api)
+function M.map(api, bind, cb)
 	if type(cb) == 'string' then
 		local cmd = cb
 		cb = function() M.exec(cmd) end
@@ -59,9 +80,9 @@ end
 
 -- viewer mode relative movement in percentages of window size
 function M.step(x, y)
-	local w, h = unpack(swi.get_window_size())
-	local px, py = unpack(v.get_position())
-	v.set_abs_position(px - math.floor(w * x / 100), py - math.floor(h * y / 100))
+	local w = swi.get_window_size()
+	local p = v.position
+	v.position = { x = p.x - math.floor(w.width * x / 100), y = p.y - math.floor(w.height * y / 100) }
 end
 
 local meta = {
@@ -89,31 +110,34 @@ setmetatable(M.vgo, meta)
 M.ggo = { dir = g.switch_image }
 setmetatable(M.ggo, meta)
 
-local last_size = 0
-local marked_count = 0
-local mark_hooks = {}
-function M.get_marked()
-	local marked = {}
-	for _, v in ipairs(l.get()) do
-		if v.mark then marked[#marked + 1] = v.path end
+---@param img_meta table<string,string>
+---@param val string name/path of the exif value to get (defaults to `Exif.Photo.<>` path)
+---@return string?
+function M.format_exif(img_meta, val)
+	if val and val:match '%.' then
+		val = img_meta[val]
+	else
+		val = img_meta['Exif.Photo.' .. val]
 	end
-	return marked
-end
-function M.on_marked_count_change(fn) mark_hooks[#mark_hooks + 1] = fn end
-function M.get_marked_count()
-	if last_size ~= l.size() then marked_count = #M.get_marked() end
-	return marked_count
-end
-function M.toggle_mark()
-	local mark = not swi[swi.mode].get_current_image().marked
-	swi[swi.mode].mark_current_image(mark)
-	marked_count = marked_count + (mark and 1 or -1)
+	if not val then return end
 
-	local i = #mark_hooks
-	while i > 0 do
-		if mark_hooks[i]() then table.remove(mark_hooks, i) end
-		i = i - 1
+	local a, b = val:match '^(%-?[0-9]+)/([0-9]+)$'
+	if a then
+		local x, y = tonumber(a), tonumber(b)
+		local n = x / y
+		if math.floor(n) == n then -- integer, not rational number -> done
+			---@diagnostic disable-next-line: cast-local-type
+			val = n
+		elseif math.floor(n * 10) == n * 10 then -- print just 1 decimal point
+			val = string.format('%.1f', n)
+		elseif b:match '^10*$' then -- just a decimal point offset
+			val = string.format('%.2f', n)
+		elseif a:match '^10*$' then -- decimal point offset through the other side
+			val = string.format('1/%d', y / x)
+		end
 	end
+
+	return val
 end
 
 return M

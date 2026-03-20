@@ -66,16 +66,13 @@ local function setIndentMarks(state)
 	if f:find('.git/', 1, true) or f:find '^/tmp' or f:find('.cache/', 1, true) then
 		vim.bo[state.buf].undofile = false -- Temp-file cleanliness
 	end
+
+	if state.match and state.match:match 'xkeyboard' then vim.bo.ft = 'xkb' end
 end
 au('BufRead', setIndentMarks)
 
 au('TextYankPost', function() vim.hl.on_yank { higroup = 'Search', timeout = 50 } end)
 au('FileType', 'nnoremap <buffer> q <Cmd>close<CR>', { 'qf', 'help', 'man' })
-au('FileType', function()
-	for _, key in ipairs { 'p', 'r', 'e', 's', 'f', 'd', 'x', 'b', 'l', 'r', 't', 'm' } do
-		vim.keymap.set('n', key, 'ciw' .. key .. '<Esc>j', { silent = true, buffer = true })
-	end
-end, 'gitrebase')
 au('TermOpen', function()
 	vim.wo[0][0].nu = false
 	vim.wo[0][0].rnu = false

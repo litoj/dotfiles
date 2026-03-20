@@ -129,10 +129,8 @@ case "$1" in
 	battery) "${0%/*}/battery" "${@:2}" ;;
 	cpu) "${0%/*}/cpu" "${@:2}" ;;
 	kb)
-		swaymsg -t get_inputs -p | grep -q \(US\) -m 1 && kb=cz || kb=us
-		swaymsg input type:keyboard xkb_switch_layout next
-		notify-send -a signal -h string:synchronous:kb " $kb"
-		pkill -RTMIN+13 i3blocks
+			swaymsg input type:keyboard xkb_switch_layout next
+			pkill -RTMIN+13 i3blocks
 		;;
 	theme) "${0%/*}/clock" $2 ;;
 	*) "$@" ;;

@@ -322,8 +322,10 @@ bindsym {
 	Ctrl+Print exec xdg-open "Pictures/scrshot/$(ls -t Pictures/scrshot|head -n1)"
 
 # Keyboard layout toggle, manual
-	$Mod+n exec $signal kb
-	$Alt+Escape exec $signal kb
+	$Mod+n nop
+	$Alt+Escape nop
+	--release $Mod+n exec sleep 0.2 && $signal kb
+	--release $Alt+Escape exec sleep 0.2 && $signal kb
 
 # Change gamma, "redshift" manually - n for night
 	$Mod+$Alt+n exec wlsunset -l 50 -L 14.5 &

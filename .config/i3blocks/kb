@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+
+kb=$(swaymsg -t get_inputs -p | awk '/Active Keyboard Layout/{print $0; exit}')
+kb=(${kb##*': '})
+
+TEXT=" ${kb::2}${kb[1]+"(${kb[1]:1:2})"}"
+
+notify-send -a signal -h string:synchronous:kb "${TEXT,,}"
+echo "${TEXT^^}"

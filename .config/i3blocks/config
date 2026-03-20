@@ -26,7 +26,6 @@ signal=14
 
 [kb]
 interval=once
-command=[[ $(swaymsg -t get_inputs -p | grep '(US)' -m 1) ]] && echo  US || echo  CZ
 signal=13
 
 [date]

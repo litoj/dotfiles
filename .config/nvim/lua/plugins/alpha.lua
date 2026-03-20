@@ -38,12 +38,14 @@ function M.config()
 
 			local file = val[2]
 			local cmd = function()
+				_G.disable_cwd = 1
 				if _G.protectWindow and path == file then -- dirs open NvimTree and discard current window
 					vim.api.nvim_set_current_buf(vim.g.old_buf)
 					vim.cmd.split()
 				end
 				vim.cmd.cd(path)
 				vim.cmd.edit(file)
+				_G.disable_cwd = nil
 			end
 
 			local hi = {
@@ -124,7 +126,7 @@ function M.config()
 				{ 'dn', '~/Documents/personal/nvim/' },
 				{ 'nn', '~/Documents/personal/nvim/nerdcontrast.nvim/lua/nerdcontrast/' },
 				{ 'nr', '~/Documents/personal/nvim/reform.nvim/' },
-				{ 'nm', '~/Documents/personal/nvim/manipulator.nvim/lua/manipulator/'}
+				{ 'nm', '~/Documents/personal/nvim/manipulator.nvim/lua/manipulator/' },
 			}),
 			buttons('[P]rojects', {
 				{ 'p', '~/Documents/school/PG/' },

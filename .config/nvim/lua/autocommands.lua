@@ -26,7 +26,8 @@ local cwdMap = {
 	cs = { '%.csproj$', '%.sln$' },
 }
 local function setCWD(s)
-	if not (cwdEnabled and validUpdate(s)) then return end
+	if not cwdEnabled or not validUpdate(s) or _G.disable_cwd then return end
+
 	if fakeUpdate then
 		fakeUpdate = false
 		if vim.b[s.buf].cwd then return end

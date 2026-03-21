@@ -82,11 +82,12 @@ local function cb(v, name)
 	if type(v) == 'number' then
 		v = string.format('%.2f', v)
 	elseif type(v) == 'table' then
-		local t = {}
+		return
+		--[[ local t = {}
 		for k, x in pairs(v) do
-			t[#t + 1] = ('[%s]=%s'):format(tostring(k), tostring(x))
+			t[#t + 1] = type(k) == 'string' and string.format('%s=%s',k,tostring(x)) or tostring(x)
 		end
-		v = ('{%s}'):format(table.concat(t, ', '))
+		v = ('{%s}'):format(table.concat(t, ', ')) ]]
 	end
 	t.set_status(
 		('%s%s set to: %s'):format(

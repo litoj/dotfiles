@@ -138,65 +138,51 @@ local function viewer_proxy(name)
 	local api = _s[name]
 	local self
 
-	local image_zoom = nil
+	---@type swayimg.image?
+	local li
 	api.on_image_change(function()
 		rawset(self, '_scale', nil)
-		if not image_zoom then return end
+		if not li then return end
 
 		---@diagnostic disable-next-line: undefined-field
-		local mode = self._default_scale
-		local i = api.get_image()
-		local w = _s.get_window_size()
+		local mode = self._default_scale:sub(9)
 
-		-- Z=S*I/W -> S=Z*W/I
-		if mode == 'keep_by_width' then
-			api.set_abs_scale(image_zoom * w.width / i.width)
-		elseif mode == 'keep_by_height' then
-			api.set_abs_scale(image_zoom * w.height / i.height)
-		end
-	end)
-	local function check_ratio(self)
-		if not image_zoom then return end
-
-		local mode = self._default_scale
 		local i = api.get_image()
-		local w = _s.get_window_size()
 		local s = api.get_scale()
-
-		-- image * scale = pixels displayed = window * zoom -> Z=S*I/W
-		if mode == 'keep_by_width' then
-			image_zoom = s * i.width / w.width
-		elseif mode == 'keep_by_height' then
-			image_zoom = s * i.height / w.height
+		if mode == 'width' then
+			s = s * li.width / i.width
+		elseif mode == 'height' then
+			s = s * li.height / i.height
+		elseif mode == 'ratio' then
+			s = s * (li.height / i.height + li.width / i.width)/2
 		end
-	end
+		api.set_abs_scale(s)
+		li = i
+	end)
 
 	local overrides = {
 		default_scale = {
-			set = function(x, self)
-				if x:sub(1, 5) == 'keep_' then
-					if x ~= 'keep_by_width' and x ~= 'keep_by_height' then
+			set = function(x)
+				if x:sub(1, 8) == 'keep_by_' then
+					if not ({ width = 1, height = 1, ratio = 1 })[x:sub(9)] then
 						error('Invalid default scale: ' .. x)
 					end
-					image_zoom = 1
-					rawset(self, '_default_scale', x)
-					check_ratio(self)
+					li = api.get_image()
 					x = 'keep'
 				else
-					image_zoom = nil
+					li = nil
 				end
 				api.set_default_scale(x)
 			end,
 		},
 		scale_centered = api.set_abs_scale,
 		scale = {
-			set = function(x, self)
+			set = function(x)
 				if type(x) == 'string' then
 					api.set_fix_scale(x)
 				else
 					api.set_abs_scale(x)
 				end
-				check_ratio(self) -- update relative zoom also if the current image used fixed scale to set it
 			end,
 			get = function(self)
 				local val = rawget(self, '_scale') or rawget(self, '_default_scale')

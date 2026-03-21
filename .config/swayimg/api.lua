@@ -201,6 +201,7 @@ function mode_base.on_signal(signal, cb) end
 ---| "keep"    # Keep the same scale as for previously viewed image
 ---| "keep_by_width"  # keep zoom level relative to image width
 ---| "keep_by_height" # keep zoom level relative to image height
+---| "keep_by_size"   # keep zoom level relative to image overall size
 
 ---@class swi.viewer.step Move around the image with ready-to-map functions
 ---@field default_size integer Default size of the step to make (in pixels)

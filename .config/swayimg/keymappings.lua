@@ -111,14 +111,14 @@ do
 		v.scale_centered(v.scale / 1.1, p.x, p.y)
 	end)
 
-	vmap('h', function() v.step.left(5) end)
-	vmap('<S-SML>', function() v.step.left(2) end)
-	vmap('j', function() v.step.down(5) end)
-	vmap('<S-SMD>', function() v.step.down(2) end)
-	vmap('k', function() v.step.up(5) end)
-	vmap('<S-SMU>', function() v.step.up(2) end)
-	vmap('l', function() v.step.right(5) end)
-	vmap('<S-SMR>', function() v.step.right(2) end)
+	vmap('h', v.step.left)
+	vmap('j', v.step.down)
+	vmap('k', v.step.up)
+	vmap('l', v.step.right)
+	vmap('<S-SML>', function() v.step.left(20) end)
+	vmap('<S-SMD>', function() v.step.down(20) end)
+	vmap('<S-SMU>', function() v.step.up(20) end)
+	vmap('<S-SMR>', function() v.step.right(20) end)
 
 	vmap('r', function() v.rotate(90) end)
 	vmap('<S-r>', function() v.rotate(270) end)
@@ -141,7 +141,7 @@ do
 		v.default_scale = 'real'
 	end)
 	vmap('a', function() v.scale = 1 end)
-	vmap('<A-a>', function() v.default_scale = 'keep_by_width' end)
+	vmap('<A-a>', function() v.default_scale = 'keep_by_size' end)
 	vmap('<S-k>', function()
 		v.scale = 0.35
 		v.default_scale = 'keep_by_width'
@@ -153,7 +153,7 @@ do
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()
 		v.scale = 2
-		v.default_scale = 'keep_by_width'
+		v.default_scale = 'keep'
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)

@@ -18,11 +18,12 @@ local function proxy(name, overrides)
 
 	---@type api_conv
 	local base = { _overrides = overrides, _on_set = {} }
+	local overrider_fields = { get = 'function', set = 'function' }
 	for k, o in pairs(overrides) do
-		local is_override = type(o) == 'table'
+		local is_override = type(o) == 'table' and getmetatable(o) == nil
 		if is_override then
-			for i, _ in pairs(o) do
-				if i ~= 'get' and i ~= 'set' then
+			for i, v in pairs(o) do
+				if type(v) ~= overrider_fields[i] then
 					is_override = false
 					break
 				end
@@ -40,15 +41,15 @@ local function proxy(name, overrides)
 		local t = base._on_set[idx]
 		if not t then
 			t = {}
-			base._on_set[idx] = {}
+			base._on_set[idx] = t
 		end
 		t[#t + 1] = cb
 	end
 
 	return setmetatable(base, {
 		__index = function(self, idx)
-			local v = overrides[idx]
-			if v and v.get then return v.get(self) end
+			local v = overrides[idx] or overrides['*']
+			if v and v.get then return v.get(self, idx) end
 
 			v = api[idx] -- get fn
 			if v ~= nil then return v end -- directly forward access to the old api
@@ -59,26 +60,23 @@ local function proxy(name, overrides)
 			v = rawget(self, '_' .. idx)
 			if v ~= nil then return v end -- read local copy of the last set value
 
-			v = idx:match '^on_(.+)_change$'
-			if v then
-				return function(x) return self.on_set(v, x) end
-			end
 			error('tried to get: ' .. name .. '.' .. idx)
 		end,
 
 		__newindex = function(self, idx, val)
-			local ov = overrides[idx]
-			if type(ov) == 'table' and ov.set then
-				ov.set(val)
+			local fn = overrides[idx] or overrides['*']
+			if type(fn) == 'table' and fn.set then
+				fn.set(val, self, idx)
 			else
-				local fn = api[(type(val) == 'boolean' and 'enable_' or 'set_') .. idx]
+				fn = api[(type(val) == 'boolean' and 'enable_' or 'set_') .. idx]
 				if not fn then error('tried to assign: ' .. name .. '.' .. idx) end
 
 				fn(val)
 			end
 
 			rawset(self, '_' .. idx, val) -- set in case a getter isn't available
-			if self._on_set[idx] then run_hooks(self._on_set[idx], val, idx) end
+			run_hooks(self._on_set[idx], val, idx)
+			run_hooks(self._on_set['*'], val, idx)
 		end,
 	})
 end
@@ -127,10 +125,7 @@ local function mode_overrides(api, extend)
 			maps = {}
 			api.bind_reset()
 		end,
-		text_tl = { set = function(x) api.set_text('topleft', x) end },
-		text_tr = { set = function(x) api.set_text('topright', x) end },
-		text_bl = { set = function(x) api.set_text('bottomleft', x) end },
-		text_br = { set = function(x) api.set_text('bottomright', x) end },
+		text = proxy(false, { ['*'] = { set = function(x, _, idx) api.set_text(idx, x) end } }),
 	}
 	for k, v in pairs(extend or {}) do
 		ret[k] = v
@@ -138,19 +133,76 @@ local function mode_overrides(api, extend)
 	return ret
 end
 
----@param api swayimg.viewer|swayimg.slideshow
-local function viewer_overrides(api)
-	return mode_overrides(api, {
+---@param name 'viewer'|'slideshow'
+local function viewer_proxy(name)
+	local api = _s[name]
+	local self
+
+	local image_zoom = nil
+	api.on_image_change(function()
+		rawset(self, '_scale', nil)
+		if not image_zoom then return end
+
+		---@diagnostic disable-next-line: undefined-field
+		local mode = self._default_scale
+		local i = api.get_image()
+		local w = _s.get_window_size()
+
+		-- Z=S*I/W -> S=Z*W/I
+		if mode == 'keep_by_width' then
+			api.set_abs_scale(image_zoom * w.width / i.width)
+		elseif mode == 'keep_by_height' then
+			api.set_abs_scale(image_zoom * w.height / i.height)
+		end
+	end)
+	local function check_ratio(self)
+		if not image_zoom then return end
+
+		local mode = self._default_scale
+		local i = api.get_image()
+		local w = _s.get_window_size()
+		local s = api.get_scale()
+
+		-- image * scale = pixels displayed = window * zoom -> Z=S*I/W
+		if mode == 'keep_by_width' then
+			image_zoom = s * i.width / w.width
+		elseif mode == 'keep_by_height' then
+			image_zoom = s * i.height / w.height
+		end
+	end
+
+	local overrides = {
+		default_scale = {
+			set = function(x, self)
+				if x:sub(1, 5) == 'keep_' then
+					if x ~= 'keep_by_width' and x ~= 'keep_by_height' then
+						error('Invalid default scale: ' .. x)
+					end
+					image_zoom = 1
+					rawset(self, '_default_scale', x)
+					check_ratio(self)
+					x = 'keep'
+				else
+					image_zoom = nil
+				end
+				api.set_default_scale(x)
+			end,
+		},
 		scale_centered = api.set_abs_scale,
 		scale = {
-			set = function(x)
+			set = function(x, self)
 				if type(x) == 'string' then
 					api.set_fix_scale(x)
 				else
 					api.set_abs_scale(x)
 				end
+				check_ratio(self) -- update relative zoom also if the current image used fixed scale to set it
 			end,
-			get = function(self) return rawget(self, '_scale') or rawget(self, '_default_scale') end,
+			get = function(self)
+				local val = rawget(self, '_scale') or rawget(self, '_default_scale')
+				if type(val) == 'string' and val:sub(1, 4) == 'keep' then return api.get_scale() end
+				return val
+			end,
 		},
 		get_abs_scale = api.get_scale,
 		position = {
@@ -173,7 +225,44 @@ local function viewer_overrides(api)
 		},
 		preload_limit = { set = api.limit_preload },
 		history_limit = { set = api.limit_history },
-	})
+
+		step = {
+			default_size = 50,
+			by = function(x, y)
+				local p = self.position
+				self.position = { x = p.x - x, y = p.y - y }
+			end,
+			left = function(p) self.step.by(-(p or self.step.default_size), 0) end,
+			right = function(p) self.step.by((p or self.step.default_size), 0) end,
+			up = function(p) self.step.by(0, -(p or self.step.default_size)) end,
+			down = function(p) self.step.by(0, (p or self.step.default_size)) end,
+		},
+
+		go = setmetatable({}, {
+			__index = function(tbl, idx)
+				tbl[idx] = function() api.switch_image(idx) end
+				return tbl[idx]
+			end,
+		}),
+	}
+
+	self = proxy(name, mode_overrides(api, overrides))
+
+	return self
+end
+
+local function gallery_proxy()
+	local api = _s.gallery
+	local overrides = {
+		cache_limit = { set = api.limit_cache },
+		go = setmetatable({}, {
+			__index = function(tbl, idx)
+				tbl[idx] = function() api.switch_image(idx) end
+				return tbl[idx]
+			end,
+		}),
+	}
+	return proxy('gallery', mode_overrides(api, overrides))
 end
 
 ---@param l swayimg.imagelist
@@ -269,10 +358,7 @@ _G.swi = proxy(nil, {
 			end,
 		},
 	}),
-	viewer = proxy('viewer', viewer_overrides(_s.viewer)),
-	slideshow = proxy('slideshow', viewer_overrides(_s.slideshow)),
-	gallery = proxy(
-		'gallery',
-		mode_overrides(_s.gallery, { cache_limit = { set = _s.gallery.limit_cache } })
-	),
+	viewer = viewer_proxy 'viewer',
+	slideshow = viewer_proxy 'slideshow',
+	gallery = gallery_proxy(),
 })

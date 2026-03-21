@@ -34,9 +34,6 @@ local function transform_key(bind)
 	return bind
 end
 
----@return swayimg.image|swayimg.entry
-function M.current() return swi[swi.mode].get_image() end
-
 -- TODO: how to make stderr appear? 2>&1 doesn't work
 ---Execute a command + print its output.
 ---Escape sequences:
@@ -47,14 +44,14 @@ function M.current() return swi[swi.mode].get_image() end
 ---@param cmd string
 function M.exec(cmd)
 	cmd = cmd
-		:gsub('([^%%])%%f', function(a) return string.format("%s'%s'", a, M.current().path) end)
+		:gsub('([^%%])%%f', function(a) return string.format("%s'%s'", a, l.get_current().path) end)
 		:gsub('([^%%])%%s', function(a)
 			local s = table.concat(l.marked.get(), "' '")
-			return string.format("%s'%s'", a, #s > 0 and s or M.current().path)
+			return string.format("%s'%s'", a, #s > 0 and s or l.get_current().path)
 		end)
 		:gsub(
 			'([^%%])%%([^%%])',
-			function(a, b) return string.format('%s%s%s', a, M.current().path, b) end
+			function(a, b) return string.format('%s%s%s', a, l.get_current().path, b) end
 		)
 		:gsub('%%%%', '%%')
 
@@ -77,38 +74,6 @@ function M.map(api, bind, cb)
 		api.map(transform_key(b), cb)
 	end
 end
-
--- viewer mode relative movement in percentages of window size
-function M.step(x, y)
-	local w = swi.get_window_size()
-	local p = v.position
-	v.position = { x = p.x - math.floor(w.width * x / 100), y = p.y - math.floor(w.height * y / 100) }
-end
-
-local meta = {
-	__index = function(tbl, dir)
-		tbl[dir] = function() tbl.dir(dir) end
-		return tbl[dir]
-	end,
-}
-M.vgo = {
-	dir = v.switch_image,
-	left = function(p)
-		return function() M.step(-p, 0) end
-	end,
-	right = function(p)
-		return function() M.step(p, 0) end
-	end,
-	up = function(p)
-		return function() M.step(0, -p) end
-	end,
-	down = function(p)
-		return function() M.step(0, p) end
-	end,
-}
-setmetatable(M.vgo, meta)
-M.ggo = { dir = g.switch_image }
-setmetatable(M.ggo, meta)
 
 ---@param img_meta table<string,string>
 ---@param val string name/path of the exif value to get (defaults to `Exif.Photo.<>` path)

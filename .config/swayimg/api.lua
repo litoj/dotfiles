@@ -1,13 +1,19 @@
 ---@meta swi
 
+---@class override
+---@field get? fun(self:api_conv,idx:string):(unknown)
+---@field set? fun(val:unknown,self:api_conv,idx:string)
+
 ---Api conversion provider
 ---@class api_conv
----@field private _overrides (function|{get?:fun(self:api_conv):(unknown),set?:fun(val)})[]
+---Overrides that handle the behaviour difference between the apis
+---`['*']` is a general handler used for all I/O when defined (replaces api)
+---@field private _overrides {['*']:override?, [string]:override|function}
 local api_conv = {}
 
 ---Add a listener for setting a variable.
 ---Only reacts to user setting the variable
----@param idx string? name of the variable to listen for getting set
+---@param idx string|'*' name of the variable to listen for getting set ('*' for all)
 --- - use `nil` to register for any variable change
 ---@param cb fun(val,idx:string):(boolean?) Handler, return true to unregister
 function api_conv.on_set(idx, cb) end
@@ -150,12 +156,15 @@ function swi.text.set_status(status) end
 -- Base mode class
 --------------------------------------------------------------------------------
 
+---@class mode_base.text: api_conv
+---@field topleft text_template_t[] Text layer scheme for top-left corner
+---@field topright text_template_t[] Text layer scheme for top-right corner
+---@field bottomleft text_template_t[] Text layer scheme for bottom-left corner
+---@field bottomright text_template_t[] Text layer scheme for bottom-right corner
+
 ---Base class providing text overlay layout fields shared by all display modes.
 ---@class mode_base: swayimg_appmode, api_conv
----@field text_tl text_template_t[] Text layer scheme for top-left corner
----@field text_tr text_template_t[] Text layer scheme for top-right corner
----@field text_bl text_template_t[] Text layer scheme for bottom-left corner
----@field text_br text_template_t[] Text layer scheme for bottom-right corner
+---@field text mode_base.text access to setting the overlay fields/indexes
 ---@field mark_color integer Mark icon color in ARGB format
 local mode_base = {}
 
@@ -179,9 +188,35 @@ function mode_base.on_signal(signal, cb) end
 ---@field [2] integer second color (i.e. 0xff888888)
 ---@field size integer size of individual grids in pixels
 
+---@alias one_time_scale_t
+---| "optimal" # 100% or less to fit to window
+---| "width"   # Fit image width to window width
+---| "height"  # Fit image height to window height
+---| "fit"     # Fit to window
+---| "fill"    # Crop image to fill the window
+
+---@alias default_scale_t
+---| one_time_scale_t
+---| "real"    # Real size (100%)
+---| "keep"    # Keep the same scale as for previously viewed image
+---| "keep_by_width"  # keep zoom level relative to image width
+---| "keep_by_height" # keep zoom level relative to image height
+
+---@class swi.viewer.step Move around the image with ready-to-map functions
+---@field default_size integer Default size of the step to make (in pixels)
+---@field by fun(x:integer,y:integer) Pan the image by x and y pixels in their directions
+---@field left fun(p:integer?) Step left by `p` px (default: step.default_size)
+---@field right fun(p:integer?) Step right by `p` px (default: step.default_size)
+---@field down fun(p:integer?) Step down by `p` px (default: step.default_size)
+---@field up fun(p:integer?) Step up by `p` px (default: step.default_size)
+
 ---@class swi.viewer : mode_base
----@field default_scale fixed_scale_t Default scale applied to newly opened images
----@field scale fixed_scale_t|number Scale of the image as a preset or absolute value
+---Helper table for easier mappings for switching between images
+---@see swi.viewer.switch_image Equivalent via passing a parameter
+---@field go {[vdir_t]:function}
+---@field step swi.viewer.step Helper table for easier mappings for moving around the image
+---@field default_scale default_scale_t Default scale applied to newly opened images
+---@field scale one_time_scale_t|number Scale of the image as a preset or absolute value
 ---@field default_position fixed_position_t Default position applied to newly opened images
 ---Position of the image relative to the position of the window.
 ---Example: ←↑ corner of the image is outside the window -> `x,y<0`
@@ -195,63 +230,66 @@ function mode_base.on_signal(signal, cb) end
 ---@field history_limit integer Number of previously viewed images to keep in cache
 swi.viewer = {}
 
----Set absolute image scale, scaling the change around a zoom center.
----@param scale number Absolute value (1.0 = 100%)
----@param x integer X coordinate of center point, empty for window center
----@param y integer Y coordinate of center point, empty for window center
-function swi.viewer.scale_centered(scale, x, y) end
+do
+	---Open the next file in the specified direction.
+	---@see swi.viewer.go equivalent using named methods for easier mapping
+	---@param dir vdir_t Next file direction
+	function swi.viewer.switch_image(dir) end
 
----Get absolute image scale that the image is currently displayed at.
----@return number
-function swi.viewer.get_abs_scale() end
+	---Get information about currently displayed image.
+	---@return swayimg.image # Currently displayed image
+	function swi.viewer.get_image() end
 
----Open the next file in the specified direction.
----@param dir vdir_t Next file direction
-function swi.viewer.switch_image(dir) end
+	---Set absolute image scale, scaling the change around a zoom center.
+	---@param scale number Absolute value (1.0 = 100%)
+	---@param x integer X coordinate of center point, empty for window center
+	---@param y integer Y coordinate of center point, empty for window center
+	function swi.viewer.scale_centered(scale, x, y) end
 
----Get information about currently displayed image.
----@return swayimg.image # Currently displayed image
-function swi.viewer.get_image() end
+	---Get absolute image scale that the image is currently displayed at.
+	---@return number
+	function swi.viewer.get_abs_scale() end
 
----Reset position and scale to default values.
----@see swayimg.viewer.set_default_scale
----@see swayimg.viewer.set_default_position
-function swi.viewer.reset() end
+	---Reset position and scale to default values.
+	---@see swayimg.viewer.set_default_scale
+	---@see swayimg.viewer.set_default_position
+	function swi.viewer.reset() end
 
----Show next frame from multi-frame image (animation).
----This function stops the animation.
----@return integer # Index of the currently shown frame
-function swi.viewer.next_frame() end
+	---Show next frame from multi-frame image (animation).
+	---This function stops the animation.
+	---@return integer # Index of the currently shown frame
+	function swi.viewer.next_frame() end
 
----Show previous frame from multi-frame image (animation).
----This function stops the animation.
----@return integer # Index of the currently shown frame
-function swi.viewer.prev_frame() end
+	---Show previous frame from multi-frame image (animation).
+	---This function stops the animation.
+	---@return integer # Index of the currently shown frame
+	function swi.viewer.prev_frame() end
 
----Stop animation.
-function swi.viewer.animation_stop() end
+	---Stop animation.
+	function swi.viewer.animation_stop() end
 
----Resume animation.
-function swi.viewer.animation_resume() end
+	---Resume animation.
+	function swi.viewer.animation_resume() end
 
----Flip image vertically.
-function swi.viewer.flip_vertical() end
+	---Flip image vertically.
+	function swi.viewer.flip_vertical() end
 
----Flip image horizontally.
-function swi.viewer.flip_horizontal() end
+	---Flip image horizontally.
+	function swi.viewer.flip_horizontal() end
 
----Rotate image.
----@param angle rotation_t Rotation angle
-function swi.viewer.rotate(angle) end
+	---Rotate image.
+	---@param angle rotation_t Rotation angle
+	function swi.viewer.rotate(angle) end
 
----Export currently displayed frame to PNG file.
----@param path string Path to the file
-function swi.viewer.export(path) end
+	---Export currently displayed frame to PNG file.
+	---@param path string Path to the file
+	function swi.viewer.export(path) end
 
----Add/replace/remove meta info for currently displayed image.
----@param key string Meta key name
----@param value string Meta value, empty value to remove the record
-function swi.viewer.set_meta(key, value) end
+	---Add/replace/remove meta info for currently displayed image.
+	---@param key string Meta key name
+	---@param value string Meta value, empty value to remove the record
+	function swi.viewer.set_meta(key, value) end
+end
 
 --------------------------------------------------------------------------------
 -- Slide show mode
@@ -266,6 +304,9 @@ swi.slideshow = {}
 --------------------------------------------------------------------------------
 
 ---@class swi.gallery : mode_base
+---Helper table for easier mappings for switching between images
+---@see swi.gallery.switch_image Equivalent via passing a parameter
+---@field go {[gdir_t]:function}
 ---@field aspect aspect_t Thumbnail aspect ratio
 ---@field thumb_size integer Thumbnail size in pixels
 ---@field padding_size integer Padding between thumbnails in pixels
@@ -282,6 +323,7 @@ swi.slideshow = {}
 swi.gallery = {}
 
 ---Select the next thumbnail from the gallery.
+---@see swi.gallery.go equivalent using named methods for easier mapping
 ---@param dir gdir_t Next thumbnail direction
 function swi.gallery.switch_image(dir) end
 

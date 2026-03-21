@@ -1,10 +1,12 @@
 v.default_scale = 'optimal'
 swi.on_window_resize(function()
-	if swi.mode == 'viewer' and type(v.scale) == 'string' then v.scale = v.default_scale end
+	if swi.mode == 'viewer' and type(v.scale) == 'string' then
+		swayimg.viewer.set_fix_scale(v.scale)
+	end
 end)
 
 swi.on_initialized(function()
-	if l.size() == 1 then l.add(h.current().path:match '.+/') end
+	if l.size() == 1 then l.add(l.get_current().path:match '.+/') end
 end)
 
 swi.overlay = false
@@ -15,7 +17,7 @@ t.foreground = 0xffffffff
 t.padding = 0
 t.line_spacing = 0.5
 t.size = 23
-t.status_timeout = 2
+t.status_timeout = 1
 t.enabled = false
 
 v.window_background = 0xff000000
@@ -36,17 +38,15 @@ g.cache_limit = 10000
 g.preload = true
 g.pstore = false
 
-g.text_tr = {}
-g.text_tl = { 'File: {name}', 'Image: {list.index}/{list.total}', 'Marked: 0' }
-l.marked.on_change(function(count)
-	local t = g.text_tl
-	t[#t] = 'Marked: ' .. count
-	g.text_tl = t
-end)
+g.text.topleft = { 'File: {name}' }
+g.text.topright = { 'Image: {list.index}/{list.total}', 'Marked: 0' }
+l.marked.on_change(
+	function(count) g.text.topright = { g.text.topright[1], 'Marked: ' .. count } end
+)
 
-v.text_tr = { '{list.index}/{list.total}' }
-v.text_br = { '{scale}' }
-v.text_bl = {}
+v.text.topright = { '{list.index}/{list.total}' }
+v.text.bottomright = { '{scale}' }
+v.text.bottomleft = {}
 v.on_image_change(function()
 	local i = v.get_image()
 	if i.path:match '%.RAF$' then
@@ -74,5 +74,30 @@ v.on_image_change(function()
 		t[#t + 1] = 'Rating: ' .. (h.format_exif(m, 'Exif.Image.Rating') or '0')
 	end
 
-	v.text_tl = t
+	v.text.topleft = t
 end)
+
+---@param name string
+local function cb(v, name)
+	if type(v) == 'number' then
+		v = string.format('%.2f', v)
+	elseif type(v) == 'table' then
+		local t = {}
+		for k, x in pairs(v) do
+			t[#t + 1] = ('[%s]=%s'):format(tostring(k), tostring(x))
+		end
+		v = ('{%s}'):format(table.concat(t, ', '))
+	end
+	t.set_status(
+		('%s%s set to: %s'):format(
+			name:sub(1, 1):upper(),
+			name:sub(2):gsub('_(.)', function(x) return ' ' .. x:upper() end),
+			v
+		)
+	)
+end
+swi.on_set('*', cb)
+t.on_set('*', cb)
+s.on_set('*', cb)
+v.on_set('*', cb)
+g.on_set('*', cb)

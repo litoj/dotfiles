@@ -73,6 +73,7 @@ function M.config()
 		kinds.File,
 		kinds.Folder,
 
+		kinds.EnumMember,
 		kinds.Variable,
 		kinds.Property,
 		kinds.Field,
@@ -83,7 +84,6 @@ function M.config()
 		kinds.Function,
 		kinds.Constructor,
 
-		kinds.EnumMember,
 		kinds.Constant,
 		kinds.Module,
 

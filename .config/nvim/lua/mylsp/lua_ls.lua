@@ -20,7 +20,6 @@ local profiles = {
 		workspace = {
 			library = {
 				'/usr/share/swayimg/swayimg.lua',
-				os.getenv 'HOME' .. '/.config/swayimg/api.lua',
 				os.getenv 'HOME' .. '/.config/swayimg/init.lua',
 			},
 		},

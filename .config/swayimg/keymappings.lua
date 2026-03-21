@@ -10,24 +10,15 @@ end
 do
 	-- TODO: what is freemove?
 	-- TODO: regulate the movement speed with a counter
-	amap('x', function() l.remove(h.current().path) end)
+	amap('x', function() l.remove(l.get_current().path) end)
 	amap({ 'q', '<Esc>' }, function() swi.exit(0) end)
 
 	-- ### Settings toggle
-	amap('u', function()
-		swi.antialiasing = not swi.antialiasing
-		t.set_status('Antialiasing: ' .. tostring(swi.antialiasing))
-	end)
+	amap('u', function() swi.antialiasing = not swi.antialiasing end)
 	amap('i', function() t.enabled = not t.enabled end)
-	amap('m', function() l.marked.set_current 'toggle' end)
-	amap('<C-=>', function()
-		t.size = t.size + 1
-		t.set_status('Font size: ' .. tostring(t.size))
-	end)
-	amap('<C-->', function()
-		t.size = t.size - 1
-		t.set_status('Font size: ' .. tostring(t.size))
-	end)
+	h.map(v, 'd', function() t.enabled = not t.enabled end)
+	amap('<C-=>', function() t.size = t.size + 1 end)
+	amap('<C-->', function() t.size = t.size - 1 end)
 
 	local function gen_rating(r)
 		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' "%" >/dev/null'
@@ -52,18 +43,18 @@ do
 
 	gmap('g', function() swi.mode = 'viewer' end)
 
-	gmap({ 'a', 'h', '<S-SMU>' }, h.ggo.left)
-	gmap({ 's', 'j' }, h.ggo.down)
-	gmap({ 'w', 'k' }, h.ggo.up)
-	gmap({ 'd', 'l', '<S-SMD>' }, h.ggo.right)
+	gmap({ 'a', 'h', '<S-SMU>' }, g.go.left)
+	gmap({ 's', 'j' }, g.go.down)
+	gmap({ 'w', 'k' }, g.go.up)
+	gmap({ 'd', 'l', '<S-SMD>' }, g.go.right)
 	gmap('<A-s>', 'dragon-drop -x -a %s')
-	gmap(' ', function()
+	gmap({ ' ', 'm' }, function()
 		l.marked.set_current 'toggle'
-		h.ggo.right()
+		g.go.right()
 	end)
-	gmap('<S- >', function()
+	gmap({ '<S- >', '<S-m>' }, function()
 		l.marked.set_current 'toggle'
-		h.ggo.left()
+		g.go.left()
 	end)
 	gmap('<S-Del>', function()
 		h.exec '$(which trash || echo rm) %s'
@@ -83,8 +74,6 @@ do
 	local function stime(factor)
 		-- round to 1/x sec steps
 		factor = math[factor < 1 and 'floor' or 'ceil'](s.timeout * factor * 4) / 4
-		s.timeout = factor
-		t.set_status(string.format('Delay: %.2f s', factor))
 	end
 
 	amap('<S-p>', function()
@@ -92,7 +81,6 @@ do
 			swi.mode = 'viewer'
 		else
 			swi.mode = 'slideshow'
-			stime(1)
 		end
 	end)
 
@@ -108,10 +96,12 @@ do
 
 	vmap('g', function() swi.mode = 'gallery' end)
 
-	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, h.vgo.prev)
-	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, h.vgo.next)
-	vmap('<Home>', h.vgo.first)
-	vmap('<End>', h.vgo.last)
+	vmap('m', function() l.marked.set_current 'toggle' end)
+
+	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
+	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
+	vmap('<Home>', v.go.first)
+	vmap('<End>', v.go.last)
 	vmap('c', function()
 		local p = swi.get_mouse_pos()
 		v.scale_centered(v.scale * 1.1, p.x, p.y)
@@ -121,14 +111,14 @@ do
 		v.scale_centered(v.scale / 1.1, p.x, p.y)
 	end)
 
-	vmap('h', h.vgo.left(5))
-	vmap('<S-SML>', h.vgo.left(2))
-	vmap('j', h.vgo.down(5))
-	vmap('<S-SMD>', h.vgo.down(2))
-	vmap('k', h.vgo.up(5))
-	vmap('<S-SMU>', h.vgo.up(2))
-	vmap('l', h.vgo.right(5))
-	vmap('<S-SMR>', h.vgo.right(2))
+	vmap('h', function() v.step.left(5) end)
+	vmap('<S-SML>', function() v.step.left(2) end)
+	vmap('j', function() v.step.down(5) end)
+	vmap('<S-SMD>', function() v.step.down(2) end)
+	vmap('k', function() v.step.up(5) end)
+	vmap('<S-SMU>', function() v.step.up(2) end)
+	vmap('l', function() v.step.right(5) end)
+	vmap('<S-SMR>', function() v.step.right(2) end)
 
 	vmap('r', function() v.rotate(90) end)
 	vmap('<S-r>', function() v.rotate(270) end)
@@ -151,10 +141,10 @@ do
 		v.default_scale = 'real'
 	end)
 	vmap('a', function() v.scale = 1 end)
-	vmap('<A-a>', function() v.default_scale = 'keep' end)
+	vmap('<A-a>', function() v.default_scale = 'keep_by_width' end)
 	vmap('<S-k>', function()
 		v.scale = 0.35
-		v.default_scale = 'keep'
+		v.default_scale = 'keep_by_width'
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
@@ -163,7 +153,7 @@ do
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()
 		v.scale = 2
-		v.default_scale = 'keep'
+		v.default_scale = 'keep_by_width'
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)

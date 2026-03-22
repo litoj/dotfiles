@@ -107,31 +107,16 @@ load() {
 }
 
 case "$1" in
-	vol)
+	vol | mic)
+		[[ $1 == vol ]] && local i=0 || local i=1
+
 		read -ra WP </tmp/my/wp
 		if [[ $2 == toggle ]]; then
-			wpctl set-mute ${WP[0]} "$2"
+			wpctl set-mute ${WP[i]} "$2"
 		else
-			wpctl set-volume ${WP[0]} "$2"
+			wpctl set-volume ${WP[i]} "$2"
 		fi
-		pkill -RTMIN+10 i3blocks
+		pkill -RTMIN+$((10 + i)) i3blocks
 		;;
-	mic)
-		read -ra WP </tmp/my/wp
-		if [[ $2 == toggle ]]; then
-			wpctl set-mute ${WP[1]} "$2"
-		else
-			wpctl set-volume ${WP[1]} "$2"
-		fi
-		pkill -RTMIN+11 i3blocks
-		;;
-	light) "${0%/*}/backlight" "${@:2}" ;;
-	battery) "${0%/*}/battery" "${@:2}" ;;
-	cpu) "${0%/*}/cpu" "${@:2}" ;;
-	kb)
-			swaymsg input type:keyboard xkb_switch_layout next
-			pkill -RTMIN+13 i3blocks
-		;;
-	theme) "${0%/*}/clock" $2 ;;
 	*) "$@" ;;
 esac

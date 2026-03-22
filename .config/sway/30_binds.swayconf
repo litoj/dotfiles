@@ -8,7 +8,7 @@ bindsym {
 	$Mod+$Alt+Shift+g gaps outer current minus 5
 	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
-	$Mod+$Alt+Shift+t exec $signal theme toggle
+	$Mod+$Alt+Shift+t exec $i3/clock toggle
 
 	$Mod+u exec $custombg set
 	$Mod+Shift+u exec DIRECTION=prev $custombg set
@@ -280,10 +280,10 @@ bindsym --release {
 mode $Exit {
 	bindsym {
 		c mode default, reload
-		e mode default, exec $signal cpu Powersave
-		a mode default, exec $signal cpu Auto
-		w mode default, exec $signal cpu Performance
-		t mode default, exec $signal cpu Test
+		e mode default, exec $i3/cpu Powersave
+		a mode default, exec $i3/cpu Auto
+		w mode default, exec $i3/cpu Performance
+		t mode default, exec $i3/cpu Test
 
 # NOTE: presentation / screen duplication mode
 		$Alt+p mode default, output * pos 0 0, output * res 1920x1080
@@ -302,7 +302,7 @@ mode $Exit {
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'
 		Shift+l mode default; exec xterm sudo bash -c 'efibootmgr -n 0004 && reboot'
 		Shift+b exit, exec systemctl reboot --firmware-setup
-		b mode default, exec $signal battery toggle
+		b mode default, exec $i3/battery toggle
 		Escape mode default
 	}
 }
@@ -322,10 +322,8 @@ bindsym {
 	Ctrl+Print exec xdg-open "Pictures/scrshot/$(ls -t Pictures/scrshot|head -n1)"
 
 # Keyboard layout toggle, manual
-	$Mod+n nop
-	$Alt+Escape nop
-	--release $Mod+n exec sleep 0.2 && $signal kb
-	--release $Alt+Escape exec sleep 0.2 && $signal kb
+	$Mod+n exec $i3/kb toggle
+	$Alt+Escape exec $i3/kb toggle
 
 # Change gamma, "redshift" manually - n for night
 	$Mod+$Alt+n exec wlsunset -l 50 -L 14.5 &
@@ -338,34 +336,34 @@ bindsym {
 	$Alt+Ctrl+Down output $d1 transform 180
 
 # Brightness
-	$Mod+b exec $signal light ^
-	$Mod+Shift+b exec $signal light v
-	XF86MonBrightnessUp exec $signal light ^
-	XF86MonBrightnessDown exec $signal light v
-	KP_Prior exec $signal light ^
-	KP_Next exec $signal light v
-	Shift+KP_Prior exec $signal light + 3
-	Shift+KP_Next exec $signal light - 2
+	$Mod+b exec $i3/backlignt ^
+	$Mod+Shift+b exec $i3/backlignt v
+	XF86MonBrightnessUp exec $i3/backlignt ^
+	XF86MonBrightnessDown exec $i3/backlignt v
+	KP_Prior exec $i3/backlignt ^
+	KP_Next exec $i3/backlignt v
+	Shift+KP_Prior exec $i3/backlignt + 3
+	Shift+KP_Next exec $i3/backlignt - 2
 
 # Audio / Volume
-	$Mod+$Alt+Shift+v exec $signal wp
-	$Mod+v exec $signal vol 5%+
-	$Mod+Shift+v exec $signal vol 5%-
-	$Mod+$Alt+v exec $signal vol toggle
-	$Mod+Ctrl+v exec $signal mic toggle
-	XF86AudioRaiseVolume exec $signal vol 5%+
-	XF86AudioLowerVolume exec $signal vol 5%-
-	Shift+XF86AudioRaiseVolume exec $signal mic 2%+
-	Shift+XF86AudioLowerVolume exec $signal mic 2%-
-	XF86AudioMute exec $signal vol toggle
-	XF86AudioMicMute exec $signal mic toggle
-	KP_Divide exec $signal vol 5%-
-	KP_Multiply exec $signal vol 5%+
-	Ctrl+KP_Divide exec $signal mic 2%-
-	Ctrl+KP_Multiply exec $signal mic 2%+
-	Shift+KP_Divide exec $signal vol toggle
-	Shift+KP_Multiply exec $signal mic toggle
-	$Alt+KP_Divide exec $signal wp
+	$Mod+$Alt+Shift+v exec $i3/signal wp
+	$Mod+v exec $i3/signal vol 5%+
+	$Mod+Shift+v exec $i3/signal vol 5%-
+	$Mod+$Alt+v exec $i3/signal vol toggle
+	$Mod+Ctrl+v exec $i3/signal mic toggle
+	XF86AudioRaiseVolume exec $i3/signal vol 5%+
+	XF86AudioLowerVolume exec $i3/signal vol 5%-
+	Shift+XF86AudioRaiseVolume exec $i3/signal mic 2%+
+	Shift+XF86AudioLowerVolume exec $i3/signal mic 2%-
+	XF86AudioMute exec $i3/signal vol toggle
+	XF86AudioMicMute exec $i3/signal mic toggle
+	KP_Divide exec $i3/signal vol 5%-
+	KP_Multiply exec $i3/signal vol 5%+
+	Ctrl+KP_Divide exec $i3/signal mic 2%-
+	Ctrl+KP_Multiply exec $i3/signal mic 2%+
+	Shift+KP_Divide exec $i3/signal vol toggle
+	Shift+KP_Multiply exec $i3/signal mic toggle
+	$Alt+KP_Divide exec $i3/signal wp
 }
 set $mpv playerctl --player=mpv
 set $info $mpv metadata --format
@@ -397,8 +395,8 @@ bindsym {
 	$Alt+KP_Down exec $mpv position 30-
 }
 bindgesture {
-	swipe:3:up exec $signal vol 1%+
-	swipe:3:right exec $signal vol 3%+
-	swipe:3:down exec $signal vol 1%-
-	swipe:3:left exec $signal vol 3%-
+	swipe:3:up exec $i3/signal vol 1%+
+	swipe:3:right exec $i3/signal vol 3%+
+	swipe:3:down exec $i3/signal vol 1%-
+	swipe:3:left exec $i3/signal vol 3%-
 }

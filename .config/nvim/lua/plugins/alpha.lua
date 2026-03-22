@@ -38,14 +38,15 @@ function M.config()
 
 			local file = val[2]
 			local cmd = function()
-				_G.disable_cwd = 1
-				if _G.protectWindow and path == file then -- dirs open NvimTree and discard current window
+				-- open manually because NvimTree opening via :e swallows current window (+bad cwd...)
+				if _G.protectWindow and path == file then
 					vim.api.nvim_set_current_buf(vim.g.old_buf)
-					vim.cmd.split()
+					vim.cmd.cd(path)
+					require('nvim-tree.api').tree.open()
+				else
+					vim.cmd.cd(path)
+					vim.cmd.edit(file)
 				end
-				vim.cmd.cd(path)
-				vim.cmd.edit(file)
-				_G.disable_cwd = nil
 			end
 
 			local hi = {

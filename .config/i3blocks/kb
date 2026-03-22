@@ -1,9 +1,57 @@
 #!/usr/bin/bash
 
-kb=$(swaymsg -t get_inputs -p | awk '/Active Keyboard Layout/{print $0; exit}')
-kb=(${kb##*': '})
+f=/tmp/my/kb
 
-TEXT=" ${kb::2}${kb[1]+"(${kb[1]:1:2})"}"
+load() {
+	layouts=()
+	local line
+	while read -r line; do
+		[[ $line == *, ]] && declare -gi idx=${line%,} || layouts+=("$line")
+	done < <(swaymsg -t get_inputs -r | awk '
+		$1 == "\"xkb_layout_names\":", /"$/ {
+			if ($0 ~ /\[/) { FS="\""; next }
+			print $2
+			if ($0 ~ /"$/) FS=" "
+		}
+		$1 == "\"xkb_active_layout_index\":" { print $2; exit }
+	')
 
-notify-send -a signal -h string:synchronous:kb "${TEXT,,}"
+	[[ -f $f ]] && declare -gi myIdx=$(<$f) || declare -gi myIdx=$idx
+}
+
+mk_text() {
+	local kb=(${layouts[$idx]})
+
+	TEXT=" ${kb::2}${kb[1]+"(${kb[1]:1:2})"}"
+}
+
+kb() {
+	load
+	if [[ $1 == toggle ]]; then
+		if ((idx != myIdx)); then # if kb setting out of sync, sync them from the beginning
+			swaymsg input type:keyboard xkb_switch_layout 0
+			idx=0
+		else
+			swaymsg input type:keyboard xkb_switch_layout next
+			((idx = (idx + 1) % ${#layouts[@]}))
+		fi &>/dev/null
+	fi
+
+	if [[ -z $button ]]; then
+		pkill -RTMIN+13 i3blocks
+	fi
+}
+
+if [[ $1 ]]; then
+	kb "$@"
+	exit
+elif [[ $button ]]; then
+	kb "toggle"
+else
+	load
+fi
+mk_text
+notify-send -a signal -h string:synchronous:kb "${TEXT,,}" &>/dev/null
+echo "$idx" >$f
+
 echo "${TEXT^^}"

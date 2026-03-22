@@ -9,7 +9,11 @@ function M.config()
 	nt.setup {
 		disable_netrw = true,
 		respect_buf_cwd = true,
-		update_focused_file = { enable = true, update_root = true, ignore_list = { 'term://' } },
+		update_focused_file = {
+			enable = true,
+			update_root = { enable = true },
+			ignore_list = { 'term://' },
+		},
 		sync_root_with_cwd = true,
 		filters = {
 			dotfiles = true,
@@ -51,8 +55,8 @@ function M.config()
 			map('-', api.node.navigate.parent_close)
 			map('_', api.tree.collapse_all)
 
-			map({ '<C-h>', '<BS>' }, api.tree.toggle_hidden_filter)
-			map('<C-g>', api.tree.toggle_gitignore_filter)
+			map({ '<C-h>', '<BS>' }, api.filter.dotfiles.toggle)
+			map('<C-g>', api.filter.git.ignored.toggle)
 			map('<F5>', api.tree.reload)
 			map({ 'n', '<C-n>' }, api.fs.create)
 			map({ 'D', '<Del>' }, api.fs.remove)

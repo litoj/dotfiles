@@ -2,7 +2,10 @@ v.default_scale = 'optimal'
 e.subscribe {
 	event = 'SwiEnter',
 	callback = function()
-		if l.size() == 1 then l.add(l.get_current().path:match '.+/') end
+		if l.size() == 1 then
+			l.adjacent = true
+			l.add(l.get_current().path:match '.+/')
+		end
 
 		e.subscribe {
 			event = 'OptionSet',

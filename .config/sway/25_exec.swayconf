@@ -1,5 +1,5 @@
-set $signal ~/.config/i3blocks/signal
-exec_always $signal load
+set $i3 ~/.config/i3blocks
+exec_always $i3/signal load
 set $lid ~/.config/sway/lidSwitch
 
 # set background

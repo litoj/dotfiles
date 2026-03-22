@@ -29,15 +29,15 @@ xkb_symbols "mk" {
     include "cz(basic)"
     name[Group1]= "Macedonian (Czech, phonetic)";
     
-    key <AE02> {[     Macedonia_dse,     Macedonia_DSE ]};
-    key <AE03> {[      Cyrillic_sha,      Cyrillic_SHA ]};
-    key <AE04> {[      Cyrillic_che,      Cyrillic_CHE ]};
-    key <AE05> {[     Cyrillic_dzhe,     Cyrillic_DZHE ]};
-    key <AE06> {[      Cyrillic_zhe,      Cyrillic_ZHE ]};
-    key <AE07> {[     Macedonia_gje,     Macedonia_GJE ]};
-    key <AE08> {[      Cyrillic_nje,      Cyrillic_NJE ]};
-    key <AE09> {[     Macedonia_kje,     Macedonia_KJE ]};
-    key <AE10> {[      Cyrillic_lje,      Cyrillic_LJE ]};
+    key <AE02> {[     Macedonia_dse      ]};
+    key <AE03> {[      Cyrillic_sha      ]};
+    key <AE04> {[      Cyrillic_che      ]};
+    key <AE05> {[     Cyrillic_dzhe      ]};
+    key <AE06> {[      Cyrillic_zhe      ]};
+    key <AE07> {[     Macedonia_gje      ]};
+    key <AE08> {[      Cyrillic_nje      ]};
+    key <AE09> {[     Macedonia_kje      ]};
+    key <AE10> {[      Cyrillic_lje      ]};
 
     key <AD02> {[       Cyrillic_yu,       Cyrillic_YU ]};
     key <AD03> {[       Cyrillic_ie,       Cyrillic_IE ]};

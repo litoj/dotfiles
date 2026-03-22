@@ -1,13 +1,46 @@
 v.default_scale = 'optimal'
-swi.on_window_resize(function()
-	if swi.mode == 'viewer' and type(v.scale) == 'string' then
-		swayimg.viewer.set_fix_scale(v.scale)
-	end
-end)
+e.subscribe {
+	event = 'SwiEnter',
+	callback = function()
+		if l.size() == 1 then l.add(l.get_current().path:match '.+/') end
 
-swi.on_initialized(function()
-	if l.size() == 1 then l.add(l.get_current().path:match '.+/') end
-end)
+		e.subscribe {
+			event = 'OptionSet',
+			pattern = '^swi%.?[^.]*%.[^.]*$', -- all main opt accesses
+			callback = function(state)
+				local v = state.data
+				if type(v) == 'number' then
+					v = string.format('%.2f', v)
+				elseif type(v) == 'table' then
+					return
+				end
+
+				local name = state.match:match '([^.]+%.[^.]+)$'
+				t.set_status(
+					('%s%s: %s'):format(
+						name:sub(1, 1):upper(),
+						name:sub(2):gsub('[_.](.)', function(x) return ' ' .. x:upper() end),
+						v
+					)
+				)
+			end,
+		}
+
+		return true
+	end,
+}
+e.subscribe {
+	event = 'WinResized',
+	mode = 'viewer',
+	callback = function()
+		if type(v.scale) == 'string' then swayimg.viewer.set_fix_scale(v.scale) end
+	end,
+}
+
+e.subscribe {
+	event = 'ShellCmdPost',
+	callback = function(state) t.set_status(state.data.out) end,
+}
 
 swi.overlay = false
 swi.antialiasing = false
@@ -40,65 +73,45 @@ g.pstore = false
 
 g.text.topleft = { 'File: {name}' }
 g.text.topright = { 'Image: {list.index}/{list.total}', 'Marked: 0' }
-l.marked.on_change(
-	function(count) g.text.topright = { g.text.topright[1], 'Marked: ' .. count } end
-)
+e.subscribe {
+	event = 'OptionSet',
+	pattern = 'swi.imagelist.marked.size',
+	callback = function(state) g.text.topright = { g.text.topright[1], 'Marked: ' .. state.data } end,
+}
 
 v.text.topright = { '{list.index}/{list.total}' }
 v.text.bottomright = { '{scale}' }
 v.text.bottomleft = {}
-v.on_image_change(function()
-	local i = v.get_image()
-	if i.path:match '%.RAF$' then
-		local o = tonumber(i.meta['Exif.Image.Orientation'])
-		v.set_meta('Exif.Image.Orientation', '0') -- to not repeatedly rotate
-		if o == 8 then
-			v.rotate(90)
-			v.scale = v.default_scale
-		elseif o == 6 then
-			v.rotate(270)
-			v.scale = v.default_scale
+e.subscribe {
+	event = 'ImgChange',
+	mode = 'viewer',
+	callback = function()
+		local i = v.get_image()
+		if i.path:match '%.RAF$' then
+			local o = tonumber(i.meta['Exif.Image.Orientation'])
+			v.set_meta('Exif.Image.Orientation', '0') -- to not repeatedly rotate
+			if o == 8 then
+				v.rotate(90)
+				v.scale = v.default_scale
+			elseif o == 6 then
+				v.rotate(270)
+				v.scale = v.default_scale
+			end
 		end
-	end
-	local t = {
-		'File: ' .. i.path:match '[^/]+$',
-		string.format('Size: %.1f MB', i.size / 1000000),
-		string.format('Res: %dx%d', i.width, i.height),
-	}
-	local m = i.meta
-	if m['Exif.Photo.ExposureTime'] then
-		t[#t + 1] = 'Exposure: ' .. h.format_exif(m, 'ExposureTime') .. ' s'
-		t[#t + 1] = 'ISO: ' .. h.format_exif(m, 'ISOSpeedRatings')
-		t[#t + 1] = 'FNumber: ' .. h.format_exif(m, 'FNumber')
-		t[#t + 1] = 'FL: ' .. h.format_exif(m, 'FocalLength') .. ' mm'
-		t[#t + 1] = 'Rating: ' .. (h.format_exif(m, 'Exif.Image.Rating') or '0')
-	end
-
-	v.text.topleft = t
-end)
-
----@param name string
-local function cb(v, name)
-	if type(v) == 'number' then
-		v = string.format('%.2f', v)
-	elseif type(v) == 'table' then
-		return
-		--[[ local t = {}
-		for k, x in pairs(v) do
-			t[#t + 1] = type(k) == 'string' and string.format('%s=%s',k,tostring(x)) or tostring(x)
+		local t = {
+			'File: ' .. i.path:match '[^/]+$',
+			string.format('Size: %.1f MB', i.size / 1000000),
+			string.format('Res: %dx%d', i.width, i.height),
+		}
+		local m = i.meta
+		if m['Exif.Photo.ExposureTime'] then
+			t[#t + 1] = 'Exposure: ' .. h.format_exif(m, 'ExposureTime') .. ' s'
+			t[#t + 1] = 'ISO: ' .. h.format_exif(m, 'ISOSpeedRatings')
+			t[#t + 1] = 'FNumber: ' .. h.format_exif(m, 'FNumber')
+			t[#t + 1] = 'FL: ' .. h.format_exif(m, 'FocalLength') .. ' mm'
+			t[#t + 1] = 'Rating: ' .. (h.format_exif(m, 'Exif.Image.Rating') or '0')
 		end
-		v = ('{%s}'):format(table.concat(t, ', ')) ]]
-	end
-	t.set_status(
-		('%s%s set to: %s'):format(
-			name:sub(1, 1):upper(),
-			name:sub(2):gsub('_(.)', function(x) return ' ' .. x:upper() end),
-			v
-		)
-	)
-end
-swi.on_set('*', cb)
-t.on_set('*', cb)
-s.on_set('*', cb)
-v.on_set('*', cb)
-g.on_set('*', cb)
+
+		v.text.topleft = t
+	end,
+}

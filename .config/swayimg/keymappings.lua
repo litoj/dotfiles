@@ -57,7 +57,7 @@ do
 		g.go.left()
 	end)
 	gmap('<S-Del>', function()
-		h.exec '$(which trash || echo rm) %s'
+		swi.exec '$(which trash || echo rm) %s'
 		local marked = l.marked.get()
 		for _, f in ipairs(marked) do
 			l.remove(f)
@@ -102,14 +102,6 @@ do
 	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
 	vmap('<Home>', v.go.first)
 	vmap('<End>', v.go.last)
-	vmap('c', function()
-		local p = swi.get_mouse_pos()
-		v.scale_centered(v.scale * 1.1, p.x, p.y)
-	end)
-	vmap('<S-c>', function()
-		local p = swi.get_mouse_pos()
-		v.scale_centered(v.scale / 1.1, p.x, p.y)
-	end)
 
 	vmap('h', v.step.left)
 	vmap('j', v.step.down)
@@ -144,16 +136,22 @@ do
 	vmap('<A-a>', function() v.default_scale = 'keep_by_size' end)
 	vmap('<S-k>', function()
 		v.scale = 0.35
-		v.default_scale = 'keep_by_width'
+		v.default_scale = 'keep'
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
-	vmap('<SMU>', function() v.scale = v.get_abs_scale() * 1.05 end)
-	vmap('<SMD>', function() v.scale = v.get_abs_scale() / 1.05 end)
+	vmap({ 'c', '<SMU>' }, function()
+		local p = swi.get_mouse_pos()
+		v.scale_centered(v.scale * 1.05, p.x, p.y)
+	end)
+	vmap({ '<S-c>', '<SMD>' }, function()
+		local p = swi.get_mouse_pos()
+		v.scale_centered(v.scale / 1.05, p.x, p.y)
+	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()
 		v.scale = 2
-		v.default_scale = 'keep'
+		v.default_scale = 'keep_by_width'
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)

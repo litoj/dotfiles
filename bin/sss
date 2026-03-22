@@ -125,7 +125,7 @@ define() {
 		opt=${defineParams[i]}
 		if [[ ! ${!opt} ]]; then # unspecified option
 			:
-		elif [[ -z ${defineParams[i + 2]} ]]; then # bool
+		elif [[ -z ${defineParams[i+2]} ]]; then # bool
 			SCRIPT_OPTS["$opt"]=${!opt}
 		elif [[ $opt == config ]]; then # string to load that file
 			local x
@@ -464,7 +464,7 @@ parseAction() {
 	declare -A opts=([h]=help [help]=help) # opt names → param map idx + special 'help' injection
 	declare -Ai args=()                    # idx → usage cnt
 	while (((i += 4) < sigN)); do
-		local sign=${sigs[i + 1]}
+		local sign=${sigs[i+1]}
 		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
 		[[ $sign != '$'? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
 		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # NOTE: '_'=no short, '$'=arg
@@ -492,7 +492,7 @@ parseAction() {
 	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
-		log Trace " - parsing ${optChain:+${optChain}[-${#arg}] }'$1'"
+		log Trace " - parsing ${optChain:+"${optChain}[-${#arg}] "}'$1'"
 		if [[ $optChain ]]; then # processing previously found shortopt chain
 			i=${opts["${arg::1}"]}
 			if [[ -z $i ]]; then
@@ -539,13 +539,13 @@ parseAction() {
 		[[ $i == help ]] && actions="$ACTION" help && exit 0
 
 		if [[ $i ]]; then # set option / named parameter
-			local varName=${sigs[$i]//-/_} matcher=${sigs[i + 2]}
+			local varName=${sigs[$i]//-/_} matcher=${sigs[i+2]}
 			if [[ $matcher ]]; then # requires arg
-				if [[ $optCnt == - && ${!varName+y} ]]; then
+				if [[ $optCnt == '-' && ${!varName+y} ]]; then
 					unset "$varName" # `+o` resets the option value - for config override
 					[[ ${args[$i]} ]] && args[$i]=-1
-				elif [[ ${arg+y} || ${1+y} ]] && argMatch "${arg-$1}"; then
-					if [[ ${sigs[i + 1]} == ?[?!] ]]; then
+				elif [[ $optCnt == '+' && (${arg+y} || ${1+y}) ]] && argMatch "${arg-$1}"; then
+					if [[ ${sigs[i+1]} == ?[?!] ]]; then
 						declare "$varName=${arg-$1}"
 						log Debug ".$varName = '${!varName}'"
 					else
@@ -570,10 +570,12 @@ parseAction() {
 						declare -i "$varName=${optCnt}1"
 						[[ $optCnt == + ]] && log Debug ".$varName = true" || log Debug ".$varName = false"
 					fi
+				elif [[ $optCnt == '-' ]]; then # option is already unset -> skip the option removal
+					[[ ${args[$i]} ]] && args[$i]=-1
 				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
 					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
 
-					[[ ${sigs[i + 1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
+					[[ ${sigs[i+1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
 					"${builder["$varName"]:=$(determinePicker "$matcher")}" "${sigs[@]:i:4}" || {
 						((${SCRIPT_OPTS['ignoreFailedPicker']} > 0)) && i=-1
@@ -617,14 +619,14 @@ parseAction() {
 			[[ $# -eq $actionArgFromEnd ]] && set -- "${1#-}" "${@:2}"
 
 			while ((posArg < sigN)); do
-				local sign=${sigs[posArg + 1]}
+				local sign=${sigs[posArg+1]}
 				if [[ $sign != '$'? || $1 == '--' ]]; then
 					posArg+=4
 					# when both posArgs accept same data this enforces next posArg
 					[[ $1 == '--' ]] && shift # also allows for skipping an otherwise required arg position
 					continue                  # this means '--' must be passed as an optval: --posArg='--'
 				fi
-				local varName=${sigs[$posArg]//-/_} matcher=${sigs[posArg + 2]}
+				local varName=${sigs[$posArg]//-/_} matcher=${sigs[posArg+2]}
 
 				if argMatch "$1"; then
 					args[$posArg]+=1              # update before posArg changes
@@ -668,7 +670,7 @@ parseAction() {
 	unset actionArgFromEnd posArg firstArg opts tmpArr _varName
 
 	while (((i += 4) < sigN)); do
-		local varName=${sigs[i]} sign=${sigs[i + 1]} matcher=${sigs[i + 2]}
+		local varName=${sigs[i]} sign=${sigs[i+1]} matcher=${sigs[i+2]}
 		((${args[$i]:-1} > 0)) && continue # opts don't have an entry, filled args > 0
 
 		# picker for optional args || arg required
@@ -867,7 +869,7 @@ printActionParams() {
 	i+=-4
 	while (((i += 4) < end)); do
 		local varName=$(caseToArg "${name[$i]}")
-		local sign=${name[i + 1]} regex=${name[i + 2]} help=${name[i + 3]}
+		local sign=${name[i+1]} regex=${name[i+2]} help=${name[i+3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
 			if [[ $sign == _? ]]; then
 				varName=--$varName

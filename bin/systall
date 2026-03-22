@@ -53,20 +53,16 @@ sysFiles() {
 		return 1
 	}
 
+	declare -A varExcl=()
+
 	if [[ ! -f /etc/hostname ]]; then
 		if [[ ! $hostname ]]; then
 			local hostname
 			pickHostname "${sysFilesParams[@]:0:4}"
 		fi
-
-		log Verbose ' - Saving hostname'
-		exec echo "$hostname" | exec sudo tee /etc/hostname >/dev/null
+	elif [[ ! $hostname ]]; then
+		varExcl['hostname']=1
 	fi
-
-	# disable beep noise on empty backspace
-	# disable bluetooth (bluetooth.service off by default, install bluez + bluetuith to use)
-	exec printf 'blacklist pcspkr\nblacklist btusb\n' |
-		exec sudo tee /etc/modprobe.d/blacklist.conf >/dev/null
 
 	if [[ $locale ]]; then
 		[[ $locale == *.???* ]] && local reg=$locale || reg="$locale.*\.UTF-8"
@@ -78,10 +74,12 @@ sysFiles() {
 		elif [[ $locale != $reg ]]; then
 			log Info " - Matched '$locale' to locale '$locales'"
 		fi
+		locale=$locales
 
-		printf "LANG=$locales\n" | exec sudo tee /etc/locale.conf >/dev/null
-		exec sudo sed -i "s/^#\($locales\)/\1/" /etc/locale.gen
+		exec sudo sed -i "s/^#\s*\($locale\)/\1/" /etc/locale.gen
 		exec sudo locale-gen
+	else
+		varExcl['locale']=1
 	fi
 
 	if [[ ! -f /etc/localtime ]]; then
@@ -90,51 +88,56 @@ sysFiles() {
 			pickTimezone "${sysFilesParams[@]:8:4}"
 		fi
 
-		log Verbose ' - Setting timezone'
 		exec sudo ln -sf /usr/share/zoneinfo/"$timezone" /etc/localtime
 	fi
 
 	declare -A regexes=()
-	local fileVar var
+	local f var
 	cd ../sys_files
-	for fileVar in *; do # initialize variable replacement sed expressions
-		regexes["$fileVar"]=""
+	for f in *; do # initialize variable replacement sed expressions
+		regexes["$f"]=""
 	done
 
-	while IFS=: read -ra fileVar; do # generate variable replacements
-		var=${fileVar[1]:2:-1}
+	local fileVarPair
+	while IFS=: read -ra fileVarPair; do # generate variable replacements
+		f=$fileVarPair
+		var=${fileVarPair[1]:2:-1} # cut the '{$' and '}'
+
+		dropFile() {
+			log Info " - Excluding '$f' from system files setup."
+			unset regexes["$f"]
+		}
+
+		[[ ${varExcl["$var"]} ]] && dropFile && continue
 
 		if [[ $exclude ]]; then
 			local expr
 			for expr in "${exclude[@]}"; do
-				if [[ $fileVar =~ $expr ]]; then
-					log Info " - Excluding '$fileVar' from system files setup."
-					unset regexes["$fileVar"]
-					continue 2
-				fi
+				[[ $fileWithVar =~ $expr ]] && dropFile && continue 2
 			done
 		fi
 
 		if [[ ${!var} ]]; then
-			log Verbose " - Replacing {\$$var} with ${!var} in ${fileVar[0]}"
+			log Verbose " - Replacing {\$${var}} with ${!var} in ${f}"
 		else
-			log Error " - Error processing $fileVar - \$$var not found"
+			log Error " - Error processing $f - \$${var} not found"
 		fi
 
-		regexes["$fileVar"]+=";s/${fileVar[1]/'$'/'\$'}/${!var}/g"
+		regexes["$f"]+=";s/{\\\$${var}}/${!var}/g"
 	done < <(grep -o '{\$\w\+}' *)
 
-	for var in "${!regexes[@]}"; do # put template system files to their locations
-		fileVar="/${var//-/\/}"
-		exec mkdir -p "${fileVar%/*}"
-		if [[ ${regexes["$var"]} ]]; then
-			if [[ ${regexes["$var"]} != */root/g* ]]; then
-				exec sed "${regexes["$var"]:1}" "$var" | exec sudo tee "$fileVar" >/dev/null
+	local freal
+	for f in "${!regexes[@]}"; do # put template system files to their locations
+		freal="/${f//-/\/}"
+		sudo mkdir -p "${freal%/*}"
+		if [[ ${regexes["$f"]} ]]; then
+			if [[ ${regexes["$f"]} != */root/g* ]]; then
+				exec sed "${regexes["$f"]:1}" "$f" | exec sudo tee "$freal" >/dev/null
 			else
 				log Warn ' - Autologin setup forbids using a root account - skipping.'
 			fi
 		else
-			exec sudo cp "$var" "$fileVar"
+			exec sudo cp "$f" "$freal"
 		fi
 	done
 	cd "$mainDir"

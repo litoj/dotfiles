@@ -15,8 +15,11 @@ local api_conv = {}
 ---Only reacts to user setting the variable
 ---@param idx string|'*' name of the variable to listen for getting set ('*' for all)
 --- - use `nil` to register for any variable change
----@param cb fun(val,idx:string):(boolean?) Handler, return true to unregister
-function api_conv.on_set(idx, cb) end
+---@param cb? fun(val,idx:string):(boolean?) Handler, return true to unregister
+--- - pass in `nil` to deregister the hook of given `id`
+---@param id string? optional identifier to be able to manually deregister the function
+---@return integer|string id
+function api_conv.on_set(idx, cb, id) end
 
 --------------------------------------------------------------------------------
 -- Main application class
@@ -42,7 +45,18 @@ function api_conv.on_set(idx, cb) end
 ---@field dnd_button string
 swi = {}
 
+---Execute a shell command in sync.
+---Escape sequences:
+--- - `%`: current file unquoted
+--- - `%f`: current file quoted with singlequotes
+--- - `%s`: all marked files or current file quoted with singlequotes
+--- - `%%`: normal percentage sign (`%`)
+---@param cmd string
+---@return string stdout
+function swi.exec(cmd) end
+
 ---Exit from application.
+---NOTE: exits only if all SwiLeavePre hooks deregister!
 ---@param code? integer Program exit code, `0` by default
 function swi.exit(code) end
 
@@ -63,19 +77,72 @@ function swi.get_window_size() end
 ---@param height integer Height of the window in pixels
 function swi.set_window_size(width, height) end
 
----Add a callback function called when main window is resized.
----@param cb fun():(boolean?) Handler, return true to unregister
-function swi.on_window_resize(cb) end
+--- Event loop processing
 
----Add a callback function called when all subsystems have been initialized.
----@param cb fun():(boolean?) Handler, return true to unregister
-function swi.on_initialized(cb) end
+---@alias event_name_t
+---| "ImgChangePre" # just before selecting a different image, data: old image
+---| "ImgChange" # after selected image has changed, data: new image
+---| "OptionSet" # after setting any option in the api, match: opt object path, data: opt value
+---| "ShellCmdPost" # after swi.exec, data: {[cmd],[out]}
+---| "ModeChanged" # when mode is changed, match: active mode
+---| "WinResized" # when a window is resized, data: new size
+---| "SwiEnter" # just after loading config and initializing imagelist
+---| "SwiLeavePre" # before exiting swayimg - hooks for given statuscode must deregister to exit
+---| "Signal" # USR1 or USR2 received by swayimg
+---| "NewHook" # when a hook gets subscribed, match: event, data: hook config
+---| "User" # custom user-emitted/triggered signaling
+
+---@class event_cfg
+---@field event event_name_t
+---@field match? string value the hooks should match against - describes the payload
+---@field data any the object in observation
+
+---@class event_state: event_cfg
+---@field mode appmode_t
+---@field match string match of the pattern
+
+---@class swi.eventloop.subscribe.opts
+---@field event event_name_t|event_name_t[]
+---@field mode? appmode_t|appmode_t[]
+---@field group? string
+---Simple string to match directly, luapat,
+---or negated simple match ("!plainstr") to forbid that match
+---@field pattern? string|string[]
+---@field callback fun(state:event_state):(boolean?)
+
+---@alias hook_id table
+
+---@class swi.eventloop.filter.opts
+---@field event? event_name_t|event_name_t[]
+---@field id? hook_id
+---@field group? string|string[]
+---@field mode? appmode_t|appmode_t[]
+---@field match? string|string[]
+
+---Event loop processor
+---@class swi.eventloop
+swi.eventloop = {}
+
+---@param f swi.eventloop.filter.opts
+function swi.eventloop.unsubscribe(f) end
+
+---@param f? swi.eventloop.filter.opts
+---@return swi.eventloop.subscribe.opts[]
+function swi.eventloop.get_subscribed(f) end
+
+---@param state event_cfg
+function swi.eventloop.trigger(state) end
+
+---@param hook swi.eventloop.subscribe.opts
+---@return hook_id id that can be used to remove the hook
+function swi.eventloop.subscribe(hook) end
 
 --------------------------------------------------------------------------------
 -- Image list
 --------------------------------------------------------------------------------
 
 ---Image list
+---Changes to the contents get emitted as OptionSet(`swi.imagelist.size`)
 ---@class swi.imagelist: api_conv
 ---@field order order_t Image list sort order
 ---@field reverse boolean Reverse the sort order
@@ -97,13 +164,16 @@ function swi.imagelist.get() end
 
 ---Add entry to the image list.
 ---@param path string Path to add
-function swi.imagelist.add(path) end
+---@param silent true? whether to supress emmiting size change event
+function swi.imagelist.add(path, silent) end
 
 ---Remove entry from the image list.
 ---@param path string Path to remove
-function swi.imagelist.remove(path) end
+---@param silent true? whether to supress emmiting size change event
+function swi.imagelist.remove(path, silent) end
 
 ---Helper for working with marks on images
+---Changes to the size get emitted as OptionSet(`swi.imagelist.marked.size`)
 ---@class swi.imagelist.marked
 swi.imagelist.marked = {}
 
@@ -117,12 +187,8 @@ function swi.imagelist.marked.get() end
 
 ---Toggle the marked state of the current entry.
 ---@param state boolean|'toggle'
----@param silent true? should the change call no hooks
+---@param silent true? whether to supress emmiting size change event
 function swi.imagelist.marked.set_current(state, silent) end
-
----Register a hook for changes in the number of marked images
----@param cb fun(mark_count:integer):(boolean?) Handler, return true to unregister
-function swi.imagelist.marked.on_change(cb) end
 
 --------------------------------------------------------------------------------
 -- Text overlay layer
@@ -163,20 +229,27 @@ function swi.text.set_status(status) end
 ---@field bottomright text_template_t[] Text layer scheme for bottom-right corner
 
 ---Base class providing text overlay layout fields shared by all display modes.
----@class mode_base: swayimg_appmode, api_conv
+---@class mode_base: api_conv
 ---@field text mode_base.text access to setting the overlay fields/indexes
 ---@field mark_color integer Mark icon color in ARGB format
 local mode_base = {}
 
+---Remove all existing key/mouse/signal bindings.
+function mode_base.bind_reset() end
+
 ---Map a keyboard or mouse event to an action.
 ---@param bind string 1 or more mouse or keyboard events to map - `Alt+s`, etc.
----@param cb fun() callback function to run
-function mode_base.map(bind, cb) end
+---@param fn fun() callback function to run
+---@param desc string? optional description of the action
+function mode_base.map(bind, fn, desc) end
 
----Bind the signal event to a handler.
----@param signal string Signal name (`USR1`, `USR2`, etc.)
----@param cb fun():(boolean?) Handler, return true to unregister
-function mode_base.on_signal(signal, cb) end
+---@class mapping_cfg
+---@field fn function the action that runs on the binding activation
+---@field src string where was the binding defined
+---@field desc? string optional description of the action
+
+---@return table<string,mapping_cfg>
+function mode_base.get_mapped() end
 
 --------------------------------------------------------------------------------
 -- Viewer mode
@@ -214,18 +287,20 @@ function mode_base.on_signal(signal, cb) end
 ---@class swi.viewer : mode_base
 ---Helper table for easier mappings for switching between images
 ---@see swi.viewer.switch_image Equivalent via passing a parameter
----@field go {[vdir_t]:function}
 ---@field step swi.viewer.step Helper table for easier mappings for moving around the image
+---Helper table for easier mappings for switching between images
+---@see swi.viewer.switch_image Equivalent via passing a parameter
+---@field go {[vdir_t]:function}
 ---@field default_scale default_scale_t Default scale applied to newly opened images
 ---@field scale one_time_scale_t|number Scale of the image as a preset or absolute value
 ---@field default_position fixed_position_t Default position applied to newly opened images
 ---Position of the image relative to the position of the window.
+---This is the viewport approach!
 ---Example: ←↑ corner of the image is outside the window -> `x,y<0`
 ---@field position fixed_position_t|{x:integer,y:integer}
 ---@field window_background integer|bkgmode_t Window background: solid ARGB color or fill mode
 ---Background color or pattern for transparent images (ARGB)
 ---@field image_background integer|checkerboard
----@field freemove boolean Free move mode TODO: needs a more detailed explanation
 ---@field loop boolean Image list loop mode
 ---@field preload_limit integer Number of images to preload in a separate thread
 ---@field history_limit integer Number of previously viewed images to keep in cache

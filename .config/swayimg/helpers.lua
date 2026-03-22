@@ -34,40 +34,12 @@ local function transform_key(bind)
 	return bind
 end
 
--- TODO: how to make stderr appear? 2>&1 doesn't work
----Execute a command + print its output.
----Escape sequences:
---- - `%`: current file unquoted
---- - `%f`: current file quoted with singlequotes
---- - `%s`: all marked files or current file quoted with singlequotes
---- - `%%`: normal percentage sign (`%`)
----@param cmd string
-function M.exec(cmd)
-	cmd = cmd
-		:gsub('([^%%])%%f', function(a) return string.format("%s'%s'", a, l.get_current().path) end)
-		:gsub('([^%%])%%s', function(a)
-			local s = table.concat(l.marked.get(), "' '")
-			return string.format("%s'%s'", a, #s > 0 and s or l.get_current().path)
-		end)
-		:gsub(
-			'([^%%])%%([^%%])',
-			function(a, b) return string.format('%s%s%s', a, l.get_current().path, b) end
-		)
-		:gsub('%%%%', '%%')
-
-	local p = io.popen(cmd, 'r')
-	if not p then error('invalid command: ' .. cmd) end
-	local out = p:read '*a'
-	p:close()
-	swi.text.set_status(out)
-end
-
 ---@param bind string|string[]
 ---@param cb string|function shellcmd to execute or callback
 function M.map(api, bind, cb)
 	if type(cb) == 'string' then
 		local cmd = cb
-		cb = function() M.exec(cmd) end
+		cb = function() swi.exec(cmd) end
 	end
 
 	for _, b in ipairs(type(bind) == 'table' and bind or { bind }) do

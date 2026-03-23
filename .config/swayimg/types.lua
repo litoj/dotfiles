@@ -1,5 +1,7 @@
 ---@meta swi
 
+---NOTE: default bindings are not overriden and therefore do not trigger our eventloop
+
 ---@class override
 ---@field get? fun(self:api_conv,idx:string):(unknown)
 ---@field set? fun(val:unknown,self:api_conv,idx:string)
@@ -30,6 +32,7 @@ function api_conv.on_set(idx, cb, id) end
 ---@field mode appmode_t Which mode is the application in
 ---@field title string Window title text
 ---@field antialiasing boolean Enable/disable antialiasing
+---@field exif_orientation boolean Enable or disable changing orientation based on EXIF
 ---Enable or disable window decoration (title, border, buttons).
 ---Available only in Wayland, the corresponding protocol must be
 ---supported by the composer.
@@ -84,7 +87,7 @@ function swi.set_window_size(width, height) end
 ---| "ImgChange" # after selected image has changed, data: new image
 ---| "OptionSet" # after setting any option in the api, match: opt object path, data: opt value
 ---| "ShellCmdPost" # after swi.exec, data: {[cmd],[out]}
----| "ModeChanged" # when mode is changed, match: active mode
+---| "ModeChanged" # match: new mode, mode: old mode
 ---| "WinResized" # when a window is resized, data: new size
 ---| "SwiEnter" # just after loading config and initializing imagelist
 ---| "SwiLeavePre" # before exiting swayimg - hooks for given statuscode must deregister to exit
@@ -127,7 +130,7 @@ swi.eventloop = {}
 function swi.eventloop.unsubscribe(f) end
 
 ---@param f? swi.eventloop.filter.opts
----@return swi.eventloop.subscribe.opts[]
+---@return table<hook_id,swi.eventloop.subscribe.opts>
 function swi.eventloop.get_subscribed(f) end
 
 ---@param state event_cfg

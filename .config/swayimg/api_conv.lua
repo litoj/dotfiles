@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-doc-field
 local _s = swayimg -- local reference; avoids repeated global lookups
 
 do
@@ -27,6 +28,7 @@ do
 		end
 	end
 
+	---@diagnostic disable-next-line: duplicate-set-field
 	function _G.tostring(x)
 		if type(x) == 'table' then return tbl_cont(x, '  ') end
 		return ts(x)
@@ -134,7 +136,7 @@ do
 
 	function evloop.get_subscribed(f)
 		local t = {}
-		apply_filtered(f, function(h, id) t[id] = h end)
+		apply_filtered(f or {}, function(h, id) t[id] = h end)
 		return t
 	end
 
@@ -265,7 +267,7 @@ local function mode_overrides(api, name, extend)
 		pattern = 'ImgChange',
 		callback = function()
 			api.on_image_change(
-				function() evloop.trigger { event = 'ImgChange', data = lazy(api.get_image) } end
+				function() evloop.trigger { event = 'ImgChange', mode = name, data = lazy(api.get_image) } end
 			)
 			return true
 		end,
@@ -535,10 +537,18 @@ end)
 _G.swi = proxy(nil, {
 	eventloop = evloop,
 
+	mode = {
+		set = function(v)
+			local m = _s.get_mode()
+			_s.set_mode(v)
+			evloop.trigger { event = 'ModeChanged', mode = m, match = v }
+		end,
+	},
+
 	exit = function(code)
 		local ev = { event = 'SwiLeavePre', match = tostring(code), data = code }
 		evloop.trigger(ev)
-		if not evloop.get_subscribed(ev) then _s.exit(code) end
+		if not next(evloop.get_subscribed(ev)) then _s.exit(code) end
 	end,
 
 	-- TODO: how to make stderr appear? 2>&1 doesn't work

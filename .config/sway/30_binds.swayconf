@@ -336,14 +336,14 @@ bindsym {
 	$Alt+Ctrl+Down output $d1 transform 180
 
 # Brightness
-	$Mod+b exec $i3/backlignt ^
-	$Mod+Shift+b exec $i3/backlignt v
-	XF86MonBrightnessUp exec $i3/backlignt ^
-	XF86MonBrightnessDown exec $i3/backlignt v
-	KP_Prior exec $i3/backlignt ^
-	KP_Next exec $i3/backlignt v
-	Shift+KP_Prior exec $i3/backlignt + 3
-	Shift+KP_Next exec $i3/backlignt - 2
+	$Mod+b exec $i3/backlight ^
+	$Mod+Shift+b exec $i3/backlight v
+	XF86MonBrightnessUp exec $i3/backlight ^
+	XF86MonBrightnessDown exec $i3/backlight v
+	KP_Prior exec $i3/backlight ^
+	KP_Next exec $i3/backlight v
+	Shift+KP_Prior exec $i3/backlight + 3
+	Shift+KP_Next exec $i3/backlight - 2
 
 # Audio / Volume
 	$Mod+$Alt+Shift+v exec $i3/signal wp

@@ -56,6 +56,7 @@ t.size = 23
 t.status_timeout = 1
 t.enabled = false
 
+swi.exif_orientation = false
 v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
 v.history_limit = 5

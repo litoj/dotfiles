@@ -20,7 +20,7 @@ local profiles = {
 		workspace = {
 			library = {
 				'/usr/share/swayimg/swayimg.lua',
-				os.getenv 'HOME' .. '/.config/swayimg/init.lua',
+				-- os.getenv 'HOME' .. '/.config/swayimg/',
 			},
 		},
 	},
@@ -29,10 +29,19 @@ local profiles = {
 return {
 	---@param client vim.lsp.Client
 	on_attach = function(client, _)
-		local u = require 'manipulator.utils'
+		local extend = require('manipulator.utils').tbl_inner_extend
 		for pattern, profile in pairs(profiles) do
 			if client.root_dir:find(pattern) then
-				u.tbl_inner_extend('keep', (client.settings or client.config.settings).Lua, profile, true)
+				local t = extend('keep', (client.settings or client.config.settings).Lua, profile, true)
+				local u = {}
+				for _, v in ipairs(t.workspace.library) do
+					u[v] = 1
+				end
+				local l = {}
+				t.workspace.library = l
+				for k, _ in pairs(u) do
+					l[#l + 1] = k
+				end
 			end
 		end
 	end,

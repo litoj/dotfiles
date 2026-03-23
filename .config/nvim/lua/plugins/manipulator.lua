@@ -12,6 +12,7 @@ function M.config()
 	local m = require 'manipulator'
 	local RM = m.RM
 	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })
+
 	m.setup { -- TODO: make input window repeatable (macro renaming)
 		-- debug = 3,
 		batch = {
@@ -40,7 +41,7 @@ function M.config()
 				},
 			},
 
-			presets = { -- TODO: create MOD for lookahead+lookbehind
+			presets = {
 				with_docs = {
 					types = {
 						inherit = 'with_docs',
@@ -86,6 +87,44 @@ function M.config()
 
 	local mcp = m.call_path
 	local ctc = mcp.ts.current -- callpath ts current
+
+	-- overriding default paste behaviour to be better suited for insert mode
+	local function paste(after)
+		local type = vim.fn.getregtype(vim.v.register)
+		if type:sub(1, 1) == '\022' then
+			vim.api.nvim_input('"' .. vim.v.register .. (after and 'p' or 'P'))
+			return
+		end
+
+		local r, is_visual = m.region.current { shift_mode = false }
+		local mode = vim.fn.mode()
+		local text = vim.fn.getreg(vim.v.register)
+		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
+		if type == 'V' then text = text:gsub('\n$', '') end
+
+		if is_visual then
+			r:set_reg { register = 'd', type = type }
+			vim.api.nvim_feedkeys('\027', 'n', false)
+			if mode == 'v' then r = r:paste { text = '' } end
+		else
+			r.range[3] = vim.fn.foldclosedend '.' - 1
+			if r.range[3] < 0 then
+				r.range[3] = r.range[1]
+			else
+				r.range[1] = r.range[3]
+			end
+		end
+
+		r = r:paste {
+			text = text,
+			linewise = type == 'V',
+			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
+		}
+		if mode == 'i' and after and type == 'v' then r.range[4] = r.range[4] + 1 end
+		r:jump { inherit = false, shift_mode = 1, end_ = type == 'v' and (after or mode == 'n') }
+	end
+	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
+	map('i', '<C-S-V>', mcp:new(false)[paste].fn)
 
 	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
 	map({ '', 'i' }, '<A-x>', tsq.fn)
@@ -252,43 +291,5 @@ function M.config()
 	mapAll('assignment', { 'assignment_statement' })
 	mapAll('condition', { '^if', '^else', '^switch', '^case' })
 	mapAll('loop', { '^for', '^while', 'do_statement' })
-
-	-- TODO: fix pasting insert at EOL
-	-- overriding default paste behaviour to be better suited for insert mode
-	local function paste(after)
-		local type = vim.fn.getregtype(vim.v.register)
-		if type:sub(1, 1) == '\022' then
-			vim.api.nvim_input('"' .. vim.v.register .. (after and 'p' or 'P'))
-			return
-		end
-
-		local r, is_visual = m.region.current { shift_mode = false }
-		local mode = vim.fn.mode()
-		local text = vim.fn.getreg(vim.v.register)
-		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
-		if type == 'V' then text = text:gsub('\n$', '') end
-
-		if is_visual then
-			r:set_reg { register = 'd', type = type }
-			vim.api.nvim_feedkeys('\027', 'n', false)
-			if mode == 'v' then r = r:paste { text = '' } end
-		else
-			r.range[3] = vim.fn.foldclosedend '.' - 1
-			if r.range[3] < 0 then
-				r.range[3] = r.range[1]
-			else
-				r.range[1] = r.range[3]
-			end
-		end
-
-		r = r:paste {
-			text = text,
-			linewise = type == 'V',
-			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
-		}
-		r:jump { inherit = false, end_ = type == 'v' and (after or mode == 'n') }
-	end
-	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
-	map('i', '<C-S-V>', mcp:new(false)[paste].fn)
 end
 return M

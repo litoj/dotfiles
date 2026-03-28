@@ -99,8 +99,12 @@ if [[ -z $quality ]]; then
 	quality=$(printf '%s\n' ${qualOpts[@]} | rofi -dmenu -p Quality)
 	(($?)) && exit 0
 
-	[[ $quality == [0-9]* || ${presets[$quality]} ]] &&
-		quality=${presets[$quality]:-bv*[height=$quality][vcodec!*=av[0-9]]/bv*[height=$quality],ba}
+	if [[ $quality == [0-9]* ]]; then
+		((quality = quality * 16 / 9))
+		quality=bv*[width=$quality][vcodec!*=av[0-9]]/bv*[width=$quality],ba
+	elif [[ ${presets[$quality]} ]]; then
+		quality=${presets[$quality]}
+	fi
 fi
 
 mpv --ytdl-format="$quality" "$url" --no-terminal &

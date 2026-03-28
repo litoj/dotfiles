@@ -16,7 +16,7 @@ case "$KIND" in
 		}
 		try @rawPreview .RAF
 		# resize images with config picker
-		try 'mom -DC resize --rename --' +image .jpeg .jpg .png .webp .tiff .bmp
+		try 'mom -D --config-picker resize --rename --' +image .jpeg .jpg .png .webp .tiff .bmp
 		;;
 	renameOrRawToJPG)
 		rawToJPG() {

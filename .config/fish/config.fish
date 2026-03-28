@@ -162,8 +162,8 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
 	export TEXMFHOME=$cache/texlive2020
-	export QT_QPA_PLATFORMTHEME=qt5ct RADV_PERFTEST=video_decode
-	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland"
+	export QT_QPA_PLATFORMTHEME=qt5ct QT_QPA_PLATFORM=wayland RADV_PERFTEST=video_decode
+	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland
 	export PATH="$HOME/.pyenv/shims:$PATH"
 	WLR_RENDERER=vulkan sway &>/dev/null < /dev/null # to disable stdin and not cause term apps to open in tty
 	killall -15 ssh-agent

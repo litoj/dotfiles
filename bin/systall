@@ -45,6 +45,7 @@ sysFilesParams=(
 	locale 'l?' '[0-9A-Za-z_.-]+' 'Set locale by prefix'
 	timezone 't?' '[A-Za-z/]' 'Set timezone to city (`Europe/Prague` etc.)'
 	exclude 'E*' '.+' 'Regex for excluding files from copying to system locations'
+	symlink ' ?' '' 'Link files without variables (makes root files user-modifiable!)'
 )
 declare -A sysFilesBuilder=([hostname]=pickHostname [locale]=pickLocale [timezone]=pickTimezone)
 sysFiles() {
@@ -136,6 +137,8 @@ sysFiles() {
 			else
 				log Warn ' - Autologin setup forbids using a root account - skipping.'
 			fi
+		elif ((symlink)); then
+			exec sudo ln -s "$f" "$freal"
 		else
 			exec sudo cp "$f" "$freal"
 		fi

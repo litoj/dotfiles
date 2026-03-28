@@ -97,25 +97,28 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 [[ -t 0 && -t 1 && -t 2 ]] && SCRIPT_OPTS[color]=1
 [[ -t 0 ]] || SCRIPT_OPTS[guiPicker]=1 SCRIPT_OPTS[argPicker]=1
 
+log_name_match=${LOG_NAMES[*]}
+
 actionInfo define D 'set script-processing options'
 defineParams=(
-	tui 'T?' '' 'Enter TUI after CLI is parsed (specify twice to add params to called action in tui)'
+	tui 'T?' '' 'Enter TUI after CLI is parsed (-TT for enabling param selection)'
 	dryRun 'D?' '' 'Disable actual commands execution'
-	color '_?' '' 'Colorize output (default=true when not redirected)'
+	color 'C?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
        or \`+c\` to unload all configs (default='~/.config/${0/*\//}.conf.sh')"
 	guiPicker 'G?' '' 'Use GUI pickers (default=true when stdin is missing)'
 	argPicker 'A?' '' 'Enable arg picker (default=true when stdin is missing)'
 	optArgPicker 'O?' '' 'Enable picker for option arguments (default=true)'
 	ignoreFailedPicker 'I?' '' 'Discard option when picker failed instead of exiting'
-	configPicker 'C?' '' 'Use config from `<ACTION>_PRESET` or pick one from `<action>Presets` map'
-	freePathNumberReuse 'N?' '' 'Increment numbers in paths without appending (default=0)'
+	configPicker ' ?' '' 'Run actions with `<ACTION>_PRESET` or pick from `<action>Presets` map'
+	freePathNumberReuse ' ?' '' 'Increment numbers in supplied paths instead of appending _1'
 	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
-	tmpLogLvl 'L?' '([0-9]+|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
-	logLvl 'l?' '([0-9]+|[A-Za-km-z]+)?'
+	tmpLogLvl 'L?' '([0-9]|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
+	logLvl 'l?' "([0-9]+|${log_name_match// /|})?"
 	"Depth of logging, -lll=-l3…\
  (default=${LOG_NAMES[${SCRIPT_OPTS['logLvl']}]}=${SCRIPT_OPTS['logLvl']})"
 )
+unset log_name_match
 defineParams+=(logLvl '$?' "${defineParams[@]:0-2}")
 [[ $DEBUG ]] && SCRIPT_OPTS[logLvl]=${LOG_LEVELS["${DEBUG:-x}"]:-${DEBUG}}
 define() {
@@ -467,7 +470,7 @@ parseAction() {
 		local sign=${sigs[i+1]}
 		((${#sign} == 2)) || log Fatal "Params[$((i + 1))] should contain signature, but has '$sign'!"
 		[[ $sign != '$'? || ${SSS_OPTS['argAsLongOpt']} -gt 0 ]] && opts["${sigs[$i]}"]="$i"
-		[[ $sign != [_$]? ]] && opts["${sign::1}"]=$i # NOTE: '_'=no short, '$'=arg
+		[[ $sign != [\ $]? ]] && opts["${sign::1}"]=$i # NOTE: ' '=no short, '$'=arg
 		[[ $sign == ?[+!] || $sign == '$'? ]] && posArg=${posArg:-$i} args[$i]=0
 	done
 	declare -i posArg="${posArg:-$sigN}"
@@ -871,7 +874,7 @@ printActionParams() {
 		local varName=$(caseToArg "${name[$i]}")
 		local sign=${name[i+1]} regex=${name[i+2]} help=${name[i+3]}
 		if [[ $sign == [^$][?*!+] ]]; then # option/non-positional arg
-			if [[ $sign == _? ]]; then
+			if [[ $sign == ' '? ]]; then
 				varName=--$varName
 			else
 				# varName="-${sign::1}, --$varName"

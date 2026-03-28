@@ -103,7 +103,7 @@ modmap {
 
 local function build(quick)
 	vim.cmd.w()
-	local cmd = vim.fn.glob '*.sln' == '' and 'dotnet build -r linux-64' or 'dotnet build'
+	local cmd = vim.fn.glob '*.sln*' == '' and 'dotnet build -r linux-64' or 'dotnet build'
 	vim.cmd[quick and '!' or 'term'](cmd)
 	if quick and vim.v.shell_error == 0 then vim.api.nvim_input '\027' end
 end
@@ -113,7 +113,7 @@ map({ 'n', 'i' }, '<A-r>', function() build(true) end)
 --- requires coroutine
 ---@param sources 'src'|'test'|'{src,test}'
 function proj.pick(prompt, sources)
-	local root = fth.findDirOf '.sln$'
+	local root = fth.findDirOf '%.sln.?$'
 	if root == '' then return vim.notify 'No solution file found' end
 
 	local projects = vim.split(vim.fn.glob(root .. sources .. '/*/'), '\n', { plain = true })

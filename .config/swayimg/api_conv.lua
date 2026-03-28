@@ -500,10 +500,9 @@ local function imagelist_overrides(api)
 		set_mark(img.path, enabled, silent)
 	end
 
-	local self
-	self = {
+	return {
 		remove = function(x, silent)
-			local ci = self.get_current()
+			local ci = swi.imagelist.get_current()
 			if x == ci.path then evloop.trigger { event = 'ImgChangePre', data = ci } end
 			api.remove(x)
 			set_mark(x, false)
@@ -521,7 +520,6 @@ local function imagelist_overrides(api)
 		marked = marked,
 		get_current = function() return _s[_s.get_mode()].get_image() end,
 	}
-	return self
 end
 
 _s.on_window_resize(function()

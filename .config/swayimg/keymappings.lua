@@ -31,7 +31,7 @@ do
 	amap('Alt+5', gen_rating(5))
 	amap('<C-f>', [[EDIT_PRESET=editFixManualFl pem -e -x -c dummy "%"]])
 	amap('<Del>', [[x="%" && which trash && trash "$x" || mv "$x" /tmp/my/trash/]])
-	amap('<A-f>', [[dragon-drop -x -T %s]])
+	amap('<A-f>', [[dragon-drop -x %f]])
 	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
 end
 
@@ -47,7 +47,7 @@ do
 	gmap({ 's', 'j' }, g.go.down)
 	gmap({ 'w', 'k' }, g.go.up)
 	gmap({ 'd', 'l', '<S-SMD>' }, g.go.right)
-	gmap('<A-s>', 'dragon-drop -x -a %s')
+	gmap('<A-s>', 'dragon-drop -x -A %s')
 	gmap({ ' ', 'm' }, function()
 		l.marked.set_current 'toggle'
 		g.go.right()
@@ -142,11 +142,11 @@ do
 	vmap('<S-f>', function() v.scale = 'fit' end)
 	vmap({ 'c', '<SMU>' }, function()
 		local p = swi.get_mouse_pos()
-		v.scale_centered(v.scale * 1.05, p.x, p.y)
+		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
 	end)
 	vmap({ '<S-c>', '<SMD>' }, function()
 		local p = swi.get_mouse_pos()
-		v.scale_centered(v.scale / 1.05, p.x, p.y)
+		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()

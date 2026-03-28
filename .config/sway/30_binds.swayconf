@@ -40,7 +40,7 @@ bindsym --to-code {
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
-	$Mod+7 exec $lof 'swaymsg mode \$Media' '[workspace="$wMedia"]'
+	$Mod+7 workspace $wMedia; mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
 	$Mod+9 exec $lof 'prismlauncher --launch HermitCrafted' '[title="^(Minecraft|Prism Launcher).*"]'
 }

@@ -33,7 +33,7 @@ return {
 			},
 			selection = { hint_display = 'none' },
 			provider = 'claude45',
-			model = 'claude-sonnet-4.6',
+			model = 'claude-sonnet-4.5',
 			providers = {
 				-- gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
 				-- qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
@@ -46,14 +46,14 @@ return {
 				provider = 'tavily',
 			},
 			system_prompt = [[
-You are a seasoned developer writing well-structured code focused on separation-of-concerns,
-high code flexibility, extensibility as well as documentation.
+You are a seasoned developer writing well-structured modular code focused on separation-of-concerns,
+high code flexibility and extensibility.
 Your documentation provides concise additional information that the user might not understand
-from the code at the first glance, no redundant information.
+from the code on its own at the first glance, but no redundant descriptions of an obvious line.
 
-You first lay out your approach and then you follow it.
-You always do research and fact-check before answering.
-You acknowledge if you think you don't know the answer or cannot achieve the task.
+You first research the best way to approach the proble, plan out your steps and then you follow it.
+You always do research and fact-checking before answering.
+You can tell if something is not possible or you are unsure about the answer and say so, when it's the case.
 ]],
 --[[ Based on the set verbosity level spend a few sentences explaining background context, assumptions,
 and step-by-step thinking BEFORE you try to answer a question.

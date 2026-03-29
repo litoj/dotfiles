@@ -202,40 +202,13 @@ map('n', '<F18>', function() coroutine.wrap(proj.debug)() end)
 local function test_method(debug)
 	local cfg = proj.cfg(fth.findDirOf '.csproj$')
 	local ts = require('manipulator').ts
-	local fn = ts.current({ types = { 'method_declaration' } }):child('name'):get_text()
-	local class = ts.current({ types = { 'class_declaration' } }):child('name'):get_text()
+	local fn = ts.current({ types = { 'method_declaration' } }):field('name'):get_text()
+	local class = ts.current({ types = { 'class_declaration' } }):field('name'):get_text()
 
 	proj.run_test(cfg, debug, class .. '.' .. fn)
 end
 map('n', 't', test_method)
 map('n', '<A-S-T>', function() test_method(true) end)
-
-map('i', '<A-y>', function()
-	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]
-	if not client then return end
-
-	local m = require 'manipulator'
-	local r = m.region.current().range
-	local indent = r:get_line():match '^%s*'
-
-	local params = {
-		_vs_textDocument = { uri = vim.uri_from_bufnr(0) },
-		_vs_position = { line = r[3], character = r[4] + 1 },
-		_vs_ch = r:__add({ 0, 0, 0, 2 }):get_text(),
-		_vs_options = {
-			tabSize = vim.bo.tabstop,
-			insertSpaces = vim.bo.expandtab,
-		},
-	}
-
-	client:request('textDocument/_vs_onAutoInsert', params, function(err, result, _)
-		if err or not result then return end
-
-		-- remove indent, because vim is stupid and prepends it to the snippet
-		local text = string.gsub(result._vs_textEdit.newText, indent, '')
-		vim.snippet.expand(text)
-	end, 0)
-end, { desc = 'manually trigger a snippet hidden in the server' })
 
 map('n', '<A-y>', function()
 	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]
@@ -270,3 +243,77 @@ map('n', '<A-y>', function()
 		vim.snippet.expand(text)
 	end, 0)
 end)
+
+local function transform_endpoint()
+	local m = require 'manipulator'
+
+	local fn = m.ts.current { types = { 'method_declaration' } }
+	local ret_type = fn:field 'returns'
+	local name_str = fn:field('name'):get_text()
+	local ok_ret = ret_type:get_text():match '^Task<ActionResult<(.*)>>$'
+	local anno_block = fn:descendant {
+		query = [[(method_declaration (attribute_list)* @fold)]],
+		types = { '@fold' },
+	}
+
+	local annos = { others = {} }
+
+	local results = {}
+
+	-- 1. Filter into a map by iterating through lines
+	for _, line in ipairs(anno_block:get_lines(false)) do
+		if line:find '%[EndpointSummary' then
+			annos.summary = line
+		elseif line:find '%[EndpointDescription' then
+			annos.desc = line
+		elseif line:find '%[Consumes' then
+			annos.consumes = line
+		elseif line:find '%[Http' then
+			annos.method = line
+				:gsub('"%)', '", )')
+				:gsub('([^)])%]', '%1()]')
+				:gsub('%)', string.format('Name = nameof(%s))', name_str))
+		elseif line:find 'ResponseType' then
+			local code, name = line:match 'Status(%d+)(%w+)'
+			if code and code ~= '401' and code ~= '403' then
+				if code:match '^2' then
+					local ok_t = { ['201'] = 'CreatedAtRoute<%s>', ['200'] = 'Ok<%s>', ['204'] = 'NoContent' }
+					table.insert(results, string.format(ok_t[code] or (name .. '<%s>'), ok_ret))
+				else
+					table.insert(results, name .. '<ProblemDetails>')
+				end
+			end
+		else
+			table.insert(annos.others, line)
+		end
+	end
+
+	-- 3. Construct Final Result
+	local results_type = #results == 1 and results[1]
+		or ('Results<' .. table.concat(results, ', ') .. '>')
+
+	ret_type:paste { text = 'Task<' .. results_type .. '>' }
+
+	local ret_line = fn:field('body'):descendant { types = { 'return_statement' } }
+	local result = ret_line
+		:get_text()
+		:gsub('return ', 'return TypedResults.')
+		:gsub('CreatedAtAction(.+),%s*null%)', 'CreatedAtRoute%1)')
+		:gsub('Ok(.+ToListAsync%(%))', 'Ok(%1).AsEnumerable()')
+	ret_line:paste { text = result }
+
+	local out_annos = {}
+	for _, v in ipairs { 'method', 'summary', 'desc', 'consumes' } do
+		out_annos[#out_annos + 1] = annos[v]
+	end
+	for _, v in ipairs(annos.others) do
+		out_annos[#out_annos + 1] = annos[v]
+	end
+
+	if #out_annos then
+		local text = table.concat(out_annos, '\n')
+		anno_block:paste { text = text }
+	end
+end
+
+_G.map('n', 'e', transform_endpoint)

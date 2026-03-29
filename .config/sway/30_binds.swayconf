@@ -374,13 +374,13 @@ bindsym {
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
-	$Mod+m exec mom -play -r
-	$Mod+Shift+m exec mom -play +l
-	$Mod+$Alt+m exec mom -play -ra3s
-	$Mod+Ctrl+$Alt+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
-	$Mod+Ctrl+$Alt+Shift+m exec mom -play -ra3s "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
+	$Mod+m exec mom play -r
+	$Mod+Shift+m exec mom -DA play +l
+	$Mod+$Alt+m exec mom -DA play -f3 -rdf
+	$Mod+Ctrl+$Alt+m exec mom -DA play -f3 -rf "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+$Alt+Shift+m exec mom -DA play -f3 -rdf "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpvFile)"
-	Shift+XF86AudioStop exec pkill -f "mpv --no-audio-display" --signal 15
+	Shift+XF86AudioStop exec pkill -f "mpv --playlist" --signal 15
 	XF86AudioPlay exec $mpv play-pause
 	KP_Subtract exec playerctl -a play-pause
 	$Mod+$Alt+space exec playerctl -a play-pause

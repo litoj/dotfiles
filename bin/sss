@@ -78,10 +78,7 @@ declare -A LOG_LEVELS=([quiet]=0 [fatal]=1 [error]=2 [warn]=3
 	[warning]=3 [info]=4 [verbose]=5 [debug]=6 [trace]=7)
 LOG_NAMES=(quiet fatal error warn info verbose debug trace)
 
-[[ $# == 0 && -t 0 && -t 1 ]]
-CLI_MODE=$? # if the actions are specified via the cli (not tui)
 declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` action
-	[tui]=$((1 - CLI_MODE))
 	[dryRun]=0
 	[color]=0
 	[guiPicker]=0
@@ -91,6 +88,7 @@ declare -Ai SCRIPT_OPTS=( # helper + runtime options - changeable by `define` ac
 	[ignoreFailedPicker]=0
 	[freePathNumberReuse]=0
 	[jobs]=$(((1 + $(nproc --all)) / 2))
+	[trash]=1
 	[logLvl]=${LOG_LEVELS['info']}
 	[tmpLogLvl]=${LOG_LEVELS['info']}
 )
@@ -101,7 +99,6 @@ log_name_match=${LOG_NAMES[*]}
 
 actionInfo define D 'set script-processing options'
 defineParams=(
-	tui 'T?' '' 'Enter TUI after CLI is parsed (-TT for enabling param selection)'
 	dryRun 'D?' '' 'Disable actual commands execution'
 	color 'C?' '' 'Colorize output (default=true when not redirected)'
 	config 'c*' '$f\.conf\.sh$|-?' "Config file as arrays of cli options like \`defineConfig+=(-l3)\`,
@@ -112,7 +109,8 @@ defineParams=(
 	ignoreFailedPicker 'I?' '' 'Discard option when picker failed instead of exiting'
 	configPicker ' ?' '' 'Run actions with `<ACTION>_PRESET` or pick from `<action>Presets` map'
 	freePathNumberReuse ' ?' '' 'Increment numbers in supplied paths instead of appending _1'
-	jobs 'j?' '[0-9]*' "Maximum number of parallel jobs (default=CPU count/2)"
+	jobs 'j?' '[0-9]*' 'Maximum number of parallel jobs (default=CPU count/2)'
+	trash ' ?' '' 'Use `trash` instead of `rm` (default=true)'
 	tmpLogLvl 'L?' '([0-9]|[A-Za-km-z]+)?' 'Depth of temporary message logging (progressbar etc.)'
 	logLvl 'l?' "([0-9]+|${log_name_match// /|})?"
 	"Depth of logging, -lll=-l3…\
@@ -147,14 +145,15 @@ define() {
 				fi
 
 				if [[ -f $x ]]; then
-					log Debug ".config['$x'] - loading"
+					log Debug ".config[\"$x\"] - loading"
 					if config= source "$x"; then
-						log Verbose ".config['$x'] - successfully loaded"
+						log Verbose ".config[\"$x\"] - successfully loaded"
 					else
-						log Error ".config['$x'] - invalid syntax"
+						log Error ".config[\"$x\"] - invalid syntax"
+						return 1
 					fi
 				elif [[ -z $USE_ALL_ARGS ]]; then # called by user
-					log Warn ".config['$x'] doesn't exist"
+					log Warn ".config[\"$x\"] doesn't exist"
 				fi
 			done
 		elif [[ ${!opt} ]]; then
@@ -162,6 +161,7 @@ define() {
 				SCRIPT_OPTS["$opt"]=${LOG_LEVELS['info']}
 				log Error ".$opt - unknown log level '${!opt}', defaulting to '${LOG_NAMES[${SCRIPT_OPTS["$opt"]}]}'
   Available are: ${LOG_NAMES[*]}"
+				return 1
 			else
 				if [[ ${!opt} == -* ]]; then # subtract negative numbers
 					((SCRIPT_OPTS["$opt"] += ${!opt}))
@@ -188,24 +188,25 @@ exitFn() {
 }
 
 runExitFn() {
-	((IS_JOB)) && exit
-	((EXITING)) && return
+	# end threads silently and avoid recursion in case of further errors
+	((IS_JOB || EXITING)) && exit
 	EXITING=1 ${SSS_OPTS['exitFn']} "$@" 3>&2
 }
 
-declare -A SSS_OPTS=( # internal behaviour / parsing options - script-specific edge case handling
-	[about]=''                     # script description
-	[exitFn]=exitFn                # on error / on successful exit - shouldn't return
-	[exitLogLvl]=$((1 + CLI_MODE)) # at which level to abort (cli:Error, tui:Fatal)
+#internal behaviour / parsing options - script-specific edge case handling
+declare -A SSS_OPTS=(
+	[about]=''      # script description
+	[exitFn]=exitFn # on error / on successful exit - shouldn't return
+	[exitLogLvl]=2  # at which level to abort (1=Error)
 	# set to main registered action if script is a single command - actions act as builders
 	# you can also change other actions' params at runtime → dynamic configuration
 	# builder example: --builder init1 --builderOption --builder init2 'default action arg'
-	[defAction]=unknown     # when no other action matches args, actionInfo register optional
-	[defActionLast]=1       # default action can't be followed by other actions (must use all args)
-	[actionPrefix]='-{0,2}' # regex for cli action long name format, used in a group
-	[optionPrefix]='--|'    # regex for cli option long name format, used in a group
-	[argAsLongOpt]=1        # allow arguments to be also parsed as long options
-	[onNoArg]=0             # >0: pick also chained opts; 0: try num arg (+=1); <0: pick non-chained opts
+	[defAction]=unknown        # when no other action matches args, actionInfo register optional
+	[defActionLast]=1          # default action can't be followed by other actions (must use all args)
+	[actionPrefix]='-{0,2}'    # regex for cli action long name format, used in a group
+	[optionPrefix]='--|'       # regex for cli option long name format, used in a group
+	[argAsLongOpt]=1           # allow arguments to be also parsed as long options
+	[onNoArg]='assume-num-arg' # assume-num-arg/pick-non-chained/pick-all
 )
 
 declare -A COLORS=(
@@ -299,10 +300,11 @@ print() {
 # Globals:
 #   TMPLOG: bool, allow message overwrite (-'\n' +'\r')
 # Arguments:
-#   LAST_LOG_LVL: one of ${LOG_LEVELS[@]}, determines message importance
+#   loglvl: one of ${LOG_LEVELS[@]}, determines message importance
 #   msg: message to print with context, ignored when SCRIPT_OPTS[logLvl]<LAST_LOG_LVL
 # Returns:
 #   success or no return (calls exitFn)
+#   if called with just log level returns the success of printing the message
 #######################################
 log() {
 	LAST_LOG_LVL=${LOG_LEVELS["${1,,}"]:-$1}
@@ -325,6 +327,7 @@ log() {
 	else
 		(($# > 1)) || return 1
 	fi
+
 	if ((SSS_OPTS['exitLogLvl'] >= LAST_LOG_LVL)); then
 		runExitFn $LAST_LOG_LVL
 	fi
@@ -332,17 +335,17 @@ log() {
 
 # for debugging - logs all given variables
 logVar() { # TODO: pretty print format for arrays
-	local lvl=$1 varName str=":"
+	local lvl=$1 varName str
 	shift
 	for varName in "$@"; do
-		str+=$'\n'"$varName='${!varName}'"
+		str+=$'\n'"$(declare -p $varName)"
 	done
 	log "$lvl" "$str"
 }
 
 # Supports simple redirection ... '>'/'>>' 'path' with logging + '&' for bg process
 exec() {
-	[[ $1 == rm && -f /usr/bin/trash ]] && set -- trash "${@:2}"
+	[[ $1 == rm && ${SCRIPT_OPTS['trash']} > 0 && -f /usr/bin/trash ]] && set -- trash "${@:2}"
 	log Verbose && log Verbose " \$> $*"
 	((SCRIPT_OPTS['dryRun'] > 0)) && return
 	# cannot use eval because args lose quotes
@@ -369,9 +372,13 @@ exec() {
 	fi
 }
 
-ui() {
+actionInfo tui 'Enter TUI mode to call actions interactively'
+tuiParams=(
+	selectParams 's?' '' 'Enable selection of params to send to the action'
+)
+tui() {
 	SCRIPT_OPTS[argPicker]=1
-	SSS_OPTS[exitLogLvl]=0
+	SSS_OPTS[exitLogLvl]=1
 	while :; do
 		read -rp "Choose $(ansi italic action noitalic delim : fg) " -n 1 line
 		echo
@@ -393,13 +400,37 @@ ui() {
 		fi
 
 		local _args=()
-		if ((SCRIPT_OPTS['tui'] >= 2)); then
+		if [[ $line == define ]] || ((selectParams > 0)); then
 			declare -n params=${line}Params
 			if ((${#params[@]} > 0)); then
+				previewFile=/tmp/${0##*/}-previewer
+				echo "#!/usr/bin/bash
+				. sss
+				$(declare -p "${line}Params")
+				declare -n plist=${line}Params
+				SCRIPT_OPTS['color']=${SCRIPT_OPTS['color']}
+				declare -i i
+				name=\${1#--}
+				for ((i = \${#plist[@]} - 4; i >= 0; i -= 4)); do
+					if [[ \${plist[i]} == \$name ]]; then
+						print \"\${plist[i+3]}
+
+						\${plist[i+2]}\"
+						exit
+					fi
+				done" >"$previewFile"
+				chmod +x "$previewFile"
+
 				declare -i i=${#params[@]}
-				readarray -t _args < <(while ((0 <= (i -= 4))); do
-					echo "--${params[$i]}"
-				done | fzf -m --prompt="Choose ${line} params: ")
+				readarray -t _args < <(
+					while ((0 <= (i -= 4))); do
+						echo "--${params[$i]}"
+					done |
+						fzf -m --prompt="Choose ${line} params: " \
+							--preview-window=wrap --preview "$previewFile {}"
+				)
+
+				rm "$previewFile"
 			fi
 			declare +n params
 			unset params i
@@ -414,19 +445,21 @@ ui() {
 main() {
 	trap 'runExitFn' EXIT
 
-	# load default config
-	[[ $NO_CONFIG ]] || config=1 define 3>&2
+	{
+		# load default config
+		[[ $NO_CONFIG ]] || ACTION=${0##*/} config=1 define
 
-	if ((CLI_MODE > 0)); then
+		if [[ $# == 0 && -t 1 ]]; then
+			help
+		fi
+
 		while (($#)); do
-			parseAction "$@" 3>&2
+			parseAction "$@"
 			shift $?
 		done
-		((SCRIPT_OPTS['tui'] > 0)) || quit 3>&2
-		unset CLI_MODE
-	fi
 
-	ui 3>&2
+		quit
+	} 3>&2
 }
 
 true=1 false=-1
@@ -490,17 +523,18 @@ parseAction() {
 			fi
 		else
 			log Error " - No config chosen"
+			return $((argc - $#))
 		fi
 	fi
 	unset cfg optChain arg # unsetting again to ensure error help has no overbleed args
 
 	while [[ ${1+y} || $optChain ]]; do # get options and args
-		log Trace " - parsing ${optChain:+"${optChain}[-${#arg}] "}'$1'"
+		log Trace " - parsing ${optChain:+"${optChain}[-${#arg}] "}\"$1\""
 		if [[ $optChain ]]; then # processing previously found shortopt chain
 			i=${opts["${arg::1}"]}
 			if [[ -z $i ]]; then
-				log Error " - Invalid option '${arg::1}' in chunk '$optChain'"
-				return
+				log Error " - Invalid option '${arg::1}' in chunk \"$optChain\""
+				return $((argc - $#))
 			fi
 
 			if ((${#arg} > 1)); then
@@ -550,12 +584,12 @@ parseAction() {
 				elif [[ $optCnt == '+' && (${arg+y} || ${1+y}) ]] && argMatch "${arg-$1}"; then
 					if [[ ${sigs[i+1]} == ?[?!] ]]; then
 						declare "$varName=${arg-$1}"
-						log Debug ".$varName = '${!varName}'"
+						log Debug ".$varName = \"${!varName}\""
 					else
 						declare _varName=$varName
 						declare -a "$varName" # necessary to override values declared higher in the stack
 						declare -n varName
-						log Debug ".${_varName}[${#varName[@]}] = '${arg-$1}'"
+						log Debug ".${_varName}[${#varName[@]}] = \"${arg-$1}\""
 						varName+=("${arg-$1}")
 						declare +n varName
 					fi
@@ -565,7 +599,8 @@ parseAction() {
 					else
 						shift
 					fi
-				elif [[ (! ${arg+y} || $optChain) && ${SSS_OPTS['onNoArg']} -ge 0 ]] && argMatch ''; then
+				elif [[ (! ${arg+y} || $optChain) &&
+					${SSS_OPTS['onNoArg']} != 'pick-non-chained' ]] && argMatch ''; then
 					if argMatch 3; then # counter
 						declare -i "$varName+=${optCnt}1"
 						log Debug ".$varName = ${!varName}"
@@ -576,7 +611,7 @@ parseAction() {
 				elif [[ $optCnt == '-' ]]; then # option is already unset -> skip the option removal
 					[[ ${args[$i]} ]] && args[$i]=-1
 				elif [[ (! ${arg+y} || ($optChain && ${opts["${arg::1}"]})) &&
-					${SSS_OPTS['onNoArg']} -gt 0 && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
+					${SSS_OPTS['onNoArg']} == 'pick-all' && ${SCRIPT_OPTS['optArgPicker']} -gt 0 ]] && {
 
 					[[ ${sigs[i+1]} == ?[+*] ]] && declare -a "$varName" || local "$varName"
 
@@ -587,13 +622,11 @@ parseAction() {
 					if ((i < 0)); then
 						log Debug ".$varName - ${builder["$varName"]} failed, skipping option"
 					else
-						log Debug ".$varName <${builder["$varName"]}>= '${!varName}'"
+						log Debug ".$varName <${builder["$varName"]}>= \"${!varName}\""
 					fi
 				else # bad arg, or picker failed
-					[[ ! $optChain ]] &&
-						log Error ".$varName - Invalid argument '${arg-$1}'" ||
-						log Error ".$varName - Invalid argument '${arg-$1}' at chunk '$optChain'"
-					return
+					log Error ".$varName - Invalid argument \"${arg-$1}\"${optChain:+" at chunk \"$optChain\""}"
+					return $((argc - $#))
 				fi
 			elif [[ ! $optChain && ($arg == false || $arg == true) ]]; then
 				declare -i "$varName=$arg"
@@ -604,7 +637,7 @@ parseAction() {
 				log Debug ".$varName = ${!varName}"
 			else
 				log Error ".$varName - Unexpected argument '$arg'"
-				return
+				return $((argc - $#))
 			fi
 
 			[[ ${args[$i]} ]] && args[$i]+=1 # required option
@@ -613,7 +646,7 @@ parseAction() {
 			if ((posArg >= sigN)); then
 				if ((USE_ALL_ARGS)); then
 					log Error " - Too many arguments: $(printf "'%s'" "$@")"
-					return
+					return $((argc - $#))
 				else
 					break # NOTE: this is where the loop ends successfully
 				fi
@@ -637,30 +670,31 @@ parseAction() {
 						declare _varName=$varName
 						declare -a "$varName"
 						declare -n varName
-						log Debug "\$${_varName}[${#varName[@]}] = '$1'"
+						log Debug "\$${_varName}[${#varName[@]}] = \"$1\""
 						varName+=("$1")
 						declare +n varName
 					else # single argument expected
 						declare "$varName=$1"
 						posArg+=4
-						log Debug "\$$varName = '${!varName}'"
+						log Debug "\$$varName = \"${!varName}\""
 					fi
 					local argUsed=1
 					shift
 					break # continue in parsing cli
 				else
 					if [[ $sign == ?[?*] || ${args[$posArg]} -gt 0 ]]; then
-						log Trace ".$varName != '$1'"
+						log Trace ".$varName != \"$1\""
 					else
-						log Error ".$varName != '$1', but is next in order"
+						log Error ".$varName != \"$1\", but is next in order"
+						return $((argc - $#))
 					fi
 					posArg+=4 # given value doesn't match → try next arg
 				fi
 			done
 
 			if (($# == actionArgFromEnd && !argUsed)); then
-				log Error " - Invalid argument '$1'"
-				return 1
+				log Error " - Invalid argument \"$1\""
+				return $((argc - $# + 1))
 			fi
 			unset argUsed
 		fi
@@ -681,13 +715,13 @@ parseAction() {
 			declare -a "$varName"
 			if "${builder["$varName"]:=$(determinePicker "$matcher")}" "${sigs[@]:i:4}"; then
 				args[$i]+=1
-				log Debug "\$$varName <${builder["$varName"]}>= '${!varName}'"
+				log Debug "\$$varName <${builder["$varName"]}>= \"${!varName}\""
 			fi
 		fi
 
 		if [[ ${args[$i]} == 0 && $sign == ?[+!] ]]; then
-			log Error " - Missing argument for '$varName'"
-			return
+			log Error " - Missing argument for \"$varName\""
+			return $((argc - $#))
 		fi
 	done
 
@@ -697,6 +731,7 @@ parseAction() {
 	# ensure valid state
 	if [[ $ACTION == "${SSS_OPTS['defAction']}" && $# -gt 0 && ${SSS_OPTS['defActionLast']} ]]; then
 		log Error " - Default action must use all args, but some were left: $*"
+		return $((argc - $#))
 	fi
 
 	log Trace ' $>>' && "$ACTION" && log Trace ' <<$' || log Error ' <<FAIL!'
@@ -780,7 +815,7 @@ getFreePath() {
 }
 
 absolutePath() {
-	[[ $1 == /* ]] && echo "$1" || echo "$PWD/$1"
+	[[ $1 == /* ]] && echo "$1" || echo "$PWD/${1#./}"
 }
 
 declare -A REGEX=(

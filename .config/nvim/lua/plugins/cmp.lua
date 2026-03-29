@@ -12,6 +12,8 @@ local M = {
 	},
 }
 
+local src = {}
+
 function M.config()
 	require('luasnip.loaders.from_vscode').lazy_load()
 	local kind_icons = {
@@ -101,23 +103,21 @@ function M.config()
 		cmpKindPref[k] = i
 	end
 
-	local src = {
-		calc = { name = 'calc', group_index = 1 },
-		font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-		latex = { name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 },
-		path = { name = 'path', group_index = 1 },
-		lsp = {
-			name = 'nvim_lsp',
-			group_index = 2,
-			priority = 2,
-			entry_filter = (function(text_kind)
-				return function(e, ctx) return e:get_kind() ~= text_kind end
-			end)(kinds.Text),
-		},
-		snip = { name = 'luasnip', group_index = 2, keyword_length = 3 },
-
-		buf = { name = 'buffer', group_index = 3 },
+	src.calc = { name = 'calc', group_index = 1 }
+	src.font = { name = 'nerdfont', group_index = 1, trigger_characters = {}, keyword_length = 3 }
+	src.latex =
+		{ name = 'latex_symbols', group_index = 1, trigger_characters = {}, keyword_length = 3 }
+	src.path = { name = 'path', group_index = 1 }
+	src.lsp = {
+		name = 'nvim_lsp',
+		group_index = 2,
+		priority = 2,
+		entry_filter = (function(text_kind)
+			return function(e, ctx) return e:get_kind() ~= text_kind end
+		end)(kinds.Text),
 	}
+	src.snip = { name = 'luasnip', group_index = 2, keyword_length = 3 }
+	src.buf = { name = 'buffer', group_index = 3 }
 
 	local comparators = {
 		cmp.config.compare.offset,
@@ -270,13 +270,13 @@ M = {
 	{ 'chrisgrieser/cmp-nerdfont', ft = { 'markdown', 'text', 'lua' }, dependencies = 'nvim-cmp' },
 }
 
---[[ -- add AI plugins when plugged in and on the main pc
+-- add AI plugins when plugged in and on the main pc
 if vim.g.features_level >= 7 then
 	src.copilot = { name = 'copilot', group_index = 3, trigger_characters = {} }
 	M[#M + 1] = {
 		'zbirenbaum/copilot.lua',
 		dependencies = { { 'litoj/cmp-copilot', opts = { update_on_keypress = true } } },
-		ft = { 'python', 'vue' },
+		ft = { 'python', 'vue', 'cs' },
 		opts = {
 			panel = { enabled = false },
 			suggestion = {
@@ -304,5 +304,5 @@ if vim.g.features_level >= 7 then
 			},
 		},
 	}
-end ]]
+end
 return M

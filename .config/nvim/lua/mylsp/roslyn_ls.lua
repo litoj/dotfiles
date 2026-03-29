@@ -4,7 +4,7 @@ return {
 	capabilities = {
 		workspace = {
 			didChangeWatchedFiles = {
-				dynamicRegistration = false,
+				dynamicRegistration = false, -- true for neovim filewatching, false for roslyn
 			},
 		},
 	},

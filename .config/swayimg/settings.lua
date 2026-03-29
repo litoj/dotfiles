@@ -53,7 +53,7 @@ t.foreground = 0xffffffff
 t.padding = 0
 t.line_spacing = 0.5
 t.size = 23
-t.status_timeout = 1
+t.status_timeout = 2
 t.enabled = false
 
 swi.exif_orientation = false
@@ -86,6 +86,13 @@ e.subscribe {
 v.text.topright = { '{list.index}/{list.total}' }
 v.text.bottomright = { '{scale}' }
 v.text.bottomleft = {}
+v.text.topleft = {'File: {name}', 'Size: {sizehr}', 'Res: {frame.width}x{frame.height}',
+	'Exposure: {ExposureTime} s',
+	'ISO: {ISOSpeedRatings}',
+	'FNumber: {FNumber}',
+	'FL: {FocalLength} mm',
+	'Rating: {Rating}'
+}
 e.subscribe {
 	event = 'ImgChange',
 	mode = 'viewer',
@@ -102,20 +109,5 @@ e.subscribe {
 				v.scale = v.default_scale
 			end
 		end
-		local t = {
-			'File: ' .. i.path:match '[^/]+$',
-			string.format('Size: %.1f MB', i.size / 1000000),
-			string.format('Res: %dx%d', i.width, i.height),
-		}
-		local m = i.meta
-		if m['Exif.Photo.ExposureTime'] then
-			t[#t + 1] = 'Exposure: ' .. h.format_exif(m, 'ExposureTime') .. ' s'
-			t[#t + 1] = 'ISO: ' .. h.format_exif(m, 'ISOSpeedRatings')
-			t[#t + 1] = 'FNumber: ' .. h.format_exif(m, 'FNumber')
-			t[#t + 1] = 'FL: ' .. h.format_exif(m, 'FocalLength') .. ' mm'
-			t[#t + 1] = 'Rating: ' .. (h.format_exif(m, 'Exif.Image.Rating') or '0')
-		end
-
-		v.text.topleft = t
 	end,
 }

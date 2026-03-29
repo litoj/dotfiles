@@ -5,6 +5,5 @@ _G.l = swi.imagelist
 _G.s = swi.slideshow
 _G.t = swi.text
 _G.e = swi.eventloop
-_G.h = require 'helpers'
 require 'settings'
 require 'keymappings'

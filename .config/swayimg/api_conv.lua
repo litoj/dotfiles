@@ -193,8 +193,14 @@ do
 	end)
 end
 
+---
+--- Overider construction
+---
+
+---@generic O
 ---@param name? string
----@param overrides? table
+---@param overrides? `O`
+---@return O
 local function proxy(name, overrides)
 	overrides = overrides or {}
 	local api = name and _s[name] or (name and {} or _s)
@@ -254,9 +260,38 @@ local function proxy(name, overrides)
 	})
 end
 
----
---- Overider construction
----
+local key_map = {
+	BS = 'BackSpace',
+	Del = 'Delete',
+	Esc = 'Escape',
+	CR = 'Enter',
+	[','] = 'comma',
+	['.'] = 'period',
+	['`'] = 'grave',
+	['~'] = 'asciitilde',
+	[' '] = 'space',
+	['+'] = 'plus',
+	['-'] = 'minus',
+	['='] = 'equal',
+}
+for _, v in ipairs { 'Middle', 'Left', 'Right' } do
+	key_map[v:sub(1, 1) .. 'MB'] = 'Mouse' .. v
+end
+for _, v in ipairs { 'Left', 'Right', 'Up', 'Down' } do
+	key_map['SM' .. v:sub(1, 1)] = 'Scroll' .. v
+end
+local function transform_key(bind) -- to be able to map keys like in vim
+	if bind:match '^<.+>$' then bind = bind:sub(2, -2) end
+	bind = bind:gsub('[AM][+-]', 'Alt+', 1):gsub('S[+-]', 'Shift+', 1):gsub('C[+-]', 'Ctrl+', 1)
+
+	if bind:match 'Shift%+Tab$' then
+		bind = bind:gsub('Shift%+Tab$', 'Shift+ISO_Left_Tab')
+	else
+		local key = bind:match '[^+-]*.$'
+		bind = bind:sub(1, -#key - 1) .. (key_map[key] or key)
+	end
+	return bind
+end
 
 ---@param api swayimg_appmode|swayimg.gallery
 ---@param name string
@@ -277,13 +312,34 @@ local function mode_overrides(api, name, extend)
 		api.on_signal(sig, function() evloop.trigger { event = 'Signal', match = sig } end)
 	end
 
-	local maps = {}
+	local mappings = {}
 	local ret = {
 		map = function(b, action, desc)
-			if maps[b] then error(string.format('%s.map("%s") already set', name, b)) end
+			if type(action) == 'string' then
+				local cmd = action
+				action = function() swi.exec(cmd) end
+			end
 
 			local i = debug.getinfo(action, 'S')
-			maps[b] = { at = ('%s: %d'):format(i.short_src, i.linedefined), fn = action, desc = desc }
+			for _, b in ipairs(type(b) == 'table' and b or { b }) do
+				b = transform_key(b)
+
+				if mappings[b] then error(string.format('%s.map("%s") already set', name, b)) end
+				mappings[b] =
+					{ at = ('%s: %d'):format(i.short_src, i.linedefined), fn = action, desc = desc }
+
+				if b:match 'Mouse' or b:match 'Scroll' then
+					api.on_mouse(b, action)
+				else
+					api.on_key(b, action)
+				end
+			end
+		end,
+		get_mappings = function() return mappings end,
+		unmap = function(b)
+			b = transform_key(b)
+			mappings[b] = nil
+			local action = function() end
 
 			if b:match 'Mouse' or b:match 'Scroll' then
 				api.on_mouse(b, action)
@@ -291,9 +347,8 @@ local function mode_overrides(api, name, extend)
 				api.on_key(b, action)
 			end
 		end,
-		get_mapped = function() return maps end,
 		bind_reset = function()
-			maps = {}
+			mappings = {}
 			api.bind_reset()
 		end,
 		text = proxy(
@@ -314,25 +369,65 @@ local function viewer_proxy(name)
 
 	---@alias lastimg {w:integer,h:integer,x:integer,y:integer}?
 	local last
+	---@type {[block_position_t]:string[]} text layer items with metadata to get replaced
+	local update_text = {}
 	api.on_image_change(function()
 		rawset(self, '_scale', nil)
-		if not last then return end
+		---@type swayimg.image
+		local img = last or next(update_text) and api.get_image()
 
-		---@diagnostic disable-next-line: undefined-field
-		local mode = self._default_scale:sub(9)
+		if last then
+			---@diagnostic disable-next-line: undefined-field
+			local mode = self._default_scale:sub(9)
 
-		local i = api.get_image()
-		local f
-		if mode == 'width' then
-			f = last.w / i.width
-		elseif mode == 'height' then
-			f = last.h / i.height
-		elseif mode == 'size' then
-			f = (last.w + last.h) / (i.width + i.height)
+			local f
+			if mode == 'width' then
+				f = last.w / img.width
+			elseif mode == 'height' then
+				f = last.h / img.height
+			elseif mode == 'size' then
+				f = (last.w + last.h) / (img.width + img.height)
+			end
+			api.set_abs_scale(api.get_scale() * f, 0, 0)
+			api.set_abs_position(last.x, last.y)
 		end
-		api.set_abs_scale(api.get_scale() * f, 0, 0)
-		api.set_abs_position(last.x, last.y)
+
+		if next(update_text) then
+			local m = img.meta
+			local f = swi.text.format_exif
+			for k, text_cfg in pairs(update_text) do
+				local replaced = {}
+				for i, str in ipairs(text_cfg) do
+					local var, path = str:match '({([A-Z][A-Za-z0-9.]+)})'
+					while path do
+						path = f(m, path) -- format the value
+						if not path then break end
+						str = str:gsub(var, path)
+
+						var, path = str:match '({([A-Z][A-Za-z0-9.].+)})'
+					end
+
+					if not var then replaced[#replaced + 1] = str end
+				end
+				api.set_text(k, replaced)
+			end
+		end
 	end)
+
+	evloop.subscribe {
+		event = 'OptionSet',
+		pattern = name .. '.text.*',
+		callback = function(state)
+			local k = state.match:match '[^.]+$'
+			for _, v in ipairs(state.data) do
+				if v:find '{[A-Z]' then
+					update_text[k] = state.data
+					return
+				end
+			end
+			update_text[k] = nil
+		end,
+	}
 
 	local overrides = {
 		default_scale = {
@@ -444,8 +539,8 @@ local function gallery_proxy()
 	return proxy(name, mode_overrides(api, name, overrides))
 end
 
----@param api swayimg.imagelist
-local function imagelist_overrides(api)
+local function imagelist_proxy()
+	local api = _s.imagelist
 	local mlist = {}
 	local msize = 0
 
@@ -500,7 +595,7 @@ local function imagelist_overrides(api)
 		set_mark(img.path, enabled, silent)
 	end
 
-	return {
+	return proxy('imagelist', {
 		remove = function(x, silent)
 			local ci = swi.imagelist.get_current()
 			if x == ci.path then evloop.trigger { event = 'ImgChangePre', data = ci } end
@@ -519,7 +614,67 @@ local function imagelist_overrides(api)
 		end,
 		marked = marked,
 		get_current = function() return _s[_s.get_mode()].get_image() end,
-	}
+	})
+end
+
+local function text_proxy()
+	local api = _s.text
+	return proxy('text', {
+		enabled = {
+			set = function(val)
+				if val == true then
+					api.show()
+					api.set_timeout(0)
+				elseif val == false then
+					api.hide()
+				else
+					api.set_timeout(val)
+				end
+			end,
+		},
+		is_visible = api.visible,
+		line_spacing = {
+			-- transform scale factor into a pixel value
+			set = function(val)
+				_s.text.set_spacing(math.floor((val - 1) * (rawget(swi.text, '_size') or 0)))
+			end,
+		},
+		size = {
+			set = function(val)
+				api.set_size(val)
+
+				-- update line spacing
+				rawset(swi.text, '_size', val)
+				swi.text.line_spacing = swi.text.line_spacing
+			end,
+		},
+
+		format_exif = function(img_meta, val)
+			if val and val:find('.', 0, true) then
+				val = img_meta[val]
+			else
+				val = img_meta['Exif.Photo.' .. val] or img_meta['Exif.Image.' .. val]
+			end
+			if not val then return end
+
+			local a, b = val:match '^(%-?[0-9]+)/([0-9]+)$'
+			if a then
+				local x, y = tonumber(a), tonumber(b)
+				local n = x / y
+				if math.floor(n) == n then -- integer, not rational number -> done
+					return n
+				elseif math.floor(n * 10) == n * 10 then -- print just 1 decimal point
+					return string.format('%.1f', n)
+				elseif b:match '^10*$' then -- just a decimal point offset
+					return string.format('%.2f', n)
+				elseif a:match '^10*$' then -- decimal point offset through the other side
+					return string.format('1/%d', y / x)
+				end
+			end
+
+			return val
+		end,
+	})
 end
 
 _s.on_window_resize(function()
@@ -571,37 +726,8 @@ _G.swi = proxy(nil, {
 		evloop.trigger { event = 'ShellCmdPost', data = { cmd = cmd, out = out } }
 	end,
 
-	imagelist = proxy('imagelist', imagelist_overrides(_s.imagelist)),
-	text = proxy('text', {
-		enabled = {
-			set = function(val)
-				if val == true then
-					_s.text.show()
-					_s.text.set_timeout(0)
-				elseif val == false then
-					_s.text.hide()
-				else
-					_s.text.set_timeout(val)
-				end
-			end,
-		},
-		is_visible = _s.text.visible,
-		line_spacing = {
-			-- transform scale factor into a pixel value
-			set = function(val)
-				_s.text.set_spacing(math.floor((val - 1) * (rawget(swi.text, '_size') or 0)))
-			end,
-		},
-		size = {
-			set = function(val)
-				_s.text.set_size(val)
-
-				-- update line spacing
-				rawset(swi.text, '_size', val)
-				swi.text.line_spacing = swi.text.line_spacing
-			end,
-		},
-	}),
+	imagelist = imagelist_proxy(),
+	text = text_proxy(),
 	viewer = viewer_proxy 'viewer',
 	slideshow = viewer_proxy 'slideshow',
 	gallery = gallery_proxy(),

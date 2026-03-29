@@ -35,6 +35,7 @@ function proj.cfg(path)
 		dll = dll,
 	}
 end
+
 vim.api.nvim_create_autocmd('InsertLeavePre', {
 	buffer = 0,
 	callback = function(s)

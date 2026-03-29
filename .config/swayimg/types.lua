@@ -221,10 +221,22 @@ function swi.text.is_visible() end
 ---@param status string Status text to show
 function swi.text.set_status(status) end
 
+---Nicely format the requested value to human readable rational numbers.
+---@param img_meta table<string,string> the `.meta` field of the image
+---@param val string name/path of the exif value to get
+--- single-word tags resolve to `Exif.Photo.<>`  or `Exif.Image.<>`
+---@return string?
+function swi.text.format_exif(img_meta, val) end
+
 --------------------------------------------------------------------------------
 -- Base mode class
 --------------------------------------------------------------------------------
 
+---In viewer+slideshow mode you can use exif tags directly, like {ExposureTime}
+---or specify the full exif path (without `meta.` prefix), like {Exif.Fujifilm.Rating}
+---`swi.text.format_exif` then automatically formats the values
+--- HINT: to see what tags are available: `print(swi.viewer.get_image().meta)`
+---@see swi.text.format_exif
 ---@class mode_base.text: api_conv
 ---@field topleft text_template_t[] Text layer scheme for top-left corner
 ---@field topright text_template_t[] Text layer scheme for top-right corner
@@ -241,18 +253,21 @@ local mode_base = {}
 function mode_base.bind_reset() end
 
 ---Map a keyboard or mouse event to an action.
----@param bind string 1 or more mouse or keyboard events to map - `Alt+s`, etc.
----@param fn fun() callback function to run
+---@param bind string|string[] 1 or more mouse or keyboard events to map - `Alt+s`, etc.
+---@param action fun()|string callback function to run or shell command to execute
 ---@param desc string? optional description of the action
-function mode_base.map(bind, fn, desc) end
+function mode_base.map(bind, action, desc) end
+
+---@param bind string keybind to disable
+function mode_base.unmap(bind) end
 
 ---@class mapping_cfg
 ---@field fn function the action that runs on the binding activation
 ---@field src string where was the binding defined
 ---@field desc? string optional description of the action
 
----@return table<string,mapping_cfg>
-function mode_base.get_mapped() end
+---@return table<string,mapping_cfg> map of the user bindings
+function mode_base.get_mappings() end
 
 --------------------------------------------------------------------------------
 -- Viewer mode

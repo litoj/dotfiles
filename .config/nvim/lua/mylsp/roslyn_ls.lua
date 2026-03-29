@@ -1,9 +1,12 @@
-return { -- dotnet tool install roslyn-language-server --prerelease -g
-	cmd = {
-		os.getenv 'HOME' .. '/.dotnet/tools/roslyn-language-server',
-		'--logLevel=Information',
-		'--extensionLogDirectory=' .. vim.fs.dirname(vim.lsp.log.get_filename()),
-		'--stdio',
+-- dotnet tool install roslyn-language-server --prerelease -g
+-- paru -S roslyn-ls
+return {
+	capabilities = {
+		workspace = {
+			didChangeWatchedFiles = {
+				dynamicRegistration = false,
+			},
+		},
 	},
 	settings = {
 		['csharp|background_analysis'] = {

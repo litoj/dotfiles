@@ -149,9 +149,14 @@ function M.config()
 		mapping = {
 			['<C-b>'] = cmp.mapping(cmp.mapping.scroll_docs(-4), { 'i', 'c' }),
 			['<C-f>'] = cmp.mapping(cmp.mapping.scroll_docs(4), { 'i', 'c' }),
-			['<Esc>'] = cmp.mapping(function()
-				if not cmp.abort() then vim.api.nvim_feedkeys('\03', 'n', false) end
-			end, { 'i', 'c' }),
+			['<Esc>'] = cmp.mapping {
+				i = function()
+					if not cmp.abort() then vim.api.nvim_feedkeys('\027', 'n', false) end
+				end,
+				c = function() -- use <C-c> to actually escape and not execute cli
+					if not cmp.abort() then vim.api.nvim_feedkeys('\03', 'n', false) end
+				end,
+			},
 			['<CR>'] = cmp.mapping {
 				i = cmp.mapping.confirm { behavior = cmp.ConfirmBehavior.Replace, select = false },
 			},

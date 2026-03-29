@@ -35,13 +35,11 @@ function proj.cfg(path)
 		dll = dll,
 	}
 end
-
-vim.api.nvim_create_autocmd({ 'InsertLeave' }, {
+vim.api.nvim_create_autocmd('InsertLeavePre', {
 	buffer = 0,
 	callback = function(s)
-		local clients = vim.lsp.get_clients { name = 'roslyn_ls' }
+		local clients = vim.lsp.get_clients { name = 'roslyn_ls', bufnr = s.buf }
 		if not clients or #clients == 0 then return end
-		if #clients > 1 then vim.notify 'Multiple Roslyn clients!' end
 
 		local params = { textDocument = vim.lsp.util.make_text_document_params(s.buf) }
 		clients[1]:request('textDocument/diagnostic', params, nil, s.buf)

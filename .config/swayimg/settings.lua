@@ -1,49 +1,11 @@
 v.default_scale = 'optimal'
-e.subscribe {
-	event = 'SwiEnter',
-	callback = function()
-		if l.size() == 1 then
-			l.adjacent = true
-			l.add(l.get_current().path:match '.+/')
-		end
-
-		e.subscribe {
-			event = 'OptionSet',
-			pattern = '^swi%.?[^.]*%.[^.]*$', -- all main opt accesses
-			callback = function(state)
-				local v = state.data
-				if type(v) == 'number' then
-					v = string.format('%.2f', v)
-				elseif type(v) == 'table' then
-					return
-				end
-
-				local name = state.match:match '([^.]+%.[^.]+)$'
-				t.set_status(
-					('%s%s: %s'):format(
-						name:sub(1, 1):upper(),
-						name:sub(2):gsub('[_.](.)', function(x) return ' ' .. x:upper() end),
-						v
-					)
-				)
-			end,
-		}
-
-		return true
-	end,
-}
-e.subscribe {
-	event = 'WinResized',
-	mode = 'viewer',
-	callback = function()
-		if type(v.scale) == 'string' then swayimg.viewer.set_fix_scale(v.scale) end
-	end,
-}
-
-e.subscribe {
-	event = 'ShellCmdPost',
-	callback = function(state) t.set_status(state.data.out) end,
-}
+do
+	local snip = require 'swi.snippets'
+	snip.load_dir_if_single()
+	snip.print_option_changes()
+	snip.resize_image_with_window()
+	snip.print_shell_output()
+end
 
 swi.overlay = false
 swi.antialiasing = false
@@ -86,12 +48,15 @@ e.subscribe {
 v.text.topright = { '{list.index}/{list.total}' }
 v.text.bottomright = { '{scale}' }
 v.text.bottomleft = {}
-v.text.topleft = {'File: {name}', 'Size: {sizehr}', 'Res: {frame.width}x{frame.height}',
+v.text.topleft = {
+	'File: {name}',
+	'Size: {sizehr}',
+	'Res: {frame.width}x{frame.height}',
 	'Exposure: {ExposureTime} s',
 	'ISO: {ISOSpeedRatings}',
 	'FNumber: {FNumber}',
 	'FL: {FocalLength} mm',
-	'Rating: {Rating}'
+	'Rating: {Rating}',
 }
 e.subscribe {
 	event = 'ImgChange',

@@ -32,15 +32,15 @@ return {
 				enable_token_counting = false,
 			},
 			selection = { hint_display = 'none' },
-			provider = 'claude45',
-			model = 'claude-sonnet-4.5',
+			provider = 'copilot',
+			model = 'gpt-5-mini',
 			providers = {
 				-- gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
 				-- qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
 				-- ds1 = vim.tbl_extend('force', eInfraBase, { model = 'deepseek-r1' }),
 
 				gpt5 = { __inherited_from = 'copilot', model = 'gpt-5' },
-				claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.6' },
+				claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
 			},
 			web_search_engine = {
 				provider = 'tavily',
@@ -51,7 +51,7 @@ high code flexibility and extensibility.
 Your documentation provides concise additional information that the user might not understand
 from the code on its own at the first glance, but no redundant descriptions of an obvious line.
 
-You first research the best way to approach the proble, plan out your steps and then you follow it.
+Always take some time to research the best way to approach the problem, to think about and plan out your steps and only after you have a good plan you carry it out.
 You always do research and fact-checking before answering.
 You can tell if something is not possible or you are unsure about the answer and say so, when it's the case.
 ]],

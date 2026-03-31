@@ -14,9 +14,7 @@ local profiles = {
 			},
 		},
 	},
-	-- swayimg Lua scripts (embeds PUC-Lua 5.4)
 	swayimg = {
-		runtime = { version = 'Lua 5.4' },
 		workspace = {
 			library = {
 				'/usr/share/swayimg/swayimg.lua',
@@ -75,5 +73,5 @@ return {
 		},
 	},
 
-	root_markers = { 'lua', 'after', 'init.lua' },
+	root_markers = { '.editorconfig', '.stylua.toml', 'lua', 'after', 'init.lua' },
 }

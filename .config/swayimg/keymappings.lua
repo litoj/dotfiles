@@ -53,6 +53,11 @@ do
 	gmap({ 's', 'j' }, g.go.down)
 	gmap({ 'w', 'k' }, g.go.up)
 	gmap({ 'd', 'l', '<S-SMD>' }, g.go.right)
+	gmap('<C-h>', g.go.first)
+	gmap('<C-j>', g.go.pgdown)
+	gmap('<C-k>', g.go.pgup)
+	gmap('<C-l>', g.go.last)
+
 	gmap('<A-s>', 'dragon-drop -x -A %s')
 	gmap({ ' ', 'm' }, function()
 		l.marked.set_current 'toggle'

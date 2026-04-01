@@ -1,4 +1,4 @@
--- require'swi.api.eventloop'.debug_trigger=true
+-- require('swi.api.eventloop').debug_trigger = true
 -- require'swi.api.eventloop'.debug_subscribe=true
 require 'swi.api.globals'
 
@@ -13,8 +13,8 @@ e.subscribe {
 		end
 
 		v.scale = v.default_scale
-		require 'keymappings'
 		require 'lazy'
+		require 'keymappings'
 		return true
 	end,
 }

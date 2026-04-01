@@ -77,6 +77,7 @@ alias lt='eza --icons -T -L'
 alias ll='eza --icons -l'
 alias la='eza --icons -l -a'
 
+abbr untrash "echo '' | trash-restore | fzf --tac --no-sort | sed -n 's/^\s\+\([0-9]\+\).*\$/\1\n/p' | trash-restore"
 abbr man    batman
 abbr se     'sudoedit'
 abbr sr     'sudo ranger'
@@ -84,10 +85,6 @@ abbr s      'sensors'
 abbr cp     'cp -i'
 abbr mv     'mv -i'
 abbr gparted 'xhost +SI:localuser:root && sudo gparted; xhost -SI:localuser:root'
-
-function setpy
-end
-
 
 # get error messages from journalctl
 abbr jctl   'journalctl -p 3 -b'

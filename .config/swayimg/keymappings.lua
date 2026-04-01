@@ -1,13 +1,13 @@
----@param bind string|string[]
----@param cb string|function shellcmd to execute or callback
-local function amap(bind, cb)
-	v.map(bind, cb)
-	s.map(bind, cb)
-	g.map(bind, cb)
-end
-
 -- ## Global
 do
+	---@param bind string|string[]
+	---@param cb string|function shellcmd to execute or callback
+	local function amap(bind, cb)
+		v.map(bind, cb)
+		s.map(bind, cb)
+		g.map(bind, cb)
+	end
+
 	-- TODO: what is freemove?
 	-- TODO: regulate the movement speed with a counter
 	amap('x', function() l.remove(l.get_current().path) end)
@@ -19,6 +19,14 @@ do
 	v.map('d', function() t.enabled = not t.enabled end)
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
+
+	amap('<S-p>', function()
+		if swi.mode == 'slideshow' then
+			swi.mode = 'viewer'
+		else
+			swi.mode = 'slideshow'
+		end
+	end)
 
 	local function gen_rating(r)
 		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' "%" >/dev/null'
@@ -37,26 +45,29 @@ end
 
 -- ## Gallery
 do
-	g.map('g', function() swi.mode = 'viewer' end)
+	local gmap = g.map
 
-	g.map({ 'a', 'h', '<S-SMU>' }, g.go.left)
-	g.map({ 's', 'j' }, g.go.down)
-	g.map({ 'w', 'k' }, g.go.up)
-	g.map({ 'd', 'l', '<S-SMD>' }, g.go.right)
-	g.map('<A-s>', 'dragon-drop -x -A %s')
-	g.map({ ' ', 'm' }, function()
+	gmap('g', function() swi.mode = 'viewer' end)
+
+	gmap({ 'a', 'h', '<S-SMU>' }, g.go.left)
+	gmap({ 's', 'j' }, g.go.down)
+	gmap({ 'w', 'k' }, g.go.up)
+	gmap({ 'd', 'l', '<S-SMD>' }, g.go.right)
+	gmap('<A-s>', 'dragon-drop -x -A %s')
+	gmap({ ' ', 'm' }, function()
 		l.marked.set_current 'toggle'
 		g.go.right()
 	end)
-	g.map({ '<S- >', '<S-m>' }, function()
+	gmap({ '<S- >', '<S-m>' }, function()
 		l.marked.set_current 'toggle'
 		g.go.left()
 	end)
-	g.map('<S-Del>', function()
-		swi.exec '$(which trash || echo rm) %s'
-		local marked = l.marked.get()
-		for _, f in ipairs(marked) do
-			l.remove(f)
+	gmap('<S-Del>', function()
+		if swi.exec '$(which trash || echo rm) %m' then
+			local marked = l.marked.get()
+			for _, f in ipairs(marked) do
+				l.remove(f)
+			end
 		end
 	end)
 end
@@ -68,87 +79,80 @@ do
 		factor = math[factor < 1 and 'floor' or 'ceil'](s.timeout * factor * 4) / 4
 	end
 
-	amap('<S-p>', function()
-		if swi.mode == 'slideshow' then
-			swi.mode = 'viewer'
-		else
-			swi.mode = 'slideshow'
-		end
-	end)
-
 	s.map({ '=', '<S-+>' }, function() stime(6 / 5) end)
 	s.map('-', function() stime(5 / 6) end)
 end
 
 -- ## Viewer
 do
-	v.map('g', function() swi.mode = 'gallery' end)
+	local vmap = v.map
+	vmap('g', function() swi.mode = 'gallery' end)
 
-	v.map('m', function() l.marked.set_current 'toggle' end)
+	vmap('m', function() l.marked.set_current 'toggle' end)
 
-	v.map({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
-	v.map({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
-	v.map('<Home>', v.go.first)
-	v.map('<End>', v.go.last)
+	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
+	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
+	vmap('<Home>', v.go.first)
+	vmap('<End>', v.go.last)
 
-	v.map('h', v.step.left)
-	v.map('j', v.step.down)
-	v.map('k', v.step.up)
-	v.map('l', v.step.right)
-	v.map('<S-SML>', function() v.step.left(20) end)
-	v.map('<S-SMD>', function() v.step.down(20) end)
-	v.map('<S-SMU>', function() v.step.up(20) end)
-	v.map('<S-SMR>', function() v.step.right(20) end)
+	vmap('h', v.step.left)
+	vmap('j', v.step.down)
+	vmap('k', v.step.up)
+	vmap('l', v.step.right)
+	vmap('<S-SML>', function() v.step.left(20) end)
+	vmap('<S-SMD>', function() v.step.down(20) end)
+	vmap('<S-SMU>', function() v.step.up(20) end)
+	vmap('<S-SMR>', function() v.step.right(20) end)
 
-	v.map('r', function() v.rotate(90) end)
-	v.map('<S-r>', function() v.rotate(270) end)
+	vmap('r', function() v.rotate(90) end)
+	vmap('<S-r>', function() v.rotate(270) end)
 
-	--- ### Scaling
-	v.map('s', function()
+	-- ### Scaling
+	vmap('s', function()
 		v.scale = 'fill'
 		v.default_scale = 'fill'
 	end)
-	v.map('<S-s>', function()
+	vmap('<S-s>', function()
 		v.scale = 'fit'
 		v.default_scale = 'fit'
 	end)
-	v.map('<A-s>', function()
+	vmap('<A-s>', function()
 		v.scale = 'optimal'
 		v.default_scale = 'optimal'
 	end)
-	v.map('<S-a>', function()
+	vmap('<S-a>', function()
 		v.scale = 1
 		v.default_scale = 'real'
 	end)
-	v.map('a', function() v.scale = 1 end)
-	v.map('<A-a>', function() v.default_scale = 'keep_by_size' end)
-	v.map('<S-k>', function()
+	vmap('a', function() v.scale = 1 end)
+	vmap('<A-a>', function() v.default_scale = 'keep_by_size' end)
+	vmap('<S-k>', function()
 		v.scale = 0.35
 		v.default_scale = 'keep'
 	end)
-	v.map('f', function() v.scale = 'fill' end)
-	v.map('<S-f>', function() v.scale = 'fit' end)
-	v.map({ 'c', '<SMU>' }, function()
+	vmap('f', function() v.scale = 'fill' end)
+	vmap('<S-f>', function() v.scale = 'fit' end)
+	vmap({ 'c', '<SMU>' }, function()
 		local p = swi.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
 	end)
-	v.map({ '<S-c>', '<SMD>' }, function()
+	vmap({ '<S-c>', '<SMD>' }, function()
 		local p = swi.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)
-	v.map('1', function() v.scale = v.get_abs_scale() * 2 end)
-	v.map('2', function()
+	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
+	vmap('2', function()
 		v.scale = 2
 		v.default_scale = 'keep_by_width'
 	end)
-	v.map('4', function() v.scale = 4 end)
-	v.map('5', function() v.scale = 0.5 end)
-	v.map({ '<Up>', '=', '<S-+>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
-	v.map({ '<Down>', '-', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
+	vmap('4', function() v.scale = 4 end)
+	vmap('5', function() v.scale = 0.5 end)
+	vmap({ '<Up>', '=', '<S-+>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
+	vmap({ '<Down>', '-', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
 
-	v.map('b', [[~/.config/sway/custombg %f]])
-	v.map('<S-b>', [[cp %f ~/Pictures/screen/]])
-	v.map('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
-	v.map('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
-	v.map('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
+	vmap('b', [[~/.config/sway/custombg %f]])
+	vmap('<S-b>', [[cp %f ~/Pictures/screen/]])
+	vmap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
+	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
+	vmap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
 end

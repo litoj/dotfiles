@@ -30,7 +30,6 @@ t.size = 23
 t.status_timeout = 2
 t.enabled = false
 
-swi.exif_orientation = false
 v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
 v.history_limit = 5
@@ -48,3 +47,12 @@ g.aspect = 'keep'
 g.cache_limit = 10000
 g.preload = true
 g.pstore = false
+
+swi.exif_orientation = true
+e.subscribe {
+	event = 'ImgChange',
+	callback = function(s)
+		if s.data.path:match '%.RAF$' then swi.exif_orientation = true end
+		return true
+	end,
+}

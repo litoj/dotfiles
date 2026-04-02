@@ -21,24 +21,6 @@ v.text.topleft = {
 	'FL:\t{FocalLength} mm',
 	'Rating:\t{Rating}',
 }
--- e.subscribe {
--- 	event = 'ImgChange',
--- 	mode = 'viewer',
--- 	callback = function(s)
--- 		local i = s.data
--- 		if i.path:match '%.RAF$' then
--- 			local o = tonumber(i.meta['Exif.Image.Orientation'])
--- 			v.set_meta('Exif.Image.Orientation', '0') -- to not repeatedly rotate
--- 			if o == 8 then
--- 				v.rotate(90)
--- 				v.scale = v.default_scale
--- 			elseif o == 6 then
--- 				v.rotate(270)
--- 				v.scale = v.default_scale
--- 			end
--- 		end
--- 	end,
--- }
 
 snip.print_option_changes()
 snip.print_shell_output()

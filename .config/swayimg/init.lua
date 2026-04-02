@@ -2,12 +2,12 @@
 -- require'swi.api.eventloop'.debug_subscribe=true
 require 'swi.api.globals'
 
--- lazyload everything that can be after the window has opened
+-- maximize lazyload after the window has opened
 local x
 e.subscribe {
 	event = 'WinResized',
 	callback = function()
-		if not x then
+		if not x and not swi.overlay then -- resizes twice with overlay disabled
 			x = true
 			return
 		end

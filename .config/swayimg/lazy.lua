@@ -1,6 +1,5 @@
 local snip = require 'swi.snippets'
 snip.load_dir_if_single()
-snip.pretty_print_tables(true)
 
 v.default_scale = 'optimal'
 snip.resize_image_with_window()

@@ -1,5 +1,6 @@
 -- require('swi.api.eventloop').debug_trigger = true
 -- require'swi.api.eventloop'.debug_subscribe=true
+-- require('swi.snippets').pretty_print_tables(true)
 require 'swi.api.globals'
 
 -- maximize lazyload after the window has opened
@@ -36,6 +37,7 @@ v.history_limit = 5
 v.preload_limit = 2
 v.loop = true
 
+g.pinch_factor = 100
 g.window_color = 0xff000000
 g.mark_color = 0xffff55ff
 g.border_size = 10
@@ -48,7 +50,7 @@ g.cache_limit = 10000
 g.preload = true
 g.pstore = false
 
-swi.exif_orientation = true
+swi.exif_orientation = false
 e.subscribe {
 	event = 'ImgChange',
 	callback = function(s)

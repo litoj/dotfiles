@@ -8,7 +8,6 @@ do
 		g.map(bind, cb)
 	end
 
-	-- TODO: what is freemove?
 	-- TODO: regulate the movement speed with a counter
 	amap('x', function() l.remove(l.get_current().path) end)
 	amap({ 'q', '<Esc>' }, function() swi.exit(0) end)
@@ -17,8 +16,10 @@ do
 	amap('u', function() swi.antialiasing = not swi.antialiasing end)
 	amap('i', function() t.enabled = not t.enabled end)
 	v.map('d', function() t.enabled = not t.enabled end)
+	local osize = t.size
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
+	amap('<C-0>', function() t.size = osize end)
 
 	amap('<S-p>', function()
 		if swi.mode == 'slideshow' then
@@ -94,6 +95,7 @@ do
 	vmap('g', function() swi.mode = 'gallery' end)
 
 	vmap('m', function() l.marked.set_current 'toggle' end)
+	vmap('c', function() v.centering = not v.centering end)
 
 	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
 	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
@@ -108,9 +110,6 @@ do
 	vmap('<S-SMD>', function() v.step.down(20) end)
 	vmap('<S-SMU>', function() v.step.up(20) end)
 	vmap('<S-SMR>', function() v.step.right(20) end)
-
-	vmap('r', function() v.rotate(90) end)
-	vmap('<S-r>', function() v.rotate(270) end)
 
 	-- ### Scaling
 	vmap('s', function()
@@ -137,11 +136,11 @@ do
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
-	vmap({ 'c', '<SMU>' }, function()
+	vmap({ '<SMU>' }, function()
 		local p = swi.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
 	end)
-	vmap({ '<S-c>', '<SMD>' }, function()
+	vmap({ '<SMD>' }, function()
 		local p = swi.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)

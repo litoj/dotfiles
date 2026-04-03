@@ -73,5 +73,5 @@ return {
 		},
 	},
 
-	root_markers = { '.editorconfig', '.stylua.toml', 'lua', 'after', 'init.lua' },
+	root_markers = { '.editorconfig', '.stylua.toml', 'lua', 'after', 'init.lua', '.git' },
 }

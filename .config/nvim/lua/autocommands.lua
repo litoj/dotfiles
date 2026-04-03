@@ -59,7 +59,14 @@ local function setCWD(s)
 end
 au('BufEnter', setCWD, '*') -- to execute on every focus change
 au('BufLeave', function(s) fakeUpdate = not validUpdate(s) end)
-map('n', ' md', function() cwdEnabled = not cwdEnabled end, { desc = 'toggle cwd changing' })
+map('n', ' md', function()
+	cwdEnabled = not cwdEnabled
+	vim.notify('AutoCWD: ' .. tostring(cwdEnabled))
+end, { desc = 'toggle cwd changing' })
+map('n', ' cd', function()
+	vim.b[vim.api.nvim_get_current_buf()].cwd = vim.fn.getcwd()
+	vim.notify 'cwd updated'
+end, { desc = 'update file cwd' })
 
 local function setIndentMarks(state)
 	vim.wo[0][0].lcs = 'tab:│ ,leadmultispace:│' .. string.rep(' ', vim.bo.sw - 1) -- indent marks

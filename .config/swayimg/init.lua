@@ -1,6 +1,5 @@
 -- require('swi.api.eventloop').debug_trigger = true
 -- require'swi.api.eventloop'.debug_subscribe=true
--- require('swi.snippets').pretty_print_tables(true)
 require 'swi.api.globals'
 
 -- maximize lazyload after the window has opened

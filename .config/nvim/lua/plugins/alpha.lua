@@ -51,6 +51,7 @@ function M.config()
 
 			local hi = {
 				{ '.*/nvim/lua/', ' ', 'Cyan' },
+				{ '.*/swayimg/', ' ', 'LightViolet' },
 				{ '.*/.config/', ' ', 'Orange' },
 				{ '~/Documents/work/', '󱫋 ', 'LightBlue' },
 				{ '~/Documents/school/', '󰑴 ', 'Blue' },
@@ -138,7 +139,7 @@ function M.config()
 				{ 'c', '~/dotfiles/.config/' },
 				{ 'n', '~/.config/nvim/lua/' },
 				{ 's', '~/.config/sway/' },
-				{ 'i', '~/.config/swayimg/config' },
+				{ 'i', '~/.config/swayimg/' },
 				{ 'b', '~/.config/i3blocks/' },
 				{ 'r', '~/.config/ranger/' },
 				{ 'f', '~/.config/fish/config.fish' },

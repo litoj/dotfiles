@@ -44,7 +44,7 @@ function M.config()
 					if file then
 						config.stdio = { file, nil, nil }
 					else
-						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.loop.cwd() .. '`')
+						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.uv.cwd() .. '`')
 						return
 					end
 					args[#args] = nil

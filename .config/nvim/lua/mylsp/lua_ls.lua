@@ -1,11 +1,11 @@
 local profiles = {
 	['/nvim'] = {
 		diagnostics = { globals = { 'vim' } },
-		workspace = {
-			library = {
-				'${3rd}/luv/library',
-			},
-		},
+		-- workspace = {
+		-- 	library = {
+		-- 		'${3rd}/luv/library',
+		-- 	},
+		-- },
 	},
 	['%.config/nvim'] = {
 		workspace = {
@@ -15,35 +15,16 @@ local profiles = {
 		},
 	},
 	swayimg = {
+		runtime = { path = { '?.lua' }, pathStrict = true },
 		workspace = {
 			library = {
 				'/usr/share/swayimg/swayimg.lua',
-				-- os.getenv 'HOME' .. '/.config/swayimg/',
 			},
 		},
 	},
 }
 
 return {
-	---@param client vim.lsp.Client
-	on_attach = function(client, _)
-		local extend = require('manipulator.utils').tbl_inner_extend
-		for pattern, profile in pairs(profiles) do
-			if client.root_dir:find(pattern) then
-				local t = extend('keep', (client.settings or client.config.settings).Lua, profile, true)
-				local u = {}
-				for _, v in ipairs(t.workspace.library) do
-					u[v] = 1
-				end
-				local l = {}
-				t.workspace.library = l
-				for k, _ in pairs(u) do
-					l[#l + 1] = k
-				end
-			end
-		end
-	end,
-
 	-- doesn't work - always uses utf-16
 	capabilities = { positionEncodings = { 'utf-8' }, offsetEncoding = 'utf-8' },
 	settings = {
@@ -74,4 +55,23 @@ return {
 	},
 
 	root_markers = { '.editorconfig', '.stylua.toml', 'lua', 'after', 'init.lua', '.git' },
+
+	---@param client vim.lsp.Client
+	on_attach = function(client, _)
+		local extend = require('manipulator.utils').tbl_inner_extend
+		for pattern, profile in pairs(profiles) do
+			if client.root_dir:find(pattern) then
+				local t = extend('keep', (client.settings or client.config.settings).Lua, profile, true)
+				local u = {}
+				for _, v in ipairs(t.workspace.library) do
+					u[v] = 1
+				end
+				local l = {}
+				t.workspace.library = l
+				for k, _ in pairs(u) do
+					l[#l + 1] = k
+				end
+			end
+		end
+	end,
 }

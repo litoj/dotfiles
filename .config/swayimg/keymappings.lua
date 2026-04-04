@@ -30,7 +30,7 @@ do
 	end)
 
 	local function gen_rating(r)
-		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' "%" >/dev/null'
+		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' %f >/dev/null'
 	end
 	amap({ 'Alt+0', 'Alt+grave' }, gen_rating(0))
 	amap('Alt+1', gen_rating(1))

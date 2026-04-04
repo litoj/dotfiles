@@ -11,18 +11,6 @@ return {
 		config = function() require 'mylsp' end,
 	},
 	{
-		'folke/lazydev.nvim',
-		dependencies = {
-			'nvim-lspconfig',
-			{ 'jbyuki/one-small-step-for-vimkind', version = 'main' }, -- for lua debugging from separate instance
-		},
-		ft = 'lua',
-		config = function()
-			require('lazydev').setup()
-			require('mylsp').setup 'lua_ls' -- must be set up after lazydev
-		end,
-	},
-	{
 		'litoj/reform.nvim',
 		event = 'VeryLazy',
 		opts = {

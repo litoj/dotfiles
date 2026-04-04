@@ -7,7 +7,7 @@ require('fthelper').withMod('dap', function(dap)
 			request = 'launch',
 			name = 'Launch file',
 			program = '${file}',
-			cwd = vim.loop.cwd(),
+			cwd = vim.uv.cwd(),
 			sourceMaps = true,
 		}, ]]
 		{
@@ -53,6 +53,7 @@ require('fthelper').withMod('dap', function(dap)
 		}, ]]
 	}
 
+	---@diagnostic disable-next-line: missing-fields
 	require('dap-vscode-js').setup {
 		adapters = { 'pwa-node', 'pwa-chrome', 'node-terminal' },
 		debugger_path = os.getenv 'HOME' .. '/.local/share/vscode-js-debug',

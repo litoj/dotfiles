@@ -20,7 +20,6 @@ e.subscribe {
 }
 
 swi.overlay = false
-swi.antialiasing = false
 l.order = 'alpha'
 t.shadow = 0xff101010
 t.foreground = 0xffffffff
@@ -34,9 +33,7 @@ v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
 v.history_limit = 5
 v.preload_limit = 2
-v.loop = true
 
-g.pinch_factor = 100
 g.window_color = 0xff000000
 g.mark_color = 0xffff55ff
 g.border_size = 10
@@ -48,12 +45,3 @@ g.aspect = 'keep'
 g.cache_limit = 10000
 g.preload = true
 g.pstore = false
-
-swi.exif_orientation = false
-e.subscribe {
-	event = 'ImgChange',
-	callback = function(s)
-		if s.data.path:match '%.RAF$' then swi.exif_orientation = true end
-		return true
-	end,
-}

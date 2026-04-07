@@ -146,6 +146,7 @@ abbr mefi   'chattr -i'
 abbr od     'od -xc --endian big -N 100'
 
 if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
+	killall -15 ssh-agent &>/dev/null
 	export (ssh-agent | sed -n 's/^\([^ ]*\);.*/\1/p')
 	export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
 	export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
@@ -163,7 +164,6 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland
 	export PATH="$HOME/.pyenv/shims:$PATH"
 	WLR_RENDERER=vulkan sway &>/dev/null < /dev/null # to disable stdin and not cause term apps to open in tty
-	killall -15 ssh-agent
 else if status --is-interactive && test -f .python-version -o -f ../.python-version
 	pyenv init - | source
 	# pyenv activate (cat .python-version ../.python-version 2>/dev/null)

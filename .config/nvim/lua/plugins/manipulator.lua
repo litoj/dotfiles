@@ -120,8 +120,7 @@ function M.config()
 			linewise = type == 'V',
 			mode = mode == 'V' and 'over' or (after and 'after' or 'before'),
 		}
-		if mode == 'i' and after and type == 'v' then r.range[4] = r.range[4] + 1 end
-		r:jump { inherit = false, shift_mode = 1, end_ = type == 'v' and (after or mode == 'n') }
+		r:jump { inherit = false, end_ = type == 'v' and (after or mode == 'n') }
 	end
 	map({ '', 'i' }, '<C-v>', mcp:new(true)[paste].fn)
 	map('i', '<C-S-V>', mcp:new(false)[paste].fn)

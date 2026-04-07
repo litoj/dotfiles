@@ -119,6 +119,7 @@ function proj.pick(prompt, sources)
 	if #projects == 0 or projects[1] == '' then return vim.notify 'No projects found' end
 	table.insert(projects, 1, fth.findDirOf '.csproj$')
 
+	---@diagnostic disable-next-line: missing-parameter
 	local _, pos = vim.ui.select(
 		vim.tbl_map(function(v) return v:match '([^/]+)/$' end, projects),
 		{ prompt = prompt or 'Pick project' }
@@ -188,6 +189,7 @@ function proj.test()
 	local cfg = proj.pick('debug project', 'test')
 	if not cfg then return end
 
+	---@diagnostic disable-next-line: missing-parameter
 	local filter = vim.ui.input { prompt = 'Testname contains literal' }
 	if not filter then return end
 	proj.run_test(cfg, false, filter)
@@ -217,6 +219,7 @@ map('n', '<A-y>', function()
 	local pos = m.ts.current { types = { 'declaration$' } }
 	local r = pos.range
 	local indent = m.Range.get_text { r[1], 0, r[1], r[2] - 1 }
+	---@diagnostic disable-next-line: cast-local-type
 	pos = pos:paste {
 		text = indent .. '///',
 		mode = 'before',
@@ -248,12 +251,14 @@ local function transform_endpoint()
 
 	local fn = m.ts.current { types = { 'method_declaration' } }
 	local ret_type = fn:field 'returns'
+	if not ret_type then return print 'weird method without return type' end
 	local name_str = fn:field('name'):get_text()
 	local ok_ret = ret_type:get_text():match '^Task<ActionResult<(.*)>>$'
 	local anno_block = fn:descendant {
 		query = [[(method_declaration (attribute_list)* @fold)]],
 		types = { '@fold' },
 	}
+	if not anno_block then return print 'no anno block' end
 
 	local annos = { others = {} }
 
@@ -276,7 +281,7 @@ local function transform_endpoint()
 			local code, name = line:match 'Status(%d+)(%w+)'
 			if code and code ~= '401' and code ~= '403' then
 				if code:match '^2' then
-					local ok_t = { ['201'] = 'CreatedAtRoute<%s>', ['200'] = 'Ok<%s>', ['204'] = 'NoContent' }
+					local ok_t = { ['201'] = 'CreatedAtRoute', ['200'] = 'Ok<%s>', ['204'] = 'NoContent' }
 					table.insert(results, string.format(ok_t[code] or (name .. '<%s>'), ok_ret))
 				else
 					table.insert(results, name .. '<ProblemDetails>')
@@ -293,13 +298,19 @@ local function transform_endpoint()
 
 	ret_type:paste { text = 'Task<' .. results_type .. '>' }
 
-	local ret_line = fn:field('body'):descendant { types = { 'return_statement' } }
-	local result = ret_line
-		:get_text()
-		:gsub('return ', 'return TypedResults.')
-		:gsub('CreatedAtAction(.+),%s*null%)', 'CreatedAtRoute%1)')
-		:gsub('Ok(.+ToListAsync%(%))', 'Ok(%1).AsEnumerable()')
-	ret_line:paste { text = result }
+	for n in
+		fn:field('body'):in_graph { inherit = 'super.descendant', types = { 'return_statement' } }
+	do
+		local result = n:get_text()
+			:gsub('return ', 'return TypedResults.')
+			:gsub('CreatedAtAction(.+),%s*null%)', 'CreatedAtRoute%1)')
+			:gsub('Ok(.+ToListAsync%(%))', 'Ok(%1).AsEnumerable()')
+			:gsub('Problem%((.*4[0-9][0-9](%w+).*)%);', '%2(new ProblemDetails { %1 });')
+			:gsub('statusCode: (.-Status4[0-9][0-9](%w+))', 'Title = "%2", Status = %1')
+			:gsub('detail: ("[^"]+")', 'Detail = %1')
+			:gsub('\n%s+("[^"]+")', '\nDetail = %1')
+		n:paste { text = result }
+	end
 
 	local out_annos = {}
 	for _, v in ipairs { 'method', 'summary', 'desc', 'consumes' } do
@@ -311,7 +322,8 @@ local function transform_endpoint()
 
 	if #out_annos then
 		local text = table.concat(out_annos, '\n')
-		anno_block:paste { text = text }
+		anno_block.range[2] = 0
+		anno_block:paste { text = text, linewise = true, mode = 'over' }
 	end
 end
 

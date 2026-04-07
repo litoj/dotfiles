@@ -255,7 +255,7 @@ basicsBundle=(
 	yt-dlp
 )
 installBasics() {
-	exec sudo systemctl enable NetworkManager ufw acpid
+	exec sudo systemctl enable NetworkManager ufw acpid systemd-oomd
 	exec sudo mkdir -p /etc/acpi/events
 
 	exec sudo ln -s "${repoDir}"/bin/* /usr/local/bin/

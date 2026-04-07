@@ -19,6 +19,7 @@ local profiles = {
 		workspace = {
 			library = {
 				'/usr/share/swayimg/swayimg.lua',
+				'/usr/local/share/swayimg/swayimg.lua',
 			},
 		},
 	},

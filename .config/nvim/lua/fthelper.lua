@@ -88,7 +88,13 @@ function M.withMod(mod, cb, ...)
 			old()
 		else
 			package.loaded[mod] = nil
-			package.loaded[mod] = package.loaders[2](mod)()
+			for _, l in ipairs(package.loaders) do
+				local ret = l(mod)
+				if type(ret) == 'function' then
+					package.loaded[mod] = ret()
+					break
+				end
+			end
 		end
 		vim.schedule(function() cb(package.loaded[mod], unpack(args)) end)
 	end

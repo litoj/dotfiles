@@ -1,11 +1,8 @@
+---@module 'lspconfig'
+---@type {[string]:_.lspconfig.settings.lua_ls.Lua}
 local profiles = {
 	['/nvim'] = {
 		diagnostics = { globals = { 'vim' } },
-		-- workspace = {
-		-- 	library = {
-		-- 		'${3rd}/luv/library',
-		-- 	},
-		-- },
 	},
 	['%.config/nvim'] = {
 		workspace = {
@@ -25,13 +22,13 @@ local profiles = {
 	},
 }
 
+---@type vim.lsp.Config
 return {
-	-- doesn't work - always uses utf-16
-	capabilities = { positionEncodings = { 'utf-8' }, offsetEncoding = 'utf-8' },
+	---@type lspconfig.settings.lua_ls
 	settings = {
 		Lua = { -- https://luals.github.io/wiki/settings/
 			codeLens = { enable = false },
-			completion = { autoRequire = false, showParams = true, callSnippet = 'Replace' },
+			completion = { autoRequire = false, showParams = true, callSnippet = 'Disable', keywordSnippet='Disable' },
 			hint = { enable = true, paramName = 'Disable', setType = true },
 			type = { castNumberToInteger = true, weakNilCheck = true, weakUnionCheck = true },
 			runtime = { version = 'LuaJIT' },
@@ -54,24 +51,31 @@ return {
 			},
 		},
 	},
-
 	root_markers = { '.editorconfig', '.stylua.toml', 'lua', 'after', 'init.lua', '.git' },
 
 	---@param client vim.lsp.Client
-	on_attach = function(client, _)
+	on_attach = function(client, buf)
+		-- vim.api.nvim_create_autocmd('InsertLeave', {
+		-- 	buffer = buf,
+		-- 	callback = function() vim.diagnostic.show(nil, buf) end,
+		-- })
 		local extend = require('manipulator.utils').tbl_inner_extend
+		local file = vim.api.nvim_buf_get_name(buf)
 		for pattern, profile in pairs(profiles) do
-			if client.root_dir:find(pattern) then
-				local t = extend('keep', (client.settings or client.config.settings).Lua, profile, true)
-				local u = {}
-				for _, v in ipairs(t.workspace.library) do
+			if file:find(pattern) then
+				local t = extend('keep', client.config.settings, { Lua = profile }, true)
+
+				local u = {} -- deduplicate entries
+				for _, v in ipairs(t.Lua.workspace.library) do
 					u[v] = 1
 				end
 				local l = {}
-				t.workspace.library = l
 				for k, _ in pairs(u) do
 					l[#l + 1] = k
 				end
+				t.Lua.workspace.library = l
+
+				client:notify('workspace/didChangeConfiguration', { settings = t })
 			end
 		end
 	end,

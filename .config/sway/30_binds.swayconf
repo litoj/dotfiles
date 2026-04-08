@@ -367,7 +367,7 @@ bindsym {
 }
 set $mpv playerctl --player=mpv
 set $info $mpv metadata --format
-set $mpvFile $info '{{xesam:url}}' | sed -e 's,file://,,' -e 's,+,%2b,' | urlencode -d
+set $mpvFile $info '{{xesam:url}}' | sed -e 's,file://,,' -e 's,+,%2b,g' | urlencode -d
 bindsym {
 # Media management
 	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\

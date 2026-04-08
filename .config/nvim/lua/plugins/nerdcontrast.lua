@@ -1,17 +1,23 @@
 local M = { 'litoj/nerdcontrast.nvim', lazy = false, priority = 72 }
 function M.config()
 	vim.o.bg = exists '/tmp/my/day' and 'light' or 'dark'
-	require('nerdcontrast').setup {
+	local nc = require 'nerdcontrast'
+	nc.setup {
 		export = true,
 		light = {
 			opacity = 'ff',
-			palette = { override = { Bg1 = { bg = '#f5f5f5' }, Bg2 = {
-				bg = '#ffffff',
-			} } },
+			palette = { override = {
+				Bg1 = { bg = '#f5f5f5' },
+				Bg2 = { bg = '#ffffff' },
+			} },
 		},
 		dark = { opacity = 'dd' },
 		theme = { override = { StatusLine = 'Bg0', Visual = 'BgBlue', Parameter = 'FgGreen' } },
 	}
+	nc.plug_hooks['blink.cmp'] = false
+	nc.hi_themed(require 'nerdcontrast.plugs.blink__cmp', 'nc_christmas')
+	nc.hi { BlinkCmpKindMethod = { fg = 'BuiltinFn', reverse = true } }
+
 	-- Dark/Light theme toggle
 	map('n', ' mn', function() vim.o.bg = vim.o.bg == 'light' and 'dark' or 'light' end)
 	map('n', ' mb', function()
@@ -27,9 +33,8 @@ function M.config()
 		require('reform.util').apply_matcher(matcher, ev)
 	end, { desc = 'update bg colour to the one under cursor' })
 	map('n', ' mt', function()
-		local nc = require 'nerdcontrast'
-		local theme = nc.config[vim.go.background].theme == 'nc_christmas' and 'nc' or 'nc_christmas'
-		nc.setup { theme = theme }
+		local theme = nc.config[vim.o.bg].theme.base == 'nc_christmas' and 'nc' or 'nc_christmas'
+		nc.setup { theme = { base = theme } }
 	end, { desc = 'toggle theme between nc and nc_christmas' })
 	map('n', ' mi', '<Cmd>Inspect<CR>', { desc = ':Inspect' })
 end

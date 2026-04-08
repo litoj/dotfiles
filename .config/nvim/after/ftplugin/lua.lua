@@ -18,5 +18,5 @@ local map = require('fthelper').once {
 	end,
 }
 
-map('n', '<F18>', function() require('osv').launch { port = 8086, delay_frozen = 100 } end)
+map('n', '<S-F6>', function() require('osv').launch { port = 8086, delay_frozen = 100 } end)
 vim.fn.matchadd('Label', [[--\zs #\+ ]])

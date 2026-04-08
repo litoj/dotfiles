@@ -110,7 +110,7 @@ map('n', ' v', '<Cmd>split<CR>')
 map('n', ' h', '<Cmd>vsplit<CR>')
 -- reload
 map({ 'n', 'i' }, '<F5>', '<Cmd>e<CR>')
-map({ 'n', 'i' }, '<F17>', '<Cmd>e!<CR>')
+map({ 'n', 'i' }, '<S-F5>', '<Cmd>e!<CR>')
 -- search with centering
 map('n', 'n', 'nzz')
 map('n', 'N', 'Nzz')

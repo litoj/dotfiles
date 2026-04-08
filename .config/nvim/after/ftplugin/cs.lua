@@ -198,7 +198,7 @@ end
 map('n', '<A-t>', function() coroutine.wrap(proj.test)() end)
 map('n', '<A-S-R>', function() coroutine.wrap(proj.run)() end)
 map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
-map('n', '<F18>', function() coroutine.wrap(proj.debug)() end)
+map('n', '<S-F6>', function() coroutine.wrap(proj.debug)() end)
 
 local function test_method(debug)
 	local cfg = proj.cfg(fth.findDirOf '.csproj$')

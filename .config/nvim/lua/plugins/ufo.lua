@@ -13,6 +13,12 @@ function M.config()
 		open_fold_hl_timeout = 0,
 		provider_selector = function(buf, ft, type) return cfg[ft] or { 'treesitter', 'indent' } end,
 	}
+
+	-- vim.lsp.config(
+	-- 	'*',
+	-- 	{ textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
+	-- )
+
 	vim.o.fdl = 99
 	vim.o.fdls = 99
 	vim.o.fen = true

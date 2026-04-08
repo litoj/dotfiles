@@ -18,13 +18,6 @@ vim.diagnostic.config {
 	},
 }
 
-vim.lsp.config(
-	'*',
-	{ capabilities = require('cmp_nvim_lsp').default_capabilities() }
-	-- ../plugins/ufo.lua
-	-- { textDocument = { foldingRange = { dynamicRegistration = false, lineFoldingOnly = true } } }
-)
-
 ---@param server? string
 ---@param opts? string|vim.lsp.Config|{setCwd:boolean, format:boolean}
 local function setup(server, opts)

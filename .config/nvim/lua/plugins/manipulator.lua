@@ -3,12 +3,15 @@
 local M = {
 	'litoj/manipulator.nvim',
 	dependencies = {
-		'nvim-treesitter',
-		'nvim-treesitter/nvim-treesitter-textobjects',
+		{
+			'nvim-treesitter/nvim-treesitter-textobjects',
+			branch = 'main',
+		},
 	},
 	event = 'VeryLazy',
 }
 function M.config()
+	require('vim._core.ui2').enable {}
 	local m = require 'manipulator'
 	local RM = m.RM
 	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })

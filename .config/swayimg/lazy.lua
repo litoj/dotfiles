@@ -2,7 +2,7 @@ local snip = require 'swi.snippets'
 snip.load_dir_if_single()
 
 v.default_scale = 'optimal'
-snip.resize_image_with_window()
+-- snip.resize_image_with_window()
 
 g.text.topleft = { 'File:\t{name}' }
 g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{swi.imagelist.marked.size}' }

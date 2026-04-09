@@ -9,6 +9,7 @@ local M = {
 		'litoj/cmp-calc',
 	},
 	event = 'InsertEnter',
+	keys = ':',
 
 	version = '1.*',
 	-- or build = 'cargo build --release',
@@ -58,7 +59,7 @@ function M.config()
 	---@module 'blink.cmp'
 	---@type blink.cmp.Config
 	local opts = {
-		signature = { enabled = false, window = { border = 'rounded' } },
+		signature = { enabled = false },
 	}
 
 	opts.appearance = {
@@ -166,17 +167,14 @@ function M.config()
 				end
 			end,
 		},
-		-- ['<C-S-space>'] = { 'show_signature', 'hide_signature' },
 		['<Esc>'] = { 'cancel', 'fallback' },
 		['<Tab>'] = {
-			function()
-				if not ls.locally_jumpable(1) then return end
-				vim.schedule(function() ls.jump(1) end)
-				return true
-			end,
-			'select_and_accept',
-			function() -- >> with cursor tracking TODO: use manipulator
-				vim.schedule(function()
+			function(cmp)
+				if ls.locally_jumpable(1) then
+					return vim.schedule(function() ls.jump(1) end)
+				end
+				if cmp.select_and_accept() or vim.fn.mode() == 'c' then return end
+				vim.schedule(function() -- >> with cursor tracking TODO: use manipulator
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
 					if line:sub(col, col):match '%w' then return end
@@ -190,25 +188,24 @@ function M.config()
 					vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
 					vim.api.nvim_win_set_cursor(0, { row, col + #indent })
 				end)
-				return true
 			end,
 		},
 		['<S-Tab>'] = {
 			function(cmp)
 				if ls.locally_jumpable(-1) then
-					vim.schedule(function() ls.jump(-1) end)
-				elseif not cmp.select_prev() then
-					vim.schedule(function()
-						local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-						local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-						local indent = line:match '^%s'
-						if not indent then return end
-						indent = indent == ' ' and vim.bo.sw or 1
-						line = line:sub(indent + 1)
-						vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
-						vim.api.nvim_win_set_cursor(0, { row, col > indent and col - indent or 0 })
-					end)
+					return vim.schedule(function() ls.jump(-1) end)
 				end
+				if cmp.insert_prev() or vim.fn.mode() == 'c' then return end
+				vim.schedule(function() -- << with cursor tracking TODO: use manipulator
+					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
+					local indent = line:match '^%s'
+					if not indent then return end
+					indent = indent == ' ' and vim.bo.sw or 1
+					line = line:sub(indent + 1)
+					vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
+					vim.api.nvim_win_set_cursor(0, { row, col > indent and col - indent or 0 })
+				end)
 			end,
 		},
 
@@ -234,6 +231,14 @@ function M.config()
 		['<C-4>'] = { function(cmp) return cmp.accept { index = 4 } end, 'fallback_to_mappings' },
 		['<C-5>'] = { function(cmp) return cmp.accept { index = 5 } end, 'fallback_to_mappings' },
 	}
+	opts.cmdline = {
+		keymap = {
+			preset = 'inherit',
+
+			['<Esc>'] = { 'cancel', function(e) vim.api.nvim_feedkeys('\03', 'n', false) end },
+		},
+		completion = { menu = { auto_show = true } },
+	}
 
 	local dropIds = { --[[ [kinds.Keyword] = true, ]]
 		[kinds.Text] = true,
@@ -246,9 +251,9 @@ function M.config()
 						return vim.tbl_filter(function(x)
 							if dropIds[x.kind] or x.kind == kinds.Keyword then return false end
 
-							if x.kind == 3 and #x.label > #x.insertText then -- drop params from fn name complete
+							if x.kind == 3 and x.insertText and #x.label > #x.insertText then -- drop params from fn name complete
 								x.label = x.insertText
-							elseif x.kind == 15 then -- regard snippets as functions
+							elseif x.kind == 15 and x.label:match '%(' then -- regard snippets as functions
 								x.kind = 3
 							end
 							return true
@@ -298,10 +303,11 @@ function M.config()
 
 		default = { 'lsp', 'path', 'calc', 'snippets', 'copilot' },
 		per_filetype = {
-			lua = { inherit_defaults = true, 'lazydev', 'nerdfont' },
+			lua = { inherit_defaults = true, 'lazydev' },
 			markdown = { inherit_defaults = true, 'nerdfont', 'latex' },
 			text = { inherit_defaults = true, 'nerdfont', 'latex' },
 			tex = { inherit_defaults = true, 'latex' },
+			AvanteInput = { inherit_defaults = false, 'path', 'calc' },
 		},
 	}
 

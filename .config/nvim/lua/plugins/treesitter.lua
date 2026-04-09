@@ -1,7 +1,7 @@
 local langs = {
 	'bash',
 	'bibtex',
-	'c',
+	-- 'c', -- builtin as a nvim depencency
 	'cpp',
 	'css',
 	'c_sharp',
@@ -11,9 +11,9 @@ local langs = {
 	'javascript',
 	'json',
 	'latex',
-	'lua',
+	-- 'lua', -- builtin
 	-- 'luadoc',
-	'markdown',
+	-- 'markdown', -- builtin
 	'markdown_inline',
 	-- 'printf'
 	'python',
@@ -21,7 +21,7 @@ local langs = {
 	'rust',
 	'tsx',
 	'typescript',
-	'vim',
+	-- 'vim', -- builtin
 	'yaml',
 }
 return {
@@ -31,9 +31,13 @@ return {
 		branch = 'main',
 		lazy = false,
 		config = function()
-			require('nvim-treesitter').install(langs)
+			local ts = require 'nvim-treesitter'
+			ts.install(langs)
 			vim.api.nvim_create_autocmd('BufEnter', {
 				callback = function() vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end,
+			})
+			vim.api.nvim_create_autocmd('FileType', {
+				callback = function(args) pcall(vim.treesitter.start, args.buf) end,
 			})
 		end,
 	},

@@ -38,20 +38,69 @@ local M = {
 		},
 	},
 }
+
+local eInfra = {
+	endpoint = 'https://llm.ai.e-infra.cz/v1',
+	api_key_name = 'E_INFRA_KEY',
+	timeout = 30000,
+	extra_request_body = {
+		max_tokens = 16384,
+	},
+	-- Model discovery via /v1/models endpoint
+	list_models = function(self)
+		local api_key = os.getenv(self.api_key_name) or error('No ' .. self.api_key_name)
+		local p =
+			io.popen(('curl -s -H "Authorization: Bearer %s" %s/models'):format(api_key, self.endpoint))
+		local ok, decoded = pcall(vim.json.decode, p:read '*a')
+		p:close()
+		if not ok or not decoded.data then return {} end
+
+		-- Transform the OpenAI models API response to Avante's expected format
+		local models = {}
+		-- print(decoded.data)
+		local filter = {
+			['deepseek-v3.2'] = 1,
+			['glm-4.7'] = 1,
+			['gpt-oss-120b'] = 1,
+			['kimi-k2.5'] = 1,
+			['llama-4-scout-17b-16e-instruct'] = 1,
+			['mini'] = 1,
+			['mistral-small-4'] = 1,
+			['multilingual-e5-large-instruct'] = 1,
+			['mxbai-embed-large:latest'] = 1,
+			['nomic-embed-text-v1.5'] = 1,
+			['nomic-embed-text-v2-moe'] = 1,
+			['qwen3-coder'] = 1,
+			['qwen3-coder-30b'] = 1,
+			['qwen3-embedding-4b'] = 1,
+			['qwen3-reranker-4b'] = 1,
+			['qwen3.5-122b'] = 1,
+			['redhatai-scout'] = 1,
+		}
+		for _, model in ipairs(decoded.data) do
+			if not filter[model.id] then
+				table.insert(models, {
+					id = model.id,
+					name = ('infra/%s'):format(model.id),
+					display_name = model.id,
+					provider_name = 'infra',
+				})
+			end
+		end
+		return models
+	end,
+}
+
 function M.config()
 	local a = require 'avante'
-	local api = require 'avante.api'
 
-	local eInfraBase = {
-		endpoint = 'https://chat.ai.e-infra.cz/api/',
-		__inherited_from = 'openai',
-		api_key_name = 'E_INFRA_API_KEY',
-		timeout = 30000,
-		extra_request_body = {
-			temperature = 0.1,
-			max_tokens = 16384,
-		},
-	}
+	-- This allows list_models to work (model_selector.lua checks __inherited_from == nil)
+	local openai = require 'avante.providers.openai'
+	-- Manually copy all functions from openai provider
+	for k, v in pairs(openai) do
+		if eInfra[k] == nil then eInfra[k] = v end
+	end
+
 	a.setup {
 		behaviour = {
 			auto_approve_tool_permissions = {
@@ -62,15 +111,13 @@ function M.config()
 			enable_token_counting = false,
 		},
 		selection = { hint_display = 'none' },
-		provider = 'copilot',
-		model = 'gpt-5-mini',
+		provider = 'infra',
+		model = 'coder',
 		providers = {
-			-- gpt120 = vim.tbl_extend('force', eInfraBase, { model = 'gpt-oss-120b' }),
-			-- qwen3 = vim.tbl_extend('force', eInfraBase, { model = 'qwen3-coder' }),
-			-- ds1 = vim.tbl_extend('force', eInfraBase, { model = 'deepseek-r1' }),
-
-			gpt5 = { __inherited_from = 'copilot', model = 'gpt-5-mini' },
-			claude45 = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
+			infra = eInfra,
+			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
+			openai5mini = { __inherited_from = 'copilot', model = 'gpt-5-mini' },
+			sonnet = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
 		},
 		web_search_engine = {
 			provider = 'tavily',
@@ -79,7 +126,7 @@ function M.config()
 You are a seasoned developer writing well-structured modular code focused on separation-of-concerns,
 high code flexibility and extensibility.
 Your documentation provides concise additional information that the user might not understand
-from the code on its own at the first glance, but no redundant descriptions of an obvious line.
+from the code on its own at the first glance, but no redundant descriptions of obvious statements.
 
 **Be genuinely helpful, not performatively helpful.** Skip the "Great question!" and "I'd be happy
 to help!" - just help. Actions speak louder than filler words.
@@ -88,7 +135,7 @@ to help!" - just help. Actions speak louder than filler words.
 always base your opinions on core thruths that you've found through thorough research. Don't just
 say something because it seems most likely - always check that things really are that way.
 
-When thinking abour a problem, don't be afraid to explore multiple directions at the beginning and
+When thinking about a problem, don't be afraid to explore multiple directions at the beginning and
 then decide which one leads to the best path into the future. Never lose hope, it's okay to say that
 something is not possible, but try find out what the end goal so that you can think of a different
 approach that might just work.
@@ -109,8 +156,7 @@ The default level is V=3. ]]
 			diff = {
 				ours = '<leader>ar', -- reject
 				theirs = '<leader>aa',
-				all_theirs = '<leader>aA',
-				both = 'cb',
+				-- all_theirs = '<leader>aA',
 				cursor = 'cc',
 				next = ']D',
 				prev = '[D',
@@ -132,16 +178,28 @@ The default level is V=3. ]]
 		map('i', '<A-Tab>', '<Esc><C-w>h', { buffer = true })
 	end, 'AvanteInput')
 
+	map('n', '<Leader>aA', function() require('avante.diff').process_position(0, 'all_theirs') end)
+	map('n', '<Leader>ae', '<Cmd>AvanteEdit<CR>')
 	map('n', '<Leader>ax', '<Cmd>AvanteClear<CR>')
 	map('n', '<Leader>af', function()
 		local fs = a.get().file_selector
 		if vim.bo.filetype == 'NvimTree' then
 			local file = require('nvim-tree.api').tree.get_node_under_cursor().absolute_path
+			if vim.fn.isdirectory(file) then file = file .. '/' end
 
-			local cnt = #fs.selected_filepaths
-			fs:remove_selected_file(file)
-			-- otherwise add the file, if it previously wasn't selected
-			if #fs.selected_filepaths == cnt then fs:add_selected_file(file) end
+			local paths = fs.selected_filepaths
+			local cnt = #paths
+			local i = cnt
+			while i > 0 do
+				if vim.startswith(paths[i], file) then table.remove(paths, i) end
+				i = i - 1
+			end
+
+			if #paths == cnt then
+				fs:add_selected_file(file)
+			else
+				fs:emit 'update'
+			end
 		else
 			-- toggles the file being included
 			fs:add_current_buffer()

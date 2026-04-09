@@ -108,7 +108,7 @@ load() {
 
 case "$1" in
 	vol | mic)
-		[[ $1 == vol ]] && local i=0 || local i=1
+		[[ $1 == vol ]] && i=0 || i=1
 
 		read -ra WP </tmp/my/wp
 		if [[ $2 == toggle ]]; then

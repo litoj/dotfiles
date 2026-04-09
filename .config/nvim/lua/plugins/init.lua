@@ -34,7 +34,7 @@ return {
 		ft = 'asciidoctor',
 		config = function() vim.g.asciidoctor_fenced_languages = { 'sh', 'javascript', 'python' } end,
 	}, ]]
-	{
+	--[[ {
 		'litoj/vim-mcfunction',
 		ft = 'mcfunction',
 		dependencies = 'reform.nvim',
@@ -53,6 +53,6 @@ return {
 				use = function(ref) vim.cmd.e(ref:gsub(':', '/functions/') .. '.mcfunction') end,
 			}
 		end,
-	},
+	}, ]]
 	-- { 'mpas/marp-nvim', cmd = 'MarpToggle', opts = { port = 8080 } },
 }

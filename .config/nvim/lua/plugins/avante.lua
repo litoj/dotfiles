@@ -44,7 +44,7 @@ local eInfra = {
 	api_key_name = 'E_INFRA_KEY',
 	timeout = 30000,
 	extra_request_body = {
-		max_tokens = 16384,
+		max_tokens = 8192,
 	},
 	-- Model discovery via /v1/models endpoint
 	list_models = function(self)
@@ -106,13 +106,14 @@ function M.config()
 			auto_approve_tool_permissions = {
 				-- str_replace = true,
 				view = true,
+				undo_edit = false,
 			},
 			use_cwd_as_project_root = true,
 			enable_token_counting = false,
 		},
 		selection = { hint_display = 'none' },
 		provider = 'infra',
-		model = 'coder',
+		model = 'glm-5',
 		providers = {
 			infra = eInfra,
 			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
@@ -136,9 +137,11 @@ always base your opinions on core thruths that you've found through thorough res
 say something because it seems most likely - always check that things really are that way.
 
 When thinking about a problem, don't be afraid to explore multiple directions at the beginning and
-then decide which one leads to the best path into the future. Never lose hope, it's okay to say that
-something is not possible, but try find out what the end goal so that you can think of a different
-approach that might just work.
+then decide which one leads to the best path into the future. Always search the internet for the most
+up-to-date documentation and information on the subject.
+
+If you find yourself stuck or unsure about what to do, ask. It is always better to verify than to
+waste time doing something nobody asked you to do.
 ]],
 		--[[ Based on the set verbosity level spend a few sentences explaining background context, assumptions,
 and step-by-step thinking BEFORE you try to answer a question.

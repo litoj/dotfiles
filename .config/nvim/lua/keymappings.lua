@@ -237,3 +237,25 @@ map('x', '<S-Tab>', function()
 	end
 	vim.api.nvim_buf_set_lines(0, from - 1, to, true, lines)
 end)
+
+local lastbuf = 1
+map('n', ' oo', function() -- cmdOutput open (or close) (requires vim._core.ui2 nvim0.12)
+	local cmdbuf = require('vim._core.ui2').bufs.cmd
+	local curbuf = vim.api.nvim_get_current_buf()
+	if curbuf == cmdbuf then
+		cmdbuf = lastbuf
+	else
+		lastbuf = curbuf
+	end
+	vim.api.nvim_set_current_buf(cmdbuf)
+end)
+
+map('n', ' ox', function() -- cmdOutput clear (x)
+	local ui2 = require 'vim._core.ui2'
+	local cmdbuf = ui2.bufs.cmd
+	if cmdbuf then
+		vim.api.nvim_buf_set_lines(cmdbuf, 0, -1, false, {})
+		vim.api.nvim_buf_clear_namespace(cmdbuf, ui2.ns, 0, -1)
+	end
+	if vim.api.nvim_get_current_buf() == cmdbuf then vim.api.nvim_set_current_buf(lastbuf) end
+end)

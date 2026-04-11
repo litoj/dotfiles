@@ -51,7 +51,33 @@ function M.config()
 			end)
 
 			map('<Tab>', api.node.open.preview)
-			map({ 'E', '+' }, api.tree.expand_all)
+			map({ 'E', '=' }, api.tree.expand_all)
+			map('+', function()
+				local cursor = vim.api.nvim_win_get_cursor(0)
+				vim.api.nvim_win_set_cursor(0, { 1, 0 })
+				api.tree.expand_all()
+				vim.api.nvim_win_set_cursor(0, cursor)
+			end)
+			map('F', function()
+				vim.api.nvim_win_set_cursor(0, { 1, 0 })
+				api.tree.expand_all()
+				api.filter.live.start()
+			end)
+			map('/', function()
+				vim.api.nvim_win_set_cursor(0, { 1, 0 })
+				api.tree.expand_all()
+
+				vim.api.nvim_feedkeys('/', 'n', false)
+				vim.keymap.set('c', '<CR>', function()
+					if vim.fn.getcmdtype() == '/' then
+						vim.schedule(function()
+							api.node.open.edit()
+							vim.cmd.nohlsearch()
+						end)
+					end
+					return '<CR>'
+				end, { expr = true, buffer = true })
+			end)
 			map('-', api.node.navigate.parent_close)
 			map('_', api.tree.collapse_all)
 
@@ -65,6 +91,15 @@ function M.config()
 			map({ 'V', '<C-v>' }, api.fs.paste)
 			map({ 'R', '<F2>' }, api.fs.rename)
 			map('q', vim.cmd.bwipeout)
+			map('<Esc>', function()
+				-- Check if live filter is active by looking for filter prefix in first line
+				local first_line = vim.api.nvim_buf_get_lines(0, 1, 2, false)[1] or ''
+				if first_line:match '%[FILTER%]:' then
+					api.filter.live.clear()
+				else
+					api.tree.close()
+				end
+			end)
 			map({ 'cd', 'O', '<S-CR>' }, api.tree.change_root_to_node)
 			map('<A-i>', api.node.show_info_popup)
 			map('S', function()

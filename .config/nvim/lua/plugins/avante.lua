@@ -39,128 +39,252 @@ local M = {
 	},
 }
 
-local eInfra = {
-	endpoint = 'https://llm.ai.e-infra.cz/v1',
-	api_key_name = 'E_INFRA_KEY',
-	timeout = 30000,
-	extra_request_body = {
-		max_tokens = 8192,
-	},
-	-- Model discovery via /v1/models endpoint
-	list_models = function(self)
-		local api_key = os.getenv(self.api_key_name) or error('No ' .. self.api_key_name)
-		local p =
-			io.popen(('curl -s -H "Authorization: Bearer %s" %s/models'):format(api_key, self.endpoint))
-		local ok, decoded = pcall(vim.json.decode, p:read '*a')
-		p:close()
-		if not ok or not decoded.data then return {} end
-
-		-- Transform the OpenAI models API response to Avante's expected format
-		local models = {}
-		-- print(decoded.data)
-		local filter = {
-			['deepseek-v3.2'] = 1,
-			['glm-4.7'] = 1,
-			['gpt-oss-120b'] = 1,
-			['kimi-k2.5'] = 1,
-			['llama-4-scout-17b-16e-instruct'] = 1,
-			['mini'] = 1,
-			['mistral-small-4'] = 1,
-			['multilingual-e5-large-instruct'] = 1,
-			['mxbai-embed-large:latest'] = 1,
-			['nomic-embed-text-v1.5'] = 1,
-			['nomic-embed-text-v2-moe'] = 1,
-			['qwen3-coder'] = 1,
-			['qwen3-coder-30b'] = 1,
-			['qwen3-embedding-4b'] = 1,
-			['qwen3-reranker-4b'] = 1,
-			['qwen3.5-122b'] = 1,
-			['redhatai-scout'] = 1,
-		}
-		for _, model in ipairs(decoded.data) do
-			if not filter[model.id] then
-				table.insert(models, {
-					id = model.id,
-					name = ('infra/%s'):format(model.id),
-					display_name = model.id,
-					provider_name = 'infra',
-				})
-			end
-		end
-		return models
-	end,
-}
-
 function M.config()
 	local a = require 'avante'
 
-	-- This allows list_models to work (model_selector.lua checks __inherited_from == nil)
-	local openai = require 'avante.providers.openai'
-	-- Manually copy all functions from openai provider
-	for k, v in pairs(openai) do
-		if eInfra[k] == nil then eInfra[k] = v end
+	---@type AvanteProviderFunctor
+	---@diagnostic disable: missing-fields
+	local eInfra = vim.tbl_deep_extend('force', require 'avante.providers.openai', {
+		endpoint = 'https://llm.ai.e-infra.cz/v1',
+		api_key_name = 'E_INFRA_KEY',
+		timeout = 30000,
+		is_reasoning_model = function() return true end,
+	})
+
+	local function infra(t) return vim.tbl_deep_extend('force', eInfra, t) end
+	local function list_models(self)
+		local api_key = os.getenv(self.api_key_name) or error('No ' .. self.api_key_name)
+		local p = io.popen(
+			('curl -s -H "Authorization: Bearer %s" %s/models'):format(api_key, self.endpoint)
+		) or error()
+		local _, decoded = pcall(vim.json.decode, p:read '*a')
+		p:close()
+
+		local models = {}
+		for _, model in ipairs(decoded.data) do
+			local id = model.id
+			if not id:find '[%-0-9]' then
+				models[#models + 1] = { id = id, name = 'infra/' .. id, display_name = id }
+			end
+		end
+		return models
 	end
 
 	a.setup {
-		behaviour = {
-			auto_approve_tool_permissions = {
-				-- str_replace = true,
-				view = true,
-				undo_edit = false,
+		provider = 'copilot',
+		acp_providers = {
+			opencode = {
+				command = 'opencode',
+				args = { 'acp' },
+				list_models = list_models,
+				include_model = true,
 			},
-			use_cwd_as_project_root = true,
-			enable_token_counting = false,
 		},
-		selection = { hint_display = 'none' },
-		provider = 'infra',
-		model = 'glm-5',
+		---@type table<string,AvanteProviderFunctor>
 		providers = {
-			infra = eInfra,
+			infra = vim.tbl_deep_extend('force', eInfra, {
+				-- Model discovery via /v1/models endpoint
+				list_models = list_models,
+			}),
+			glm = infra { model = 'glm-5', context_window = 200000 },
+			qwen = infra { model = 'qwen3.5', context_window = 262000 },
+			kimi = infra {
+				model = 'kimi-k2.5',
+				context_window = 256000,
+				extra_request_body = { chat_template_kwargs = { thinking = true } },
+			},
+			ds = infra {
+				model = 'deepseek-v3.2',
+				context_window = 160000,
+				extra_request_body = { chat_template_kwargs = { thinking = true } },
+			},
+
 			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
-			openai5mini = { __inherited_from = 'copilot', model = 'gpt-5-mini' },
+			open5 = { __inherited_from = 'copilot', model = 'gpt-5-mini' },
 			sonnet = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
 		},
 		web_search_engine = {
 			provider = 'tavily',
 		},
 		system_prompt = [[
-You are a seasoned developer writing well-structured modular code focused on separation-of-concerns,
-high code flexibility and extensibility.
-Your documentation provides concise additional information that the user might not understand
-from the code on its own at the first glance, but no redundant descriptions of obvious statements.
+You are a pragmatic senior developer. Write code that is maintainable, well-structured, and appropriately simple for the problem at hand.
 
-**Be genuinely helpful, not performatively helpful.** Skip the "Great question!" and "I'd be happy
-to help!" - just help. Actions speak louder than filler words.
+**Code Quality:**
+- Prefer working code over perfect code. Solve the problem first, refine second.
+- Respect existing conventions. Match the style, patterns, and structure already present in the codebase.
+- Separation of concerns: each function/module should have one clear responsibility.
+  - But don't split a simple one-time-use function into smaller ones - just keep all the code in one!!!
+- Prefer duplication over the wrong abstraction. Don't generalize until you have 3+ similar cases.
 
-**Have opinions.** You're allowed to disagree, prefer things, find stuff amusing or boring. But
-always base your opinions on core thruths that you've found through thorough research. Don't just
-say something because it seems most likely - always check that things really are that way.
+**Documentation:**
+- Document WHY, not WHAT. The code shows what it does; comments should explain intent, trade-offs, or non-obvious behavior.
+- Example of good comment: "-- Defer cleanup to avoid race with buffer deletion"
+- Example of bad comment: "-- Increment counter by 1"
+- For complex logic, a brief inline explanation of the approach is better than a long docstring.
 
-When thinking about a problem, don't be afraid to explore multiple directions at the beginning and
-then decide which one leads to the best path into the future. Always search the internet for the most
-up-to-date documentation and information on the subject.
+**Research:**
+- Search the web for API documentation, version-specific behavior, or when you're genuinely uncertain.
+- Always check the official documentation before creating code.
 
-If you find yourself stuck or unsure about what to do, ask. It is always better to verify than to
-waste time doing something nobody asked you to do.
+**Communication:**
+- Skip pleasantries. No "Great question!", "You're absolutely right...", or filler.
+- When thinking through a problem, use the thinking tool for complex cases.
+- Present your reasoning briefly: context, assumptions, and why you chose this approach.
+- If stuck or requirements are unclear, ask before implementing.
+
+**When I reject a change:**
+1. STOP. Do not re-implement the same solution.
+2. Acknowledge the rejection and analyze why based on my explanation.
+3. Propose 2-3 alternative approaches in text BEFORE writing code.
+4. Wait for my direction on which to pursue.
+
+**Red flags you're off track:**
+- You haven't consulted the official documentation first.
+- You haven't proposed alternatives in text first.
+- You're about to suggest the same edit for the 2nd time.
+- Your changes are failing -> you should **view() the file you're working** to check for changes.
 ]],
-		--[[ Based on the set verbosity level spend a few sentences explaining background context, assumptions,
-and step-by-step thinking BEFORE you try to answer a question.
-Users communicating with you can specify level of detail of the steps and background of your thoughts
-they would like in your response with the following notation: V=<level>, where <level> can be 0-5.
-Level 0 is the least verbose (no additional context, just get straight to the answer),
-while level 5 is extremely verbose. For example: V=5 How do you approach solving this problem?
-The default level is V=3. ]]
 		windows = {
 			spinner = {
+				editing = { '' },
 				generating = { '' },
+				thinking = { '' },
+			},
+			input = {
+				height = 20,
 			},
 		},
+		selection = { hint_display = 'none' },
+		behaviour = {
+			auto_approve_tool_permissions = {
+				run_python = false,
+				'view',
+			},
+			confirmation_ui_style = 'inline_buttons', -- popup allows to provide rejection reason, but is awful otherwise
+			use_cwd_as_project_root = false,
+			enable_token_counting = true,
+			auto_focus_on_diff_view = true,
+		},
+		history = {
+			max_tokens = 4096,
+		},
+		custom_tools = {
+			{
+				name = 'run_viml',
+				description = 'Execute VimL code in neovim.',
+				command = 'vim.cmd[[...]]',
+				param = {
+					type = 'table',
+					fields = {
+						type = 'string',
+						name = 'command',
+						description = 'The VimL command to run.',
+						optional = false,
+					},
+				},
+				returns = {
+					{
+						name = 'result',
+						description = 'Output of the code',
+						type = 'string',
+					},
+					{
+						name = 'error',
+						description = 'Error message if execution failed',
+						type = 'string',
+						optional = true,
+					},
+				},
+				---@type AvanteLLMToolFunc
+				func = function(p, o)
+					local command = p.command
+					if not command then return nil, 'Error: missing argument `command`' end
+
+					if command:find '\n' then
+						local message = require('avante.history').Message:new(
+							'assistant',
+							('\nResult of:\n```vim\n%s\n```'):format(command),
+							{
+								just_for_display = true,
+							}
+						)
+						o.session_ctx.on_messages_add { message }
+					end
+
+					local ui2 = require 'vim._core.ui2'
+					local cmdbuf = ui2.bufs.cmd
+
+					-- Clear command buffer before execution
+					vim.api.nvim_buf_set_lines(cmdbuf, 0, -1, false, {})
+					vim.api.nvim_buf_clear_namespace(cmdbuf, ui2.ns, 0, -1)
+
+					local ok, err = pcall(function() vim.cmd(command) end)
+					return ok and table.concat(vim.api.nvim_buf_get_lines(cmdbuf, 0, -1, false), '\n') or '',
+						not ok and err or nil
+				end,
+			},
+
+			{
+				name = 'run_nvim_lua',
+				description = 'Run Lua code in the current neovim instance.',
+				command = '... -- example: return vim.bo.ft',
+				param = {
+					type = 'table',
+					fields = {
+						{
+							type = 'string',
+							name = 'command',
+							description = 'The lua code to execute (supports multiline).',
+							optional = false,
+						},
+					},
+				},
+				returns = {
+					{
+						name = 'result',
+						description = 'Result of the execution',
+						type = 'string',
+					},
+					{
+						name = 'error',
+						description = 'Error message if execution failed',
+						type = 'string',
+						optional = true,
+					},
+				},
+				---@type AvanteLLMToolFunc
+				func = function(p, o)
+					local command = p.command
+					if not command then return nil, 'Error: missing argument `command`' end
+
+					if command:find '\n' then
+						local message = require('avante.history').Message:new(
+							'assistant',
+							('\nResult of:\n```lua\n%s\n```'):format(command),
+							{
+								just_for_display = true,
+							}
+						)
+						o.session_ctx.on_messages_add { message }
+					end
+
+					local chunk, err = loadstring(command)
+					if not chunk then return nil, 'Syntax error: ' .. err end
+
+					local ok, result = pcall(chunk)
+					local output = ok and vim.inspect(result) or ''
+					_G.data = { p, o }
+					-- Include the code in the output so it's visible in chat
+					return output, not ok and tostring(result) or nil
+				end,
+			},
+		},
+
 		mappings = {
 			diff = {
-				ours = '<leader>ar', -- reject
-				theirs = '<leader>aa',
-				-- all_theirs = '<leader>aA',
-				cursor = 'cc',
+				ours = '<leader>ao', -- reject
+				theirs = '<leader>at',
+				cursor = false,
 				next = ']D',
 				prev = '[D',
 			},
@@ -175,20 +299,85 @@ The default level is V=3. ]]
 	}
 
 	require 'autocommands'('FileType', function(_) vim.wo.conceallevel = 2 end, 'Avante')
+	local function simulate_press(keyword, limit, cb)
+		local cwin = vim.api.nvim_get_current_win()
+		local cpos = vim.api.nvim_win_get_cursor(cwin)
+		--   Allow      Allow Always      Reject -- no X for Reject because it can get wrapped
+		keyword = ({ Allow = ' Allow', AlwaysAllow = ' Allow Always', Reject = 'Reject' })[keyword]
+
+		local awin, abuf
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			local buf = vim.api.nvim_win_get_buf(win)
+			if vim.bo[buf].ft == 'Avante' then
+				awin, abuf = win, buf
+				break
+			end
+		end
+
+		local function press_next(remaining, last_line)
+			local lines = vim.api.nvim_buf_get_lines(abuf, 0, -1, false)
+			if remaining > 0 then
+				for i = #lines, 1, -1 do
+					local col = lines[i]:find(keyword, 1, true)
+					if col then
+						if last_line == i then break end -- matched some text
+
+						vim.api.nvim_win_set_cursor(awin, { i, col })
+						vim.api.nvim_input '\r'
+						vim.defer_fn(function() press_next(remaining - 1, i) end, 120)
+						return
+					end
+				end
+			end
+
+			-- Restore win/cursor if done
+			if awin ~= cwin then
+				vim.api.nvim_win_set_cursor(awin, { #lines, 0 })
+
+				vim.api.nvim_set_current_win(cwin)
+				vim.api.nvim_win_set_cursor(cwin, cpos)
+				if cb then cb() end
+			end
+		end
+
+		if awin then
+			vim.cmd 'stopinsert'
+			vim.api.nvim_set_current_win(awin)
+			press_next(limit or 100, nil)
+		end
+	end
+
 	require 'autocommands'('FileType', function(_)
 		vim.bo.tw = 0
 		map('n', '<A-Tab>', '<C-w>h', { buffer = true })
 		map('i', '<A-Tab>', '<Esc><C-w>h', { buffer = true })
+		map({ 'n', 'i' }, '<C-s>', function()
+			simulate_press('Reject', 100, function()
+				vim.cmd 'stopinsert'
+				vim.api.nvim_input '\r'
+			end)
+		end, { buffer = true })
 	end, 'AvanteInput')
 
-	map('n', '<Leader>aA', function() require('avante.diff').process_position(0, 'all_theirs') end)
-	map('n', '<Leader>ae', '<Cmd>AvanteEdit<CR>')
-	map('n', '<Leader>ax', '<Cmd>AvanteClear<CR>')
-	map('n', '<Leader>af', function()
+	local api = require 'avante.api'
+	map('n', ' aa', function() simulate_press('Allow', 1) end)
+	map('n', ' aA', function() simulate_press('Always Allow', 1) end)
+	map('n', ' ar', function() simulate_press('Reject', 1) end)
+	map('n', ' aS', function()
+		api.stop()
+		simulate_press 'Reject'
+	end)
+
+	map('n', ' a/', function()
+		api.switch_provider 'opencode'
+		api.select_acp_model()
+	end)
+	map('n', ' ax', '<Cmd>AvanteClear<CR>')
+	map('n', ' af', function()
 		local fs = a.get().file_selector
 		if vim.bo.filetype == 'NvimTree' then
 			local file = require('nvim-tree.api').tree.get_node_under_cursor().absolute_path
-			if vim.fn.isdirectory(file) then file = file .. '/' end
+			if vim.fn.isdirectory(file) == 1 then file = file .. '/' end
 
 			local paths = fs.selected_filepaths
 			local cnt = #paths
@@ -208,6 +397,7 @@ The default level is V=3. ]]
 			fs:add_current_buffer()
 		end
 	end)
+	map('n', ' aq', function() a.get().file_selector:add_quickfix_files() end)
 end
 
 return M

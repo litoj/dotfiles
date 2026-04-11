@@ -11,7 +11,7 @@ local M = {
 	event = 'InsertEnter',
 	keys = ':',
 
-	version = '1.*',
+	-- version = '1.*',
 	-- or build = 'cargo build --release',
 }
 
@@ -99,7 +99,8 @@ function M.config()
 	}
 
 	opts.fuzzy = {
-		implementation = 'prefer_rust_with_warning', -- won't get used because of custom sorter
+		-- implementation = 'prefer_rust_with_warning', -- won't get used because of custom sorter
+		implementation = 'lua',
 		frecency = { enabled = true },
 		use_proximity = true,
 		sorts = {
@@ -146,16 +147,11 @@ function M.config()
 	local ls = require 'luasnip'
 	local cmp = require 'blink.cmp'
 
-	map('i', '<CR>', function()
-		if not cmp.accept() then
-			vim.api.nvim_feedkeys(require('nvim-autopairs').autopairs_cr() or '\r', 'n', false)
-		end
-	end)
-
 	opts.snippets = { preset = 'luasnip' }
 	opts.keymap = {
 		preset = 'none',
 
+		['<CR>'] = { 'accept', 'fallback' },
 		['<C-space>'] = {
 			'show',
 			function(cmp)
@@ -212,8 +208,8 @@ function M.config()
 		-- or leave <A-k>/<A-j> to go up and down outside cmp?
 		['<Up>'] = { 'select_prev', 'fallback' },
 		['<Down>'] = { 'select_next', 'fallback' },
-		['<A-k>'] = { 'select_prev', 'fallback_to_mappings' },
-		['<A-j>'] = { 'select_next', 'fallback_to_mappings' },
+		['<A-k>'] = { 'select_prev', 'fallback' },
+		['<A-j>'] = { 'select_next', 'fallback' },
 
 		['<C-A-k>'] = {
 			'scroll_signature_up',
@@ -236,6 +232,7 @@ function M.config()
 			preset = 'inherit',
 
 			['<Esc>'] = { 'cancel', function(e) vim.api.nvim_feedkeys('\03', 'n', false) end },
+			['<CR>'] = { 'fallback' },
 		},
 		completion = { menu = { auto_show = true } },
 	}
@@ -301,13 +298,16 @@ function M.config()
 			},
 		},
 
-		default = { 'lsp', 'path', 'calc', 'snippets', 'copilot' },
+		default = function()
+			return vim.treesitter.get_parser() --
+					and { 'lsp', 'path', 'calc', 'snippets', 'copilot' }
+				or { 'path', 'calc' }
+		end,
 		per_filetype = {
 			lua = { inherit_defaults = true, 'lazydev' },
 			markdown = { inherit_defaults = true, 'nerdfont', 'latex' },
 			text = { inherit_defaults = true, 'nerdfont', 'latex' },
 			tex = { inherit_defaults = true, 'latex' },
-			AvanteInput = { inherit_defaults = false, 'path', 'calc' },
 		},
 	}
 
@@ -317,5 +317,5 @@ end
 return {
 	M,
 	{ 'MahanRahmati/blink-nerdfont.nvim' },
-	{ 'erooke/blink-cmp-latex', branch = 'regex' },
+	{ 'erooke/blink-cmp-latex' },
 }

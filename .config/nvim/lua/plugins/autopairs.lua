@@ -1,7 +1,7 @@
 local M = { 'windwp/nvim-autopairs', event = 'InsertEnter' }
 M.opts = {
-	map_cr = false,
-	check_ts = true,
+	-- map_cr = false,
+	-- check_ts = true,
 	ts_config = {
 		lua = { 'string' }, -- it will not add pair on that treesitter node
 		javascript = { 'template_string' },

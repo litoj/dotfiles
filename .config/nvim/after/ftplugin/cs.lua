@@ -170,13 +170,11 @@ function proj.debug()
 	proj.debug_cfg(cfg)
 end
 
-function proj.run_test(cfg, debug, name_contains)
+function proj.run_test(cfg, debug, filter)
 	cfg.cmd = table.concat({
-		'dotnet',
-		'test -v detailed',
-		cfg.dll,
-		name_contains and name_contains ~= '' and '--filter "DisplayName~' .. name_contains .. '"'
-			or nil,
+		'dotnet test -v detailed --project',
+		cfg.csproj,
+		filter,
 	}, ' ')
 	if debug then
 		proj.debug_cfg(cfg)
@@ -186,13 +184,9 @@ function proj.run_test(cfg, debug, name_contains)
 end
 
 function proj.test()
-	local cfg = proj.pick('debug project', 'test')
+	local cfg = proj.pick('test project', 'test')
 	if not cfg then return end
-
-	---@diagnostic disable-next-line: missing-parameter
-	local filter = vim.ui.input { prompt = 'Testname contains literal' }
-	if not filter then return end
-	proj.run_test(cfg, false, filter)
+	proj.run_test(cfg, false)
 end
 
 map('n', '<A-t>', function() coroutine.wrap(proj.test)() end)
@@ -200,16 +194,24 @@ map('n', '<A-S-R>', function() coroutine.wrap(proj.run)() end)
 map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
 map('n', '<S-F6>', function() coroutine.wrap(proj.debug)() end)
 
-local function test_method(debug)
+local function test_active(debug)
 	local cfg = proj.cfg(fth.findDirOf '.csproj$')
 	local ts = require('manipulator').ts
-	local fn = ts.current({ types = { 'method_declaration' } }):field('name'):get_text()
 	local class = ts.current({ types = { 'class_declaration' } }):field('name'):get_text()
-
-	proj.run_test(cfg, debug, class .. '.' .. fn)
+	local fn = ts.current { types = { 'method_declaration' }, nil_wrap = false }
+	local txt
+	if fn then
+		txt = ('--filter-method "*.%s.%s"'):format(class, fn:field('name'):get_text())
+	elseif not debug then
+		txt = ('--filter-class "*.%s"'):format(class)
+	else
+		print 'Debugging allowed only for individual methods'
+		return
+	end
+	proj.run_test(cfg, debug, txt)
 end
-map('n', 't', test_method)
-map('n', '<A-S-T>', function() test_method(true) end)
+map('n', 't', test_active)
+map('n', '<A-S-T>', function() test_active(true) end)
 
 map('n', '<A-y>', function()
 	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]

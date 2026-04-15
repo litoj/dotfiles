@@ -108,6 +108,7 @@ function M.config()
 	map('n', ' dg', dap.goto_)
 	map('n', ' dl', function() dap.list_breakpoints(true) end)
 	map('n', ' du', dapui.toggle)
+	map('n', ' dr', '<Cmd>DapToggleRepl<CR>')
 	map('n', ' dE', dapui.eval)
 	map('n', ' de', function()
 		vim.ui.input(

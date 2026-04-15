@@ -36,16 +36,15 @@ function proj.cfg(path)
 	}
 end
 
-vim.api.nvim_create_autocmd('InsertLeavePre', {
-	buffer = 0,
-	callback = function(s)
-		local clients = vim.lsp.get_clients { name = 'roslyn_ls', bufnr = s.buf }
-		if not clients or #clients == 0 then return end
+local function refresh(s)
+	local clients = vim.lsp.get_clients { name = 'roslyn_ls', bufnr = s.buf }
+	if not clients or #clients == 0 then return end
 
-		local params = { textDocument = vim.lsp.util.make_text_document_params(s.buf) }
-		clients[1]:request('textDocument/diagnostic', params, nil, s.buf)
-	end,
-})
+	local params = { textDocument = vim.lsp.util.make_text_document_params(s.buf) }
+	clients[1]:request('textDocument/diagnostic', params, nil, s.buf)
+end
+
+vim.api.nvim_create_autocmd({ 'InsertLeavePre', 'BufWrite' }, { buffer = 0, callback = refresh })
 
 local map, modmap = fth.once {
 	mylsp = function(ml) ml.setup 'roslyn_ls' end,
@@ -64,7 +63,7 @@ local map, modmap = fth.once {
 				env = runcfg.env,
 				args = runcfg.args,
 				program = function()
-					local cfg = proj.cfg()
+					local cfg = proj.cfg(vim.fn.bufname())
 					if not cfg then return dap.ABORT end
 
 					vim.api.nvim_set_current_dir(cfg.dir)
@@ -76,9 +75,7 @@ local map, modmap = fth.once {
 				type = 'netcoredbg',
 				request = 'attach',
 				processId = function()
-					-- attaches to VSTEST_HOST_DEBUG=1 dotnet test test/APITest/bin/Debug/net8.0/APITest.dll
-					local p = io.popen [[ps axf | grep 'dotnet exec --runtimeconfig' |
-					grep -v grep | awk '{print $1}' ]]
+					local p = io.popen [[ps axf | grep 'dotnettestcli' | grep -v grep | awk '{print $1}' ]]
 					if not p then return dap.ABORT end
 					local pid = tonumber(p:read '*a') or dap.ABORT
 					p:close()
@@ -137,10 +134,8 @@ fth.withMod('dap', function(dap)
 		local bufnr = vim.api.nvim_get_current_buf()
 		proj.run_cfg(cfg)
 
-		vim.defer_fn(function()
-			vim.api.nvim_set_current_buf(bufnr)
-			dap.continue()
-		end, 3000)
+		vim.api.nvim_set_current_buf(bufnr)
+		dap.continue()
 	end
 end)
 
@@ -172,9 +167,10 @@ end
 
 function proj.run_test(cfg, debug, filter)
 	cfg.cmd = table.concat({
-		'dotnet test -v detailed --project',
+		'dotnet test --no-build -v detailed --stop-on-fail on --show-live-output on --project',
 		cfg.csproj,
 		filter,
+		debug and '--debug' or [[ | awk '/Connected to Docker/,/WARNING/ {next} {print}' ]],
 	}, ' ')
 	if debug then
 		proj.debug_cfg(cfg)
@@ -184,8 +180,8 @@ function proj.run_test(cfg, debug, filter)
 end
 
 function proj.test()
-	local cfg = proj.pick('test project', 'test')
-	if not cfg then return end
+	local cfg = proj.pick('run test suite', 'test')
+	if not cfg then return print 'no project picked' end
 	proj.run_test(cfg, false)
 end
 
@@ -194,24 +190,24 @@ map('n', '<A-S-R>', function() coroutine.wrap(proj.run)() end)
 map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
 map('n', '<S-F6>', function() coroutine.wrap(proj.debug)() end)
 
-local function test_active(debug)
+local function test_under_cursor(debug)
 	local cfg = proj.cfg(fth.findDirOf '.csproj$')
 	local ts = require('manipulator').ts
 	local class = ts.current({ types = { 'class_declaration' } }):field('name'):get_text()
 	local fn = ts.current { types = { 'method_declaration' }, nil_wrap = false }
-	local txt
+	local args
 	if fn then
-		txt = ('--filter-method "*.%s.%s"'):format(class, fn:field('name'):get_text())
+		args = ('--filter-method "*.%s.%s"'):format(class, fn:field('name'):get_text())
 	elseif not debug then
-		txt = ('--filter-class "*.%s"'):format(class)
+		args = ('--filter-class "*.%s"'):format(class)
 	else
 		print 'Debugging allowed only for individual methods'
 		return
 	end
-	proj.run_test(cfg, debug, txt)
+	proj.run_test(cfg, debug, args)
 end
-map('n', 't', test_active)
-map('n', '<A-S-T>', function() test_active(true) end)
+map('n', 't', test_under_cursor)
+map('n', 'T', function() test_under_cursor(true) end)
 
 map('n', '<A-y>', function()
 	local client = vim.lsp.get_clients({ name = 'roslyn_ls', bufnr = 0 })[1]

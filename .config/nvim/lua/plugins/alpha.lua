@@ -80,7 +80,7 @@ function M.config()
 				hlFt = #val[2]
 			end
 
-			group.val[i + 2] = {
+			group.val[i + 1] = {
 				type = 'button',
 				val = val[2],
 				on_press = cmd,
@@ -104,22 +104,20 @@ function M.config()
 		return group
 	end
 
-	local function oldfiles(max)
-		local recent = {}
-		for _, v in ipairs(vim.v.oldfiles) do
-			if exists(v) and not v:find('.git/', 1, true) then
-				recent[#recent + 1] = { '' .. #recent, v }
-				if #recent == max then break end
-			end
-		end
-		return buttons('Recent', recent)
-	end
-
 	local config = {
 		layout = {
 			{
 				type = 'group',
-				val = function() return { oldfiles(10) } end,
+				val = function()
+					local recent = {}
+					for _, v in ipairs(vim.v.oldfiles) do
+						if exists(v) and not v:find('.git/', 1, true) then
+							recent[#recent + 1] = { '' .. #recent, v }
+							if #recent == 10 then break end
+						end
+					end
+					return buttons('Recent', recent).val
+				end,
 			},
 			buttons('Bookmarks', {
 				{ 'dp', '~/Documents/personal/' },

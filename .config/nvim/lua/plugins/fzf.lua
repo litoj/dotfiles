@@ -26,7 +26,8 @@ function M.config()
 		grep = {
 			rg_opts = [[--column --line-number --no-heading --color=always --smart-case \
 				--max-columns=255 --colors=line:fg:magenta --colors=column:fg:magenta \
-				--colors=path:fg:green --colors=match:fg:red -e]],
+				--colors=path:fg:green --colors=match:fg:red --glob '!**/Migrations/**' -e \
+				]],
 		},
 		lsp = { jump1 = true, ignore_current_line = true },
 		oldfiles = { stat_file = exists, include_current_session = true },

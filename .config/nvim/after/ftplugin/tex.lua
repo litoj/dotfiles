@@ -5,16 +5,19 @@ local map, modmap = require('fthelper').once {
 }
 
 modmap {
-	['manipulator'] = function(m, buf) ---@param m manipulator
+	---@module 'manipulator'
+	---@param m manipulator
+	['manipulator'] = function(m, buf)
 		local mapAll = require('plugins.manipulator').mapAll
 		mapAll('chapter', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
 		mapAll('figure block', { 'begin' }, { buffer = buf })
 		map({ 'n', 'i' }, '<F2>', function()
-			local self = m.ts.current({ types = { 'begin', 'end' } }):parent()
-			if not self or not self.range then return end
-			local opts = { inherit = false, types = { 'curly_group_text' } }
-			local o = self.range
-			local b = self:child(0, opts):paste { text = '{}' }
+			local env = m.ts.current({ types = { 'begin', 'end' } }):parent()
+			if not env or not env.range then return end
+			local bopts = { inherit = false, types = { 'curly_group_text' }, src = '.' }
+			local eopts = { inherit = false, types = { 'curly_group_text' }, direction = 'backward' }
+			local o = env.range
+			local b = env:descendant(bopts):paste { text = '{}' }
 
 			b:highlight 'Visual'
 
@@ -22,15 +25,15 @@ modmap {
 			b:jump { start_insert = true }
 			o[4] = 4 -- make the environment block be selectable by range - ignore end env name
 
-			local group = vim.api.nvim_create_augroup('env-sync', {})
+			local group = vim.api.nvim_create_augroup('env-sync', { clear = true })
 			vim.api.nvim_create_autocmd({ 'CursorMovedI', 'CursorMoved' }, {
 				group = group,
 				callback = function(s)
-					b = m.ts.current(opts) or ''
-					self = m.ts.get(o) or ''
-					local e = self:child(-1, opts) or ''
+					b = m.ts.current(bopts) or error 'current node not part of env declarators'
+					env = m.ts.get(o) or error 'env size changed'
+					local e = env:descendant(eopts) or error 'env with no end'
 					if not b.range or s.event == 'CursorMoved' then
-						self:child(0, opts):highlight(false)
+						env:descendant(bopts):highlight(false)
 						e:highlight(false)
 						vim.api.nvim_del_augroup_by_id(group)
 						return
@@ -70,6 +73,50 @@ map('i', '<A-c>', '\\texttt{}<left>')
 map('i', '<A-i>', '\\textit{}<left>')
 map('i', '<A-u>', '\\underline{}<left>')
 
-local compile = 'set x (compiler "%:p"); if not pgrep -f "zathura $x"; zathura "$x" &; end'
-map({ 'n', 'i' }, '<A-S-B>', '<Cmd>term ' .. compile .. '<CR>')
-map({ 'n', 'i' }, '<A-r>', '<Cmd>w|!' .. compile .. '<CR><CR>')
+local function find_main_tex()
+	local dir = vim.api.nvim_buf_get_name(0):match '(.+)/'
+
+	while dir and #dir > 1 do
+		for file in vim.fs.dir(dir) do
+			if file:match '%.tex$' then
+				file = dir .. '/' .. file
+				local f = io.open(file, 'r') or error('no file: ' .. file)
+				for _ = 1, 20 do
+					local line = f:read '*line'
+					if not line then break end
+
+					if vim.startswith(line, '\\documentclass') then
+						f:close()
+						return file
+					end
+				end
+				f:close()
+			end
+		end
+
+		dir = dir:match '(.+)/'
+	end
+end
+
+local function get_main_tex()
+	-- Try to get the texlab LSP client and check its cache
+	local lsp = vim.lsp.get_clients({ bufnr = 0, name = 'texlab' })[1]
+	local ret = lsp and lsp.main_tex or vim.b.main_tex
+	if ret then return ret end
+
+	ret = find_main_tex() or error 'no \\documentclass file found'
+
+	-- Cache in LSP client if available
+	if lsp then lsp.main_tex = ret end
+	vim.b.main_tex = ret
+	return ret
+end
+
+local function compile(windowed)
+	local cmd = ('set x (compiler "%s"); if not pgrep -f "zathura $x"; zathura "$x" &; end'):format(
+		get_main_tex()
+	)
+	return (windowed and '<Cmd>term %s<CR>' or '<Cmd>w|!%s<CR><CR>'):format(cmd)
+end
+map({ 'n', 'i' }, '<A-b>', function() return compile(true) end, { expr = true })
+map({ 'n', 'i' }, '<A-r>', compile, { expr = true })

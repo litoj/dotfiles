@@ -1,5 +1,6 @@
 vim.o.shortmess = 'asWIcCFt'
 vim.o.formatoptions = 'tcqjl1'
+vim.o.jumpoptions = 'view'
 vim.o.tw = 100
 vim.o.et = false
 vim.o.ts = 2

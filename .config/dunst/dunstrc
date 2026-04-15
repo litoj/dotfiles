@@ -36,6 +36,6 @@
 	appname=signal
 	format="<b>%s</b>"
 	frame_color="#bb33aa"
-	# progressbar color
+	# pgbar color
 	highlight="#54a015"
 	timeout=1

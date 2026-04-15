@@ -4,7 +4,7 @@ return {
 	capabilities = {
 		workspace = {
 			didChangeWatchedFiles = {
-				dynamicRegistration = false, -- true for neovim filewatching, false for roslyn
+				dynamicRegistration = true, -- true for neovim filewatching, false for roslyn
 			},
 		},
 	},
@@ -37,7 +37,7 @@ return {
 		},
 		['csharp|code_lens'] = {
 			dotnet_enable_references_code_lens = false,
-			dotnet_enable_tests_code_lens = true,
+			dotnet_enable_tests_code_lens = false,
 		},
 		['csharp|formatting'] = {
 			dotnet_organize_imports_on_format = true,

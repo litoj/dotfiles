@@ -130,22 +130,19 @@ function M.config()
 
 	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
 	map({ '', 'i' }, '<A-x>', tsq.fn)
-	map(
-		{ '', 'i' },
-		'<A-S-H>',
-		tsq:queue_or_swap({ hl_group = '' }):repeatable('prev_sibling').dot_fn
-	)
-	map(
-		{ '', 'i' },
-		'<A-S-L>',
-		tsq:queue_or_swap({ hl_group = '' }):repeatable('next_sibling').dot_fn
-	)
+	local tsswap = tsq:queue_or_swap({ hl_group = '' }):repeatable()
+	map({ '', 'i' }, '<A-S-H>', tsswap:prev('path').dot_fn)
+	map({ '', 'i' }, '<A-S-L>', tsswap:next('path').dot_fn)
 
 	local tsj = ctc({ src = '.' })['&1'].jump['&$']['*1']:repeatable()
-	map({ '', 'i' }, '<C-h>', tsj.prev.fn)
-	map({ '', 'i' }, '<C-l>', tsj.next.fn)
-	map({ '', 'i' }, '<C-A-h>', tsj:prev('path').fn)
-	map({ '', 'i' }, '<C-A-l>', tsj:next('path')['*$']({ end_ = true }).fn)
+	map({ '', 'i' }, '<C-h>', tsj:prev({ new_edge = 'start' }).fn)
+	map({ '', 'i' }, '<C-l>', tsj:next({ new_edge = 'start' }).fn)
+	map({ '', 'i' }, '<C-A-h>', tsj:prev({ inherit = 'path', new_edge = 'start' }).fn)
+	map(
+		{ '', 'i' },
+		'<C-A-l>',
+		tsj:next({ inherit = 'path', new_edge = 'end' })['*$']({ end_ = true }).fn
+	)
 	map(
 		{ '', 'i' },
 		'<C-p>',

@@ -70,6 +70,7 @@ function M.config()
 		return models
 	end
 
+	require('avante.sidebar').show_input_hint = function() end
 	a.setup {
 		provider = 'copilot',
 		acp_providers = {
@@ -86,17 +87,36 @@ function M.config()
 				-- Model discovery via /v1/models endpoint
 				list_models = list_models,
 			}),
-			glm = infra { model = 'glm-5', context_window = 200000 },
+			glm = infra {
+				model = 'glm-5',
+				context_window = 200000,
+				extra_request_body = {
+					temperature = 0.75,
+					reasoning_effort = 'high',
+				},
+			},
 			qwen = infra { model = 'qwen3.5', context_window = 262000 },
 			kimi = infra {
 				model = 'kimi-k2.5',
 				context_window = 256000,
-				extra_request_body = { chat_template_kwargs = { thinking = true } },
+				extra_request_body = {
+					chat_template_kwargs = { thinking = true },
+					extra_request_body = {
+						temperature = 0.75,
+						reasoning_effort = 'medium',
+					},
+				},
 			},
 			ds = infra {
 				model = 'deepseek-v3.2',
 				context_window = 160000,
-				extra_request_body = { chat_template_kwargs = { thinking = true } },
+				extra_request_body = {
+					chat_template_kwargs = { thinking = true },
+					extra_request_body = {
+						temperature = 0.75,
+						reasoning_effort = 'low',
+					},
+				},
 			},
 
 			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
@@ -130,6 +150,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 - Skip pleasantries. No "Great question!", "You're absolutely right...", or filler.
 - When thinking through a problem, use the thinking tool for complex cases.
 - Present your reasoning briefly: context, assumptions, and why you chose this approach.
+- You don't need to repeat what you're thinking, if you've already said that through the thinking tool.
 - If stuck or requirements are unclear, ask before implementing.
 
 **When I reject a change:**

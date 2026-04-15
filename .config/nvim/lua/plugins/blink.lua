@@ -11,7 +11,7 @@ local M = {
 	event = 'InsertEnter',
 	keys = ':',
 
-	-- version = '1.*',
+	version = '1.*',
 	-- or build = 'cargo build --release',
 }
 
@@ -147,11 +147,17 @@ function M.config()
 	local ls = require 'luasnip'
 	local cmp = require 'blink.cmp'
 
+	map('i', '<CR>', function()
+		if not cmp.accept() then
+			vim.api.nvim_feedkeys(require('nvim-autopairs').autopairs_cr() or '\r', 'n', false)
+		end
+	end)
+
 	opts.snippets = { preset = 'luasnip' }
 	opts.keymap = {
 		preset = 'none',
 
-		['<CR>'] = { 'accept', 'fallback' },
+		-- ['<CR>'] = { 'accept', 'fallback' },
 		['<C-space>'] = {
 			'show',
 			function(cmp)
@@ -232,7 +238,7 @@ function M.config()
 			preset = 'inherit',
 
 			['<Esc>'] = { 'cancel', function(e) vim.api.nvim_feedkeys('\03', 'n', false) end },
-			['<CR>'] = { 'fallback' },
+			['<CR>'] = false,
 		},
 		completion = { menu = { auto_show = true } },
 	}

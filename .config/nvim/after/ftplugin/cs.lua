@@ -36,13 +36,7 @@ function proj.cfg(path)
 	}
 end
 
-local function refresh(s)
-	local clients = vim.lsp.get_clients { name = 'roslyn_ls', bufnr = s.buf }
-	if not clients or #clients == 0 then return end
-
-	local params = { textDocument = vim.lsp.util.make_text_document_params(s.buf) }
-	clients[1]:request('textDocument/diagnostic', params, nil, s.buf)
-end
+local function refresh(s) vim.lsp.diagnostic._refresh(s.buf) end
 
 vim.api.nvim_create_autocmd({ 'InsertLeavePre', 'BufWrite' }, { buffer = 0, callback = refresh })
 

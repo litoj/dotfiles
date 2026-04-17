@@ -1,13 +1,6 @@
 -- dotnet tool install roslyn-language-server --prerelease -g
 -- paru -S roslyn-ls
 return {
-	capabilities = {
-		workspace = {
-			didChangeWatchedFiles = {
-				dynamicRegistration = true, -- true for neovim filewatching, false for roslyn
-			},
-		},
-	},
 	settings = {
 		['csharp|background_analysis'] = {
 			dotnet_analyzer_diagnostics_scope = 'openFiles',

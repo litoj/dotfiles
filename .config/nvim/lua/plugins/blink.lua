@@ -11,7 +11,7 @@ local M = {
 	event = 'InsertEnter',
 	keys = ':',
 
-	version = '1.*',
+	-- version = '1.*',
 	-- or build = 'cargo build --release',
 }
 
@@ -147,17 +147,11 @@ function M.config()
 	local ls = require 'luasnip'
 	local cmp = require 'blink.cmp'
 
-	map('i', '<CR>', function()
-		if not cmp.accept() then
-			vim.api.nvim_feedkeys(require('nvim-autopairs').autopairs_cr() or '\r', 'n', false)
-		end
-	end)
-
 	opts.snippets = { preset = 'luasnip' }
 	opts.keymap = {
 		preset = 'none',
 
-		-- ['<CR>'] = { 'accept', 'fallback' },
+		['<CR>'] = { 'accept', 'fallback' },
 		['<C-space>'] = {
 			'show',
 			function(cmp)
@@ -173,13 +167,17 @@ function M.config()
 		['<Tab>'] = {
 			function(cmp)
 				if ls.locally_jumpable(1) then
-					return vim.schedule(function() ls.jump(1) end)
+					vim.schedule(function() ls.jump(1) end)
+					return true
+				elseif cmp.select_and_accept() or vim.fn.mode() == 'c' then
+					return true
 				end
-				if cmp.select_and_accept() or vim.fn.mode() == 'c' then return end
+
+				local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+				local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
+				if line:sub(col, col):match '%w' then return end
+
 				vim.schedule(function() -- >> with cursor tracking TODO: use manipulator
-					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
-					if line:sub(col, col):match '%w' then return end
 					local indent = line:match '^%s'
 					if not indent then
 						indent = vim.bo.et and string.rep(' ', vim.bo.sw) or '\t'
@@ -190,7 +188,9 @@ function M.config()
 					vim.api.nvim_buf_set_lines(0, row - 1, row, true, { line })
 					vim.api.nvim_win_set_cursor(0, { row, col + #indent })
 				end)
+				return true
 			end,
+			'fallback',
 		},
 		['<S-Tab>'] = {
 			function(cmp)
@@ -217,16 +217,8 @@ function M.config()
 		['<A-k>'] = { 'select_prev', 'fallback' },
 		['<A-j>'] = { 'select_next', 'fallback' },
 
-		['<C-A-k>'] = {
-			'scroll_signature_up',
-			'scroll_documentation_up',
-			function() return vim.api.nvim_replace_termcodes('<C-x><C-y>', true, false, true) end,
-		},
-		['<C-A-j>'] = {
-			'scroll_signature_down',
-			'scroll_documentation_down',
-			function() return vim.api.nvim_replace_termcodes('<C-x><C-e>', true, false, true) end,
-		},
+		['<M-C-K>'] = { 'scroll_signature_up', 'scroll_documentation_up', 'fallback_to_mappings' },
+		['<M-C-J>'] = { 'scroll_signature_down', 'scroll_documentation_down', 'fallback_to_mappings' },
 		['<C-1>'] = { function(cmp) return cmp.accept { index = 1 } end, 'fallback_to_mappings' },
 		['<C-2>'] = { function(cmp) return cmp.accept { index = 2 } end, 'fallback_to_mappings' },
 		['<C-3>'] = { function(cmp) return cmp.accept { index = 3 } end, 'fallback_to_mappings' },

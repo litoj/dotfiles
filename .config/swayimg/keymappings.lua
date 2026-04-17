@@ -38,8 +38,8 @@ do
 	amap('Alt+3', gen_rating(3))
 	amap('Alt+4', gen_rating(4))
 	amap('Alt+5', gen_rating(5))
-	amap('<C-f>', [[EDIT_PRESET=editFixManualFl pem -e -x -c dummy "%"]])
-	amap('<Del>', [[x="%" && which trash && trash "$x" || mv "$x" /tmp/my/trash/]])
+	amap('<C-f>', [[pem -D --config-picker -- -e -x -c dummy %s]])
+	amap('<Del>', [[which trash && trash %f || mv %f /tmp/my/trash/]])
 	amap('<A-f>', [[dragon-drop -x %f]])
 	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
 end

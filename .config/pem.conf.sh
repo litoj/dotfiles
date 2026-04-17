@@ -10,17 +10,34 @@ fix35mmFl() {
 	bc < <(getExif '$FocalLength*1.5')
 }
 
+editSetFl=(
+	-t FocalLength -v ''
+	-t LensInfo -v '$FocalLength $FocalLength undef undef'
+	-t FocalLengthIn35mmFormat -v '$fix35mmFl$'
+	-t MinFocalLength -v '$FocalLength'
+	-t MaxFocalLength -v '$FocalLength'
+)
+
+editSetFl500=(
+	-t FocalLength -v 500
+	-t FNumber -v 8
+	-t LensInfo -v '$FocalLength $FocalLength 8 8'
+	"${editSetFl[@]:8}"
+)
+
+editSetFl35=(
+	-t FocalLength -v 35
+	-t FNumber -v 1.4
+	-t LensInfo -v '$FocalLength $FocalLength 1.4 16'
+	"${editSetFl[@]:8}"
+)
+
 # NOTE: for full detail on vanames use: exiftool -a -s -G1
 # to specify a group use exiftool -<group>:<tag> (Image=IFD0, Photo=ExifIFD, Fujifilm=Fujifilm)
 declare -gA editPresets=(
-	['fixManualFl']=editFixManualFl
-)
-editFixManualFl=(
-	-t FocalLength -v ''
-	-t FocalLengthIn35mmFormat -v '$fix35mmFl$'
-	-t LensInfo -v '$FocalLength $FocalLength undef undef'
-	-t MinFocalLength -v '$FocalLength'
-	-t MaxFocalLength -v '$FocalLength'
+	['FL=?']=editSetFl
+	['FL=500']=editSetFl500
+	['FL=35']=editSetFl35
 )
 
 # TODO: more 3D photo attempts

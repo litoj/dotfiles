@@ -11,7 +11,7 @@ modmap {
 		local mapAll = require('plugins.manipulator').mapAll
 		mapAll('chapter', { 'chapter', 'section', 'subsection', 'subsubsection' }, { buffer = buf })
 		mapAll('figure block', { 'begin' }, { buffer = buf })
-		map({ 'n', 'i' }, '<F2>', function()
+		local function renameEnv()
 			local env = m.ts.current({ types = { 'begin', 'end' } }):parent()
 			if not env or not env.range then return end
 			local bopts = { inherit = false, types = { 'curly_group_text' }, src = '.' }
@@ -42,7 +42,9 @@ modmap {
 					e:paste({ text = b:get_text() }):highlight 'Visual'
 				end,
 			})
-		end)
+		end
+		map({ 'n', 'i' }, '<F2>', renameEnv)
+		map('i', '<Tab>', renameEnv)
 	end,
 }
 

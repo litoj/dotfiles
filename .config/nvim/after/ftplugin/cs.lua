@@ -36,10 +36,6 @@ function proj.cfg(path)
 	}
 end
 
-local function refresh(s) vim.lsp.diagnostic._refresh(s.buf) end
-
-vim.api.nvim_create_autocmd({ 'InsertLeavePre', 'BufWrite' }, { buffer = 0, callback = refresh })
-
 local map, modmap = fth.once {
 	mylsp = function(ml) ml.setup 'roslyn_ls' end,
 

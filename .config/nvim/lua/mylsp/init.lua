@@ -1,3 +1,4 @@
+---@class mylsp
 local M = {}
 vim.diagnostic.config {
 	virtual_text = false,
@@ -20,10 +21,10 @@ vim.diagnostic.config {
 
 ---@param server? string
 ---@param opts? string|vim.lsp.Config|{setCwd:boolean, format:boolean}
-local function setup(server, opts)
+function M.setup(server, opts)
 	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
 
-	local on_attach = opts.on_attach
+	local on_attach = opts.on_attach or (vim.lsp.config[server] or {}).on_attach
 	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
 		-- custom settings for dynamic capability override
@@ -57,10 +58,9 @@ local function setup(server, opts)
 	vim.lsp.enable(server)
 	return opts
 end
-M.setup = setup
 
-setup 'bashls'
-setup 'vue_ls'
+M.setup 'bashls'
+M.setup 'vue_ls'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
 -- setup 'jsonls'
@@ -85,7 +85,7 @@ map('n', 'gD', function() vim.lsp.buf.declaration() end)
 map('n', 'gd', function() vim.lsp.buf.definition() end)
 map('n', 'gr', function() vim.lsp.buf.references() end)
 map('n', 'gI', function() vim.lsp.buf.implementation() end)
-map({ 'n', 'i' }, '<A-S-C>', vim.lsp.codelens.refresh)
+map({ 'n', 'i' }, '<A-S-C>', function() vim.lsp.codelens.enable(true, { bufnr = 0 }) end)
 map({ 'n', 'i' }, '<A-i>', function() vim.lsp.buf.hover { border = 'rounded' } end)
 map('i', '<A-S-I>', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 map({ 'n', 'i' }, '<C-m>', vim.lsp.buf.document_highlight)

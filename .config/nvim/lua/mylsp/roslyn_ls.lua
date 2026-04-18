@@ -1,6 +1,25 @@
 -- dotnet tool install roslyn-language-server --prerelease -g
 -- paru -S roslyn-ls
+
+local function refresh(s) vim.lsp.diagnostic._refresh(s.buf) end
+
 return {
+	on_attach = function(client, bufnr)
+		vim.api.nvim_create_autocmd(
+			{ 'InsertLeavePre', 'BufWritePost' },
+			{ buffer = bufnr, callback = refresh }
+		)
+	end,
+	handlers = {
+		['workspace/projectInitializationComplete'] = function(_, _, ctx) vim.lsp.diagnostic._refresh() end,
+	},
+	capabilities = {
+		workspace = {
+			didChangeWatchedFiles = {
+				dynamicRegistration = false, -- true for neovim filewatching, false for roslyn
+			},
+		},
+	},
 	settings = {
 		['csharp|background_analysis'] = {
 			dotnet_analyzer_diagnostics_scope = 'openFiles',

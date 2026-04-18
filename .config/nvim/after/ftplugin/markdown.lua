@@ -28,7 +28,7 @@ local function enter_or_list()
 	end
 end
 
-map('i', '<Enter>', enter_or_list, { buffer = true, expr = true })
+map('i', '<CR>', enter_or_list, { buffer = true, expr = true })
 map('n', '<A-S-R>', '<Cmd>MarpToggle<CR><CR>')
 map(
 	{ 'n', 'i' },

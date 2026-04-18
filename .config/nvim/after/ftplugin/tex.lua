@@ -1,7 +1,41 @@
 if vim.bo.bufhidden ~= '' then return end
 
+local function find_main_tex(buf)
+	local dir = vim.api.nvim_buf_get_name(buf or 0):match '(.+)/'
+
+	while dir and #dir > 1 do
+		for file in vim.fs.dir(dir) do
+			if file:match '%.tex$' then
+				file = dir .. '/' .. file
+				local f = io.open(file, 'r') or error('no file: ' .. file)
+				for line in f:lines '*l' do
+					if #line > 0 and line:sub(1, 1) ~= '%' then -- skip all comments
+						if vim.startswith(line, '\\documentclass') then
+							f:close()
+							return file
+						else
+							break
+						end
+					end
+				end
+				f:close()
+			end
+		end
+
+		dir = dir:match '(.+)/'
+	end
+
+	error 'no \\documentclass file found'
+end
+
 local map, modmap = require('fthelper').once {
-	mylsp = function(ml) ml.setup 'texlab' end,
+	---@module "mylsp.init"
+	---@param ml mylsp
+	mylsp = function(ml)
+		local cfg = require 'mylsp.texlab'
+		cfg.root_dir = function(bufnr, on_dir) on_dir(find_main_tex(bufnr):match '.+/') end
+		ml.setup('texlab', cfg)
+	end,
 }
 
 modmap {
@@ -53,11 +87,7 @@ vim.bo.commentstring = '%%s'
 -- \usepackage[autostyle]{csquotes}
 local function enter_or_item()
 	local line = vim.api.nvim_buf_get_lines(0, vim.fn.line '.' - 1, -1, false)[1]:match '^%s*\\item.?'
-	if not line then
-		return '\r'
-	else
-		return '\r\b\\item '
-	end
+	return line and '\r\\item ' or '\r'
 end
 
 map('i', '<CR>', enter_or_item, { expr = true })
@@ -75,50 +105,33 @@ map('i', '<A-c>', '\\texttt{}<left>')
 map('i', '<A-i>', '\\textit{}<left>')
 map('i', '<A-u>', '\\underline{}<left>')
 
-local function find_main_tex()
-	local dir = vim.api.nvim_buf_get_name(0):match '(.+)/'
-
-	while dir and #dir > 1 do
-		for file in vim.fs.dir(dir) do
-			if file:match '%.tex$' then
-				file = dir .. '/' .. file
-				local f = io.open(file, 'r') or error('no file: ' .. file)
-				for _ = 1, 20 do
-					local line = f:read '*line'
-					if not line then break end
-
-					if vim.startswith(line, '\\documentclass') then
-						f:close()
-						return file
-					end
-				end
-				f:close()
-			end
-		end
-
-		dir = dir:match '(.+)/'
-	end
-end
-
 local function get_main_tex()
 	-- Try to get the texlab LSP client and check its cache
 	local lsp = vim.lsp.get_clients({ bufnr = 0, name = 'texlab' })[1]
 	local ret = lsp and lsp.main_tex or vim.b.main_tex
 	if ret then return ret end
 
-	ret = find_main_tex() or error 'no \\documentclass file found'
+	ret = find_main_tex()
 
 	-- Cache in LSP client if available
+	---@diagnostic disable-next-line: inject-field
 	if lsp then lsp.main_tex = ret end
 	vim.b.main_tex = ret
 	return ret
 end
 
 local function compile(windowed)
-	local cmd = ('set x (compiler "%s"); if not pgrep -f "zathura $x"; zathura "$x" &; end'):format(
-		get_main_tex()
-	)
-	return (windowed and '<Cmd>term %s<CR>' or '<Cmd>w|!%s<CR><CR>'):format(cmd)
+	local main = get_main_tex()
+
+	local cmd = ('latexmk -pdflua "%s" | grep -vF "(/usr/"'):format(main)
+	if windowed then
+		return ('<Cmd>term %s<CR>'):format(cmd)
+	else
+		return ('<Cmd>w|!%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR><CR>'):format(
+			cmd,
+			main:gsub('%.tex$', '.pdf')
+		)
+	end
 end
 map({ 'n', 'i' }, '<A-b>', function() return compile(true) end, { expr = true })
 map({ 'n', 'i' }, '<A-r>', compile, { expr = true })

@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+echo '' | trash-restore | fzf --multi --tac --no-sort |
+	sort -nr | # reverse order to keep the idx of restored files in tact
+	while read -ra line; do
+		echo "$line" | trash-restore >/dev/null
+	done

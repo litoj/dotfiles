@@ -160,7 +160,14 @@ function proj.run_test(cfg, debug, filter)
 		'dotnet test --no-build -v detailed --stop-on-fail on --show-live-output on --project',
 		cfg.csproj,
 		filter,
-		debug and '--debug' or [[ | awk '/Connected to Docker/,/WARNING/ {next} {print}' ]],
+		debug and '--debug' or '',
+		[[ | awk ']],
+		'/Connected to Docker/,/WARNING/ {next}',
+		'/Tenant:/ {next}',
+		'$1=="VALUES" {next}',
+		'/^  (SELECT|INSERT)/ {print ";"}',
+		'{print}',
+		[[' ]],
 	}, ' ')
 	if debug then
 		proj.debug_cfg(cfg)

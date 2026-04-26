@@ -4,7 +4,6 @@ local M = {
 	event = 'VeryLazy',
 }
 function M.config()
-	vim.o.laststatus = 3
 	local mode_color = {
 		n = 'Magenta',
 		i = 'Green',

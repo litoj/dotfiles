@@ -20,6 +20,7 @@ do
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
 	amap('<C-0>', function() t.size = osize end)
+	amap('<S-w>', function() swi.apply_raw_wb = not swi.apply_raw_wb end)
 
 	amap('<S-p>', function()
 		if swi.mode == 'slideshow' then
@@ -151,8 +152,8 @@ do
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)
-	vmap({ '<Up>', '=', '<S-+>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
-	vmap({ '<Down>', '-', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
+	vmap({ '<Up>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
+	vmap({ '<Down>', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
 
 	vmap('b', [[~/.config/sway/custombg %f]])
 	vmap('<S-b>', [[cp %f ~/Pictures/screen/]])

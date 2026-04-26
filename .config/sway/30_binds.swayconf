@@ -285,6 +285,7 @@ mode $Exit {
 		a mode default, exec $i3/cpu Auto
 		w mode default, exec $i3/cpu Performance
 		t mode default, exec $i3/cpu Test
+		m mode default, exec $i3/cpu Min
 
 # NOTE: presentation / screen duplication mode
 		$Alt+p mode default, output * pos 0 0, output * res 1920x1080

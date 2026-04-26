@@ -70,7 +70,11 @@ function M.config()
 		return models
 	end
 
-	require('avante.sidebar').show_input_hint = function() end
+	local old = require('avante.sidebar').show_input_hint
+	require('avante.sidebar').show_input_hint = function(self)
+		if vim.fn.mode() == 'n' then return old(self) end
+		self:close_input_hint() -- Close the existing hint window
+	end
 	a.setup {
 		provider = 'copilot',
 		acp_providers = {
@@ -319,12 +323,21 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		},
 	}
 
-	require 'autocommands'('FileType', function(_) vim.wo.conceallevel = 2 end, 'Avante')
+	vim.api.nvim_create_autocmd('FileType', {
+		pattern = 'Avante',
+		callback = function(s)
+			vim.wo.conceallevel = 2
+			vim.treesitter.start(s.buf, 'markdown')
+		end,
+	})
 	local function simulate_press(keyword, limit, cb)
 		local cwin = vim.api.nvim_get_current_win()
 		local cpos = vim.api.nvim_win_get_cursor(cwin)
 		--   Allow      Allow Always      Reject -- no X for Reject because it can get wrapped
-		keyword = ({ Allow = ' Allow', AlwaysAllow = ' Allow Always', Reject = 'Reject' })[keyword]
+		keyword = ({ Allow = ' Allow', Always = ' Allow Always', Reject = ' Reject' })[keyword]
+
+		local base = keyword:match '%w+$'
+		local icon = keyword:sub(1, -#base - 1)
 
 		local awin, abuf
 		for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -339,8 +352,14 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 			local lines = vim.api.nvim_buf_get_lines(abuf, 0, -1, false)
 			if remaining > 0 then
 				for i = #lines, 1, -1 do
-					local col = lines[i]:find(keyword, 1, true)
-					if col then
+					local col = lines[i]:find(base, 1, true)
+					if
+						col -- check for matches at the edge of the line
+						and (
+							col > 1 and lines[i]:find(keyword, 1, true) == col - #icon
+							or (col == 1 and i > 1 and lines[i - 1]:find(icon, -#icon, true))
+						)
+					then
 						if last_line == i then break end -- matched some text
 
 						vim.api.nvim_win_set_cursor(awin, { i, col })
@@ -364,7 +383,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		if awin then
 			vim.cmd 'stopinsert'
 			vim.api.nvim_set_current_win(awin)
-			press_next(limit or 100, nil)
+			press_next(limit or 10, nil)
 		end
 	end
 
@@ -382,7 +401,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 
 	local api = require 'avante.api'
 	map('n', ' aa', function() simulate_press('Allow', 1) end)
-	map('n', ' aA', function() simulate_press('Always Allow', 1) end)
+	map('n', ' aA', function() simulate_press('Always', 1) end)
 	map('n', ' ar', function() simulate_press('Reject', 1) end)
 	map('n', ' aS', function()
 		api.stop()
@@ -393,6 +412,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		api.switch_provider 'opencode'
 		api.select_acp_model()
 	end)
+	map('v', ' ae', ':AvanteEdit<CR>')
 	map('n', ' ax', '<Cmd>AvanteClear<CR>')
 	map('n', ' af', function()
 		local fs = a.get().file_selector

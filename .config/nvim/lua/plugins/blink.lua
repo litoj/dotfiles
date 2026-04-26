@@ -1,6 +1,5 @@
 local M = {
 	'saghen/blink.cmp',
-	-- optional: provides snippets for the snippet source
 	dependencies = {
 		'L3MON4D3/LuaSnip',
 		'rafamadriz/friendly-snippets',
@@ -11,6 +10,7 @@ local M = {
 	event = 'InsertEnter',
 	keys = ':',
 
+	commit = 'c573a15a62bd0bfd4006ee0849b24f5404395500',
 	-- version = '1.*',
 	-- or build = 'cargo build --release',
 }
@@ -102,7 +102,8 @@ function M.config()
 		-- implementation = 'prefer_rust_with_warning', -- won't get used because of custom sorter
 		implementation = 'lua',
 		frecency = { enabled = true },
-		use_proximity = true,
+		use_proximity = false,
+		max_typos = 0,
 		sorts = {
 			'score',
 			function(a, b) return kindPriority[a.kind] < kindPriority[b.kind] end,
@@ -122,7 +123,11 @@ function M.config()
 			auto_show = true,
 			draw = {
 				padding = { 0, 0 },
-				columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 } },
+				columns = {
+					{ 'kind_icon' },
+					{ 'label', 'label_description', gap = 1, width = { fill = true } },
+					-- { 'source_name' },
+				},
 				components = {
 					kind_icon = {
 						text = function(ctx)
@@ -197,7 +202,7 @@ function M.config()
 				if ls.locally_jumpable(-1) then
 					return vim.schedule(function() ls.jump(-1) end)
 				end
-				if cmp.insert_prev() or vim.fn.mode() == 'c' then return end
+				if cmp.is_menu_visible() and cmp.insert_prev() or vim.fn.mode() == 'c' then return end
 				vim.schedule(function() -- << with cursor tracking TODO: use manipulator
 					local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 					local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1]
@@ -239,6 +244,16 @@ function M.config()
 		[kinds.Text] = true,
 	}
 	opts.sources = {
+		transform_items = function(ctx, items)
+			local filtered = {}
+			local match = ctx.get_keyword():gsub('(.)', '.-%1'):sub(3)
+			local base_len = #ctx.get_keyword()
+			for _, item in ipairs(items) do
+				local match = item.label:match(match)
+				if match and #match < base_len + 8 then filtered[#filtered + 1] = item end
+			end
+			return filtered
+		end,
 		providers = {
 			lsp = {
 				transform_items = function(_, items)
@@ -305,7 +320,7 @@ function M.config()
 			lua = { inherit_defaults = true, 'lazydev' },
 			markdown = { inherit_defaults = true, 'nerdfont', 'latex' },
 			text = { inherit_defaults = true, 'nerdfont', 'latex' },
-			tex = { inherit_defaults = true, 'latex' },
+			tex = { 'lsp', 'copilot', 'latex' },
 		},
 	}
 

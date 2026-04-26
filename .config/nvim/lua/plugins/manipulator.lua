@@ -11,7 +11,6 @@ local M = {
 	event = 'VeryLazy',
 }
 function M.config()
-	require('vim._core.ui2').enable {}
 	local m = require 'manipulator'
 	local RM = m.RM
 	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })
@@ -131,8 +130,8 @@ function M.config()
 	local tsq = ctc({ on_partial = '.' })['&1'].queue_or_swap['*1']
 	map({ '', 'i' }, '<A-x>', tsq.fn)
 	local tsswap = tsq:queue_or_swap({ hl_group = '' }):repeatable()
-	map({ '', 'i' }, '<A-S-H>', tsswap:prev('path').dot_fn)
-	map({ '', 'i' }, '<A-S-L>', tsswap:next('path').dot_fn)
+	map({ '', 'i' }, '<A-S-H>', tsswap:prev_sibling().dot_fn)
+	map({ '', 'i' }, '<A-S-L>', tsswap:next_sibling().dot_fn)
 
 	local tsj = ctc({ src = '.' })['&1'].jump['&$']['*1']:repeatable()
 	map({ '', 'i' }, '<C-h>', tsj:prev({ new_edge = 'start' }).fn)

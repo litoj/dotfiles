@@ -3,22 +3,16 @@
 require 'swi.api.globals'
 
 -- maximize lazyload after the window has opened
-local x
 e.subscribe {
-	event = 'WinResized',
+	event = 'SwiEnter',
 	callback = function()
-		if not x and not swi.overlay then -- resizes twice with overlay disabled
-			x = true
-			return
-		end
-
-		v.scale = v.default_scale
 		require 'lazy'
-		require 'keymappings'
+		require 'binds'
 		return true
 	end,
 }
 
+swi.apply_raw_wb = false
 swi.overlay = false
 l.order = 'alpha'
 t.shadow = 0xff101010
@@ -29,6 +23,7 @@ t.size = 23
 t.status_timeout = 2
 t.enabled = false
 
+swi.antialiasing = false
 v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
 v.history_limit = 5

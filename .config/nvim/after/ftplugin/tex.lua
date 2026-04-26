@@ -61,12 +61,13 @@ modmap {
 
 			local group = vim.api.nvim_create_augroup('env-sync', { clear = true })
 			vim.api.nvim_create_autocmd({ 'CursorMovedI', 'CursorMoved' }, {
+				buffer = buf,
 				group = group,
 				callback = function(s)
-					b = m.ts.current(bopts) or error 'current node not part of env declarators'
+					b = m.ts.current(bopts)
 					env = m.ts.get(o) or error 'env size changed'
 					local e = env:descendant(eopts) or error 'env with no end'
-					if not b.range or s.event == 'CursorMoved' then
+					if s.event == 'CursorMoved' or not b or not b.range then
 						env:descendant(bopts):highlight(false)
 						e:highlight(false)
 						vim.api.nvim_del_augroup_by_id(group)
@@ -100,10 +101,26 @@ map('i', ',hs', '\\hspace{m}<left><left>')
 -- \\enquote or \\uv
 map('i', '<A-q>', '\\uv{}<left>')
 map('i', '...', '\\dots{}')
+-- TODO: rewrite reform.matcher to allow just simple one-time match of the chars around cursor and
+-- return the result for further processing
+-- map('i', '-', '--')
+map('i', '#', '\\#')
 map('i', '<A-b>', '\\textbf{}<left>')
 map('i', '<A-c>', '\\texttt{}<left>')
 map('i', '<A-i>', '\\textit{}<left>')
 map('i', '<A-u>', '\\underline{}<left>')
+
+map('i', '<C-1>', '\\chapter{}<left>')
+map('i', '<C-2>', '\\section{}<left>')
+map('i', '<C-3>', '\\subsection{}<left>')
+map('i', '<C-4>', '\\subsubsection{}<left>')
+map('i', '<C-5>', '\\paragraph{}<left>')
+
+map('i', '# ', '\\chapter{}<left>')
+map('i', '## ', '\\section{}<left>')
+map('i', '### ', '\\subsection{}<left>')
+map('i', '#### ', '\\subsubsection{}<left>')
+map('i', '##### ', '\\paragraph{}<left>')
 
 local function get_main_tex()
 	-- Try to get the texlab LSP client and check its cache
@@ -123,15 +140,17 @@ end
 local function compile(windowed)
 	local main = get_main_tex()
 
-	local cmd = ('latexmk -pdflua "%s" | grep -vF "(/usr/"'):format(main)
+	local cmdBase = ('latexmk -pdflua "%s"'):format(main)
+	local cmdFilter = '| grep -vF "(/usr/"'
 	if windowed then
-		return ('<Cmd>term %s<CR>'):format(cmd)
+		return ('<Cmd>term %s -f %s<CR>'):format(cmdBase, cmdFilter)
 	else
-		return ('<Cmd>w|!%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR><CR>'):format(
-			cmd,
+		return ('<Cmd>w|!%s%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR><Esc>'):format(
+			cmdBase,
+			cmdFilter,
 			main:gsub('%.tex$', '.pdf')
 		)
 	end
 end
-map({ 'n', 'i' }, '<A-b>', function() return compile(true) end, { expr = true })
+map('n', '<A-b>', function() return compile(true) end, { expr = true })
 map({ 'n', 'i' }, '<A-r>', compile, { expr = true })

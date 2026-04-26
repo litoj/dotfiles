@@ -30,6 +30,8 @@ vim.o.hidden = true
 vim.o.showmode = false
 vim.o.whichwrap = '<,>,[,],h,l'
 vim.o.cmdheight = 1
+require('vim._core.ui2').enable {}
+vim.o.laststatus = 3 -- show only one statusline at the bottom
 vim.o.pumheight = 10
 vim.o.backup = false
 vim.o.writebackup = false

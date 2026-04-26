@@ -293,14 +293,15 @@ installDev() {
 
 latexBundle=(
 	texlab
+	texlive-luatex
+	texlive-langczechslovak
+	texlive-latexextra # latexmk, latexindent
+	biber
 	texlive-bibtexextra
-	texlive-fontsextra
-	texlive-formatsextra
-	texlive-humanities
-	texlive-latexindent-meta
+	# texlive-formatsextra
+	texlive-fontsrecommended
+	texlive-plaingeneric
 	texlive-pictures
-	texlive-publishers
-	texlive-science
 )
 
 actionInfo install 'install various package categories'

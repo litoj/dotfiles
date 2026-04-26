@@ -45,6 +45,7 @@ xkb_symbols "mod_1" {
     key <RCTL> {actions = [ {SetMods(modifiers=Control),SetGroup(group=-1)} ]};
     key <LWIN> {actions = [ {SetMods(modifiers=Mod4),   SetGroup(group=-1)} ]};
     key <RWIN> {actions = [ {SetMods(modifiers=Mod4),   SetGroup(group=-1)} ]};
+    key <SPCE> {type = "ONE_LEVEL", [ space ]};
 };
 
 partial modifier_keys
@@ -54,19 +55,20 @@ xkb_symbols "mod_2" {
     key <RCTL> {actions = [ {SetMods(modifiers=Control),SetGroup(group=-2)} ]};
     key <LWIN> {actions = [ {SetMods(modifiers=Mod4),   SetGroup(group=-2)} ]};
     key <RWIN> {actions = [ {SetMods(modifiers=Mod4),   SetGroup(group=-2)} ]};
+    key <SPCE> {type = "ONE_LEVEL", [ space ]};
 };
 
 partial alphanumeric_keys
 xkb_symbols "cz" {
-    include "cus(mod_1)"
     include "cz(basic)"
+    include "cus(mod_1)"
     name[Group1]= "Czech";
 };
 
 partial alphanumeric_keys
 xkb_symbols "mk" {
-    include "cus(mod_2)"
     include "cz(basic)"
+    include "cus(mod_2)"
     include "cus(altus)"
     name[Group1]= "Macedonian (Czech, phonetic)";
     

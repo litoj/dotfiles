@@ -103,14 +103,14 @@ do
 	vmap('<Home>', v.go.first)
 	vmap('<End>', v.go.last)
 
-	vmap('h', v.step.left)
-	vmap('j', v.step.down)
-	vmap('k', v.step.up)
-	vmap('l', v.step.right)
-	vmap('<S-SML>', function() v.step.left(20) end)
-	vmap('<S-SMD>', function() v.step.down(20) end)
-	vmap('<S-SMU>', function() v.step.up(20) end)
-	vmap('<S-SMR>', function() v.step.right(20) end)
+	vmap('h', v.pan.left)
+	vmap('j', v.pan.down)
+	vmap('k', v.pan.up)
+	vmap('l', v.pan.right)
+	vmap('<S-SML>', function() v.pan.left(20) end)
+	vmap('<S-SMD>', function() v.pan.down(20) end)
+	vmap('<S-SMU>', function() v.pan.up(20) end)
+	vmap('<S-SMR>', function() v.pan.right(20) end)
 
 	-- ### Scaling
 	vmap('s', function()

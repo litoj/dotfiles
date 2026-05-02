@@ -172,7 +172,7 @@ function M.config()
 		['<Tab>'] = {
 			function(cmp)
 				if ls.locally_jumpable(1) then
-					vim.schedule(function() ls.jump(1) end)
+					if not cmp.accept() then vim.schedule(function() ls.jump(1) end) end
 					return true
 				elseif cmp.select_and_accept() or vim.fn.mode() == 'c' then
 					return true
@@ -257,7 +257,7 @@ function M.config()
 		providers = {
 			lsp = {
 				transform_items = function(_, items)
-					if items[1] and items[1].client_name == 'lua_ls' then
+					if (items[1] or {}).client_name == 'lua_ls' then
 						return vim.tbl_filter(function(x)
 							if dropIds[x.kind] or x.kind == kinds.Keyword then return false end
 
@@ -271,6 +271,14 @@ function M.config()
 					end
 
 					return vim.tbl_filter(function(x) return not dropIds[x.kind] end, items)
+				end,
+			},
+			bib = {
+				name = 'lsp',
+				module = 'blink.cmp.sources.lsp',
+				transform_items = function(_, items)
+					-- Filter out @xxx entries in bib filetype
+					return vim.tbl_filter(function(x) return x.label:sub(1, 1) ~= '@' end, items)
 				end,
 			},
 			path = { opts = { get_cwd = vim.uv.cwd } },
@@ -320,7 +328,8 @@ function M.config()
 			lua = { inherit_defaults = true, 'lazydev' },
 			markdown = { inherit_defaults = true, 'nerdfont', 'latex' },
 			text = { inherit_defaults = true, 'nerdfont', 'latex' },
-			tex = { 'lsp', 'copilot', 'latex' },
+			tex = { 'lsp', 'snippets', 'copilot', 'path' },
+			bib = { 'bib', 'snippets', 'copilot' },
 		},
 	}
 

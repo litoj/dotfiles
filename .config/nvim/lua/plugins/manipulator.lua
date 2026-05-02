@@ -59,30 +59,6 @@ function M.config()
 						},
 					},
 				},
-
-				c_sharp = {
-					types = {
-						inherit = true,
-						'modifier',
-						'implicit_type',
-						'list$',
-						'prefix_unary_expression',
-						'member_access_expression',
-						throw_statement = false,
-					},
-
-					in_graph = {
-						types = {
-							'identifier',
-							'string_literal',
-							throw_statement = false,
-							return_statement = false,
-							expression_statement = false,
-							local_declaration_statement = false,
-							'_statement$',
-						},
-					},
-				},
 			},
 		},
 	}

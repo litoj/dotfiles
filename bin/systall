@@ -299,7 +299,7 @@ latexBundle=(
 	biber
 	texlive-bibtexextra
 	# texlive-formatsextra
-	texlive-fontsrecommended
+	texlive-fontsextra # for bbding.sty in presentations
 	texlive-plaingeneric
 	texlive-pictures
 )

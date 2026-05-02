@@ -66,7 +66,7 @@ isNewTerm() {
 runAndTime() {
 	start=$(date +%H:%M)
 	"$@"
-	# ((SECONDS < 60)) && exit
+	((SECONDS < 300)) && exit
 	dur="$start-$(date +%H:%M) = $(bc <<<"scale=2;$SECONDS/3600")"
 
 	if ((last[0] == new[0] && last[1] == new[1])); then # append to current day

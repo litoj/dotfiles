@@ -36,7 +36,7 @@ bindsym --to-code {
 	$Mod+2 exec xterm nvim &
 	$Mod+$Alt+2 exec REPORT_TO=~/Documents/work/ ~/.config/sway/reporter \
 		xterm nvim -i ~/Documents/work/session.shada
-	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/Bakal/ ~/.config/sway/reporter \
+	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ ~/.config/sway/reporter \
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'

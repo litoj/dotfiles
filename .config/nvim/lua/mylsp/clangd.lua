@@ -14,7 +14,7 @@ return { -- https://clangd.llvm.org/config
 		local h = require 'fthelper'
 		local root = h.findDirOf 'src/'
 		if root and not exists(root .. 'compile_commands.json') then
-			local commands = h.glob(root .. '*build*/compile_commands.json')[1]
+			local commands = exists('/tmp/build') and '/tmp/build/' or h.glob(root .. '*build*/compile_commands.json')[1]
 			if commands then cmd[#cmd + 1] = '--compile-commands-dir=' .. commands:match '.+/' end
 		end
 

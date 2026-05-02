@@ -36,6 +36,22 @@ local map, modmap = require('fthelper').once {
 		cfg.root_dir = function(bufnr, on_dir) on_dir(find_main_tex(bufnr):match '.+/') end
 		ml.setup('texlab', cfg)
 	end,
+
+	---@module 'luasnip'
+	---@param ls LuaSnip
+	luasnip = function(ls)
+		local parse = ls.parser.parse_snippet
+
+		ls.add_snippets('bib', {
+			parse('@online', [[@online{$1,
+	title = {$2},
+	author = {$3},
+	publisher = {$4},
+	urldate = {]] .. (vim.fn.system 'date +%Y-%m-%d'):sub(1, -2) .. [[},
+	url = {$6}
+}]]),
+		})
+	end,
 }
 
 modmap {
@@ -95,9 +111,9 @@ map('i', '<CR>', enter_or_item, { expr = true })
 -- short space: \\, vs inseparable space: ~
 -- can be mostly done automatically using \usepackage{luavlna} (or xevlna)
 map('i', '<S-Space>', '~')
-map('i', ',em', '\\emph{}<left>')
-map('i', ',vs', '\\vspace{m}<left><left>')
-map('i', ',hs', '\\hspace{m}<left><left>')
+map('i', '<A-e>', '\\emph{}<left>')
+map('i', '<A-v>', '\\vspace{m}<left><left>')
+map('i', '<A-S-V>', '\\hspace{m}<left><left>')
 -- \\enquote or \\uv
 map('i', '<A-q>', '\\uv{}<left>')
 map('i', '...', '\\dots{}')
@@ -145,7 +161,7 @@ local function compile(windowed)
 	if windowed then
 		return ('<Cmd>term %s -f %s<CR>'):format(cmdBase, cmdFilter)
 	else
-		return ('<Cmd>w|!%s%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR><Esc>'):format(
+		return ('<Cmd>w|!%s%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR>'):format(
 			cmdBase,
 			cmdFilter,
 			main:gsub('%.tex$', '.pdf')

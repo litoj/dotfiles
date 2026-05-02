@@ -161,3 +161,5 @@ do
 	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
 	vmap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
 end
+
+require('swi.snippets').two_pane_mode()

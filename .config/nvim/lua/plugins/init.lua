@@ -2,6 +2,11 @@ return {
 	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
+		'jiaoshijie/undotree',
+		opts = {},
+		keys = { { ' u', function() require('undotree').toggle() end } },
+	},
+	{
 		'neovim/nvim-lspconfig',
 		dependencies = {
 			-- { 'j-hui/fidget.nvim', opts = {} },

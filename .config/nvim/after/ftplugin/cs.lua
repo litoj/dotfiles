@@ -104,17 +104,6 @@ local map, modmap = fth.once {
 	end,
 }
 
-modmap {
-	['manipulator.call_path'] = function(mcp, buf)
-		local mapAll = require('plugins.manipulator').mapAll
-		mapAll(
-			'docs',
-			{ opts = { langs = false, query = [[(comment)+ @docs]], types = { '@docs' } } },
-			{ buffer = buf }
-		)
-	end,
-}
-
 local function build(quick)
 	vim.cmd.w()
 	local cmd = vim.fn.glob '*.sln*' == '' and 'dotnet build -r linux-64' or 'dotnet build'
@@ -184,19 +173,23 @@ function proj.debug()
 end
 
 function proj.run_test(cfg, debug, filter)
-	cfg.cmd = table.concat({
-		'dotnet test --no-build -v detailed --stop-on-fail on --show-live-output on --project',
-		cfg.csproj,
-		filter,
-		debug and '--debug' or '',
-		[[ | awk ']],
-		'/Connected to Docker/,/WARNING/ {next}',
-		'/Tenant:/ {next}',
-		'$1=="VALUES" {next}',
-		'/^  (SELECT|INSERT)/ {print ";"}',
-		'{print}',
-		[[' ]],
-	}, ' ')
+	cfg.cmd = table
+		.concat({
+			'LANG=C dotnet test --no-build --stop-on-fail on',
+			cfg.csproj and '--project ' .. cfg.csproj or '',
+			filter or '',
+			debug and '--debug' or '',
+			[[ | awk '
+    /Connected to Docker:$/,/Execute "psql/ {next}
+    /Worker count/,/Schedule/{x=x+1;print "Test Nr. "int((x+3)/4)"!!!";next}
+    /^  DO/,/@Admin/{next}
+    /INFORMATION/ {next}
+    1=="VALUES" {next}
+    /^  (SELECT|INSERT)/ {print ";"}
+		{print}
+  ']],
+		}, ' ')
+		:gsub('\n', ' ')
 	if debug then
 		proj.debug_cfg(cfg)
 	else
@@ -210,7 +203,20 @@ function proj.test()
 	proj.run_test(cfg, false)
 end
 
+function proj.test_filtered()
+	---@diagnostic disable-next-line: missing-parameter, assign-type-mismatch
+	vim.ui.input({ prompt = 'class test filter: ' }, function(out)
+		if not out or #out == 0 then return end
+		proj.run_test(
+			{ dir = './' },
+			false,
+			'--max-parallel-test-modules 1 --max-threads 1 --filter-class "*' .. out .. '*"'
+		)
+	end)
+end
+
 map('n', '<A-t>', function() coroutine.wrap(proj.test)() end)
+map('n', '<A-S-t>', proj.test_filtered)
 map('n', '<A-S-R>', function() coroutine.wrap(proj.run)() end)
 map('n', '<A-S-D>', function() coroutine.wrap(proj.debug)() end)
 map('n', '<S-F6>', function() coroutine.wrap(proj.debug)() end)

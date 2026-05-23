@@ -14,7 +14,7 @@ bindsym {
 	$Mod+Shift+u exec DIRECTION=prev $custombg set
 	$Mod+$Alt+u exec $custombg cursave
 	$Mod+Ctrl+u exec xdg-open "$($custombg current)"
-	$Mod+Ctrl+$Alt+u exec xdg-open "$(fd "$($custombg current | sed 's,.*/\(.*\)\..*,\1,')" -t f ~/Pictures/sdcard/Pictures/)"
+	$Mod+Ctrl+$Alt+u exec xdg-open "$(fd "$($custombg current | sed -E 's,.*/([0-9_-]{17}).*,\1,')" -t f ~/Pictures/sdcard/Pictures/)"
 
 #---------------+
 # App selection |
@@ -42,7 +42,7 @@ bindsym --to-code {
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
 	$Mod+7 workspace $wMedia; mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
-	$Mod+9 exec $lof 'prismlauncher --launch HermitCrafted' '[title="^(Minecraft|Prism Launcher).*"]'
+	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'
 }
 mode $Msg {
 	bindsym {
@@ -365,7 +365,6 @@ bindsym {
 	Ctrl+KP_Multiply exec $i3/signal mic 2%+
 	Shift+KP_Divide exec $i3/signal vol toggle
 	Shift+KP_Multiply exec $i3/signal mic toggle
-	$Alt+KP_Divide exec $i3/signal wp
 }
 set $mpv playerctl --player=mpv
 set $info $mpv metadata --format
@@ -377,8 +376,9 @@ bindsym {
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 	$Mod+m exec mom play -r
-	$Mod+Shift+m exec mom -DA play +l
-	$Mod+$Alt+m exec mom -DA play -f3 -rdf
+	$Mod+Shift+m exec playerctl -a pause
+	$Mod+Ctrl+Shift+m exec playerctl -a play-pause
+	$Mod+$Alt+m exec mom -DA play +l #-f3 -rdf
 	$Mod+Ctrl+$Alt+m exec mom -DA play -f3 -rf "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+$Alt+Shift+m exec mom -DA play -f3 -rdf "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
 	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpvFile)"
@@ -391,6 +391,8 @@ bindsym {
 	XF86AudioPrev exec $mpv prev
 	XF86AudioStop exec playerctl -a pause
 
+	$Alt+KP_Divide exec playerctl -a pause
+	$Alt+KP_Multiply exec $mpv position 10000+
 	$Alt+KP_Left exec $mpv position 5-
 	$Alt+KP_Right exec $mpv position 5+
 	$Alt+KP_Up exec $mpv position 30+

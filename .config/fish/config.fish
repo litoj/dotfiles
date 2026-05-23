@@ -148,7 +148,7 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	killall -15 ssh-agent &>/dev/null
 	export (ssh-agent | sed -n 's/^\([^ ]*\);.*/\1/p')
 	export FZF_DEFAULT_OPTS="--bind='alt-h:backward-char,alt-j:down,alt-k:up,alt-l:forward-char'"
-	export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1
+	export JAVA_HOME=/usr/lib/jvm/default-runtime/ _JAVA_AWT_WM_NONREPARENTING=1 JAVA_TOOL_OPTIONS=-Dsun.java2d.uiScale=2
 	export WINDEDEBUG=-all
 	# for '~' expansion
 	set -x XDG_CONFIG_HOME ~/.config

@@ -3,12 +3,12 @@ local M = {
 	'yetone/avante.nvim',
 	keys = ' a',
 	build = 'make',
-	-- enabled = false,
 	dependencies = {
 		'nvim-lua/plenary.nvim',
 		'MunifTanjim/nui.nvim',
 		{
 			'zbirenbaum/copilot.lua',
+			enabled = false,
 			opts = {
 				panel = { enabled = false },
 				suggestion = {
@@ -39,8 +39,100 @@ local M = {
 	},
 }
 
+---Returns the first visible, modifiable, named buffer in a non-floating window.
+---@return integer
+---@return string
+local function get_real_active_buf()
+	for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+		if vim.api.nvim_win_get_config(win).relative == '' then
+			local buf = vim.api.nvim_win_get_buf(win)
+			if
+				vim.bo[buf].buftype == 'terminal'
+				or (
+					vim.bo[buf].modifiable
+					and vim.bo[buf].buftype == ''
+					and vim.api.nvim_buf_get_name(buf) ~= ''
+				)
+			then
+				return buf,
+					---@diagnostic disable-next-line: redundant-return-value
+					vim.api
+						.nvim_buf_get_name(buf)
+						:gsub('^term://(.+/)/%d+:.*$', '%1', 1)
+						:gsub('^~', os.getenv 'HOME', 1)
+			end
+		end
+	end
+	error 'No valid buffer in current tab'
+end
+
 function M.config()
 	local a = require 'avante'
+
+	local old = require('avante.sidebar').show_input_hint
+	require('avante.sidebar').show_input_hint = function(self)
+		if vim.fn.mode() == 'n' then return old(self) end
+		self:close_input_hint() -- Close the existing hint window
+	end
+
+	local aview = require 'avante.llm_tools.view'
+	aview.enabled = nil
+	local Helpers = require 'avante.llm_tools.helpers'
+	local Utils = require 'avante.utils'
+	aview.description = [[Reads the content of the given file in the project.
+
+IMPORTANT NOTES:
+- If the file content exceeds a certain size, the returned content will be truncated, and `is_truncated` will be set to true. If `is_truncated` is true, please use the `start_line` parameter and `end_line` parameter to call this `view` tool again.
+- The cwd changes based on the type of file the user is currently in. Therefore the view tool tries
+to adapt and tries to find your file anywhere in the tree upwards. It isn't necessarily the current
+relative path, but it ensures you get the file if there was one.
+]]
+
+	function aview.func(input, opts)
+		if not input.path then return false, 'path is required' end
+		if opts.on_log then opts.on_log('path: ' .. input.path) end
+		if input.path:sub(1, 1) ~= '/' then
+			local d = select(2, get_real_active_buf()):match '.*/'
+			while #d > 1 do
+				if exists(d .. input.path) then
+					input.path = d .. input.path
+					break
+				end
+				d = d:gsub('[^/]*/$', '')
+			end
+		end
+		if not exists(input.path) then return false, 'File does not exist: ' .. input.path end
+		if vim.fn.isdirectory(input.path) == 1 then
+			return 'List of files in directory:\n' .. vim.fn.glob(input.path .. '/*')
+		end
+		local abs_path = Helpers.get_abs_path(input.path)
+		local lines = Utils.read_file_from_buf_or_disk(abs_path)
+		local start_line = input.start_line
+		local end_line = input.end_line
+		if start_line and end_line and lines then
+			lines = vim.list_slice(lines, start_line, end_line)
+		end
+		local truncated_lines = {}
+		local is_truncated = false
+		local size = 0
+		for _, line in ipairs(lines or {}) do
+			size = size + #line
+			if size > 2048 * 100 then
+				is_truncated = true
+				break
+			end
+			table.insert(truncated_lines, line)
+		end
+		local total_line_count = lines and #lines or 0
+		local content = truncated_lines and table.concat(truncated_lines, '\n') or ''
+		local result = vim.json.encode {
+			content = content,
+			total_line_count = total_line_count,
+			is_truncated = is_truncated,
+		}
+		if not opts.on_complete then return result, nil end
+		opts.on_complete(result, nil)
+	end
 
 	---@type AvanteProviderFunctor
 	---@diagnostic disable: missing-fields
@@ -51,7 +143,6 @@ function M.config()
 		is_reasoning_model = function() return true end,
 	})
 
-	local function infra(t) return vim.tbl_deep_extend('force', eInfra, t) end
 	local function list_models(self)
 		local api_key = os.getenv(self.api_key_name) or error('No ' .. self.api_key_name)
 		local p = io.popen(
@@ -63,64 +154,19 @@ function M.config()
 		local models = {}
 		for _, model in ipairs(decoded.data) do
 			local id = model.id
-			if not id:find '[%-0-9]' then
-				models[#models + 1] = { id = id, name = 'infra/' .. id, display_name = id }
-			end
+			models[#models + 1] = { id = id, name = 'infra/' .. id, display_name = 'infra/' .. id }
 		end
 		return models
 	end
+	local function infra(t) return vim.tbl_deep_extend('force', eInfra, t) end
 
-	local old = require('avante.sidebar').show_input_hint
-	require('avante.sidebar').show_input_hint = function(self)
-		if vim.fn.mode() == 'n' then return old(self) end
-		self:close_input_hint() -- Close the existing hint window
-	end
 	a.setup {
-		provider = 'copilot',
-		acp_providers = {
-			opencode = {
-				command = 'opencode',
-				args = { 'acp' },
-				list_models = list_models,
-				include_model = true,
-			},
-		},
+		provider = 'infra',
 		---@type table<string,AvanteProviderFunctor>
 		providers = {
-			infra = vim.tbl_deep_extend('force', eInfra, {
+			infra = infra {
 				-- Model discovery via /v1/models endpoint
 				list_models = list_models,
-			}),
-			glm = infra {
-				model = 'glm-5',
-				context_window = 200000,
-				extra_request_body = {
-					temperature = 0.75,
-					reasoning_effort = 'high',
-				},
-			},
-			qwen = infra { model = 'qwen3.5', context_window = 262000 },
-			kimi = infra {
-				model = 'kimi-k2.5',
-				context_window = 256000,
-				extra_request_body = {
-					chat_template_kwargs = { thinking = true },
-					extra_request_body = {
-						temperature = 0.75,
-						reasoning_effort = 'medium',
-					},
-				},
-			},
-			ds = infra {
-				model = 'deepseek-v3.2',
-				context_window = 160000,
-				extra_request_body = {
-					chat_template_kwargs = { thinking = true },
-					extra_request_body = {
-						temperature = 0.75,
-						reasoning_effort = 'low',
-					},
-				},
 			},
 
 			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
@@ -131,7 +177,11 @@ function M.config()
 			provider = 'tavily',
 		},
 		system_prompt = [[
-You are a pragmatic senior developer. Write code that is maintainable, well-structured, and appropriately simple for the problem at hand.
+**You:**
+- are a pragmatic senior developer
+- write code that is maintainable, well-structured, and appropriately simple for the problem at hand
+- have good intuition and can continue writing the code in the same style it was already
+- can write similar code to what's already there without studying the called method structure and implementation deeply until you need to fix errors in it
 
 **Code Quality:**
 - Respect existing conventions. Match the style, patterns, and structure already present in the codebase.
@@ -140,29 +190,31 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 
 **Documentation:**
 - Document WHY, not WHAT. Comments should explain intent, trade-offs, or non-obvious behavior.
-- Example of good comment: "-- Defer cleanup to avoid race with buffer deletion"
-- Example of bad comment: "-- Increment counter by 1"
+- Do not comment what is already stated by the method name. Comment only what isn't obvious from the name.
+- Example of good comment: "lazyCleanup()-- Defer cleanup to avoid race with buffer deletion"
+- Example of bad comment: "addOne()-- Increment counter by 1"
 
 **Research:**
-- NEVER use subtasks. You can always use the view() tool to see everything in the files you're looking for.
-- Search the web for API documentation, version-specific behavior, or when you're genuinely uncertain.
-- Always check the official documentation before creating code.
+- AVOID USING TASKS/SUBTASKS OR YOU WILL BE FIRED FOR INEFFICIENCY!!!
+- Tasks are extremely slow and you can get the same information much quicker.
+- Use tasks ONLY if you have divided the entire plan into AT LEAST 5 SUBTASKS that can be done in parallel WHILE YOU KEEP WORKING.
+- Use the web for API documentation, version-specific behavior, or when you're genuinely uncertain.
 
 **Communication:**
-- Skip pleasantries. No "Great question!", "You're absolutely right...", or filler.
+- Skip pleasantries. No "Great question!", "You're right...", "But wait, no this, no that"...
 - Present your reasoning briefly: context, assumptions, and why you chose this approach.
-- You don't need to repeat what you're thinking, if you've already said that through the thinking tool.
-- Prefer using complicated vim regexes for repetitive changes via the run_viml tool (`%s/\(keep\)bad/\1/g`, etc.)
 
-**When the user rejects a change:**
+**When a tool call is rejected or fails:**
 1. STOP. Do not re-implement the same solution.
-2. Acknowledge the rejection and analyze why, ask if you're uncertain.
+2. Acknowledge the rejection/failure and analyze why, ask if you're uncertain.
 3. Propose 2-3 alternative approaches in text and wait for the user to choose.
 
 **Red flags you're off track:**
 - You haven't consulted the official documentation first.
-- Your changes are failing -> you should **view() the file you're working on** to check for changes.
+- Your tool calls are failing repeatedly.
+- You have launched a task for reading or finding files.
 ]],
+		-- - Use vim regexes for repetitive changes via the run_nvim_lua tool like vim.cmd'%s/\(keep\)bad/\1/g'
 		windows = {
 			spinner = {
 				editing = { '' },
@@ -178,6 +230,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 			auto_approve_tool_permissions = {
 				run_python = false,
 				'view',
+				'str_replace',
 			},
 			confirmation_ui_style = 'inline_buttons', -- popup allows to provide rejection reason, but is awful otherwise
 			use_cwd_as_project_root = false,
@@ -187,117 +240,90 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		history = {
 			max_tokens = 4096,
 		},
-		custom_tools = {
-			{
-				name = 'run_viml',
-				description = 'Execute VimL code in neovim.',
-				command = 'vim.cmd[[...]]',
-				param = {
-					type = 'table',
-					fields = {
-						type = 'string',
-						name = 'command',
-						description = 'The VimL command to run.',
-						optional = false,
-					},
-				},
-				returns = {
-					{
-						name = 'result',
-						description = 'Output of the code',
-						type = 'string',
-					},
-					{
-						name = 'error',
-						description = 'Error message if execution failed',
-						type = 'string',
-						optional = true,
-					},
-				},
-				---@type AvanteLLMToolFunc
-				func = function(p, o)
-					local command = p.command
-					if not command then return nil, 'Error: missing argument `command`' end
+		-- 		 custom_tools = {
+		-- 			{
+		-- 				name = 'run_nvim_lua',
+		-- 				description = [[Run Lua code in the current neovim session and return its return value.
+		-- Note: you return the value you want, no printing
 
-					if command:find '\n' then
-						local message = require('avante.history').Message:new(
-							'assistant',
-							('\nResult of:\n```vim\n%s\n```'):format(command),
-							{
-								just_for_display = true,
-							}
-						)
-						o.session_ctx.on_messages_add { message }
-					end
+		-- Use the global variable `buf` to refer to the number of the buffer the user is actually editing!!
+		-- ]],
+		-- 				param = {
+		-- 					type = 'table',
+		-- 					fields = {
+		-- 						{
+		-- 							type = 'string',
+		-- 							name = 'command',
+		-- 							description = 'The multiline lua code to execute.',
+		-- 							optional = false,
+		-- 						},
+		-- 					},
+		-- 					usage = {
+		-- 						command = 'Multiline lua code to run inside the currently used neovim editor with return value passthrough',
+		-- 					},
+		-- 				},
+		-- 				returns = {
+		-- 					{
+		-- 						name = 'result',
+		-- 						description = 'Return value of the code',
+		-- 						type = 'string',
+		-- 					},
+		-- 					{
+		-- 						name = 'error',
+		-- 						description = 'Error message if execution failed',
+		-- 						type = 'string',
+		-- 						optional = true,
+		-- 					},
+		-- 				},
+		-- 				---@type AvanteLLMToolFunc
+		-- 				func = function(p, o)
+		-- 					local command = p.command
+		-- 					if not command then return nil, 'Error: missing argument `command`' end
 
-					local ui2 = require 'vim._core.ui2'
-					local cmdbuf = ui2.bufs.cmd
+		-- 					if a._command == command then
+		-- 						return nil,
+		-- 							'RED FLAG: trying to run the same command again.\nThink about what is wrong with the command and fix it.'
+		-- 					end
+		-- 					---@diagnostic disable-next-line: inject-field
+		-- 					a._command = command
 
-					-- Clear command buffer before execution
-					vim.api.nvim_buf_set_lines(cmdbuf, 0, -1, false, {})
-					vim.api.nvim_buf_clear_namespace(cmdbuf, ui2.ns, 0, -1)
+		-- 					-- Inject multiline code separately so it's visible in chat
+		-- 					if command:find '\n' then
+		-- 						local message = require('avante.history').Message:new(
+		-- 							'assistant',
+		-- 							('\nResult of:\n```lua\n%s\n```'):format(command),
+		-- 							{ just_for_display = true }
+		-- 						)
+		-- 						o.session_ctx.on_messages_add { message }
+		-- 					end
 
-					local ok, err = pcall(function() vim.cmd(command) end)
-					return ok and table.concat(vim.api.nvim_buf_get_lines(cmdbuf, 0, -1, false), '\n') or '',
-						not ok and err or nil
-				end,
-			},
+		-- 					for k, v in pairs {
+		-- 						['print%('] = 'printing to the user instead of `return`',
+		-- 						write = 'write not allowed, use str_replace tool or vim.cmd[[%s/xxx/yyy/]] for modifying the buffer.',
+		-- 						[ 'vim.cmd%(([\'"])w%1%)' ] = 'writing files not allowed. if youuse str_replace tool for modifying the text',
+		-- 						set_lines = 'changing text allowed only via str_replace tool',
+		-- 						read = 'use the view tool to read a file',
+		-- 					} do
+		-- 						if command:match(k) then return nil, 'Logic error: ' .. v end
+		-- 					end
+		-- 					-- add missing `return` keyword
+		-- 					if not command:match 'return ' and not command:match '=[^\n]+$' then
+		-- 						command:gsub('([^\n=]+)$', 'return %1')
+		-- 					end
+		-- 					local chunk, err = loadstring(command)
+		-- 					if not chunk then return nil, 'Syntax error: ' .. err end
 
-			{
-				name = 'run_nvim_lua',
-				description = 'Run Lua code in the current neovim instance.',
-				command = '... -- example: return vim.bo.ft',
-				param = {
-					type = 'table',
-					fields = {
-						{
-							type = 'string',
-							name = 'command',
-							description = 'The lua code to execute (supports multiline).',
-							optional = false,
-						},
-					},
-				},
-				returns = {
-					{
-						name = 'result',
-						description = 'Result of the execution',
-						type = 'string',
-					},
-					{
-						name = 'error',
-						description = 'Error message if execution failed',
-						type = 'string',
-						optional = true,
-					},
-				},
-				---@type AvanteLLMToolFunc
-				func = function(p, o)
-					local command = p.command
-					if not command then return nil, 'Error: missing argument `command`' end
+		-- 					_G.buf = get_real_active_buf()
+		-- 					local ok, result = xpcall(chunk, debug.traceback)
+		-- 					_G.buf = nil
+		-- 					if not ok then return nil, result or 'Error during execution' end
 
-					if command:find '\n' then
-						local message = require('avante.history').Message:new(
-							'assistant',
-							('\nResult of:\n```lua\n%s\n```'):format(command),
-							{
-								just_for_display = true,
-							}
-						)
-						o.session_ctx.on_messages_add { message }
-					end
+		-- 					if result == nil then return 'No value was returned' end
 
-					local chunk, err = loadstring(command)
-					if not chunk then return nil, 'Syntax error: ' .. err end
-
-					local ok, result = pcall(chunk)
-					local output = ok and vim.inspect(result) or ''
-					_G.data = { p, o }
-					-- Include the code in the output so it's visible in chat
-					return output, not ok and tostring(result) or nil
-				end,
-			},
-		},
+		-- 					return vim.inspect(result)
+		-- 				end,
+		-- 			},
+		-- 		},
 
 		mappings = {
 			diff = {
@@ -317,13 +343,6 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		},
 	}
 
-	vim.api.nvim_create_autocmd('FileType', {
-		pattern = 'Avante',
-		callback = function(s)
-			vim.wo.conceallevel = 2
-			vim.treesitter.start(s.buf, 'markdown')
-		end,
-	})
 	local function simulate_press(keyword, limit, cb)
 		local cwin = vim.api.nvim_get_current_win()
 		local cpos = vim.api.nvim_win_get_cursor(cwin)
@@ -381,6 +400,7 @@ You are a pragmatic senior developer. Write code that is maintainable, well-stru
 		end
 	end
 
+	require 'autocommands'('FileType', function(_) vim.wo.conceallevel = 0 end, 'Avante')
 	require 'autocommands'('FileType', function(_)
 		vim.bo.tw = 0
 		map('n', '<A-Tab>', '<C-w>h', { buffer = true })

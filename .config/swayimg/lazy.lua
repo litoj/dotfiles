@@ -1,11 +1,6 @@
 local snip = require 'swi.snippets'
 snip.load_dir_if_single()
-
-v.default_scale = 'optimal'
 snip.resize_image_with_window()
-
-g.text.topleft = { 'File:\t{name}' }
-g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{swi.imagelist.marked.size}' }
 
 v.text.topright = { '{list.index}/{list.total}' }
 v.text.bottomright = { '{scale}' }
@@ -21,5 +16,11 @@ v.text.topleft = {
 	'Rating:\t{Rating}',
 }
 
+g.text.topleft = v.text.topleft
+-- g.text.topleft = { 'File:\t{name}' }
+g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{swi.imagelist.marked.size}' }
+
 snip.print_option_changes()
 snip.print_shell_output()
+
+snip.two_pane_mode('Shift+t')

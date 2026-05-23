@@ -13,6 +13,7 @@ case "$KIND" in
 			local base=/tmp/raw_preview
 			mkdir -p "$base"
 			exiftool -b -W $base/%f.%s -previewimage "$@"
+			return 0
 		}
 		try @rawPreview .RAF
 		# resize images with config picker
@@ -29,6 +30,7 @@ case "$KIND" in
 				exiftool -TagsFromFile "$f" -all:all -overwrite_original_in_place "$out" &>/dev/null
 				echo "JPG stored as $out"
 			done
+			return 0
 		}
 		try @rawToJPG .RAF
 

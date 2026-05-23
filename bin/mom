@@ -68,6 +68,64 @@ download() { # TODO: allow video; allow qual/fmt selection through a picker
 	done
 }
 
+MPV_AUDIO_EDIT=$(
+	cat <<lua
+	require 'mp'
+	local pick_file = os.getenv 'pick_file'
+	local volume = os.getenv 'volume'
+	if volume:sub(1,1) ~= '-' then -- -xxLUFS || -xxdB
+		mp.set_property_number('volume', (tonumber(volume) or 1) * 100)
+		volume = nil
+	end
+	
+	local function divmod(a, b) return a / b, a % b end
+	
+	local function getTime()
+		local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
+		local h, m = divmod(m, 60)
+		local s = math.floor(remainder)
+		local ms = math.floor((remainder - s) * 1000)
+		return string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
+	end
+	
+	local function add(varName, value)
+		local f = io.open(pick_file, 'a')
+		local src = mp.get_property 'path'
+	
+		mp.osd_message(varName .. ' = ' .. value, 2)
+	
+		f:write(varName)
+		f:write '='
+		f:write(value)
+		f:write '='
+		f:write(src)
+		f:write '\n'
+		f:close()
+	end
+	local function addVolume()
+		if not volume then 
+			add('volume', mp.get_property_number 'volume' / 100)
+		else -- don't change volume if an absolute value in dB was set
+			add('volume', volume)
+		end
+	end
+	
+	-- NOTE: maybe do dynamically from action regex defs?
+	mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
+	mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
+	mp.add_key_binding('f', 'pickFade', function() add('fadeout', getTime()) end)
+	mp.add_key_binding('F', 'pickFadeEnd', function() add('fadeoutEnd', getTime()) end)
+	mp.add_key_binding('v', 'pickVolume', addVolume)
+	mp.add_key_binding('Enter', 'confirm', function()
+		mp.commandv 'quit'
+	end)
+	mp.add_key_binding('x', 'reset', function()
+		os.remove(pick_file)
+		mp.commandv 'quit'
+	end)
+lua
+)
+
 declare MPV_PICKER_PICK_PATH='/tmp/mom-mpv-picker.pick'
 mpvPicker() {
 	if [[ ! -f $src ]]; then
@@ -77,63 +135,7 @@ mpvPicker() {
 
 	if [[ ! -f $MPV_PICKER_PICK_PATH ]]; then # pick values
 		local pickerFile=${MPV_PICKER_PICK_PATH%.pick}.lua
-		cat >>"$pickerFile" <<lua
-			require 'mp'
-			
-			local function divmod(a, b) return a / b, a % b end
-			
-			local function getTime()
-				local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
-				local h, m = divmod(m, 60)
-				local s = math.floor(remainder)
-				local ms = math.floor((remainder - s) * 1000)
-				return string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
-			end
-			
-			local function add(varName, value)
-				local f = io.open(_G.pick_file, 'a')
-				local src = mp.get_property 'path'
-			
-				mp.osd_message(varName .. ' = ' .. value, 2)
-			
-				f:write(varName)
-				f:write '='
-				f:write(value)
-				f:write '='
-				f:write(src)
-				f:write '\n'
-				f:close()
-			end
-			local function addVolume()
-lua
-		if [[ $volume != -* ]]; then # don't change volume if an absolute value in dB was set
-			cat >>"$pickerFile" <<lua
-				add('volume', mp.get_property_number 'volume' / 100)
-lua
-		else
-			cat >>"$pickerFile" <<lua
-				add('volume', '$volume')
-lua
-		fi
-		cat >>"$pickerFile" <<lua
-			end
-			
-			-- NOTE: maybe do dynamically from action regex defs?
-			mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
-			mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
-			mp.add_key_binding('f', 'pickFade', function() add('fadeout', getTime()) end)
-			mp.add_key_binding('F', 'pickFadeEnd', function() add('fadeoutEnd', getTime()) end)
-			mp.add_key_binding('v', 'pickVolume', addVolume)
-			mp.add_key_binding('Enter', 'confirm', function()
-				mp.commandv 'quit'
-			end)
-			mp.add_key_binding('x', 'reset', function()
-				os.remove(_G.pick_file)
-				mp.commandv 'quit'
-			end)
-	
-			_G.pick_file = '${MPV_PICKER_PICK_PATH}'
-lua
+		echo "$MPV_AUDIO_EDIT" >>"$pickerFile"
 
 		local _opts=(--msg-level=cplayer=error --no-audio-display --loop-playlist --display-tags-clr
 			--term-playing-msg="Playing $( ((SCRIPT_OPTS['color'] > 0)) &&
@@ -142,12 +144,12 @@ $(print "<s> to pick --start")
 $(print "<e> to pick --end")
 $(print "<f> to pick --fadeout")
 $(print "<Shift+F> to pick --fadeoutEnd")
-$(print "<v> to pick --volume")
+$(print "<v> to pick --volume" )
 $(print "<Enter> to confirm and quit")" --script="$pickerFile"
 		)
 
 		while :; do
-			if ! mpv "${_opts[@]}" "${src[@]}"; then
+			if ! pick_file=$MPV_PICKER_PICK_PATH volume=$volume mpv "${_opts[@]}" "${src[@]}"; then
 				rm "$pickerFile"
 				return 1
 			fi
@@ -493,6 +495,165 @@ giphie() {
 	exec "${cmd[@]}" "$out" && rm "$tmp"
 }
 
+MPV_CUT=$(
+	cat <<lua
+	require 'mp'
+	local pick_file = os.getenv 'pick_file'
+	local crf = tonumber(os.getenv 'crf')
+	
+	local function divmod(a, b) return a / b, a % b end
+	
+	local function getTime()
+		local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
+		local h, m = divmod(m, 60)
+		local s = math.floor(remainder)
+		local ms = math.floor((remainder - s) * 1000)
+		return string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
+	end
+	
+	_G.clips = {{}}
+	_G.lastAction = {}
+
+	local function getClipStr(clip)
+		if not clip.file then return 'Empty clip' end
+		return 'Clip: "' .. clip.file .. '"[' ..
+				(clip.start or '0') .. ' - ' .. (clip['end'] or 'end') .. '] volume=' ..
+				(clip.volume or 1) .. ' crf=' .. (clip.crf or crf)
+	end
+	local function printClip(clip)
+		mp.osd_message(getClipStr(clip), 4)
+	end
+
+	local function getVol()
+		return mp.get_property('mute') == 'yes' and 0 or mp.get_property_number 'volume' / 100
+	end
+
+	local function markClip()
+		local clip = _G.clips[#_G.clips]
+		if not clip.file then
+			mp.osd_message('Clip empty', 2)
+			return false
+		end
+		if not clip.start then clip.start = '0' end
+		if not clip['end'] then clip['end'] = 'end' end
+		if clip.volume ~= -1 then clip.volume = getVol() end
+		if not clip.crf then clip.crf = crf end
+		printClip(clip)
+
+		_G.clips[#_G.clips + 1] = {}
+		_G.lastAction = {}
+		return true
+	end
+
+	local function writeAll()
+		if not markClip() and #_G.clips == 1 then return false end -- autoconfirm last clip,
+		_G.clips[#_G.clips] = nil
+
+		local f = io.open(pick_file, 'w')
+		for _, clip in ipairs(_G.clips) do
+			f:write(table.concat(
+				{clip.file, clip.start, clip['end'], clip.volume, clip.crf},
+				'\t'
+			))
+			f:write '\n'
+		end
+		f:close()
+		return true
+	end
+
+	local function add(varName, value)
+		if _G.clips[#_G.clips]['end'] and varName == 'start' then
+			markClip()
+		end
+
+		if varName ~= _G.lastAction[#_G.lastAction] then
+			_G.lastAction[#_G.lastAction+1] = varName
+		end
+		_G.clips[#_G.clips][varName] = value
+		_G.clips[#_G.clips].file = mp.get_property('path')
+		mp.osd_message(varName .. ' = ' .. value, 2)
+	end
+
+	local function dropClip()
+		if #_G.clips > 1 then
+			_G.clips[#_G.clips] = nil
+			mp.osd_message('Clip removed', 2)
+		else
+			mp.osd_message('Already editing the first clip', 3)
+		end
+	end
+
+
+	local function remove(varName)
+		if not varName then
+			while #_G.lastAction > 0 and not _G.clips[#_G.clips][_G.lastAction[#_G.lastAction]] do
+				_G.lastAction[#_G.lastAction] = nil
+			end
+
+			if #_G.lastAction == 0 then
+				mp.osd_message('Already default clip', 2)
+				return
+			end
+			varName = _G.lastAction[#_G.lastAction]
+			_G.lastAction[#_G.lastAction] = nil
+		elseif not _G.clips[#_G.clips][varName] then
+			mp.osd_message('Already undone clip.' .. varName, 2)
+			return
+		end
+
+		mp.osd_message('Undone clip.' .. varName .. '=' .. _G.clips[#_G.clips][varName], 2)
+		_G.clips[#_G.clips][varName] = nil
+	end
+
+	mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
+	mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
+	mp.add_key_binding('v', 'pickVolume', function() add('volume', getVol()) end)
+	mp.add_key_binding('Shift+s', 'dropStart', function() remove('start') end)
+	mp.add_key_binding('Shift+e', 'dropEnd', function() remove('end') end)
+	mp.add_key_binding('Shift+v', 'dropVolume', function() add('volume', -1) end)
+	mp.add_key_binding('Alt+Enter', 'confirmClip', markClip)
+	local function qualGen(change)
+		return function()
+			crf = crf + change
+			add('crf', crf)
+		end
+	end
+	mp.add_key_binding('Alt+q', 'incCrf', qualGen(1))
+	mp.add_key_binding('Alt+Shift+q', 'decCrf', qualGen(-1))
+	mp.add_key_binding('Shift+q', 'dropCrf', function() remove('crf') end)
+	mp.add_key_binding('Enter', 'confirm', function()
+		if writeAll() then
+			mp.commandv 'quit'
+		else
+			mp.osd_message('No clips to process, set volume for full length', 3)
+		end
+	end)
+	mp.add_key_binding('Alt+i', 'printClipInfo', function()
+		local info = {}
+		for _, clip in ipairs(_G.clips) do
+			info[#info + 1] = getClipStr(clip)
+		end
+		mp.osd_message(table.concat(info, '\n'), 4)
+	end)
+	mp.add_key_binding('u', 'undoPrevAction', remove)
+	mp.add_key_binding('d', 'dropClip', dropClip)
+	mp.add_key_binding('h', 'help', function()
+		mp.osd_message(([[Create clips in the order you want them to be concatenated in.
+			<s> start a clip
+			<e> end a clip
+			<v> set clip volume (or disable when muted)
+			<Alt+q> increase clip crf (lower quality)
+			<Alt+Shift+q> decrease clip crf (higher quality)
+			<Shift+S/E/Q/V> reset clip param
+			<u> undo previous action
+			<d> drop all current params, edit last confirmed clip
+			<Alt+Enter> to confirm clip params (vol+crf automatically set to current)
+			<Enter> to process clips and quit]]):gsub('\t+',''), 8)
+	end)
+	mp.osd_message('Press <h> for editing help', 3)
+lua
+)
+
 actionInfo cut 'cut and concat video files'
 cutParams=(
 	copy 'c?' '' 'Copy all data, no recompression (disables -qa and volume amplifier)'
@@ -507,169 +668,12 @@ cutParams=(
 cut() {
 	local crf=${crf:-28}
 	local pickerFile=${MPV_PICKER_PICK_PATH%.pick}.lua
-	cat >"$pickerFile" <<lua
-		require 'mp'
-		local crf=$crf
-lua
-	cat >>"$pickerFile" <<lua
-		
-		local function divmod(a, b) return a / b, a % b end
-		
-		local function getTime()
-			local m, remainder = divmod(mp.get_property_number 'time-pos', 60)
-			local h, m = divmod(m, 60)
-			local s = math.floor(remainder)
-			local ms = math.floor((remainder - s) * 1000)
-			return string.format('%02d:%02d:%02d.%03d', h, m, s, ms)
-		end
-		
-		_G.clips = {{}}
-		_G.lastAction = {}
-
-		local function getClipStr(clip)
-			if not clip.file then return 'Empty clip' end
-			return 'Clip: "' .. clip.file .. '"[' ..
-					(clip.start or '0') .. ' - ' .. (clip['end'] or 'end') .. '] volume=' ..
-					(clip.volume or 1) .. ' crf=' .. (clip.crf or crf)
-		end
-		local function printClip(clip)
-			mp.osd_message(getClipStr(clip), 4)
-		end
-
-		local function getVol()
-			return mp.get_property('mute') == 'yes' and 0 or mp.get_property_number 'volume' / 100
-		end
-
-		local function markClip()
-			local clip = _G.clips[#_G.clips]
-			if not clip.file then
-				mp.osd_message('Clip empty', 2)
-				return false
-			end
-			if not clip.start then clip.start = '0' end
-			if not clip['end'] then clip['end'] = 'end' end
-			if clip.volume ~= -1 then clip.volume = getVol() end
-			if not clip.crf then clip.crf = crf end
-			printClip(clip)
-
-			_G.clips[#_G.clips + 1] = {}
-			_G.lastAction = {}
-			return true
-		end
-
-		local function writeAll()
-			if not markClip() and #_G.clips == 1 then return false end -- autoconfirm last clip,
-			_G.clips[#_G.clips] = nil
-
-			local f = io.open(_G.pick_file, 'w')
-			for _, clip in ipairs(_G.clips) do
-				f:write(table.concat(
-					{clip.file, clip.start, clip['end'], clip.volume, clip.crf},
-					'\t'
-				))
-				f:write '\n'
-			end
-			f:close()
-			return true
-		end
-
-		local function add(varName, value)
-			if _G.clips[#_G.clips]['end'] and varName == 'start' then
-				markClip()
-			end
-
-			if varName ~= _G.lastAction[#_G.lastAction] then
-				_G.lastAction[#_G.lastAction+1] = varName
-			end
-			_G.clips[#_G.clips][varName] = value
-			_G.clips[#_G.clips].file = mp.get_property('path')
-			mp.osd_message(varName .. ' = ' .. value, 2)
-		end
-
-		local function dropClip()
-			if #_G.clips > 1 then
-				_G.clips[#_G.clips] = nil
-				mp.osd_message('Clip removed', 2)
-			else
-				mp.osd_message('Already editing the first clip', 3)
-			end
-		end
-
-
-		local function remove(varName)
-			if not varName then
-				while #_G.lastAction > 0 and not _G.clips[#_G.clips][_G.lastAction[#_G.lastAction]] do
-					_G.lastAction[#_G.lastAction] = nil
-				end
-
-				if #_G.lastAction == 0 then
-					mp.osd_message('Already default clip', 2)
-					return
-				end
-				varName = _G.lastAction[#_G.lastAction]
-				_G.lastAction[#_G.lastAction] = nil
-			elseif not _G.clips[#_G.clips][varName] then
-				mp.osd_message('Already undone clip.' .. varName, 2)
-				return
-			end
-
-			mp.osd_message('Undone clip.' .. varName .. '=' .. _G.clips[#_G.clips][varName], 2)
-			_G.clips[#_G.clips][varName] = nil
-		end
-
-		mp.add_key_binding('s', 'pickStart', function() add('start', getTime()) end)
-		mp.add_key_binding('e', 'pickEnd', function() add('end', getTime()) end)
-		mp.add_key_binding('v', 'pickVolume', function() add('volume', getVol()) end)
-		mp.add_key_binding('Shift+s', 'dropStart', function() remove('start') end)
-		mp.add_key_binding('Shift+e', 'dropEnd', function() remove('end') end)
-		mp.add_key_binding('Shift+v', 'dropVolume', function() add('volume', -1) end)
-		mp.add_key_binding('Alt+Enter', 'confirmClip', markClip)
-		local function qualGen(change)
-			return function()
-				crf = crf + change
-				add('crf', crf)
-			end
-		end
-		mp.add_key_binding('Alt+q', 'incCrf', qualGen(1))
-		mp.add_key_binding('Alt+Shift+q', 'decCrf', qualGen(-1))
-		mp.add_key_binding('Shift+q', 'dropCrf', function() remove('crf') end)
-		mp.add_key_binding('Enter', 'confirm', function()
-			if writeAll() then
-				mp.commandv 'quit'
-			else
-				mp.osd_message('No clips to process, set volume for full length', 3)
-			end
-		end)
-		mp.add_key_binding('Alt+i', 'printClipInfo', function()
-			local info = {}
-			for _, clip in ipairs(_G.clips) do
-				info[#info + 1] = getClipStr(clip)
-			end
-			mp.osd_message(table.concat(info, '\n'), 4)
-		end)
-		mp.add_key_binding('u', 'undoPrevAction', remove)
-		mp.add_key_binding('d', 'dropClip', dropClip)
-		mp.add_key_binding('h', 'help', function()
-			mp.osd_message([[Create clips in the order you want them to be concatenated in.
-<s> start a clip
-<e> end a clip
-<v> set clip volume (or disable when muted)
-<Alt+q> increase clip crf (lower quality)
-<Alt+Shift+q> decrease clip crf (higher quality)
-<Shift+S/E/Q/V> reset clip param
-<u> undo previous action
-<d> drop all current params, edit last confirmed clip
-<Alt+Enter> to confirm clip params (vol+crf automatically set to current)
-<Enter> to process clips and quit]], 8)
-		end)
-		mp.osd_message('Press <h> for editing help', 3)
-
-		_G.pick_file = '${MPV_PICKER_PICK_PATH}'
-lua
+	echo "$MPV_CUT" >"$pickerFile"
 
 	local _opts=(--msg-level=cplayer=error --loop-playlist --display-tags-clr --script="$pickerFile")
 
-	while mpv "${_opts[@]}" "${src[@]}" && [[ ! -f $MPV_PICKER_PICK_PATH ]]; do
+	while pick_file=$MPV_PICKER_PICK_PATH crf=$crf mpv "${_opts[@]}" "${src[@]}" &&
+		[[ ! -f $MPV_PICKER_PICK_PATH ]]; do
 		echo 'You must use the keybindings to set the values'
 	done
 	rm "$pickerFile"
@@ -697,7 +701,7 @@ lua
 				[vorbis]=libvorbis
 			)
 			[[ $audioEncoder ]] && audioEncoder=${codecMap["${audioEncoder}"]:-$audioEncoder}
-			local audioEncoder=${audioEncoder:-libopus}
+			local audioEncoder=${audioEncoder:-libmp3lame}
 			_cmd+=(-c:a "$audioEncoder")
 			((audioBitrate)) && _cmd+=(-b:a "${audioBitrate}k") # otherwise set based on crf
 		else
@@ -931,8 +935,6 @@ play() {
 		else
 			exec "${cmd[@]}"
 		fi
-
-		exec rm "$playlistFile"
 		return
 	fi
 
@@ -975,7 +977,6 @@ play() {
 
 	exec "${cmd[@]}"
 	local o=$?
-	exec rm "$playlistFile"
 	if ((o == 0 && loop > 0)); then
 		local args=($ACTION -l -d$dirPicks -f$filesPerDir -r$randomizer "${dirs[@]}")
 

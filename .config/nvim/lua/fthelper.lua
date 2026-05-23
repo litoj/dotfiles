@@ -1,12 +1,5 @@
 local M = {}
 
-function _G.exists(f)
-	---@diagnostic disable-next-line: param-type-mismatch
-	f = io.open(f)
-	if f then f:close() end
-	return f ~= nil
-end
-
 ---@param dir? string defaults to buf parent dir
 function M.findUpFile(luapat, dir, allow_home)
 	dir = dir or vim.api.nvim_buf_get_name(0):match '.+/'

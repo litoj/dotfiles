@@ -8,6 +8,12 @@
 
 (string 
 	content: (string_content) @injection.content
+  (#match? @injection.content "([&>]\\&)|(\\|\\|)")
+  (#set! injection.language "bash")
+)
+
+(string 
+	content: (string_content) @injection.content
   (#match? @injection.content "\\[[^]]*[_.[^-][^]]*\\]")
   (#set! injection.language "regex")
 )

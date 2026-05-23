@@ -17,6 +17,7 @@ function M.config()
 		sync_root_with_cwd = true,
 		filters = {
 			dotfiles = true,
+			git_ignored = true,
 			custom = { '^.git$', '^node_modules$', '^\\.cache$' },
 			exclude = { '.config', '.scripts' },
 		},

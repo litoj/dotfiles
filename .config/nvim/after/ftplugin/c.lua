@@ -1,4 +1,4 @@
-if vim.bo.bufhidden ~= '' then return end
+if vim.bo.bufhidden ~= '' or vim.bo.ft ~= 'c' then return end
 
 local map = require('fthelper').once {
 	mylsp = function(ml) ml.setup 'clangd' end,
@@ -21,18 +21,19 @@ local map = require('fthelper').once {
 					for _, main in ipairs(seek) do
 						if exists(main) then return main end
 					end
-					vim.notify('None of the expected executables found:\n' .. table.concat(seek, '\n'))
+					vim.notify 'No executable found'
+
+					-- name = nil
+					-- vim.ui.input({ prompt = 'Enter name of executable: ' }, function(r) name = r end)
+					-- vim.wait(math.huge, function() return name ~= nil end)
+					-- return name
 					-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 				end,
 			},
 		}
-		dap.configurations.cpp = dap.configurations.c
 	end,
 }
 
-map({ 'n', 'i' }, '<A-b>', '<Cmd>w|cd %:h|term compiler %:p<CR>')
-map({ 'n', 'i' }, '<A-r>', '<Cmd>w|make||!compiler %:p<CR><CR>')
-map({ 'n', 'i' }, '<C-s>', "<Cmd>w|!rm '%:r'.o '%:r'.out<CR><CR>")
 map(
 	{ 'n', 'i' },
 	'<A-S-B>',
@@ -41,11 +42,3 @@ map(
 )
 map({ 'n', 'i' }, '<A-S-T>', "<C-s><Cmd>!cd '%:h' && make test<CR>", { remap = true })
 map({ 'n', 'i' }, '<A-S-M>', "<Cmd>w|!cd '%:h' && make all<CR>")
-
-map({ 'n', 'i' }, '<A-S-R>', function()
-	local name = vim.api.nvim_buf_get_name(0)
-	local out = name:gsub('%.c$', '.out')
-	if not exists(out) then out = vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end
-	if not exists(out) then return vim.notify 'No executable found' end
-	vim.cmd.term(out)
-end)

@@ -23,7 +23,6 @@ local cwdMap = {
 	fallback = { 'README.md', 'package.json', '.git/' },
 	ft_default = { '.*/src/' },
 	lua = { 'lua/', 'after/' },
-	cs = { '%.csproj$', '%.sln$' },
 }
 local function setCWD(s)
 	if not cwdEnabled or not validUpdate(s) then return end
@@ -85,6 +84,21 @@ au('FileType', 'set ft=tex', { 'plaintex' })
 au('TermOpen', function()
 	vim.wo[0][0].nu = false
 	vim.wo[0][0].rnu = false
+end)
+vim.api.nvim_clear_autocmds { group = 'nvim.terminal', event = 'TermClose' }
+au('TermClose', function(s)
+	-- Only auto-close when: no-args terminal AND clean exit (same conditions as default)
+	if not s.file:match '//%d+:.*%s' and vim.v.event.status == 0 then
+		if vim.api.nvim_get_current_buf() ~= s.buf then
+			vim.cmd.bdelete(s.buf)
+			return
+		end
+		vim.schedule(function()
+			-- Switch current window to another buffer, then wipe the terminal buffer.
+			vim.cmd.bprev()
+			vim.cmd.bdelete(s.buf)
+		end)
+	end
 end)
 
 local function hiNotes()

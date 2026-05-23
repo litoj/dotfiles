@@ -4,7 +4,10 @@ _G.map = vim.keymap.set
 
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 
-require 'fthelper'
+function _G.exists(f)
+	-- returns various codes based on what failed - `2` is for non-existence
+	return select(3, os.rename(f, f)) ~= 2
+end
 
 -- determine whether to disable some functionality
 local f = io.open '/sys/class/power_supply/BAT0/status'

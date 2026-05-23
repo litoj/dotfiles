@@ -12,8 +12,14 @@ local map = require('fthelper').once {
 				cwd = '${workspaceFolder}',
 				program = function()
 					if exists 'main.out' then return 'main.out' end
-					local name = vim.api.nvim_buf_get_name(0)
-					return name:gsub('%.cpp$', '.out')
+					local name = vim.api.nvim_buf_get_name(0):gsub('.c[cp]p?$', '.out')
+					if exists(name) then return name end
+					vim.notify 'No executable found'
+
+					-- name = nil
+					-- vim.ui.input({ prompt = 'Enter name of executable: ' }, function(r) name = r end)
+					-- vim.wait(math.huge, function() return name ~= nil end, 1000)
+					-- return name
 					-- LSAN_OPTIONS=verbosity=1:log_threads=1 gdb...
 				end,
 			},
@@ -21,9 +27,6 @@ local map = require('fthelper').once {
 	end,
 }
 
-map({ 'n', 'i' }, '<A-b>', '<Cmd>w|cd %:h|term compiler %:p<CR>')
-map({ 'n', 'i' }, '<A-r>', '<Cmd>w|!compiler %:p<CR><CR>')
-map({ 'n', 'i' }, '<C-s>', "<Cmd>w|!rm '%:r'.o '%:r'.out<CR><CR>")
 map(
 	{ 'n', 'i' },
 	'<A-S-B>',
@@ -31,11 +34,3 @@ map(
 	{ remap = true }
 )
 map({ 'n', 'i' }, '<A-S-M>', '<Cmd>w|!cd %:h && make<CR>')
-
-map({ 'n', 'i' }, '<A-S-R>', function()
-	local name = vim.api.nvim_buf_get_name(0)
-	local out = name:gsub('%.cpp$', '.out')
-	if not exists(out) then vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end
-	if not exists(out) then return vim.notify 'No executable found' end
-	vim.cmd.term(out)
-end)

@@ -14,6 +14,7 @@ function M.config()
 	local m = require 'manipulator'
 	local RM = m.RM
 	map('n', ' mT', '<Cmd>InspectTree<CR>', { desc = ':InspectTree' })
+	-- TODO: fix paste over multiple filled lines vs over empty lines at edges
 
 	m.setup { -- TODO: make input window repeatable (macro renaming)
 		-- debug = 3,
@@ -69,14 +70,22 @@ function M.config()
 	-- overriding default paste behaviour to be better suited for insert mode
 	local function paste(after)
 		local type = vim.fn.getregtype(vim.v.register)
-		if type:sub(1, 1) == '\022' then
-			vim.api.nvim_input('"' .. vim.v.register .. (after and 'p' or 'P'))
-			return
-		end
-
-		local r, is_visual = m.region.current { shift_mode = false }
 		local mode = vim.fn.mode()
 		local text = vim.fn.getreg(vim.v.register)
+		local r, is_visual = m.region.current { shift_mode = false }
+		if type:sub(1, 1) == '\022' then
+			if is_visual then
+				vim.api.nvim_input(
+					(vim.fn.mode() == 'i' and '<C-o>' or '')
+						.. '"'
+						.. vim.v.register
+						.. (after and 'p' or 'P')
+				)
+				return
+			end
+			type = 'v'
+		end
+
 		if type == 'v' and text:sub(#text) == '\n' then type = 'V' end
 		if type == 'V' then text = text:gsub('\n$', '') end
 
@@ -135,7 +144,8 @@ function M.config()
 	)
 
 	local tss_doc = ctc['&1']:select('with_docs')['*1']:repeatable()
-	map({ '', 'i' }, '<A-s>', tss_doc.fn)
+	map({ 'n', 'i' }, '<A-s>', tss_doc.fn)
+	map('v', '<A-s>', mcp.ts.current({ src = '.' }):select({ rangemod = RM.extend_visual }).fn)
 	map({ '', 'i' }, '<A-p>', tss_doc.parent.fn)
 
 	map('', ' qa', ctc.add_to_qf.fn)

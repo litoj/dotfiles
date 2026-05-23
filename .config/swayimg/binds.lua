@@ -10,17 +10,17 @@ do
 
 	-- TODO: regulate the movement speed with a counter
 	amap('x', function() l.remove(l.get_current().path) end)
-	amap({ 'q', '<Esc>' }, function() swi.exit(0) end)
+	amap('q', function() swi.exit(0) end)
 
 	-- ### Settings toggle
 	amap('u', function() swi.antialiasing = not swi.antialiasing end)
 	amap('i', function() t.enabled = not t.enabled end)
-	v.map('d', function() t.enabled = not t.enabled end)
 	local osize = t.size
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
 	amap('<C-0>', function() t.size = osize end)
-	amap('<S-w>', function() swi.apply_raw_wb = not swi.apply_raw_wb end)
+	amap('r', function() swi.apply_raw_wb = not swi.apply_raw_wb end)
+	amap('F5', function() swi[swi.mode].reload() end)
 
 	amap('<S-p>', function()
 		if swi.mode == 'slideshow' then
@@ -29,7 +29,6 @@ do
 			swi.mode = 'slideshow'
 		end
 	end)
-
 	local function gen_rating(r)
 		return 'exiftool -overwrite_original_in_place -all:Rating=' .. r .. ' %f >/dev/null'
 	end
@@ -43,6 +42,38 @@ do
 	amap('<Del>', [[which trash && trash %f || mv %f /tmp/my/trash/]])
 	amap('<A-f>', [[dragon-drop -x %f]])
 	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
+	amap('b', [[~/.config/sway/custombg %f]])
+	amap('<S-b>', [[cp %f ~/Pictures/screen/]])
+
+	amap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
+	local raw_path = '/tmp/raw_to_jpg/'
+
+	v.map('C-S-e', function()
+		swi.exec('mkdir -p ' .. raw_path)
+		local i = v.get_image()
+		local dst = raw_path .. i.path:match '^([^/]+)%.[^./]-$' .. '.jxl'
+		swi.exec(([[darktable-cli '%s' '%s' --width %d --hq 0 \
+		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
+		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
+	end, 'Export raw to ' .. raw_path .. '<>.jxl')
+	v.map('e', function()
+		if v.get_image().path:match '%.RAF$' then
+			swi.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+		end
+	end)
+	g.map('e', function()
+		if g.get_image().path:match '%.RAF$' then
+			swi.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+		end
+	end)
+
+	---@diagnostic disable-next-line: missing-fields
+	local fm = require('swi.mode.filter').new {}
+	amap('/', function() fm.enabled = true end)
+
+	---@diagnostic disable-next-line: missing-fields
+	local cmd = require('swi.mode.cmd').new {}
+	amap(':', function() cmd.enabled = true end)
 end
 
 -- ## Gallery
@@ -130,7 +161,7 @@ do
 		v.default_scale = 'real'
 	end)
 	vmap('a', function() v.scale = 1 end)
-	vmap('<A-a>', function() v.default_scale = 'keep_by_size' end)
+	vmap('<A-a>', function() v.default_scale = 'keep_size' end)
 	vmap('<S-k>', function()
 		v.scale = 0.35
 		v.default_scale = 'keep'
@@ -146,20 +177,18 @@ do
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
+	local snip = require 'swi.snippets'
 	vmap('2', function()
 		v.scale = 2
-		v.default_scale = 'keep_by_width'
+		local t = { 'width', 'height', 'size', 'fit', 'fill' }
+		local pref = 'keep_'
+		v.default_scale = pref .. (snip.cycle_values(t, v.default_scale:sub(#pref + 1)) or 'width')
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)
 	vmap({ '<Up>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
 	vmap({ '<Down>', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
 
-	vmap('b', [[~/.config/sway/custombg %f]])
-	vmap('<S-b>', [[cp %f ~/Pictures/screen/]])
 	vmap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
 	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
-	vmap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
 end
-
-require('swi.snippets').two_pane_mode()

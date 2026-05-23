@@ -24,6 +24,7 @@ function M.config()
 						'--quote-style=AutoPreferSingle',
 						'--collapse-simple-statement=Always',
 						'--call-parentheses=None',
+						'--respect-ignores'
 					}
 				end,
 			},

@@ -102,8 +102,8 @@ function M.config()
 		-- implementation = 'prefer_rust_with_warning', -- won't get used because of custom sorter
 		implementation = 'lua',
 		frecency = { enabled = true },
-		use_proximity = false,
-		max_typos = 0,
+		-- use_proximity = false,
+		-- max_typos = 0,
 		sorts = {
 			'score',
 			function(a, b) return kindPriority[a.kind] < kindPriority[b.kind] end,
@@ -171,10 +171,11 @@ function M.config()
 		['<Esc>'] = { 'cancel', 'fallback' },
 		['<Tab>'] = {
 			function(cmp)
+				if cmp.select_and_accept() then return true end
 				if ls.locally_jumpable(1) then
 					if not cmp.accept() then vim.schedule(function() ls.jump(1) end) end
 					return true
-				elseif cmp.select_and_accept() or vim.fn.mode() == 'c' then
+				elseif vim.fn.mode() == 'c' then
 					return true
 				end
 
@@ -246,10 +247,10 @@ function M.config()
 	opts.sources = {
 		transform_items = function(ctx, items)
 			local filtered = {}
-			local match = ctx.get_keyword():gsub('(.)', '.-%1'):sub(3)
+			local match = ctx.get_keyword():gsub('(.)', '.-%1'):sub(3):lower()
 			local base_len = #ctx.get_keyword()
 			for _, item in ipairs(items) do
-				local match = item.label:match(match)
+				local match = item.label:lower():match(match)
 				if match and #match < base_len + 8 then filtered[#filtered + 1] = item end
 			end
 			return filtered

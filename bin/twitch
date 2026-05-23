@@ -95,13 +95,13 @@ fi
 if [[ -z $quality ]]; then
 	qualOpts=(360 720 1440 best audio)
 	[[ $live ]] && qualOpts[0]=480
-	declare -A presets=([best]="bv*[vcodec!*=av[0-9]]/bv+ba" [audio]="ba")
+	declare -A presets=([best]="bv*[vcodec!*=av01]/bv+ba" [audio]="ba")
 	quality=$(printf '%s\n' ${qualOpts[@]} | rofi -dmenu -p Quality)
 	(($?)) && exit 0
 
 	if [[ $quality == [0-9]* ]]; then
 		((quality = quality * 16 / 9))
-		quality=bv*[width=$quality][vcodec!*=av[0-9]]/bv*[width=$quality],ba
+		quality=bv*[width=$quality][vcodec!*=av01]/bv*[width=$quality],ba
 	elif [[ ${presets[$quality]} ]]; then
 		quality=${presets[$quality]}
 	fi

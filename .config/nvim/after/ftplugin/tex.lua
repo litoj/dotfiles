@@ -1,34 +1,34 @@
 if vim.bo.bufhidden ~= '' then return end
+vim.bo.expandtab = true
+
+local fth = require 'fthelper'
 
 local function find_main_tex(buf)
-	local dir = vim.api.nvim_buf_get_name(buf or 0):match '(.+)/'
+	local dir = vim.api.nvim_buf_get_name(buf or 0):match '(.*)/'
 
-	while dir and #dir > 1 do
-		for file in vim.fs.dir(dir) do
-			if file:match '%.tex$' then
-				file = dir .. '/' .. file
-				local f = io.open(file, 'r') or error('no file: ' .. file)
-				for line in f:lines '*l' do
-					if #line > 0 and line:sub(1, 1) ~= '%' then -- skip all comments
-						if vim.startswith(line, '\\documentclass') then
-							f:close()
-							return file
-						else
-							break
-						end
+	while #dir > 1 do
+		for _, file in ipairs(fth.glob(dir .. '/*.tex')) do
+			local f = io.open(file, 'r') or error('no file: ' .. file)
+			for line in f:lines '*l' do
+				if #line > 0 and line:sub(1, 1) ~= '%' then -- skip all comments
+					if vim.startswith(line, '\\documentclass') then
+						f:close()
+						return file
+					else
+						break
 					end
 				end
-				f:close()
 			end
+			f:close()
 		end
 
-		dir = dir:match '(.+)/'
+		dir = dir:match '(.*)/'
 	end
 
 	error 'no \\documentclass file found'
 end
 
-local map, modmap = require('fthelper').once {
+local map, modmap = fth.once {
 	---@module "mylsp.init"
 	---@param ml mylsp
 	mylsp = function(ml)
@@ -50,6 +50,14 @@ local map, modmap = require('fthelper').once {
 	urldate = {]] .. (vim.fn.system 'date +%Y-%m-%d'):sub(1, -2) .. [[},
 	url = {$6}
 }]]),
+		})
+		ls.add_snippets('tex', {
+			parse(
+				'lst',
+				[[\begin{lstlisting}[caption={$1}]
+  $0
+\end{lstlisting}]]
+			),
 		})
 	end,
 }
@@ -116,7 +124,7 @@ map('i', '<A-v>', '\\vspace{m}<left><left>')
 map('i', '<A-S-V>', '\\hspace{m}<left><left>')
 -- \\enquote or \\uv
 map('i', '<A-q>', '\\uv{}<left>')
-map('i', '...', '\\dots{}')
+-- map('i', '...', '\\dots{}')
 -- TODO: rewrite reform.matcher to allow just simple one-time match of the chars around cursor and
 -- return the result for further processing
 -- map('i', '-', '--')
@@ -129,13 +137,12 @@ map('i', '<A-u>', '\\underline{}<left>')
 map('i', '<C-1>', '\\chapter{}<left>')
 map('i', '<C-2>', '\\section{}<left>')
 map('i', '<C-3>', '\\subsection{}<left>')
-map('i', '<C-4>', '\\subsubsection{}<left>')
+map('i', '<C-4>', '\\subsubsection*{}<left>')
 map('i', '<C-5>', '\\paragraph{}<left>')
 
-map('i', '# ', '\\chapter{}<left>')
 map('i', '## ', '\\section{}<left>')
 map('i', '### ', '\\subsection{}<left>')
-map('i', '#### ', '\\subsubsection{}<left>')
+map('i', '#### ', '\\subsubsection*{}<left>')
 map('i', '##### ', '\\paragraph{}<left>')
 
 local function get_main_tex()
@@ -157,11 +164,20 @@ local function compile(windowed)
 	local main = get_main_tex()
 
 	local cmdBase = ('latexmk -pdflua "%s"'):format(main)
-	local cmdFilter = '| grep -vF "(/usr/"'
+	local cmdFilter = table.concat {
+		[[| grep -vF -e '(/usr/' | awk ']],
+		'$1 == "Rc", $1 == "No"{next}',
+		'$2 == "applying" && $3 == "rule",$1 == "Reason" {next}',
+		'$1 == "Running", $1 == "(./main.lol)"{next}',
+		'$1 == "Overfull",/^$/ {next}',
+		'/Warning/,/^$/{next}',
+		'/^$/{next}',
+		[[{print}']],
+	}
 	if windowed then
-		return ('<Cmd>term %s -f %s<CR>'):format(cmdBase, cmdFilter)
+		return ('<Cmd>term latexmk -c; %s -f %s<CR>'):format(cmdBase, cmdFilter)
 	else
-		return ('<Cmd>w|!%s%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR>'):format(
+		return ([[<Cmd>w|!%s%s && set x "%s" && if not pgrep -f "zathura $x"; zathura "$x" &; end<CR>]]):format(
 			cmdBase,
 			cmdFilter,
 			main:gsub('%.tex$', '.pdf')

@@ -1,5 +1,23 @@
--- require('swi.api.eventloop').debug_trigger = true
--- require'swi.api.eventloop'.debug_subscribe=true
+-- swayimg.imagelist.enable_recursive(true)
+-- swayimg.set_mode 'gallery'
+-- swayimg.on_initialized(function()
+-- 	local paths = {}
+-- 	for i, img in ipairs(swayimg.imagelist.get()) do
+-- 		paths[i] = img.path
+-- 	end
+-- 	for _ = 0, #paths / 2 do
+-- 		swayimg.imagelist.remove(paths)
+-- 		swayimg.imagelist.add(paths)
+-- 		for i = 1, #paths / 2 do
+-- 			local at = math.random(math.floor(#paths / 2) + 1, #paths)
+-- 			paths[i], paths[at] = paths[at], paths[i]
+-- 		end
+-- 	end
+-- 	-- swayimg.exit(0)
+-- end)
+-- if true then return end
+-- if require 'perf_test' ~= '' then return end
+
 require 'swi.api.globals'
 
 -- maximize lazyload after the window has opened
@@ -8,6 +26,7 @@ e.subscribe {
 	callback = function()
 		require 'lazy'
 		require 'binds'
+		-- swayimg.exit(0)
 		return true
 	end,
 }
@@ -15,6 +34,7 @@ e.subscribe {
 swi.apply_raw_wb = false
 swi.overlay = false
 l.order = 'alpha'
+l.recursive = false
 t.shadow = 0xff101010
 t.foreground = 0xffffffff
 t.padding = 0
@@ -40,4 +60,5 @@ g.selected_scale = 1.2
 g.aspect = 'keep'
 g.cache_limit = 10000
 g.preload = true
-g.pstore = false
+-- g.pstore = true
+g.pstore_path = '/tmp/swi-filter'

@@ -21,16 +21,25 @@ function M.config()
 
 		local config = dap.configurations[vim.o.filetype]
 		if config == nil then return vim.notify('No config for `' .. vim.o.filetype .. '`') end
-		config = config[1] --[[@as {}]]
+		config = vim.deepcopy(config[1])
 
 		config.stdio = { nil, nil, nil }
-		vim.ui.input(
-			{ prompt = 'Args: ', cancelreturn = false, default = table.concat(config.args or {}, ' ') },
-			function(res)
-				if not res then return end
-				local args = {}
-				local concat = false
-				for arg in res:gmatch '[^ ]+' do
+		vim.ui.input({
+			size = 80,
+			prompt = 'Args (and/or cmd): ',
+			cancelreturn = false,
+			default = table.concat(config.args or {}, ' '),
+		}, function(res)
+			if not res then return end
+			local setCmd = false
+			local args = {}
+			local concat = false
+			for arg in res:gmatch '[^ ]+' do
+				if #args == 0 and not setCmd and vim.fn.executable(arg) == 1 then
+					setCmd = true
+					config.program = function() return arg end
+					config.stopOnEntry = true
+				else
 					if concat then
 						args[#args] = args[#args]:sub(1, -2) .. ' ' .. arg
 						concat = false
@@ -39,21 +48,21 @@ function M.config()
 					end
 					if arg:sub(-1) == '\\' then concat = true end
 				end
-				if args[#args - 1] == '<' then
-					local file = require('reform.util').real_file(args[#args])
-					if file then
-						config.stdio = { file, nil, nil }
-					else
-						vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.uv.cwd() .. '`')
-						return
-					end
-					args[#args] = nil
-					args[#args] = nil
-				end
-				config.args = args
-				dap.run(config)
 			end
-		)
+			if args[#args - 1] == '<' then
+				local file = require('reform.util').real_file(args[#args])
+				if file then
+					config.stdio = { file, nil, nil }
+				else
+					vim.notify('File `' .. args[#args] .. '` does not exist in `' .. vim.uv.cwd() .. '`')
+					return
+				end
+				args[#args] = nil
+				args[#args] = nil
+			end
+			config.args = args
+			dap.run(config)
+		end)
 	end
 
 	vim.fn.sign_define(
@@ -120,6 +129,7 @@ function M.config()
 	map('n', '<S-F6>', run)
 	map('n', '<F7>', dap.step_into)
 	map('n', '<F8>', dap.step_over)
+	map('n', '<S-F8>', dap.pause)
 	map('n', '<F9>', dap.step_out)
 	map('n', '<F10>', function()
 		dap.terminate()

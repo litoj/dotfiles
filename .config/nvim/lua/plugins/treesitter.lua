@@ -1,7 +1,7 @@
 local langs = {
 	'bash',
 	'bibtex',
-	-- 'c', -- builtin as a nvim depencency
+	'c', -- builtin as a nvim depencency
 	'cpp',
 	'css',
 	'c_sharp',
@@ -11,9 +11,9 @@ local langs = {
 	'javascript',
 	'json',
 	'latex',
-	-- 'lua', -- builtin
+	'lua', -- builtin
 	-- 'luadoc',
-	-- 'markdown', -- builtin
+	'markdown', -- builtin
 	'markdown_inline',
 	-- 'printf'
 	'python',
@@ -21,7 +21,7 @@ local langs = {
 	'rust',
 	'tsx',
 	'typescript',
-	-- 'vim', -- builtin
+	'vim', -- builtin
 	'yaml',
 }
 
@@ -29,7 +29,6 @@ return {
 	{
 		'nvim-treesitter/nvim-treesitter',
 		build = ':TSUpdate',
-		branch = 'main',
 		lazy = false,
 		config = function()
 			require('nvim-treesitter').install(langs)

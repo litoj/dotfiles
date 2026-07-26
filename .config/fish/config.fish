@@ -72,10 +72,10 @@ set --global fish_color_search_match --bold --background=222222
 set --global fish_color_redirection brmagenta
 set --global fish_color_error brred
 
-alias ls='eza --icons'
-alias lt='eza --icons -T -L'
-alias ll='eza --icons -l'
-alias la='eza --icons -l -a'
+alias ls='eza --icons auto'
+alias lt='eza --icons auto -T -L'
+alias ll='eza --icons auto -l'
+alias la='eza --icons auto -l -a'
 
 abbr man    batman
 abbr se     'sudoedit'
@@ -159,7 +159,7 @@ if status is-login && test -z "$DISPLAY" -a "$XDG_VTNR" -eq 1
 	export ANDROID_SDK_HOME=$cache/Google/android ANDROID_AVD_HOME=$cache/Google/android/avd
 	export CARGO_HOME=$cache/cargo NUGET_PACKAGES=$cache/nuget
 	export TEXMFHOME=$cache/texlive2020
-	export QT_QPA_PLATFORMTHEME=qt5ct QT_QPA_PLATFORM=wayland RADV_PERFTEST=video_decode
+	export QT_QPA_PLATFORMTHEME=qt5ct QT_QPA_PLATFORM=wayland RADV_EXPERIMENTAL=video_decode
 	export XDG_CURRENT_DESKTOP=sway MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland
 	export PATH="$HOME/.pyenv/shims:$PATH"
 	WLR_RENDERER=vulkan sway &>/dev/null < /dev/null # to disable stdin and not cause term apps to open in tty

@@ -1,4 +1,4 @@
-local snip = require 'swi.snippets'
+local snip = require 'sai.snippets'
 snip.load_dir_if_single()
 snip.resize_image_with_window()
 
@@ -18,7 +18,7 @@ v.text.topleft = {
 
 g.text.topleft = v.text.topleft
 -- g.text.topleft = { 'File:\t{name}' }
-g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{swi.imagelist.marked.size}' }
+g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{sai.imagelist.marked.size}' }
 
 snip.print_option_changes()
 snip.print_shell_output()

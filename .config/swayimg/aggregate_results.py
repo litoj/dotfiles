@@ -12,9 +12,9 @@ def parse_results(input_file):
         for line in f:
             line = line.strip()
             
-            if line.startswith('# '):
+            if line.startsaith('# '):
                 current_commit = line[2:].strip()
-            elif line.startswith('Total:') or line.startswith('Took:'):
+            elif line.startsaith('Total:') or line.startsaith('Took:'):
                 match = re.match(r'(?:Total|Took):\s*cpu=([\d.]+)', line)
                 if match and current_commit:
                     commits[current_commit]['total_times'].append(float(match.group(1)))
@@ -212,7 +212,7 @@ def format_tables(aggregated):
     # Group methods by prefix (auto-detect from data)
     prefixes = sorted(set(m.split(':')[0] for m in all_methods))
     for prefix in prefixes:
-        methods = sorted([m for m in all_methods if m.startswith(prefix)])
+        methods = sorted([m for m in all_methods if m.startsaith(prefix)])
         if not methods:
             continue
         

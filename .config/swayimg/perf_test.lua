@@ -1,6 +1,6 @@
 local l = swayimg.imagelist
 local g = swayimg.gallery
-local e = swi and swi.eventloop
+local e = sai and sai.eventloop
 if not e then
 	local oninit = function() end
 	local onres = function() end
@@ -26,7 +26,7 @@ if not e then
 		end
 	end)
 end
-local swi = swi or { gallery = { border_size = 5, padding_size = 5 } }
+local sai = sai or { gallery = { border_size = 5, padding_size = 5 } }
 
 local M = {}
 
@@ -119,7 +119,7 @@ function M.schedule_signal(requested)
 
 		if sig_i % M.dist_freq == 0 then
 			local dir = M.distractions[math.floor(sig_i / M.dist_freq) % #M.distractions + 1]
-			g.switch_image(dir)
+			g.saitch_image(dir)
 			log { distraction = dir }
 		end
 	end
@@ -176,7 +176,7 @@ end
 local move_cfg
 local function recalc_moves()
 	local win = swayimg.get_window_size()
-	local thumb = g.get_thumb_size() + swi.gallery.border_size * 2 + swi.gallery.padding_size * 2
+	local thumb = g.get_thumb_size() + sai.gallery.border_size * 2 + sai.gallery.padding_size * 2
 	line = math.floor(win.width / thumb)
 	page = math.floor(win.height / thumb) * line
 
@@ -214,7 +214,7 @@ function M.mov(f, t, s)
 		for _, level_cfg in ipairs(cfg) do
 			-- log(level_cfg)
 			for _ = level_cfg.reps, 1, -1 do
-				g.switch_image(level_cfg.dir)
+				g.saitch_image(level_cfg.dir)
 			end
 		end
 		return get_pos() ~= (s > 0 and l.size() or 1) and 0.01 or nil

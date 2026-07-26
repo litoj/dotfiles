@@ -6,7 +6,7 @@ local M = {
 	dependencies = {
 		'nvim-lua/plenary.nvim',
 		'MunifTanjim/nui.nvim',
-		{
+		--[[ {
 			'zbirenbaum/copilot.lua',
 			enabled = false,
 			opts = {
@@ -35,7 +35,7 @@ local M = {
 					vue = true,
 				},
 			},
-		},
+		}, ]]
 	},
 }
 
@@ -169,9 +169,13 @@ relative path, but it ensures you get the file if there was one.
 				list_models = list_models,
 			},
 
-			copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
-			open5 = { __inherited_from = 'copilot', model = 'gpt-5-mini' },
-			sonnet = { __inherited_from = 'copilot', model = 'claude-sonnet-4.5' },
+			-- copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
+		},
+		acp_providers = {
+			opencode = {
+				command = 'opencode',
+				args = { 'acp' },
+			},
 		},
 		web_search_engine = {
 			provider = 'tavily',
@@ -238,7 +242,7 @@ relative path, but it ensures you get the file if there was one.
 			auto_focus_on_diff_view = true,
 		},
 		history = {
-			max_tokens = 4096,
+			max_tokens = 16384,
 		},
 		-- 		 custom_tools = {
 		-- 			{

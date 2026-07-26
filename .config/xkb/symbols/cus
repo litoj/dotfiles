@@ -96,7 +96,6 @@ xkb_symbols "mk" {
     key <AD08> {[        Cyrillic_i,        Cyrillic_I ]};
     key <AD09> {[        Cyrillic_o,        Cyrillic_O ]};
     key <AD10> {[       Cyrillic_pe,       Cyrillic_PE ]};
-    key <AD11> {[        numerosign, a ]};
 
     key <AC01> {[        Cyrillic_a,        Cyrillic_A ]};
     key <AC02> {[       Cyrillic_es,       Cyrillic_ES ]};

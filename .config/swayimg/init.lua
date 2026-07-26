@@ -18,7 +18,7 @@
 -- if true then return end
 -- if require 'perf_test' ~= '' then return end
 
-require 'swi.api.globals'
+require 'sai.api.globals'
 
 -- maximize lazyload after the window has opened
 e.subscribe {
@@ -31,8 +31,8 @@ e.subscribe {
 	end,
 }
 
-swi.apply_raw_wb = false
-swi.overlay = false
+sai.apply_raw_wb = false
+sai.overlay = false
 l.order = 'alpha'
 l.recursive = false
 t.shadow = 0xff101010
@@ -43,11 +43,11 @@ t.size = 23
 t.status_timeout = 2
 t.enabled = false
 
-swi.antialiasing = false
+sai.antialiasing = false
 v.window_background = 0xff000000
 v.mark_color = 0xffbb33aa
-v.history_limit = 5
-v.preload_limit = 2
+v.history_size = 5
+v.preload_size = 2
 
 g.hover = false
 g.window_color = 0xff000000
@@ -58,7 +58,7 @@ g.border_color = 0xffbb33aa
 g.thumb_size = 500
 g.selected_scale = 1.2
 g.aspect = 'keep'
-g.cache_limit = 10000
+g.cache_size = 10000
 g.preload = true
 -- g.pstore = true
-g.pstore_path = '/tmp/swi-filter'
+g.pstore_path = '/tmp/sai-filter'

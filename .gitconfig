@@ -30,3 +30,5 @@
 	excludesfile = /home/kepis/dotfiles/other/gitignore
 [commit]
 	gpgsign = true
+[init]
+	defaultBranch = main

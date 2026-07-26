@@ -10,23 +10,23 @@ do
 
 	-- TODO: regulate the movement speed with a counter
 	amap('x', function() l.remove(l.get_current().path) end)
-	amap('q', function() swi.exit(0) end)
+	amap('q', function() sai.exit(0) end)
 
 	-- ### Settings toggle
-	amap('u', function() swi.antialiasing = not swi.antialiasing end)
+	amap('u', function() sai.antialiasing = not sai.antialiasing end)
 	amap('i', function() t.enabled = not t.enabled end)
 	local osize = t.size
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
 	amap('<C-0>', function() t.size = osize end)
-	amap('r', function() swi.apply_raw_wb = not swi.apply_raw_wb end)
-	amap('F5', function() swi[swi.mode].reload() end)
+	amap('r', function() sai.apply_raw_wb = not sai.apply_raw_wb end)
+	amap('F5', function() sai[sai.mode].reload() end)
 
 	amap('<S-p>', function()
-		if swi.mode == 'slideshow' then
-			swi.mode = 'viewer'
+		if sai.mode == 'slideshow' then
+			sai.mode = 'viewer'
 		else
-			swi.mode = 'slideshow'
+			sai.mode = 'slideshow'
 		end
 	end)
 	local function gen_rating(r)
@@ -49,30 +49,30 @@ do
 	local raw_path = '/tmp/raw_to_jpg/'
 
 	v.map('C-S-e', function()
-		swi.exec('mkdir -p ' .. raw_path)
+		sai.exec('mkdir -p ' .. raw_path)
 		local i = v.get_image()
 		local dst = raw_path .. i.path:match '^([^/]+)%.[^./]-$' .. '.jxl'
-		swi.exec(([[darktable-cli '%s' '%s' --width %d --hq 0 \
+		sai.exec(([[darktable-cli '%s' '%s' --width %d --hq 0 \
 		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
 		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
 	end, 'Export raw to ' .. raw_path .. '<>.jxl')
 	v.map('e', function()
 		if v.get_image().path:match '%.RAF$' then
-			swi.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+			sai.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
 		end
 	end)
 	g.map('e', function()
 		if g.get_image().path:match '%.RAF$' then
-			swi.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+			sai.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
 		end
 	end)
 
 	---@diagnostic disable-next-line: missing-fields
-	local fm = require('swi.mode.filter').new {}
+	local fm = require('sai.mode.filter').new {}
 	amap('/', function() fm.enabled = true end)
 
 	---@diagnostic disable-next-line: missing-fields
-	local cmd = require('swi.mode.cmd').new {}
+	local cmd = require('sai.mode.cmd').new {}
 	amap(':', function() cmd.enabled = true end)
 end
 
@@ -80,7 +80,7 @@ end
 do
 	local gmap = g.map
 
-	gmap('g', function() swi.mode = 'viewer' end)
+	gmap('g', function() sai.mode = 'viewer' end)
 
 	gmap({ 'a', 'h', '<S-SMU>' }, g.go.left)
 	gmap({ 's', 'j' }, g.go.down)
@@ -101,7 +101,7 @@ do
 		g.go.left()
 	end)
 	gmap('<S-Del>', function()
-		if swi.exec '$(which trash || echo rm) %m' then
+		if sai.exec '$(which trash || echo rm) %m' then
 			local marked = l.marked.get()
 			for _, f in ipairs(marked) do
 				l.remove(f)
@@ -124,10 +124,10 @@ end
 -- ## Viewer
 do
 	local vmap = v.map
-	vmap('g', function() swi.mode = 'gallery' end)
+	vmap('g', function() sai.mode = 'gallery' end)
 
 	vmap('m', function() l.marked.set_current 'toggle' end)
-	vmap('c', function() v.centering = not v.centering end)
+	vmap('c', function() v.auto_center = not v.auto_center end)
 
 	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
 	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
@@ -169,15 +169,15 @@ do
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
 	vmap({ '<SMU>' }, function()
-		local p = swi.get_mouse_pos()
+		local p = sai.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
 	end)
 	vmap({ '<SMD>' }, function()
-		local p = swi.get_mouse_pos()
+		local p = sai.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
-	local snip = require 'swi.snippets'
+	local snip = require 'sai.snippets'
 	vmap('2', function()
 		v.scale = 2
 		local t = { 'width', 'height', 'size', 'fit', 'fill' }

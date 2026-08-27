@@ -364,7 +364,7 @@ configs() {
 		ln -s /tmp/my/cache ~/.cache/$name
 	done
 	mkdir -p ~/.local/state/nvim/
-	for name in dapui.log log lsp.log luasnip.log nio.log; do
+	for name in dapui.log lsp.log luasnip.log nvim.log; do
 		ln -s /tmp/my/log ~/.local/state/nvim/$name
 	done
 }

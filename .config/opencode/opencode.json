@@ -9,9 +9,10 @@
 				"baseURL": "https://llm.ai.e-infra.cz/v1"
 			},
 			"models": {
-				"agentic": {"name": "agentic"},
+				"mini": {"name": "mini"},
 				"thinker": {"name": "thinker"},
-				"glm": {"name": "glm-5.2"},
+				"coder": {"name": "coder"},
+				"glm": {"name": "glm-5.3"},
 				"kimi": {"name": "kimi-k3"},
 				"deepseek": {"name": "deepseek-v4-pro-thinking"},
 				"command-a": {"name": "command-a"}

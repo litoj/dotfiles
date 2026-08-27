@@ -34,7 +34,7 @@ charge_limit() {
 if [[ $1 ]]; then
 	charge_limit "$@"
 	exit 0
-elif [[ $button == 3 ]]; then
+elif ((button == 3)); then
 	charge_limit toggle manual
 fi
 

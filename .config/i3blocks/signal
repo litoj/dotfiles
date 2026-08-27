@@ -1,6 +1,17 @@
 #!/usr/bin/bash
 #Signal managing script for statusbar
 
+clock() {
+	pkill -RTMIN+20 i3blocks
+
+	killall setTheme.sh sleep
+	FORCE=1 "${0%/*}/setTheme.sh" &
+	disown
+
+	sleep $((60 - $(date +%S)))
+	pkill -RTMIN+21 i3blocks
+}
+
 wp() {
 	local arg=$1
 	declare -A nodes def
@@ -86,6 +97,7 @@ checkPower() {
 load() {
 	killall acpi_listen
 	checkPower
+	clock &
 	wp detect
 
 	local old

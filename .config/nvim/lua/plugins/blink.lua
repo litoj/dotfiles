@@ -3,7 +3,7 @@ local M = {
 	dependencies = {
 		'L3MON4D3/LuaSnip',
 		'rafamadriz/friendly-snippets',
-		'fang2hou/blink-copilot',
+		-- 'fang2hou/blink-copilot',
 		{ 'saghen/blink.compat', version = '2.*', opts = {} },
 		'litoj/cmp-calc',
 	},
@@ -322,15 +322,15 @@ function M.config()
 
 		default = function()
 			return vim.treesitter.get_parser() --
-					and { 'lsp', 'path', 'calc', 'snippets', 'copilot' }
+					and { 'lsp', 'path', 'calc', 'snippets', --[[ 'copilot' ]] }
 				or { 'path', 'calc' }
 		end,
 		per_filetype = {
 			lua = { inherit_defaults = true, 'lazydev' },
 			markdown = { inherit_defaults = true, 'nerdfont', 'latex' },
 			text = { inherit_defaults = true, 'nerdfont', 'latex' },
-			tex = { 'lsp', 'snippets', 'copilot', 'path' },
-			bib = { 'bib', 'snippets', 'copilot' },
+			tex = { 'lsp', 'snippets', --[[ 'copilot', ]] 'path' },
+			bib = { 'bib', 'snippets', --[[ 'copilot' ]] },
 		},
 	}
 

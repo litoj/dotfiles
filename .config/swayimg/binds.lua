@@ -1,11 +1,13 @@
+local snip = require 'sai.snippets'
 -- ## Global
 do
 	---@param bind string|string[]
 	---@param cb string|function shellcmd to execute or callback
-	local function amap(bind, cb)
-		v.map(bind, cb)
-		s.map(bind, cb)
-		g.map(bind, cb)
+	---@param desc string?
+	local function amap(bind, cb, desc)
+		v.map(bind, cb, desc)
+		s.map(bind, cb, desc)
+		g.map(bind, cb, desc)
 	end
 
 	-- TODO: regulate the movement speed with a counter
@@ -18,7 +20,7 @@ do
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
 	amap('<C-0>', function() t.size = osize end)
-	amap('r', function() sai.format_params.raw.camera_wb = not sai.format_params.raw.camera_wb end)
+	amap('r', function() sai.formats.raw.camera_wb = not sai.formats.raw.camera_wb end)
 	amap('F5', function() sai[sai.mode].reload() end)
 
 	amap('<S-p>', function()
@@ -38,7 +40,9 @@ do
 	amap('Alt+4', gen_rating(4))
 	amap('Alt+5', gen_rating(5))
 	amap('<C-f>', [[pem -D --config-picker -- -e -x -c dummy %s]])
-	amap('<Del>', [[which trash && trash %f || mv %f /tmp/my/trash/]])
+	-- amap('<Del>', [[which trash && trash %f* || mv %f* /tmp/my/trash/]])
+	amap('<Del>', [[mv %f* /tmp/my/trash/]])
+	g.map('<A-Del>', [[bash -c 'for f in %s; do rm "$f"*; done']])
 	amap('<A-f>', [[dragon-drop -x %f]])
 	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
 	amap('b', [[~/.config/sway/custombg %f]])
@@ -58,24 +62,37 @@ do
 		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
 		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
 	end, 'Export raw to ' .. raw_path .. '<>.jxl')
-	v.map('e', function()
-		if v.get_image().path:match '%.RAF$' then
-			sai.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
-		end
-	end)
 	g.map('e', function()
 		if g.get_image().path:match '%.RAF$' then
 			sai.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
 		end
-	end)
+	end, 'RawToPreview')
+	v.map('e', function()
+		if v.get_image().path:match '%.RAF$' then
+			sai.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+		end
+	end, 'RawToJPG')
 
+	-- TODO: implement similar to help mode for bindings list and variables
 	---@diagnostic disable-next-line: missing-fields
 	local fm = require('sai.mode.filter').new {}
 	amap('/', function() fm.enabled = true end)
 
+	local base_cmd = require 'sai.mode.cmd'
 	---@diagnostic disable-next-line: missing-fields
-	local cmd = require('sai.mode.cmd').new {}
+	local cmd = base_cmd.new {}
 	amap(':', function() cmd.enabled = true end)
+	---@diagnostic disable-next-line: missing-fields
+	local shell = base_cmd.new {
+		_prompt = 'Shell cmd: ',
+		on_confirm = function(self, text)
+			return base_cmd.on_confirm(self, ('sai.exec[[%s]]'):format(text))
+		end,
+	}
+	g.map('<S-s>', function() shell.enabled = true end)
+
+	local tp = snip.two_pane_mode '<S-t>'
+	g.map('<S-t>', function() tp.enabled = true end, 'Enable two-pane mode')
 end
 
 -- ## Gallery
@@ -84,6 +101,8 @@ do
 
 	gmap('g', function() sai.mode = 'viewer' end)
 
+	local osize = g.thumb_size
+	gmap('0', function() g.thumb_size = osize end)
 	gmap({ 'a', 'h', '<S-SMU>' }, g.go.left)
 	gmap({ 's', 'j' }, g.go.down)
 	gmap({ 'w', 'k' }, g.go.up)
@@ -152,8 +171,8 @@ do
 	vmap('m', function() l.marked.set_current 'toggle' end)
 	vmap('c', function() v.auto_center = not v.auto_center end)
 
-	vmap({ '<S-Space>', '<BS>', 'Left', 'comma', '<S-h>', '<S-n>' }, v.go.prev)
-	vmap({ '<Space>', 'Right', 'period', '<S-l>', 'n' }, v.go.next)
+	vmap({ '<S- >', '<BS>', 'Left', ',', '<S-h>', '<S-n>' }, v.go.prev)
+	vmap({ ' ', 'Right', '.', '<S-l>', 'n' }, v.go.next)
 	vmap('<Home>', v.go.first)
 	vmap('<End>', v.go.last)
 
@@ -166,7 +185,7 @@ do
 	vmap('<S-SMU>', function() v.pan.up(20) end)
 	vmap('<S-SMR>', function() v.pan.right(20) end)
 
-	-- ### Scaling
+	-- ### Scaling TODO: make a custom mode for it with a searchbar for selection of settings to apply
 	vmap('s', function()
 		v.scale = 'fill'
 		v.default_scale = 'fill'
@@ -184,10 +203,9 @@ do
 		v.default_scale = 'real'
 	end)
 	vmap('a', function() v.scale = 1 end)
-	vmap('<A-a>', function() v.default_scale = 'keep_size' end)
-	vmap('<S-k>', function()
-		v.scale = 0.35
-		v.default_scale = 'keep'
+	vmap('<A-a>', function()
+		local t = { 'keep_width', 'keep_height', 'keep_size', 'keep_fit', 'keep_fill' }
+		v.default_scale = snip.cycle_values(t, v.default_scale) or 'keep_width'
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
@@ -199,13 +217,19 @@ do
 		local p = sai.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)
+	vmap('<S-i>', function()
+		v.scale = 0.35
+		v.default_scale = 'keep'
+	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
-	local snip = require 'sai.snippets'
 	vmap('2', function()
-		v.scale = 2
-		local t = { 'width', 'height', 'size', 'fit', 'fill' }
-		local pref = 'keep_'
-		v.default_scale = pref .. (snip.cycle_values(t, v.default_scale:sub(#pref + 1)) or 'width')
+		if v.scale == 2 then
+			local t = { 'keep_width', 'keep_height', 'keep_size', 'keep_fit', 'keep_fill' }
+			v.default_scale = snip.cycle_values(t, v.default_scale) or 'keep_width'
+		else
+			v.scale = 2
+			v.default_scale = 'keep_width'
+		end
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)

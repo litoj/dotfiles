@@ -1,4 +1,4 @@
-if vim.g.features_level < 7 then return {} end
+-- if vim.g.features_level < 7 then return {} end
 local M = {
 	'yetone/avante.nvim',
 	keys = ' a',
@@ -168,8 +168,6 @@ relative path, but it ensures you get the file if there was one.
 				-- Model discovery via /v1/models endpoint
 				list_models = list_models,
 			},
-
-			-- copilot = { __inherited_from = 'copilot', model = 'gpt-4.1' },
 		},
 		acp_providers = {
 			opencode = {
@@ -180,44 +178,10 @@ relative path, but it ensures you get the file if there was one.
 		web_search_engine = {
 			provider = 'tavily',
 		},
-		system_prompt = [[
-**You:**
-- are a pragmatic senior developer
-- write code that is maintainable, well-structured, and appropriately simple for the problem at hand
-- have good intuition and can continue writing the code in the same style it was already
-- can write similar code to what's already there without studying the called method structure and implementation deeply until you need to fix errors in it
-
-**Code Quality:**
-- Respect existing conventions. Match the style, patterns, and structure already present in the codebase.
-- Separation of concerns: each function/module should have one clear responsibility.
-- But don't split a one-time-use function into smaller ones - abstract only for large code or repeated use.
-
-**Documentation:**
-- Document WHY, not WHAT. Comments should explain intent, trade-offs, or non-obvious behavior.
-- Do not comment what is already stated by the method name. Comment only what isn't obvious from the name.
-- Example of good comment: "lazyCleanup()-- Defer cleanup to avoid race with buffer deletion"
-- Example of bad comment: "addOne()-- Increment counter by 1"
-
-**Research:**
-- AVOID USING TASKS/SUBTASKS OR YOU WILL BE FIRED FOR INEFFICIENCY!!!
-- Tasks are extremely slow and you can get the same information much quicker.
-- Use tasks ONLY if you have divided the entire plan into AT LEAST 5 SUBTASKS that can be done in parallel WHILE YOU KEEP WORKING.
-- Use the web for API documentation, version-specific behavior, or when you're genuinely uncertain.
-
-**Communication:**
-- Skip pleasantries. No "Great question!", "You're right...", "But wait, no this, no that"...
-- Present your reasoning briefly: context, assumptions, and why you chose this approach.
-
-**When a tool call is rejected or fails:**
-1. STOP. Do not re-implement the same solution.
-2. Acknowledge the rejection/failure and analyze why, ask if you're uncertain.
-3. Propose 2-3 alternative approaches in text and wait for the user to choose.
-
-**Red flags you're off track:**
-- You haven't consulted the official documentation first.
-- Your tool calls are failing repeatedly.
-- You have launched a task for reading or finding files.
-]],
+		system_prompt = table.concat(
+			vim.fn.readfile(os.getenv 'HOME' .. '/dotfiles/other/AGENTS.md'),
+			'\n'
+		),
 		-- - Use vim regexes for repetitive changes via the run_nvim_lua tool like vim.cmd'%s/\(keep\)bad/\1/g'
 		windows = {
 			spinner = {
@@ -345,6 +309,12 @@ relative path, but it ensures you get the file if there was one.
 			},
 			select_history = '<leader>ah',
 		},
+	}
+	local Config = require 'avante.config'
+
+	Config.providers = {
+		---@diagnostic disable-next-line: undefined-field
+		infra = Config.providers.infra,
 	}
 
 	local function simulate_press(keyword, limit, cb)

@@ -15,6 +15,9 @@ local map = require('fthelper').once {
 		dap.adapters.nlua = function(callback, config)
 			callback { type = 'server', host = config.host or '127.0.0.1', port = config.port or 8086 }
 		end
+
+		-- registers in dap.configurations.lua and the `sai` adapter
+		loadfile(os.getenv 'HOME' .. '/.config/swayimg/sai/nvim_dap.lua')().setup()
 	end,
 }
 

@@ -1,6 +1,7 @@
 local snip = require 'sai.snippets'
 snip.load_dir_if_single()
 snip.resize_image_with_window()
+snip.auto_open_video()
 
 v.text.topright = { '{list.index}/{list.total}' }
 v.text.bottomright = { '{scale}' }
@@ -22,5 +23,3 @@ g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{sai.imagelis
 
 snip.print_option_changes()
 snip.print_shell_output()
-
-snip.two_pane_mode('Shift+t')

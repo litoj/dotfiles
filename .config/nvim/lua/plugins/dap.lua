@@ -135,5 +135,9 @@ function M.config()
 		dap.terminate()
 		dapui.close()
 	end)
+	map('n', '<S-F10>', function()
+		dap.disconnect()
+		dapui.close()
+	end)
 end
 return M

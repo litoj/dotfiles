@@ -11,7 +11,6 @@ signal=10
 signal=11
 
 [backlight]
-interval=once
 signal=12
 
 [battery]
@@ -33,5 +32,6 @@ command=date +" %a %d.%m."
 signal=20
 
 [clock]
-interval=persist
+command=date +" %R"
+interval=60
 signal=21

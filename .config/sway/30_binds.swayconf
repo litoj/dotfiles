@@ -8,7 +8,7 @@ bindsym {
 	$Mod+$Alt+Shift+g gaps outer current minus 5
 	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
-	$Mod+$Alt+Shift+t exec $i3/clock toggle
+	$Mod+$Alt+Shift+t exec $i3/setTheme.sh toggle
 
 	$Mod+u exec $custombg set
 	$Mod+Shift+u exec DIRECTION=prev $custombg set

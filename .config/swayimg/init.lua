@@ -20,6 +20,9 @@
 
 require 'sai.api.globals'
 
+-- DAP debug harness (nvim-dap: adapters.swai = { type = 'pipe', pipe = <socket path> }):
+-- require('sai.bridge.debug').start {}
+
 -- maximize lazyload after the window has opened
 e.subscribe {
 	event = 'SwiEnter',
@@ -31,10 +34,10 @@ e.subscribe {
 	end,
 }
 
-sai.format_params.raw.camera_wb = false
+sai.formats.raw.camera_wb = false
 sai.overlay = false
 l.order = 'alpha'
-l.recursive = false
+l.recursive = true
 t.shadow = 0xff101010
 t.foreground = 0xffffffff
 t.padding = 0

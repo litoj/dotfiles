@@ -23,7 +23,6 @@ setTheme() {
 }
 
 updateTheme() {
-	pkill -RTMIN+20 i3blocks
 	if ((STAT[0] <= x && x < STAT[1])); then
 		[[ ! -e /tmp/my/day || $next == 0 ]] && touch /tmp/my/day && setTheme light
 		swaymsg -q 'set $bg #ffffff; set $fg #000000'
@@ -35,7 +34,6 @@ updateTheme() {
 	fi
 	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
 		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"
-	prev=$x
 }
 
 if [[ $1 ]]; then
@@ -45,17 +43,17 @@ if [[ $1 ]]; then
 	exit 0
 fi
 
-STAT=($(sunwait list 47.8N 13E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
-next=0
-
-update() {
-	x=($(date +"%H %M %S"))
-	echo " ${x[0]}:${x[1]}"
-	((x[0] = ${x[0]#0} * 60 + ${x[1]#0}))
-}
+STAT=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*60+$2,$3*60+$4)}'))
 
 while :; do
-	update
-	((next < x || x < prev)) && updateTheme >/dev/null
-	sleep $((60 - ${x[2]#0}))
+	x=($(date +'%H %M'))
+	((x = ${x[0]#0} * 60 + ${x[1]#0}))
+	updateTheme >/dev/null
+	if ((x > next)); then
+		sleep $((60 * (60 * 24 - x))) # wait till midnight
+		pkill -RTMIN+20 i3blocks      # update the date
+		sleep $((60 * next))          # wait till sunrise to switch back to lightmode
+	else
+		sleep $((60 * (next - x)))
+	fi
 done

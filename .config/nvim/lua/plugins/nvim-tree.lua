@@ -18,8 +18,7 @@ function M.config()
 		filters = {
 			dotfiles = true,
 			git_ignored = true,
-			custom = { '^.git$', '^node_modules$', '^\\.cache$' },
-			exclude = { '.config', '.scripts' },
+			custom = { '^\\.git$', '^node_modules$', '^\\.cache$' },
 		},
 		renderer = {
 			indent_markers = { enable = true },

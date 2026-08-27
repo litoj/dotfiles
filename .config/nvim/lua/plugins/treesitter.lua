@@ -23,6 +23,7 @@ local langs = {
 	'typescript',
 	'vim', -- builtin
 	'yaml',
+	'xml',
 }
 
 return {

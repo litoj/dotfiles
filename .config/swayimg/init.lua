@@ -31,7 +31,7 @@ e.subscribe {
 	end,
 }
 
-sai.apply_raw_wb = false
+sai.format_params.raw.camera_wb = false
 sai.overlay = false
 l.order = 'alpha'
 l.recursive = false

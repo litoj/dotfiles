@@ -12,7 +12,7 @@
 				"agentic": {"name": "agentic"},
 				"thinker": {"name": "thinker"},
 				"glm": {"name": "glm-5.2"},
-				"kimi": {"name": "kimi-k2.7"},
+				"kimi": {"name": "kimi-k3"},
 				"deepseek": {"name": "deepseek-v4-pro-thinking"},
 				"command-a": {"name": "command-a"}
 			}

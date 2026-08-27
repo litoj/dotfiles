@@ -34,11 +34,11 @@ return {
 	},
 	{ 'tpope/vim-abolish', event = 'VeryLazy' },
 	{ 'litoj/i3config.vim', ft = 'swayconfig' },
-	--[[ {
+	{
 		'habamax/vim-asciidoctor',
 		ft = 'asciidoctor',
 		config = function() vim.g.asciidoctor_fenced_languages = { 'sh', 'javascript', 'python' } end,
-	}, ]]
+	},
 	--[[ {
 		'litoj/vim-mcfunction',
 		ft = 'mcfunction',

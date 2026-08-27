@@ -19,7 +19,7 @@ interval=60
 signal=14
 
 # [cpu_check]
-# interval=-3
+# interval=persist
 
 # [updates]
 # interval=once
@@ -33,4 +33,5 @@ command=date +" %a %d.%m."
 signal=20
 
 [clock]
-interval=-3
+interval=persist
+signal=21

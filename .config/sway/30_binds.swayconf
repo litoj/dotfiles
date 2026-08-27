@@ -40,7 +40,7 @@ bindsym --to-code {
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
 	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
 	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
-	$Mod+7 workspace $wMedia; mode $Media
+	$Mod+7 mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
 	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'
 }
@@ -73,8 +73,8 @@ mode $BindFree {
 }
 mode $Media {
 	bindsym {
-		g mode default, exec gimp
-		d mode default, exec darktable
+		g mode default, workspace $wMedia, exec gimp
+		d mode default, workspace $wMedia, exec darktable
 		t mode default, exec twitch
 		q mode default
 		Escape mode default
@@ -369,12 +369,13 @@ bindsym {
 set $mpv playerctl --player=mpv
 set $info $mpv metadata --format
 set $mpvFile $info '{{xesam:url}}' | sed -e 's,file://,,' -e 's,+,%2b,g' | urlencode -d
-bindsym {
-# Media management
-	$Mod+i exec notify-send -u low -a player -h string:synchronous:player\
+set $mpvTime notify-send -u low -a player -h string:synchronous:player\
 		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
 		"$($info '{{title}}')"\
 		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
+bindsym {
+# Media management
+	$Mod+i exec $mpvTime
 	$Mod+m exec mom play -r
 	$Mod+Shift+m exec playerctl -a pause
 	$Mod+Ctrl+Shift+m exec playerctl -a play-pause
@@ -393,10 +394,10 @@ bindsym {
 
 	$Alt+KP_Divide exec playerctl -a pause
 	$Alt+KP_Multiply exec $mpv position 10000+
-	$Alt+KP_Left exec $mpv position 5-
-	$Alt+KP_Right exec $mpv position 5+
-	$Alt+KP_Up exec $mpv position 30+
-	$Alt+KP_Down exec $mpv position 30-
+	$Alt+KP_Left exec $mpv position 5- && $mpvTime
+	$Alt+KP_Right exec $mpv position 5+ && $mpvTime
+	$Alt+KP_Up exec $mpv position 30+ && $mpvTime
+	$Alt+KP_Down exec $mpv position 30- && $mpvTime
 }
 bindgesture {
 	swipe:3:up exec $i3/signal vol 1%+

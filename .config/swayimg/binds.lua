@@ -14,12 +14,11 @@ do
 
 	-- ### Settings toggle
 	amap('u', function() sai.antialiasing = not sai.antialiasing end)
-	amap('i', function() t.enabled = not t.enabled end)
 	local osize = t.size
 	amap('<C-=>', function() t.size = t.size + 1 end)
 	amap('<C-->', function() t.size = t.size - 1 end)
 	amap('<C-0>', function() t.size = osize end)
-	amap('r', function() sai.apply_raw_wb = not sai.apply_raw_wb end)
+	amap('r', function() sai.format_params.raw.camera_wb = not sai.format_params.raw.camera_wb end)
 	amap('F5', function() sai[sai.mode].reload() end)
 
 	amap('<S-p>', function()
@@ -45,13 +44,16 @@ do
 	amap('b', [[~/.config/sway/custombg %f]])
 	amap('<S-b>', [[cp %f ~/Pictures/screen/]])
 
+	g.map('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %s]])
+	v.map('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
+	amap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
 	amap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
 	local raw_path = '/tmp/raw_to_jpg/'
 
-	v.map('C-S-e', function()
+	v.map('<C-S-e>', function()
 		sai.exec('mkdir -p ' .. raw_path)
 		local i = v.get_image()
-		local dst = raw_path .. i.path:match '^([^/]+)%.[^./]-$' .. '.jxl'
+		local dst = raw_path .. i.path:match '([^/]+)%.[^./]-$' .. '.jxl'
 		sai.exec(([[darktable-cli '%s' '%s' --width %d --hq 0 \
 		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
 		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
@@ -100,6 +102,17 @@ do
 		l.marked.set_current 'toggle'
 		g.go.left()
 	end)
+	local function set_marked_for_all(val)
+		local path = g.get_image().path
+		g.go.last()
+		for _ = l.size(), 1, -1 do
+			l.marked.set_current(val)
+			g.go.left()
+		end
+		g.go(path)
+	end
+	gmap('<C-a>', function() set_marked_for_all(true) end)
+	gmap('<C-S-a>', function() set_marked_for_all(false) end)
 	gmap('<S-Del>', function()
 		if sai.exec '$(which trash || echo rm) %m' then
 			local marked = l.marked.get()
@@ -107,6 +120,16 @@ do
 				l.remove(f)
 			end
 		end
+	end)
+
+	gmap('<LMB>', function()
+		local pos = sai.get_mouse_pos()
+		g.go(pos.x, pos.y)
+	end)
+	gmap('<2-LMB>', function()
+		local pos = sai.get_mouse_pos()
+		g.go(pos.x, pos.y)
+		sai.mode = 'viewer'
 	end)
 end
 
@@ -186,9 +209,11 @@ do
 	end)
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)
-	vmap({ '<Up>', 'p' }, function() v.scale = v.get_abs_scale() * 1.1 end)
-	vmap({ '<Down>', '<S-_>', 'o' }, function() v.scale = v.get_abs_scale() / 1.1 end)
+	vmap({ '<Up>', 'i' }, function() v.scale = v.get_abs_scale() * 1.1 end)
+	vmap({ '<Down>', 'o', '<S-_>' }, function() v.scale = v.get_abs_scale() / 1.1 end)
 
-	vmap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
-	vmap('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
+	vmap(
+		'<MMB>',
+		function() v.scale = ({ [1] = 2, [2] = v.default_scale })[v.get_abs_scale()] or 1 end
+	)
 end

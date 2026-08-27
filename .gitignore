@@ -6,3 +6,4 @@
 .config/mpv/watch_later
 .config/gtk-3.0/bookmarks
 .config/swayimg/*/
+.config/htop/htop_history

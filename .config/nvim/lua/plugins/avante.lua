@@ -179,7 +179,7 @@ relative path, but it ensures you get the file if there was one.
 			provider = 'tavily',
 		},
 		system_prompt = table.concat(
-			vim.fn.readfile(os.getenv 'HOME' .. '/dotfiles/other/AGENTS.md'),
+			vim.fn.readfile(os.getenv 'HOME' .. '/.config/opencode/AGENTS.md'),
 			'\n'
 		),
 		-- - Use vim regexes for repetitive changes via the run_nvim_lua tool like vim.cmd'%s/\(keep\)bad/\1/g'

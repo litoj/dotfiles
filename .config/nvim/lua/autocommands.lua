@@ -81,6 +81,11 @@ au('BufRead', setIndentMarks)
 au('TextYankPost', function() vim.hl.on_yank { higroup = 'Search', timeout = 50 } end)
 au('FileType', 'nnoremap <buffer> q <Cmd>close<CR>', { 'qf', 'help', 'man' })
 au('FileType', 'set ft=tex', { 'plaintex' })
+au('FileType', function()
+	vim.bo.ts = 4
+	vim.bo.et = true
+	vim.bo.sw = 4
+end, { 'xkb' })
 au('TermOpen', function()
 	vim.wo[0][0].nu = false
 	vim.wo[0][0].rnu = false

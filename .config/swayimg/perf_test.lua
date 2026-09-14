@@ -162,12 +162,11 @@ function M.del(...)
 		for p in iterator(function(p) return p end, ...) do
 			paths[#paths + 1] = p
 		end
-		if #paths == l.size() then paths[#paths] = nil end
+		if #paths == l.size then paths[#paths] = nil end
 		return function() l.remove(paths) end
 	end
 	return iterator(function(p)
-		-- print("Size: "..l.size())
-		if l.size() == 1 then return end
+		if l.size == 1 then return end
 		l.remove(p)
 		return #p % 100 ~= 0 and 0 or true
 	end, ...)
@@ -214,10 +213,10 @@ function M.mov(f, t, s)
 		for _, level_cfg in ipairs(cfg) do
 			-- log(level_cfg)
 			for _ = level_cfg.reps, 1, -1 do
-				g.saitch_image(level_cfg.dir)
+				g.select(level_cfg.dir)
 			end
 		end
-		return get_pos() ~= (s > 0 and l.size() or 1) and 0.01 or nil
+		return get_pos() ~= (s > 0 and l.size or 1) and 0.01 or nil
 	end, f, t, s)
 end
 
@@ -231,7 +230,7 @@ function M.next_op()
 	op_pos = op_pos + 1
 	local cfg = M.ops[op_pos]
 	local op = cfg[1](select(2, unpack(cfg)))
-	log(string.format('%s[%d]: imgcnt: %d ', op_names[cfg[1]], op_pos, l.size()))
+	log(string.format('%s[%d]: imgcnt: %d ', op_names[cfg[1]], op_pos, l.size))
 	return op
 end
 

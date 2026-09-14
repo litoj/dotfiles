@@ -11,6 +11,7 @@ signal=10
 signal=11
 
 [backlight]
+interval=once
 signal=12
 
 [battery]
@@ -28,10 +29,11 @@ interval=once
 signal=13
 
 [date]
-command=date +" %a %d.%m."
+command=date +' %a %d.%m.'
+interval=once
 signal=20
 
 [clock]
-command=date +" %R"
-interval=60
+command=[ $button ] && date +' %H:%M:%S' || date +' %R'
+interval=once
 signal=21

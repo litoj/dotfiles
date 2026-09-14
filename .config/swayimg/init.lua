@@ -38,6 +38,7 @@ sai.formats.raw.camera_wb = false
 sai.overlay = false
 l.order = 'alpha'
 l.recursive = true
+t.background = 0x1c000000
 t.shadow = 0xff101010
 t.foreground = 0xffffffff
 t.padding = 0

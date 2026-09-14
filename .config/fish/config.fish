@@ -105,18 +105,20 @@ alias cdr='ranger --choosedir=/tmp/cwd && cd (cat /tmp/cwd) && rm /tmp/cwd'
 abbr dup    'cd ~/dotfiles; git pull'
 # git
 abbr gp     'git pull'
+abbr gap    'git add -p -v (git lf | fzf -m | sed "s/..//")'
 abbr gA     'git add -A && git commit'
 abbr ga     'git add -v (git lf | fzf -m | sed "s/..//")'
 abbr gC     'git commit'
 abbr gr     'git rebase'
 abbr grc    'git rebase --continue'
-abbr grf    'git checkout <branch>^ --' # restore file
+abbr grf    'git checkout main^ --' # restore file
 abbr gff    'git log --all -1 --' # go find file
 abbr gP     'git push'
-abbr gbP    'git push origin HEAD:'
-abbr gdP    'git push -d origin'
-abbr gtP    'git push origin --tags'
-abbr gd     'git branch -d (git branch | fzf | sed "s/.* //")'
+abbr gPb    'git push origin HEAD:'
+abbr gPd    'git push -d origin'
+abbr gPt    'git push origin --tags'
+abbr gbd    'git branch -d (git branch | fzf | sed "s/.* //")'
+abbr gbD    'git branch -D (git branch | fzf | sed "s/.* //")'
 abbr gb     'git checkout -b'
 
 # internet related shortcuts

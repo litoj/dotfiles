@@ -108,7 +108,6 @@ modmap {
 }
 
 vim.bo.textwidth = 80
-vim.bo.commentstring = '%%s'
 -- \usepackage[autostyle]{csquotes}
 local function enter_or_item()
 	local line = vim.api.nvim_buf_get_lines(0, vim.fn.line '.' - 1, -1, false)[1]:match '^%s*\\item.?'

@@ -1,4 +1,4 @@
-local M = { 'numToStr/Comment.nvim', event = 'VeryLazy' }
+local M = { 'yvng-jie/Comment.nvim', event = 'VeryLazy', branch = 'fix/ft-nil-safe' }
 function M.config()
 	require('Comment').setup {
 		ignore = '^$',

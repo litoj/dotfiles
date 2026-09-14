@@ -8,13 +8,14 @@ bindsym {
 	$Mod+$Alt+Shift+g gaps outer current minus 5
 	$Mod+Shift+t gaps inner current toggle $gaps
 	$Mod+$Alt+t border toggle $border
-	$Mod+$Alt+Shift+t exec $i3/setTheme.sh toggle
+	$Mod+$Alt+Shift+t exec $i3/signal theme toggle
 
 	$Mod+u exec $custombg set
 	$Mod+Shift+u exec DIRECTION=prev $custombg set
 	$Mod+$Alt+u exec $custombg cursave
 	$Mod+Ctrl+u exec xdg-open "$($custombg current)"
-	$Mod+Ctrl+$Alt+u exec xdg-open "$(fd "$($custombg current | sed -E 's,.*/([0-9_-]{17}).*,\1,')" -t f ~/Pictures/sdcard/Pictures/)"
+	$Mod+Ctrl+$Alt+u exec xdg-open "$(fd "$($custombg current | sed -E 's,.*/([0-9_-]{17}).*,\1,')" \
+		-t f ~/Pictures/sdcard/Pictures/ | head -n 1)"
 
 #---------------+
 # App selection |

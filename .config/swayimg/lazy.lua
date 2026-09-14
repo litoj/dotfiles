@@ -9,7 +9,7 @@ v.text.bottomleft = {}
 v.text.topleft = {
 	'File:\t{name}',
 	'Size:\t{sizehr}',
-	'Res:\t{frame.width}x{frame.height}',
+	'Res:\t{width}x{height}',
 	'Exposure:\t{ExposureTime} s',
 	'ISO:\t{ISOSpeedRatings}',
 	'FNumber:\t{FNumber}',
@@ -20,6 +20,8 @@ v.text.topleft = {
 g.text.topleft = v.text.topleft
 -- g.text.topleft = { 'File:\t{name}' }
 g.text.topright = { 'Image:\t{list.index}/{list.total}', 'Marked:\t{sai.imagelist.marked.size}' }
+
+require('sai.mode.key_help').short_binds = true
 
 snip.print_option_changes()
 snip.print_shell_output()

@@ -1,22 +1,73 @@
 #!/usr/bin/bash
-#Signal managing script for statusbar
+#Signal-managing script for statusbar
+
+setTheme() {
+	gsettings set org.gnome.desktop.interface color-scheme prefer-${1,,}
+	gsettings set org.gnome.desktop.interface gtk-theme ${1^}
+	sed "s/Dark/${1^}/" ~/.config/gtk-3.0/theme.ini >/tmp/my/gtk3rc
+	sed '1d;s/=\([a-z].*\|[A-Z][^A-Z].*\)/="\1"/' /tmp/my/gtk3rc >/tmp/my/gtk2rc
+	ln -sf ~/.config/qt6ct/colors/$1.conf /tmp/my/qt
+	ln -sf ~/.config/rofi/$1.rasi /tmp/my/rofi
+	ln -sf ~/.config/foot/$1.ini /tmp/my/foot
+
+	# toggle theme for foot terminal linked to /bin/xterm
+	local signal
+	[[ $1 == dark ]] && signal=SIGUSR1 || signal=SIGUSR2
+	pkill --signal $signal xterm
+
+	local msg="\x94\x0\x1\xafnvim_set_option\x92\xaabackground\xa${#1}$1"
+
+	for f in /run/user/$(id -u)/nvim.*.0; do
+		local pid=${f#*.}
+		ps -p ${pid%.*} >/dev/null && printf "$msg" | ncat -U "$f"
+	done
+}
+
+theme() {
+	if [[ ! $DAYTIME ]]; then
+		local DAYTIME=(0 1)
+		[[ $1 == light || ($1 == toggle && ! -e /tmp/my/day) ]] && x=0 || x=1
+	fi
+
+	if ((DAYTIME[0] <= x && x < DAYTIME[1])); then
+		[[ -z $next || ! -e /tmp/my/day ]] && touch /tmp/my/day && setTheme light
+		swaymsg -q 'set $bg #ffffff; set $fg #000000'
+		next=${DAYTIME[1]}
+	else
+		[[ -z $next ]] || rm /tmp/my/day &>/dev/null && setTheme dark
+		swaymsg -q 'set $bg #101010; set $fg #ffffff'
+		next=${DAYTIME[0]}
+	fi
+	swaymsg -q "$(grep 'colors {' -A 10 ~/.config/sway/20_layout.swayconf |
+		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"
+}
 
 clock() {
-	pkill -RTMIN+20 i3blocks
+	local DAYTIME=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*3600+$2*60,$3*3600+$4*60)}'))
 
-	killall setTheme.sh sleep
-	FORCE=1 "${0%/*}/setTheme.sh" &
-	disown
+	while ((! $?)); do
+		x=($(date +'%-H %-M %-S'))
+		((x = x * 3600 + x[1] * 60 + x[2]))
+		theme
+		if ((x > next)); then
+			sleep $((3600 * 24 - x)) || exit # wait till midnight
+			pkill -RTMIN+20 i3blocks         # update the date
+			sleep $next                      # wait till sunrise to switch back to lightmode
+		else
+			sleep $((next - x))
+		fi
+	done &
 
-	sleep $((60 - $(date +%S)))
-	pkill -RTMIN+21 i3blocks
+	# update the clock status from here so that it can also process mouse clicks
+	while sleep $((60 - $(date +%-S))); do
+		pkill -RTMIN+21 i3blocks
+	done
 }
 
 wp() {
 	local arg=$1
 	declare -A nodes def
-	[[ $arg == detect ]] && sleep 1
-	while :; do
+	while ((! $?)); do
 		{
 			while read -r line; do
 				[[ $line == '├─ Sinks:' ]] && break
@@ -77,7 +128,7 @@ wp() {
 
 checkPower() {
 	local profile
-	if ((!$#)); then
+	if ((! $#)); then
 		read profile </sys/class/power_supply/BAT0/status
 	else
 		(($1)) && profile=Charging || profile=Discharging
@@ -91,21 +142,16 @@ checkPower() {
 	fi
 	"${0%/*}/cpu" "$profile"
 
-	sleep 1 && pkill -RTMIN+14 i3blocks # update battery status
+	{
+		sleep 1 && pkill -RTMIN+14 i3blocks # update battery status
+	} &
 }
 
 load() {
-	killall acpi_listen
-	checkPower
+	killall acpi_listen sleep
 	clock &
+	checkPower
 	wp detect
-
-	local old
-	readarray -t old < <(pgrep -f signal)
-	((${#old[@]} > 1)) && kill -9 "${old[*]/$$/}"
-	unset old
-
-	[[ -f /bin/acpi_listen ]] || exit
 
 	while read -r line; do
 		case "$line" in

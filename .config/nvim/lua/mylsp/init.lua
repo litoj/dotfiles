@@ -24,7 +24,7 @@ vim.diagnostic.config {
 function M.setup(server, opts)
 	opts = type(opts) == 'table' and opts or require('mylsp.' .. (opts or server))
 
-	local on_attach = opts.on_attach or (vim.lsp.config[server] or {}).on_attach
+	local on_attach = opts.on_attach or (server and vim.lsp.config[server] or {}).on_attach
 	opts.on_attach = function(client, bufnr)
 		vim.bo.formatoptions = 'tcqjl1'
 		-- custom settings for dynamic capability override

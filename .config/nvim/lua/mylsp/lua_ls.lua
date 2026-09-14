@@ -28,10 +28,16 @@ return {
 	settings = {
 		Lua = { -- https://luals.github.io/wiki/settings/
 			codeLens = { enable = false },
-			completion = { autoRequire = false, showParams = true, callSnippet = 'Disable', keywordSnippet='Disable' },
+			completion = {
+				autoRequire = false,
+				showParams = true,
+				callSnippet = 'Disable',
+				keywordSnippet = 'Disable',
+			},
 			hint = { enable = true, paramName = 'Disable', setType = true },
 			type = { castNumberToInteger = true, weakNilCheck = true, weakUnionCheck = true },
 			runtime = { version = 'LuaJIT' },
+			diagnostics = { severity = { ['unused-local'] = 'Warning', ['unused-vararg'] = 'Warning' } },
 			workspace = { checkThirdParty = false, library = {} },
 			format = {
 				enable = false, -- TODO: try to switch

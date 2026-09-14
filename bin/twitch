@@ -100,7 +100,7 @@ if [[ -z $quality ]]; then
 	(($?)) && exit 0
 
 	if [[ $quality == [0-9]* ]]; then
-		((quality = quality * 16 / 9))
+		((quality = (quality * 16 + 8) / 9))
 		quality=bv*[width=$quality][vcodec!*=av01]/bv*[width=$quality],ba
 	elif [[ ${presets[$quality]} ]]; then
 		quality=${presets[$quality]}

@@ -52,6 +52,17 @@ do
 	v.map('<C-e>', [[xdg-open -c ~/.config/ranger/edit.conf.sh %f]])
 	amap('<A-e>', [[xterm ranger --selectfile=%f &>/dev/null &]])
 	amap('<S-e>', [[mkdir -p /tmp/img_export/ && cp %s /tmp/img_export/]])
+	amap('<C-u>', function()
+		local found =
+			sai.exec [[fd "$(echo %f | sed -E 's,.*/([0-9_-]{17}).*,\1,')" -t f ~/Pictures/sdcard/Pictures/ | head -n 1]]
+		if found == '' then
+			sai.notify 'File not found'
+			return
+		end
+		l.clear()
+		l.add(found, true)
+		l.select(found)
+	end)
 	local raw_path = '/tmp/raw_to_jpg/'
 
 	v.map('<C-S-e>', function()
@@ -75,7 +86,7 @@ do
 
 	-- TODO: implement similar to help mode for bindings list and variables
 	---@diagnostic disable-next-line: missing-fields
-	local fm = require('sai.mode.filter').new {}
+	local fm = require('sai.mode.image_filter').new {}
 	amap('/', function() fm.enabled = true end)
 
 	local base_cmd = require 'sai.mode.cmd'
@@ -103,10 +114,10 @@ do
 
 	local osize = g.thumb_size
 	gmap('0', function() g.thumb_size = osize end)
-	gmap({ 'a', 'h', '<S-SMU>' }, g.go.left)
+	gmap({ 'a', 'h', '<S-UMS>' }, g.go.left)
 	gmap({ 's', 'j' }, g.go.down)
 	gmap({ 'w', 'k' }, g.go.up)
-	gmap({ 'd', 'l', '<S-SMD>' }, g.go.right)
+	gmap({ 'd', 'l', '<S-DMS>' }, g.go.right)
 	gmap('<C-h>', g.go.first)
 	gmap('<C-j>', g.go.pgdown)
 	gmap('<C-k>', g.go.pgup)
@@ -124,7 +135,7 @@ do
 	local function set_marked_for_all(val)
 		local path = g.get_image().path
 		g.go.last()
-		for _ = l.size(), 1, -1 do
+		for _ = l.size, 1, -1 do
 			l.marked.set_current(val)
 			g.go.left()
 		end
@@ -180,10 +191,10 @@ do
 	vmap('j', v.pan.down)
 	vmap('k', v.pan.up)
 	vmap('l', v.pan.right)
-	vmap('<S-SML>', function() v.pan.left(20) end)
-	vmap('<S-SMD>', function() v.pan.down(20) end)
-	vmap('<S-SMU>', function() v.pan.up(20) end)
-	vmap('<S-SMR>', function() v.pan.right(20) end)
+	vmap('<S-LMS>', function() v.pan.left(20) end)
+	vmap('<S-DMS>', function() v.pan.down(20) end)
+	vmap('<S-UMS>', function() v.pan.up(20) end)
+	vmap('<S-RMS>', function() v.pan.right(20) end)
 
 	-- ### Scaling TODO: make a custom mode for it with a searchbar for selection of settings to apply
 	vmap('s', function()
@@ -209,11 +220,11 @@ do
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
-	vmap({ '<SMU>' }, function()
+	vmap({ '<UMS>' }, function()
 		local p = sai.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
 	end)
-	vmap({ '<SMD>' }, function()
+	vmap({ '<DMS>' }, function()
 		local p = sai.get_mouse_pos()
 		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
 	end)

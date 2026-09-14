@@ -5,7 +5,7 @@ local M = {
 }
 function M.config()
 	local ml = require 'mylsp'
-	ml.setup 'eslint'
+	ml.setup('eslint', { format = true })
 	require('typescript-tools').setup(ml.setup(nil, 'tsserver'))
 end
 return M

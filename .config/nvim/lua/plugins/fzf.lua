@@ -21,7 +21,7 @@ function M.config()
 			prompt = 'Files> ',
 			git_icons = false,
 			fd_opts = [[--color=never --type f --follow -d 10 \
-				-E Android -E node_modules -E deps -E build -S '-100k']],
+				-E Android -E node_modules -E deps -E build -E .git -S '-100k']],
 		},
 		grep = {
 			rg_opts = [[--column --line-number --no-heading --color=always --smart-case \

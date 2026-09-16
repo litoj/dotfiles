@@ -19,3 +19,5 @@ In this repository are my personal dotfiles which I use on my arch system.
 ![screenshot](https://user-images.githubusercontent.com/54900518/194711893-6b27d7b7-289b-4a39-b79f-9db3beba493b.png)
 
 Installation and setup via [systall](./bin/systall) script.
+
+Clone this repo with `--recurse-submodules`, if you want full functionality.

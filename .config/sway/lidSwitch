@@ -52,7 +52,6 @@ main() {
 			swaymsg 'output * power on'
 			# refresh battery status and date&time
 			pkill -RTMIN+14 i3blocks && pkill -RTMIN+21 i3blocks
-			"${0%/*/*}/i3blocks/signal" clock # re-align the clock to update at the earliest time
 			;;
 		toggle)
 			if [[ -f $NO_SLEEP ]]; then

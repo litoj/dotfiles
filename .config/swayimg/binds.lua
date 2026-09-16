@@ -89,21 +89,15 @@ do
 	local fm = require('sai.mode.image_filter').new {}
 	amap('/', function() fm.enabled = true end)
 
-	local base_cmd = require 'sai.mode.cmd'
-	---@diagnostic disable-next-line: missing-fields
-	local cmd = base_cmd.new {}
-	amap(':', function() cmd.enabled = true end)
-	---@diagnostic disable-next-line: missing-fields
-	local shell = base_cmd.new {
-		_prompt = 'Shell cmd: ',
-		on_confirm = function(self, text)
-			return base_cmd.on_confirm(self, ('sai.exec[[%s]]'):format(text))
-		end,
-	}
-	g.map('<S-s>', function() shell.enabled = true end)
+	local cmd = snip.lua_mode()
+	amap(':', function() cmd.enabled = true end, 'Lua mode')
+	local shell = snip.shell_mode()
+	g.map('<S-s>', function() shell.enabled = true end, 'Shell mode')
 
 	local tp = snip.two_pane_mode '<S-t>'
-	g.map('<S-t>', function() tp.enabled = true end, 'Enable two-pane mode')
+	g.map('<S-t>', function() tp.enabled = true end, 'Two-pane mode')
+	local sort = require('sai.mode.sort').new {}
+	g.map('o', function() sort.enabled = not sort.enabled end, 'Sort mode')
 end
 
 -- ## Gallery

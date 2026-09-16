@@ -19,6 +19,11 @@ local profiles = {
 				'/usr/local/share/swayimg/swayimg.lua',
 			},
 		},
+		diagnostics = {
+			workspaceDelay = 500,
+			workspaceRate = 10,
+			workspaceEvent = 'OnChange',
+		},
 	},
 }
 
@@ -37,8 +42,20 @@ return {
 			hint = { enable = true, paramName = 'Disable', setType = true },
 			type = { castNumberToInteger = true, weakNilCheck = true, weakUnionCheck = true },
 			runtime = { version = 'LuaJIT' },
-			diagnostics = { severity = { ['unused-local'] = 'Warning', ['unused-vararg'] = 'Warning' } },
-			workspace = { checkThirdParty = false, library = {} },
+			diagnostics = {
+				severity = {
+					['unused-local'] = 'Warning',
+					['unused-vararg'] = 'Warning',
+					['no-unknown'] = 'Information',
+				},
+			},
+			workspace = {
+				checkThirdParty = false,
+				library = {},
+				maxPreload = 5000,
+				preloadFileSize = 500,
+			},
+			doc = { protectedName = { '_*' } },
 			format = {
 				enable = false, -- TODO: try to switch
 				--[[ defaultConfig = {

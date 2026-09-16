@@ -13,22 +13,26 @@
    - state what you found: naming, imports, file and module structure, comment and doc style
    - match all of it in your changes
 2. If a different approach seems better suited than the codebase patterns, discuss it with me first.
-3. Plan: split the work into small isolated sections you can work on and test one by one;
-   set your todos. You need to know the necessary changes for the feature, or the plan will be wrong.
+3. Plan: split the work into small isolated sections you can work on and test one by one; set your
+   todos. You need to know the necessary changes for the feature, or the plan will be wrong.
 4. Check the design for _high cohesion, low coupling_:
    - a state change belongs to the file that defines the object
    - objects in one file work with objects created in that file
    - never modify internal state of foreign objects - always use the public api
    - keep the reliance on the state of other objects minimal
+   - review your own plan and avoid any unnecessary coupling.
+   - no hijacking of code not owned by that component. No hacks.
+     - if you think about doing it, then stop and explain the issue and propose solutions with NO
+       HIJACKING OR HACKS INTO THE EXISTING/INTERNAL CODE!
 
 ## Comments and documentation
 
 - If the code can say it, do not write the comment.
-- Explain _why_ it is there and is useful or necessary - not _what_.
-  Explain _what_ only when neither the name nor the code makes it obvious.
+- Explain _why_ it is there and is useful or necessary - not _what_. Explain _what_ only when
+  neither the name nor the code makes it obvious.
 - A comment longer than two lines: structure it into points or simple sentences.
-- Compare your docs to the existing docs; discuss notable differences first if the better form
-  is not obvious.
+- Compare your docs to the existing docs; discuss notable differences first if the better form is
+  not obvious.
 
 Example (language-neutral - the same rule applies everywhere):
 
@@ -39,8 +43,13 @@ Example (language-neutral - the same rule applies everywhere):
 
 1. If you're solving a bug: make a test that catches it first.
 2. Implement: fix the bug or add the feature.
-3. Test: cover intended usecases and edge cases. Cover unintended usecases too, as long as they
-   need no hacks to reproduce (public api only, no reflection).
+3. Test: cover intended usecases and edge cases. Cover unintended usecases too, as long as they need
+   no hacks to reproduce (public api only, no reflection).
+   - Run the suite **once** and read the **full** output: never filter it through grep/head, never
+     re-run it repeatedly (a flake report needs the user, not another run).
+   - **NEVER USE GIT STASH**. TEST WHAT IS THERE. Ask if you think some test errors aren't your
+     fault.
+     - IF YOU USE GIT FOR ANYTHING THAT CHANGES THE FILE CONTENT YOU WILL BE FIRED
 4. Update the documentation by the rules above.
 5. Make a git checkpoint: a commit with a clear message and changelist.
    - mark it with `checkpoint: ` so that it is clear which changes were there before and what to

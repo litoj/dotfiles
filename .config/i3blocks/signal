@@ -30,11 +30,11 @@ theme() {
 	fi
 
 	if ((DAYTIME[0] <= x && x < DAYTIME[1])); then
-		[[ -z $next || ! -e /tmp/my/day ]] && touch /tmp/my/day && setTheme light
+		[[ ! -e /tmp/my/day ]] && touch /tmp/my/day && setTheme light
 		swaymsg -q 'set $bg #ffffff; set $fg #000000'
 		next=${DAYTIME[1]}
 	else
-		[[ -z $next ]] || rm /tmp/my/day &>/dev/null && setTheme dark
+		rm /tmp/my/day &>/dev/null || [[ -z $next ]] && setTheme dark
 		swaymsg -q 'set $bg #101010; set $fg #ffffff'
 		next=${DAYTIME[0]}
 	fi

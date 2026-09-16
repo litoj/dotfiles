@@ -1,0 +1,6 @@
+[submodule ".config/ranger/plugins/ranger_swayimg"]
+	path = .config/ranger/plugins/ranger_swayimg
+	url = git@github.com:litoj/ranger_swayimg.git
+[submodule ".config/swayimg/sai"]
+	path = .config/swayimg/sai
+	url = git@github.com:litoj/sai.swi.git

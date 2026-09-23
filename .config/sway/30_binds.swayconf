@@ -367,27 +367,22 @@ bindsym {
 	Shift+KP_Divide exec $i3/signal vol toggle
 	Shift+KP_Multiply exec $i3/signal mic toggle
 }
-set $mpv playerctl --player=mpv
-set $info $mpv metadata --format
-set $mpvFile $info '{{xesam:url}}' | sed -e 's,file://,,' -e 's,+,%2b,g' | urlencode -d
-set $mpvTime notify-send -u low -a player -h string:synchronous:player\
-		-h int:value:$(($($info '{{position}}/({{mpris:length}}/100)')))\
-		"$($info '{{title}}')"\
-		"$($info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
+set $mpris ~/.config/sway/mpris.sh
+set $mpv $mpris mpv
 bindsym {
 # Media management
-	$Mod+i exec $mpvTime
+	$Mod+i exec $mpris info
 	$Mod+m exec mom play -r
-	$Mod+Shift+m exec playerctl -a pause
-	$Mod+Ctrl+Shift+m exec playerctl -a play-pause
+	$Mod+Shift+m exec $mpris pause
+	$Mod+Ctrl+Shift+m exec $mpris play-pause
 	$Mod+$Alt+m exec mom -DA play +l #-f3 -rdf
-	$Mod+Ctrl+$Alt+m exec mom -DA play -f3 -rf "$($mpvFile | sed 's,^\(.*/\)[^/]*$,\1,')"
-	$Mod+Ctrl+$Alt+Shift+m exec mom -DA play -f3 -rdf "$($mpvFile | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
-	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpvFile)"
+	$Mod+Ctrl+$Alt+m exec mom -DA play -f3 -rf "$($mpris play_path | sed 's,^\(.*/\)[^/]*$,\1,')"
+	$Mod+Ctrl+$Alt+Shift+m exec mom -DA play -f3 -rdf "$($mpris play_path | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"
+	$Mod+Ctrl+m exec xterm ranger --selectfile="$($mpris play_path)"
 	Shift+XF86AudioStop exec pkill -f "mpv --playlist" --signal 15
 	XF86AudioPlay exec $mpv play-pause
-	KP_Subtract exec playerctl -a play-pause
-	$Mod+$Alt+space exec playerctl -a play-pause
+	KP_Subtract exec $mpris play-pause
+	$Mod+$Alt+space exec $mpris play-pause
 	# not using 'next' to work for last song in mpv (where mom generates the next)
 	XF86AudioNext exec $mpv position 10000+
 	XF86AudioPrev exec $mpv prev
@@ -395,10 +390,10 @@ bindsym {
 
 	$Alt+KP_Divide exec playerctl -a pause
 	$Alt+KP_Multiply exec $mpv position 10000+
-	$Alt+KP_Left exec $mpv position 5- && $mpvTime
-	$Alt+KP_Right exec $mpv position 5+ && $mpvTime
-	$Alt+KP_Up exec $mpv position 30+ && $mpvTime
-	$Alt+KP_Down exec $mpv position 30- && $mpvTime
+	$Alt+KP_Left exec $mpv position 5-
+	$Alt+KP_Right exec $mpv position 5+
+	$Alt+KP_Up exec $mpv position 30+
+	$Alt+KP_Down exec $mpv position 30-
 }
 bindgesture {
 	swipe:3:up exec $i3/signal vol 1%+

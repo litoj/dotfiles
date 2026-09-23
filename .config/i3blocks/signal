@@ -42,7 +42,7 @@ theme() {
 		grep '\$' -B 10 | sed '1d;/^\s*#/d;s/^/bar bar-0 colors/')"
 }
 
-clock() {
+clock() { # TODO: doesn't update after sleep
 	local DAYTIME=($(sunwait list 50N 14.5E | sed 's/:/ /g;s/,//' | awk '{print($1*3600+$2*60,$3*3600+$4*60)}'))
 
 	while ((! $?)); do
@@ -159,7 +159,6 @@ load() {
 			jack/micro*) pkill -RTMIN+11 i3blocks ;;
 			# plugging in emmits the *1 event twice
 			ac_adapter*) [[ ${line:0-1} == 0 ]] || read -r line && checkPower ${line:0-1} ;;
-			button/lid*open) sleep 1 && checkPower ;;
 		esac
 	done < <(acpi_listen)
 }

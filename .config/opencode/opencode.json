@@ -1,6 +1,11 @@
 {
 	"$schema": "https://opencode.ai/config.json",
 	"lsp": true,
+	// Upstream rejects the request before the context is full, so let it report
+	// the overflow instead of summarising early. Run /compact by hand to continue.
+	"compaction": {
+		"auto": false
+	},
 	"provider": {
 		"e-infra": {
 			"npm": "@ai-sdk/openai-compatible",

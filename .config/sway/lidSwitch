@@ -2,24 +2,28 @@
 
 NO_SLEEP=/tmp/my/nolidsleep
 
-cmd=$1
+action=$1
 
 main() {
 	# first process if the system should go to sleep
-	if [[ $cmd == closed && ! -f $NO_SLEEP || $cmd == sleep ]]; then
+	if [[ $action == closed && ! -f $NO_SLEEP || $action == sleep ]]; then
 		swaymsg 'output eDP-1 power off'
 		systemctl suspend
 
 		# determine what to do after wakeup
 		if sleep 1 && [[ $(</proc/acpi/button/lid/LID/state) == *" closed" ]]; then
 			"$0" closed &
-			exit
 		else
-			cmd=resume
+			swaymsg 'output * power on'
+			# refresh battery status and date&time
+			pkill -RTMIN+20 i3blocks
+			pkill -RTMIN+21 i3blocks
+			~/.config/i3blocks/signal load &
 		fi
+		exit
 	fi
 
-	case "$cmd" in
+	case "$action" in
 		mode)
 			state=($(
 				swaymsg -t get_outputs -p |
@@ -48,11 +52,7 @@ main() {
 		closed) swaymsg 'output $d1 power off' ;;
 		open) swaymsg 'output $d1 power on' ;;
 		idle) swaymsg 'output * power off' ;;
-		resume)
-			swaymsg 'output * power on'
-			# refresh battery status and date&time
-			pkill -RTMIN+14 i3blocks && pkill -RTMIN+21 i3blocks
-			;;
+		resume) swaymsg 'output * power on' ;;
 		toggle)
 			if [[ -f $NO_SLEEP ]]; then
 				rm "$NO_SLEEP"

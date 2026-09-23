@@ -73,26 +73,23 @@ do
 		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
 		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
 	end, 'Export raw to ' .. raw_path .. '<>.jxl')
-	g.map('e', function()
-		if g.get_image().path:match '%.RAF$' then
-			sai.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+	local te = require('sai.mode.tag_edit').new {}
+	amap('e', function()
+		if l.get_current().path:match '%.RAF$' then
+			if sai.mode == 'gallery' then
+				sai.exec 'KIND=resizeOrExtractPreview xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+			else
+				sai.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
+			end
+		else
+			te.enabled = not te.enabled
 		end
 	end, 'RawToPreview')
-	v.map('e', function()
-		if v.get_image().path:match '%.RAF$' then
-			sai.exec 'KIND=renameOrRawToJPG xdg-open -c ~/.config/ranger/transform.conf.sh %f'
-		end
-	end, 'RawToJPG')
 
 	-- TODO: implement similar to help mode for bindings list and variables
 	---@diagnostic disable-next-line: missing-fields
 	local fm = require('sai.mode.image_filter').new {}
 	amap('/', function() fm.enabled = true end)
-
-	local cmd = snip.lua_mode()
-	amap(':', function() cmd.enabled = true end, 'Lua mode')
-	local shell = snip.shell_mode()
-	g.map('<S-s>', function() shell.enabled = true end, 'Shell mode')
 
 	local tp = snip.two_pane_mode '<S-t>'
 	g.map('<S-t>', function() tp.enabled = true end, 'Two-pane mode')

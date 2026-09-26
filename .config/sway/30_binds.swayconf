@@ -374,7 +374,7 @@ bindsym {
 	$Mod+i exec $mpris info
 	$Mod+m exec mom play -r
 	$Mod+Shift+m exec $mpris pause
-	$Mod+Ctrl+Shift+m exec $mpris play-pause
+	$Mod+Ctrl+Shift+m exec pkill -f "mpv --playlist" --signal 15
 	$Mod+$Alt+m exec mom -DA play +l #-f3 -rdf
 	$Mod+Ctrl+$Alt+m exec mom -DA play -f3 -rf "$($mpris play_path | sed 's,^\(.*/\)[^/]*$,\1,')"
 	$Mod+Ctrl+$Alt+Shift+m exec mom -DA play -f3 -rdf "$($mpris play_path | sed 's,^\(.*/\)[^/]\+/[^/]*$,\1,')"

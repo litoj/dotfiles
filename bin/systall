@@ -343,7 +343,7 @@ actionInfo configs 'link config files to these dotfiles'
 configs() {
 	log Info " - Linking base configs."
 
-	ln -s "${repoDir}"/.{bashrc,gitconfig} ~/
+	ln -s "${repoDir}"/.{bashrc,gitconfig,XCompose} ~/
 	mkdir -p ~/.config
 	ln -s "${repoDir}"/.config/* ~/.config/
 	bat cache --build

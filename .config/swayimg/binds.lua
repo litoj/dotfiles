@@ -182,10 +182,7 @@ do
 	vmap('j', v.pan.down)
 	vmap('k', v.pan.up)
 	vmap('l', v.pan.right)
-	vmap('<S-LMS>', function() v.pan.left(20) end)
-	vmap('<S-DMS>', function() v.pan.down(20) end)
-	vmap('<S-UMS>', function() v.pan.up(20) end)
-	vmap('<S-RMS>', function() v.pan.right(20) end)
+	vmap('<S-ScrollVertical>', function(ver) v.pan.by(ver * 100, 0) end)
 
 	-- ### Scaling TODO: make a custom mode for it with a searchbar for selection of settings to apply
 	vmap('s', function()
@@ -211,14 +208,6 @@ do
 	end)
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
-	vmap({ '<UMS>' }, function()
-		local p = sai.get_mouse_pos()
-		v.scale_centered(v.get_abs_scale() * 1.05, p.x, p.y)
-	end)
-	vmap({ '<DMS>' }, function()
-		local p = sai.get_mouse_pos()
-		v.scale_centered(v.get_abs_scale() / 1.05, p.x, p.y)
-	end)
 	vmap('<S-i>', function()
 		v.scale = 0.35
 		v.default_scale = 'keep'

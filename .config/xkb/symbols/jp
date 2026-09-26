@@ -1,0 +1,219 @@
+// Keyboard layouts for Japan.
+
+// All kana variants share one design: hiragana in the base level,
+// katakana on Shift, the small form of the same kana on AltGr and
+// AltGr+Shift where a small form exists, and the sound marks on
+// <AE11> and <AE12>. The whole alphanumeric block and F1-F10 hold
+// kana, so this group has no digits and no function keys; switch
+// groups for those. The empty gojuon slots (yi, ye, wi, we) keep
+// their Latin keys.
+
+// The gojuon table rotated to the left: each keyboard column holds
+// one kana row (a, ka, sa, ta, na, ha, ma, ya, ra, wa from left to
+// right) and reads o, e, u, i, a top to bottom.
+//
+//      F  お こ そ と の ほ も よ ろ を
+//      1  え け せ て ね へ め     れ
+//      q  う く す つ ぬ ふ む ゆ る ん
+//      a  い き し ち に ひ み     り
+//      z  あ か さ た な は ま や ら わ
+default partial alphanumeric_keys function_keys
+xkb_symbols "rotated" {
+
+    name[Group1]= "Japanese (Kana, rotated)";
+
+    key <HKTG>	{[ Hiragana_Katakana, Romaji ], type[group1]="PC_ALT_LEVEL2" };
+    key <AE11>	{[ voicedsound, semivoicedsound ]};
+    key <AE12>	{[ prolongedsound, kana_conjunctive ]};
+
+    key <FK01>	{ type[1]="FOUR_LEVEL", [ U304A, U30AA, U3049, U30A9 ]};
+    key <FK02>	{[ U3053, U30B3		]};
+    key <FK03>	{[ U305D, U30BD		]};
+    key <FK04>	{[ U3068, U30C8		]};
+    key <FK05>	{[ U306E, U30CE		]};
+    key <FK06>	{[ U307B, U30DB		]};
+    key <FK07>	{[ U3082, U30E2		]};
+    key <FK08>	{ type[1]="FOUR_LEVEL", [ U3088, U30E8, U3087, U30E7 ]};
+    key <FK09>	{[ U308D, U30ED		]};
+    key <FK10>	{[ U3092, U30F2		]};
+
+    key <AE01>	{ type[1]="FOUR_LEVEL", [ U3048, U30A8, U3047, U30A7 ]};
+    key <AE02>	{[ U3051, U30B1		]};
+    key <AE03>	{[ U305B, U30BB		]};
+    key <AE04>	{[ U3066, U30C6		]};
+    key <AE05>	{[ U306D, U30CD		]};
+    key <AE06>	{[ U3078, U30D8		]};
+    key <AE07>	{[ U3081, U30E1		]};
+    key <AE09>	{[ U308C, U30EC		]};
+
+    key <AD01>	{ type[1]="FOUR_LEVEL", [ U3046, U30A6, U3045, U30A5 ]};
+    key <AD02>	{[ U304F, U30AF		]};
+    key <AD03>	{[ U3059, U30B9		]};
+    key <AD04>	{ type[1]="FOUR_LEVEL", [ U3064, U30C4, U3063, U30C3 ]};
+    key <AD05>	{[ U306C, U30CC		]};
+    key <AD06>	{[ U3075, U30D5		]};
+    key <AD07>	{[ U3080, U30E0		]};
+    key <AD08>	{ type[1]="FOUR_LEVEL", [ U3086, U30E6, U3085, U30E5 ]};
+    key <AD09>	{[ U308B, U30EB		]};
+    key <AD10>	{[ U3093, U30F3		]};
+
+    key <AC01>	{ type[1]="FOUR_LEVEL", [ U3044, U30A4, U3043, U30A3 ]};
+    key <AC02>	{[ U304D, U30AD		]};
+    key <AC03>	{[ U3057, U30B7		]};
+    key <AC04>	{[ U3061, U30C1		]};
+    key <AC05>	{[ U306B, U30CB		]};
+    key <AC06>	{[ U3072, U30D2		]};
+    key <AC07>	{[ U307F, U30DF		]};
+    key <AC09>	{[ U308A, U30EA		]};
+
+    key <AB01>	{ type[1]="FOUR_LEVEL", [ U3042, U30A2, U3041, U30A1 ]};
+    key <AB02>	{[ U304B, U30AB		]};
+    key <AB03>	{[ U3055, U30B5		]};
+    key <AB04>	{[ U305F, U30BF		]};
+    key <AB05>	{[ U306A, U30CA		]};
+    key <AB06>	{[ U306F, U30CF		]};
+    key <AB07>	{[ U307E, U30DE		]};
+    key <AB08>	{ type[1]="FOUR_LEVEL", [ U3084, U30E4, U3083, U30E3 ]};
+    key <AB09>	{[ U3089, U30E9		]};
+    key <AB10>	{[ U308F, U30EF		]};
+};
+
+// The same grid mirrored vertically: each column holds one kana
+// row and reads a, i, u, e, o top to bottom.
+//
+//      F  あ か さ た な は ま や ら わ
+//      1  い き し ち に ひ み     り
+//      q  う く す つ ぬ ふ む ゆ る ん
+//      a  え け せ て ね へ め     れ
+//      z  お こ そ と の ほ も よ ろ を
+partial alphanumeric_keys function_keys
+xkb_symbols "mirrored" {
+
+    name[Group1]= "Japanese (Kana, mirrored)";
+
+    key <HKTG>	{[ Hiragana_Katakana, Romaji ], type[group1]="PC_ALT_LEVEL2" };
+    key <AE11>	{[ voicedsound, semivoicedsound ]};
+    key <AE12>	{[ prolongedsound, kana_conjunctive ]};
+
+    key <FK01>	{ type[1]="FOUR_LEVEL", [ U3042, U30A2, U3041, U30A1 ]};
+    key <FK02>	{[ U304B, U30AB		]};
+    key <FK03>	{[ U3055, U30B5		]};
+    key <FK04>	{[ U305F, U30BF		]};
+    key <FK05>	{[ U306A, U30CA		]};
+    key <FK06>	{[ U306F, U30CF		]};
+    key <FK07>	{[ U307E, U30DE		]};
+    key <FK08>	{ type[1]="FOUR_LEVEL", [ U3084, U30E4, U3083, U30E3 ]};
+    key <FK09>	{[ U3089, U30E9		]};
+    key <FK10>	{[ U308F, U30EF		]};
+
+    key <AE01>	{ type[1]="FOUR_LEVEL", [ U3044, U30A4, U3043, U30A3 ]};
+    key <AE02>	{[ U304D, U30AD		]};
+    key <AE03>	{[ U3057, U30B7		]};
+    key <AE04>	{[ U3061, U30C1		]};
+    key <AE05>	{[ U306B, U30CB		]};
+    key <AE06>	{[ U3072, U30D2		]};
+    key <AE07>	{[ U307F, U30DF		]};
+    key <AE09>	{[ U308A, U30EA		]};
+
+    key <AD01>	{ type[1]="FOUR_LEVEL", [ U3046, U30A6, U3045, U30A5 ]};
+    key <AD02>	{[ U304F, U30AF		]};
+    key <AD03>	{[ U3059, U30B9		]};
+    key <AD04>	{ type[1]="FOUR_LEVEL", [ U3064, U30C4, U3063, U30C3 ]};
+    key <AD05>	{[ U306C, U30CC		]};
+    key <AD06>	{[ U3075, U30D5		]};
+    key <AD07>	{[ U3080, U30E0		]};
+    key <AD08>	{ type[1]="FOUR_LEVEL", [ U3086, U30E6, U3085, U30E5 ]};
+    key <AD09>	{[ U308B, U30EB		]};
+    key <AD10>	{[ U3093, U30F3		]};
+
+    key <AC01>	{ type[1]="FOUR_LEVEL", [ U3048, U30A8, U3047, U30A7 ]};
+    key <AC02>	{[ U3051, U30B1		]};
+    key <AC03>	{[ U305B, U30BB		]};
+    key <AC04>	{[ U3066, U30C6		]};
+    key <AC05>	{[ U306D, U30CD		]};
+    key <AC06>	{[ U3078, U30D8		]};
+    key <AC07>	{[ U3081, U30E1		]};
+    key <AC09>	{[ U308C, U30EC		]};
+
+    key <AB01>	{ type[1]="FOUR_LEVEL", [ U304A, U30AA, U3049, U30A9 ]};
+    key <AB02>	{[ U3053, U30B3		]};
+    key <AB03>	{[ U305D, U30BD		]};
+    key <AB04>	{[ U3068, U30C8		]};
+    key <AB05>	{[ U306E, U30CE		]};
+    key <AB06>	{[ U307B, U30DB		]};
+    key <AB07>	{[ U3082, U30E2		]};
+    key <AB08>	{ type[1]="FOUR_LEVEL", [ U3088, U30E8, U3087, U30E7 ]};
+    key <AB09>	{[ U308D, U30ED		]};
+    key <AB10>	{[ U3092, U30F2		]};
+};
+
+// The gojuon table cut into blocks: each keyboard row holds two
+// kana rows, left to right in a, i, u, e, o order.
+//
+//      F  あ い う え お    は ひ ふ へ ほ
+//      1  か き く け こ    ま み む め も
+//      q  さ し す せ そ    や    ゆ    よ
+//      a  た ち つ て と    ら り る れ ろ
+//      z  な に ぬ ね の    わ    ん    を
+partial alphanumeric_keys function_keys
+xkb_symbols "blocks" {
+
+    name[Group1]= "Japanese (Kana, blocks)";
+
+    key <HKTG>	{[ Hiragana_Katakana, Romaji ], type[group1]="PC_ALT_LEVEL2" };
+    key <AE11>	{[ voicedsound, semivoicedsound ]};
+    key <AE12>	{[ prolongedsound, kana_conjunctive ]};
+
+    key <FK01>	{ type[1]="FOUR_LEVEL", [ U3042, U30A2, U3041, U30A1 ]};
+    key <FK02>	{ type[1]="FOUR_LEVEL", [ U3044, U30A4, U3043, U30A3 ]};
+    key <FK03>	{ type[1]="FOUR_LEVEL", [ U3046, U30A6, U3045, U30A5 ]};
+    key <FK04>	{ type[1]="FOUR_LEVEL", [ U3048, U30A8, U3047, U30A7 ]};
+    key <FK05>	{ type[1]="FOUR_LEVEL", [ U304A, U30AA, U3049, U30A9 ]};
+    key <FK06>	{[ U306F, U30CF		]};
+    key <FK07>	{[ U3072, U30D2		]};
+    key <FK08>	{[ U3075, U30D5		]};
+    key <FK09>	{[ U3078, U30D8		]};
+    key <FK10>	{[ U307B, U30DB		]};
+
+    key <AE01>	{[ U304B, U30AB		]};
+    key <AE02>	{[ U304D, U30AD		]};
+    key <AE03>	{[ U304F, U30AF		]};
+    key <AE04>	{[ U3051, U30B1		]};
+    key <AE05>	{[ U3053, U30B3		]};
+    key <AE06>	{[ U307E, U30DE		]};
+    key <AE07>	{[ U307F, U30DF		]};
+    key <AE08>	{[ U3080, U30E0		]};
+    key <AE09>	{[ U3081, U30E1		]};
+    key <AE10>	{[ U3082, U30E2		]};
+
+    key <AD01>	{[ U3055, U30B5		]};
+    key <AD02>	{[ U3057, U30B7		]};
+    key <AD03>	{[ U3059, U30B9		]};
+    key <AD04>	{[ U305B, U30BB		]};
+    key <AD05>	{[ U305D, U30BD		]};
+    key <AD06>	{ type[1]="FOUR_LEVEL", [ U3084, U30E4, U3083, U30E3 ]};
+    key <AD08>	{ type[1]="FOUR_LEVEL", [ U3086, U30E6, U3085, U30E5 ]};
+    key <AD10>	{ type[1]="FOUR_LEVEL", [ U3088, U30E8, U3087, U30E7 ]};
+
+    key <AC01>	{[ U305F, U30BF		]};
+    key <AC02>	{[ U3061, U30C1		]};
+    key <AC03>	{ type[1]="FOUR_LEVEL", [ U3064, U30C4, U3063, U30C3 ]};
+    key <AC04>	{[ U3066, U30C6		]};
+    key <AC05>	{[ U3068, U30C8		]};
+    key <AC06>	{[ U3089, U30E9		]};
+    key <AC07>	{[ U308A, U30EA		]};
+    key <AC08>	{[ U308B, U30EB		]};
+    key <AC09>	{[ U308C, U30EC		]};
+    key <AC10>	{[ U308D, U30ED		]};
+
+    key <AB01>	{[ U306A, U30CA		]};
+    key <AB02>	{[ U306B, U30CB		]};
+    key <AB03>	{[ U306C, U30CC		]};
+    key <AB04>	{[ U306D, U30CD		]};
+    key <AB05>	{[ U306E, U30CE		]};
+    key <AB06>	{[ U308F, U30EF		]};
+    key <AB08>	{[ U3093, U30F3		]};
+    key <AB10>	{[ U3092, U30F2		]};
+};
+
+

@@ -1,0 +1,51 @@
+// Romaji input, gated on NumLock: off = Latin, on = JP mode.
+// Every remapped key emits a private-use marker keysym that
+// ~/.XCompose joins into kana; markers are allocated in one
+// hole-free block in this letter order, starting at U+E001:
+//   a i u e o  k s z t d n p h g m y r w b  c f j  x
+// Katakana repeats the same letters at U+E018..U+E02E
+// (marker + 0x17). ん is typed as nn or n'. c f j spell the
+// Hepburn forms chi fu ji, x prefixes small kana. Letters not
+// listed stay Latin in JP mode.
+// Each key uses type[1]="NL_GATE" (types/gate): Shift gives
+// the Latin capital, NumLock level 3 (hiragana), NumLock+Shift
+// level 4 (katakana). The group index keeps the type from
+// leaking into the other layouts of the keymap.
+default partial alphanumeric_keys
+xkb_symbols "romaji" {
+
+    // full US base, so this layout works standalone; the key
+    // definitions below override only the letters they remap
+    include "us(basic)"
+
+    name[Group1]= "US (Romaji)";
+
+    // vowels a i u e o: hiragana U+E001..U+E005, katakana U+E018..U+E01C
+    key <AC01>	{ type[1]="NL_GATE", [ a, A, UE001, UE018 ]};
+    key <AD08>	{ type[1]="NL_GATE", [ i, I, UE002, UE019 ]};
+    key <AD07>	{ type[1]="NL_GATE", [ u, U, UE003, UE01A ]};
+    key <AD03>	{ type[1]="NL_GATE", [ e, E, UE004, UE01B ]};
+    key <AD09>	{ type[1]="NL_GATE", [ o, O, UE005, UE01C ]};
+
+    // consonants k s z t d n p h g m y r w b: katakana U+E01D..U+E02A
+    key <AC08>	{ type[1]="NL_GATE", [ k, K, UE006, UE01D ]};
+    key <AC02>	{ type[1]="NL_GATE", [ s, S, UE007, UE01E ]};
+    key <AB01>	{ type[1]="NL_GATE", [ z, Z, UE008, UE01F ]};
+    key <AD05>	{ type[1]="NL_GATE", [ t, T, UE009, UE020 ]};
+    key <AC03>	{ type[1]="NL_GATE", [ d, D, UE00A, UE021 ]};
+    key <AB06>	{ type[1]="NL_GATE", [ n, N, UE00B, UE022 ]};
+    key <AD10>	{ type[1]="NL_GATE", [ p, P, UE00C, UE023 ]};
+    key <AC06>	{ type[1]="NL_GATE", [ h, H, UE00D, UE024 ]};
+    key <AC05>	{ type[1]="NL_GATE", [ g, G, UE00E, UE025 ]};
+    key <AB07>	{ type[1]="NL_GATE", [ m, M, UE00F, UE026 ]};
+    key <AD06>	{ type[1]="NL_GATE", [ y, Y, UE010, UE027 ]};
+    key <AD04>	{ type[1]="NL_GATE", [ r, R, UE011, UE028 ]};
+    key <AD02>	{ type[1]="NL_GATE", [ w, W, UE012, UE029 ]};
+    key <AB05>	{ type[1]="NL_GATE", [ b, B, UE013, UE02A ]};
+
+    // Hepburn and small-kana letters c f j x: katakana U+E02B..U+E02E
+    key <AB03>	{ type[1]="NL_GATE", [ c, C, UE014, UE02B ]};
+    key <AC04>	{ type[1]="NL_GATE", [ f, F, UE015, UE02C ]};
+    key <AC07>	{ type[1]="NL_GATE", [ j, J, UE016, UE02D ]};
+    key <AB02>	{ type[1]="NL_GATE", [ x, X, UE017, UE02E ]};
+};

@@ -17,7 +17,9 @@
    - split the work into small isolated sections you can work on and test one by one
    - set your TODOs. You need to know the necessary changes for the feature, or the plan will be
      wrong.
-4. Check the design for _high cohesion, low coupling_:
+4. Check the design:
+   - ensure _high cohesion, low coupling_
+   - ensure _separation of concerns_ - no class should be managing multiple distinct objects/jobs
    - a state change belongs to the file that defines the object
    - objects in one file work with objects created in that file
    - never modify internal state of foreign objects - always use the public api

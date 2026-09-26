@@ -1,0 +1,19 @@
+// Key type for NumLock-gated layouts such as jprom(romaji):
+// Shift gives the Latin capital, NumLock the hiragana marker,
+// NumLock+Shift the katakana marker. A custom type is needed
+// because symbols files cannot define types.
+default partial xkb_types "gate" {
+    virtual_modifiers NumLock;
+
+    type "NL_GATE" {
+	modifiers = Shift+NumLock;
+	map[None] = Level1;
+	map[Shift] = Level2;
+	map[NumLock] = Level3;
+	map[Shift+NumLock] = Level4;
+	level_name[Level1] = "Base";
+	level_name[Level2] = "Shift";
+	level_name[Level3] = "NumLock";
+	level_name[Level4] = "Shift+NumLock";
+    };
+};

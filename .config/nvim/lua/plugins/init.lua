@@ -2,6 +2,20 @@ return {
 	{ 'samjwill/nvim-unception', lazy = false, priority = 99 },
 	{ 'LunarVim/bigfile.nvim', lazy = false },
 	{
+		'nosduco/remote-sshfs.nvim',
+		event = 'VeryLazy',
+		dependencies = { 'ibhagwan/fzf-lua', 'nvim-lua/plenary.nvim' },
+		opts = {
+			ui = { picker = 'fzf-lua' },
+			connections = {
+				sshfs_args = {
+					'-o follow_symlinks',
+					'-o reconnect',
+				},
+			},
+		},
+	},
+	{
 		'jiaoshijie/undotree',
 		opts = {},
 		keys = { { ' u', function() require('undotree').toggle() end } },

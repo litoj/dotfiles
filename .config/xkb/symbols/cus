@@ -1,5 +1,6 @@
 partial alphanumeric_keys
-xkb_symbols "altus" {    
+xkb_symbols "altus" {
+    name[Group1]= "Custom (Altus)";
     key <AD01>	{[any,any,	 q,	 Q		]};
     key <AD02>	{[any,any,	 w,	 W		]};
     key <AD03>	{[any,any,	 e,	 E		]};

@@ -63,7 +63,7 @@ M.setup 'bashls'
 M.setup 'vue_ls'
 -- setup("cssls", {cmd = {"vscode-css-language-server", "--stdio"}})
 -- setup("html", {cmd = {"vscode-html-language-server", "--stdio"}, format = true})
--- setup 'jsonls'
+M.setup 'jsonls'
 -- setup("yamlls", {})
 
 -- Lsp diagnostic

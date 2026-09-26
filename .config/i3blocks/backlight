@@ -10,7 +10,7 @@ light() {
 		if [[ $scale == 'non-linear' ]]; then
 			((now = now * 2 / 3 - 1))
 		else
-			now+=-1
+			((now -= max / 10))
 		fi
 
 		((now > max_threshold)) && now=max_threshold
@@ -18,7 +18,7 @@ light() {
 		if [[ $scale == 'non-linear' ]]; then
 			((now = now * 3 / 2 + 3))
 		else
-			now+=1
+			((now += max / 10))
 		fi
 
 		((now < min_threshold)) && now=min_threshold

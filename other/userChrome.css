@@ -3,6 +3,7 @@
 		background: #fafafa !important;
 	}
 	.tab-background:is([selected],[multiselected]) {
+		border: 2px solid #bb33aa !important;
 		background: #fff !important;
 		margin: 3px 0 0 0 !important;
 	}

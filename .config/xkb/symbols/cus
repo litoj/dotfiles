@@ -60,9 +60,17 @@ xkb_symbols "mod_2" {
 };
 
 partial alphanumeric_keys
+xkb_symbols "us" {
+    include "us(basic)"
+    include "jprom(kana)"
+    name[Group1]= "US (Romaji)";
+};
+
+partial alphanumeric_keys
 xkb_symbols "cz" {
     include "cz(basic)"
     include "cus(mod_1)"
+    include "jprom(kana)"
     name[Group1]= "Czech";
 };
 

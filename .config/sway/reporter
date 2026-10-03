@@ -75,7 +75,6 @@ runAndTime() {
 		mv /tmp/wrep "$rep"
 	else
 
-		isNewWeek "${new[@]}" && echo "- W$(date -d "$lastDate" +%W): $(sumWeek)" >>"$rep"
 		isNewTerm "${new[@]}" && echo "- T${last}: $(sumTerm)" >>"$rep"
 		((last != new)) && echo "${new}." >>"$rep" # mark beginning of current month
 

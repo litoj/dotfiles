@@ -105,7 +105,7 @@ function M.config()
 			map('S', function()
 				local cwd = vim.uv.cwd()
 				vim.api.nvim_set_current_dir(
-					vim.api.tree.get_node_under_cursor().absolute_path:match '(.+/)'
+					api.tree.get_node_under_cursor().absolute_path:match '(.+/)'
 				)
 				vim.cmd.terminal()
 				vim.api.nvim_set_current_dir(cwd)

@@ -1,26 +1,45 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-	"lsp": true,
+	// "lsp": true,
 	// Upstream rejects the request before the context is full, so let it report
 	// the overflow instead of summarising early. Run /compact by hand to continue.
 	"compaction": {
-		"auto": false
+		"auto": true,
+		"keep": {"tokens": 15000},
+		"buffer": 16000
 	},
 	"provider": {
 		"e-infra": {
 			"npm": "@ai-sdk/openai-compatible",
 			"name": "E-Infra",
 			"options": {
+				"apiKey": "{env:E_INFRA_KEY}",
 				"baseURL": "https://llm.ai.e-infra.cz/v1"
 			},
 			"models": {
-				"mini": {"name": "mini"},
-				"thinker": {"name": "thinker"},
-				"coder": {"name": "coder"},
-				"glm": {"name": "glm-5.3"},
-				"kimi": {"name": "kimi-k3"},
-				"deepseek": {"name": "deepseek-v4-pro-thinking"},
-				"command-a": {"name": "command-a"}
+				"mini": {
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"thinker": {
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"coder": {
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"glm-5.3": {
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"kimi-k3": {
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"deepseek-v4.1-flash-thinking": {
+					"name": "deepseek-flash",
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				},
+				"deepseek-thinking": {
+					"name": "ds-think",
+          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+				}
 			}
 		}
 	}

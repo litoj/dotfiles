@@ -203,7 +203,7 @@ bindsym {
 	$Mod+Ctrl+a move workspace prev, workspace prev
 	$Mod+Ctrl+d move workspace next, workspace next
 	$Mod+Ctrl+f move workspace back_and_forth, workspace back_and_forth
-	$Mod+Ctrl+Shift+f move output left, focus output left
+	$Mod+Shift+f move output left, focus output left
 
 ## Both hands
 	$Mod+comma workspace prev
@@ -288,8 +288,8 @@ mode $Exit {
 		t mode default, exec $i3/cpu Test
 		m mode default, exec $i3/cpu Min
 
-# NOTE: presentation / screen duplication mode
-		$Alt+p mode default, output * pos 0 0, output * res 1920x1080
+# NOTE: presentation/mirror/duplication mode
+		$Alt+p mode default, exec wl-mirror -F $d1 
 
 		--release d mode default, exec $dpmsOff
 		--release Shift+d mode default, output $d1 toggle

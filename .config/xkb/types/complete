@@ -1,5 +1,5 @@
 // Shadow of the system types/complete that adds the gate file
-// with the NL_GATE type (libxkbcommon searches ~/.config/xkb
+// with the NL6_GATE type (libxkbcommon searches ~/.config/xkb
 // first). Keep in sync with the system file on xkeyboard-config
 // updates.
 default xkb_types "complete" {

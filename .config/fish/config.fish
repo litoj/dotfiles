@@ -135,6 +135,7 @@ abbr sand   'adb push --sync ~/Pictures/sdcard/Pictures /sdcard/ && adb push --s
 abbr ap     'adb push --sync'
 abbr revsync   'rsync -rltvuP /run/media/$USER/Elements/zaloha/linux/Pictures ~'
 abbr sydoc   'rsync -rltvuPC --exclude="__*" --exclude=bin --exclude=node_modules --exclude=work ~/Documents /run/media/$USER/Elements/zaloha/linux/'
+abbr async  'adbsync push ~/Music/Songs/ /sdcard/Music/Songs'
 
 abbr fit    'ssh -oHostKeyAlgorithms=ssh-rsa litosjos@fray1.fit.cvut.cz'
 abbr getcert 'gnutls-cli --save-cert=myvpn.pem --insecure'

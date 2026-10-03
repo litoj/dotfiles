@@ -1,4 +1,4 @@
-local M = { 'yvng-jie/Comment.nvim', event = 'VeryLazy', branch = 'fix/ft-nil-safe' }
+local M = { 'neovim-plugins/comment.nvim', event = 'VeryLazy' }
 function M.config()
 	require('Comment').setup {
 		ignore = '^$',
@@ -9,5 +9,8 @@ function M.config()
 	map('n', '<C-S-C>', 'gcc', opt)
 	map('v', '<C-S-C>', 'gc', opt)
 	map('i', '<C-S-C>', '<C-o>gcc', opt)
+
+	local ft = require 'Comment.ft'
+	ft.json = '//%s'
 end
 return M

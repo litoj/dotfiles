@@ -6,6 +6,13 @@
 - I - the user - am the leading developer of the project
   - consult your ideas for implementation with me first including viable alternatives
 
+## Dividing work
+
+- When using subagents, always ensure that their problem description is clearly distinct
+  - Any shared parts of work should be done beforehand - avoid duplication
+- Goals and boundaries must be clearly defined - the agents clearly aim for the instructed goal and
+  not waste any time with scanning unrelated files etc.
+
 ## Before you write code
 
 1. Learn the conventions of _this_ codebase first - they win over your defaults:
@@ -69,13 +76,13 @@ Example (language-neutral - the same rule applies everywhere):
 
 ## Reviewing
 
-- Reviews should focus on:
+- Review scope - checking for:
   - consistency - adhering to the codebase style, structure, practices…
   - thoroughness of testing and coverage of possible edge case situations
   - readability and understandability of the code
   - documentation present on what needs explaining to fully grasp the issue (not on matters obious
     from context)
-- when asked for a proper review:
+- Process steps - when asked for a review:
   - Have a couple of agents review the changes between the given branch and the main (/master)
     branch.
   - Yhey may split the work, if the changes are divisible without major loss on context.
@@ -87,4 +94,6 @@ Example (language-neutral - the same rule applies everywhere):
     - the report file should format all file references to be actual valid sourcecode online links
       - example (reviewed branch ci-local):
         [BE/scripts/x.md:24-27](https://gitlab.fit.cvut.cz/ict/dev/projects-fit/-/blob/ci-local/packages/profit-theses-backend/scripts/x.md#L24-27)
-- Present issues in sections and as multi-level lists with a clear structure - no long sentences .
+- Output:
+  - Present issues in sections and as multi-level lists with a clear structure - no long sentences.
+  - Present only the list of remaining issues.

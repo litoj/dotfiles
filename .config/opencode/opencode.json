@@ -8,6 +8,21 @@
 		"keep": {"tokens": 15000},
 		"buffer": 16000
 	},
+	"references": {
+		"central-ai-notes": {
+			"path": "./central-ai-notes",
+			"description": "Shared working memory for all projects; follow its AGENTS.md entrypoint"
+		}
+	},
+	// The notes sit outside every project Location; allow that boundary
+	// instead of relying on the built-in global-config exemption.
+	"permissions": [
+		{
+			"action": "external_directory",
+			"resource": "~/.config/opencode/central-ai-notes/*",
+			"effect": "allow"
+		}
+	],
 	"provider": {
 		"e-infra": {
 			"npm": "@ai-sdk/openai-compatible",

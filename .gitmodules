@@ -4,3 +4,6 @@
 [submodule ".config/swayimg/sai"]
 	path = .config/swayimg/sai
 	url = git@github.com:litoj/sai.swi.git
+[submodule ".config/opencode/central-ai-notes"]
+	path = .config/opencode/central-ai-notes
+	url = git@github.com:litoj/fieldbook.git

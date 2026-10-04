@@ -1,3 +1,9 @@
+# Central AI notes
+
+- `~/.config/opencode/central-ai-notes` is the shared working memory for all
+  projects. Read its `AGENTS.md` and follow it to the project matching the
+  request.
+
 # Communication
 
 - Always write all your responses in the **ASD-STE100** format. (Including documentation)
@@ -74,26 +80,4 @@ Example (language-neutral - the same rule applies everywhere):
 - Run the tests, formatter and linter of the repo, if it has them.
 - Update the TODOs.
 
-## Reviewing
-
-- Review scope - checking for:
-  - consistency - adhering to the codebase style, structure, practices…
-  - thoroughness of testing and coverage of possible edge case situations
-  - readability and understandability of the code
-  - documentation present on what needs explaining to fully grasp the issue (not on matters obious
-    from context)
-- Process steps - when asked for a review:
-  - Have a couple of agents review the changes between the given branch and the main (/master)
-    branch.
-  - Yhey may split the work, if the changes are divisible without major loss on context.
-  - Compare their findings. Have them cross-check the findings and find other issues.
-  - Compile a joined report on the changes ordered by importance / correctness and maintainability.
-  - I don't care about what has been disproven or proven by the other side. I just want a clean list
-    of issues to focus on.
-  - Iff reviewing a branch of a MR, then write the report into a new temporary markdown file.
-    - the report file should format all file references to be actual valid sourcecode online links
-      - example (reviewed branch ci-local):
-        [BE/scripts/x.md:24-27](https://gitlab.fit.cvut.cz/ict/dev/projects-fit/-/blob/ci-local/packages/profit-theses-backend/scripts/x.md#L24-27)
-- Output:
-  - Present issues in sections and as multi-level lists with a clear structure - no long sentences.
-  - Present only the list of remaining issues.
+Code review has its own mode - see `agents/review.md`.

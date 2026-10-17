@@ -73,6 +73,7 @@ do
 		--style 'raw|swayimg' --style-overwrite]]):format(i.path, dst, i.width))
 		-- TODO: try out dcraw -T %f; mv %f.TIFF ...
 	end, 'Export raw to ' .. raw_path .. '<>.jxl')
+	---@diagnostic disable-next-line: missing-fields
 	local te = require('sai.mode.tag_edit').new {}
 	amap('e', function()
 		if l.get_current().path:match '%.RAF$' then
@@ -93,6 +94,7 @@ do
 
 	local tp = snip.two_pane_mode '<S-t>'
 	g.map('<S-t>', function() tp.enabled = true end, 'Two-pane mode')
+	---@diagnostic disable-next-line: missing-fields
 	local sort = require('sai.mode.sort').new {}
 	g.map('o', function() sort.enabled = not sort.enabled end, 'Sort mode')
 end
@@ -171,7 +173,7 @@ do
 	vmap('g', function() sai.mode = 'gallery' end)
 
 	vmap('m', function() l.marked.set_current 'toggle' end)
-	vmap('c', function() v.auto_center = not v.auto_center end)
+	vmap('p', snip.cycle_auto_pos, 'Cycle auto pos')
 
 	vmap({ '<S- >', '<BS>', 'Left', ',', '<S-h>', '<S-n>' }, v.go.prev)
 	vmap({ ' ', 'Right', '.', '<S-l>', 'n' }, v.go.next)
@@ -205,12 +207,12 @@ do
 	vmap('<A-a>', function()
 		local t = { 'keep_width', 'keep_height', 'keep_size', 'keep_fit', 'keep_fill' }
 		v.default_scale = snip.cycle_values(t, v.default_scale) or 'keep_width'
-	end)
+	end, "Cycle 'keep' scaling")
 	vmap('f', function() v.scale = 'fill' end)
 	vmap('<S-f>', function() v.scale = 'fit' end)
 	vmap('<S-i>', function()
 		v.scale = 0.35
-		v.default_scale = 'keep'
+		v.default_scale = 'keep_width'
 	end)
 	vmap('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap('2', function()
@@ -221,7 +223,7 @@ do
 			v.scale = 2
 			v.default_scale = 'keep_width'
 		end
-	end)
+	end, "2x zoom + 'keep' scaling cycling")
 	vmap('4', function() v.scale = 4 end)
 	vmap('5', function() v.scale = 0.5 end)
 	vmap({ '<Up>', 'i' }, function() v.scale = v.get_abs_scale() * 1.1 end)

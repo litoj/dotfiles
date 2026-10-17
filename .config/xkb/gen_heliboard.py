@@ -4,11 +4,24 @@
 One table describes the keyboard.  The file written is a FlorisBoard-style
 json layout, which HeliBoard can load from a file:
 
-    .config/xkb/symbols/japanese.json
+    .config/xkb/symbols/jprom.json
 
-The base keys show the consonant and type the -a form (the n key types ん).
-A long press opens the a i u e o forms.  The shift key switches hiragana to
-katakana (manual shift and shift lock), so the table holds two kana per entry.
+The keyboard keeps the czech QWERTZ shape, and every key shows the kana it
+prints.  The kana sit where gen_kana.py puts the matching romaji gate: j carries
+the や row with the small ゃゅょ, x し with the š palatals, g じ with
+the ž palatals, v the č gate, c the cu with the small っ, f the が row and l the ん; the
+katakana ヴ letters sit on w.  A blank key only holds the position
+of a letter without kana.  The bottom row holds six keys on purpose:
+centered, m lands half a key left of k, like on a PC keyboard.  A long
+press opens the remaining forms; each kana has exactly one home, so no
+popup repeats what another key prints.
+Foreign sounds (ヴ, チェ, ファ, ティ, ディ, シェ, ジェ, ウィ ウェ ウォ, イェ,
+ツァ ツィ ツェ ツォ) live in the katakana keyboard only: the shifted
+popups carry them and the hiragana popups stay clean.  The last row holds exactly two
+keys, so HeliBoard puts them in place of the comma and the period key
+next to the spacebar.  The shift key switches hiragana to katakana
+(manual shift and shift lock); automatic shift stays hiragana, so the
+table holds two kana per entry.
 
 Run it after a table change.  `--check` only reports drift.
 """
@@ -17,73 +30,76 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / ".config/xkb/symbols/japanese.json"
+OUT = ROOT / ".config/xkb/symbols/jprom.json"
 
-# keep the latin consonant label in katakana mode, where shift would upcase it
-PRESERVE_CASE = 0x10000
-
-# (label, (hiragana, katakana), [(hiragana, katakana) popup, ...])
-# label is the consonant; a non-ascii label means "show the kana".
+# czech QWERTZ rows: (hiragana, katakana, [popup h...], [popup k...])
+# None key = blank, it only holds the qwertz position
+# hiragana None = foreign-only key, blank until shifted
 ROWS = [
-    [
-        ("a", ("あ", "ア"), [("ぁ", "ァ")]),
-        ("i", ("い", "イ"), [("ぃ", "ィ")]),
-        ("u", ("う", "ウ"), [("ぅ", "ゥ")]),
-        ("e", ("え", "エ"), [("ぇ", "ェ")]),
-        ("o", ("お", "オ"), [("ぉ", "ォ")]),
+    [  # q w e r t z u i o p
+        None,                                                                    # q
+        ("わ", "ワ", ["を"], ["ヲ", "ヴ", "ヴァ", "ヴィ", "ヴェ", "ヴォ"]),                   # w
+        ("え", "エ", ["ぇ"], ["ェ"]),                                              # e
+        ("ら", "ラ", ["り", "る", "れ", "ろ"], ["リ", "ル", "レ", "ロ"]),                   # r
+        ("た", "タ", ["て", "と"], ["テ", "ト", "ティ"]),                                 # t
+        ("ざ", "ザ", ["ず", "ぜ", "ぞ"], ["ズ", "ゼ", "ゾ", "ジェ"]),                       # z
+        ("う", "ウ", ["ぅ"], ["ゥ", "ウィ", "ウェ", "ウォ"]),                             # u
+        ("い", "イ", ["ぃ"], ["ィ", "イェ"]),                                       # i
+        ("お", "オ", ["ぉ"], ["ォ"]),                                              # o
+        ("ぱ", "パ", ["ぴ", "ぷ", "ぺ", "ぽ"], ["ピ", "プ", "ペ", "ポ"]),                   # p
     ],
-    [
-        ("k", ("か", "カ"), [("か", "カ"), ("き", "キ"), ("く", "ク"), ("け", "ケ"), ("こ", "コ")]),
-        ("s", ("さ", "サ"), [("さ", "サ"), ("し", "シ"), ("す", "ス"), ("せ", "セ"), ("そ", "ソ")]),
-        ("t", ("た", "タ"), [("た", "タ"), ("ち", "チ"), ("つ", "ツ"), ("て", "テ"), ("と", "ト")]),
-        ("n", ("ん", "ン"), [("な", "ナ"), ("に", "ニ"), ("ぬ", "ヌ"), ("ね", "ネ"), ("の", "ノ")]),
-        ("h", ("は", "ハ"), [("は", "ハ"), ("ひ", "ヒ"), ("ふ", "フ"), ("へ", "ヘ"), ("ほ", "ホ")]),
-        ("m", ("ま", "マ"), [("ま", "マ"), ("み", "ミ"), ("む", "ム"), ("め", "メ"), ("も", "モ")]),
+    [  # a s d f g h j k l
+        ("あ", "ア", ["ぁ"], ["ァ"]),                                              # a
+        ("さ", "サ", ["す", "せ", "そ"], ["ス", "セ", "ソ", "シェ"]),                       # s
+        ("だ", "ダ", ["ぢ", "づ", "で", "ど"], ["ヂ", "ヅ", "デ", "ド", "ディ"]),              # d
+        ("が", "ガ", ["ぎ", "ぐ", "げ", "ご"], ["ギ", "グ", "ゲ", "ゴ"]),                   # f
+        ("じ", "ジ", ["じゃ", "じゅ", "じょ"], ["ジャ", "ジュ", "ジョ"]),                  # g
+        ("は", "ハ", ["ひ", "ふ", "へ", "ほ"],
+                   ["ヒ", "フ", "ヘ", "ホ", "ファ", "フィ", "フェ", "フォ"]),              # h
+        ("や", "ヤ", ["ゆ", "よ", "ゃ", "ゅ", "ょ"], ["ユ", "ヨ", "ャ", "ュ", "ョ"]),          # j
+        ("か", "カ", ["き", "く", "け", "こ"], ["キ", "ク", "ケ", "コ"]),                   # k
+        ("ん", "ン", [], []),                                                     # l
     ],
-    [
-        ("y", ("や", "ヤ"), [("や", "ヤ"), ("ゆ", "ユ"), ("よ", "ヨ"), ("ゃ", "ャ"), ("ゅ", "ュ"), ("ょ", "ョ")]),
-        ("r", ("ら", "ラ"), [("ら", "ラ"), ("り", "リ"), ("る", "ル"), ("れ", "レ"), ("ろ", "ロ")]),
-        ("w", ("わ", "ワ"), [("わ", "ワ"), ("を", "ヲ")]),
-        ("g", ("が", "ガ"), [("が", "ガ"), ("ぎ", "ギ"), ("ぐ", "グ"), ("げ", "ゲ"), ("ご", "ゴ")]),
-        ("z", ("ざ", "ザ"), [("ざ", "ザ"), ("じ", "ジ"), ("ず", "ズ"), ("ぜ", "ゼ"), ("ぞ", "ゾ")]),
-        ("d", ("だ", "ダ"), [("だ", "ダ"), ("ぢ", "ヂ"), ("づ", "ヅ"), ("で", "デ"), ("ど", "ド")]),
+    [  # x c v b n m — six keys on purpose, see the docstring
+        ("し", "シ", ["しゃ", "しゅ", "しょ"], ["シャ", "シュ", "ショ"]),                  # x
+        ("つ", "ツ", ["っ"], ["ッ", "ツァ", "ツィ", "ツェ", "ツォ"]),                     # c
+        ("ち", "チ", ["ちゃ", "ちゅ", "ちょ"], ["チャ", "チュ", "チョ", "チェ"]),          # v
+        ("ば", "バ", ["び", "ぶ", "べ", "ぼ"], ["ビ", "ブ", "ベ", "ボ"]),                   # b
+        ("な", "ナ", ["に", "ぬ", "ね", "の"], ["ニ", "ヌ", "ネ", "ノ"]),                   # n
+        ("ま", "マ", ["み", "む", "め", "も"], ["ミ", "ム", "メ", "モ"]),                   # m
     ],
-    [
-        ("b", ("ば", "バ"), [("ば", "バ"), ("び", "ビ"), ("ぶ", "ブ"), ("べ", "ベ"), ("ぼ", "ボ")]),
-        ("p", ("ぱ", "パ"), [("ぱ", "パ"), ("ぴ", "ピ"), ("ぷ", "プ"), ("ぺ", "ペ"), ("ぽ", "ポ")]),
-        ("っ", ("っ", "ッ"), []),
-        ("ー", ("ー", "ー"), []),
-        ("。", ("。", "。"), []),
-        ("、", ("、", "、"), []),
+    [  # exactly two keys: HeliBoard moves them next to the spacebar
+        ("、", "、", [], []),                                                     # comma slot
+        ("。", "。", ["ー"], ["ー"]),                                              # period slot
     ],
 ]
 
 
-def branch(label, kana, popups):
-    shown = label if label.isascii() else kana
-    key = {"label": shown if shown == kana else "%s|%s" % (shown, kana),
-           "labelFlags": PRESERVE_CASE}
+def branch(kana, popups):
+    key = {"label": kana}
     if popups:
         order = [{"label": "!fixedColumnOrder!%d" % len(popups)}] if len(popups) > 1 else []
         key["popup"] = {"relevant": order + [{"label": p} for p in popups]}
     return key
 
 
-def key_data(label, kana, popups):
-    hira, kata = kana
-    if hira == kata and not popups:
-        return {"label": hira}
-    hira_popups = [h for h, _ in popups]
-    kata_popups = [k for _, k in popups]
-    if hira == kata:
-        return branch(label, hira, hira_popups)
+def key_data(entry):
+    if entry is None:
+        return {"type": "placeholder"}
+    hira, kata, hira_popups, kata_popups = entry
+    if hira is None:  # foreign-only key: blank until the shift switches the script
+        return {"$": "shift_state_selector",
+                "manualOrLocked": branch(kata, kata_popups),
+                "default": {"type": "placeholder"}}
+    if hira == kata and hira_popups == kata_popups:
+        return branch(hira, hira_popups)
     return {"$": "shift_state_selector",
-            "manualOrLocked": branch(label, kata, kata_popups),
-            "default": branch(label, hira, hira_popups)}
+            "manualOrLocked": branch(kata, kata_popups),
+            "default": branch(hira, hira_popups)}
 
 
 def layout():
-    return [[key_data(label, kana, popups) for label, kana, popups in row] for row in ROWS]
+    return [[key_data(entry) for entry in row] for row in ROWS]
 
 
 def text():

@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <map>
 #include <mutex>
 #include <unordered_map>
@@ -41,25 +42,25 @@ public:
 
     ~ThreadProfile()
     {
-        std::lock_guard<std::mutex> lock(g_profile_mutex);
+        std::scoped_lock lock(g_profile_mutex);
         for (const auto& [name, s] : stats) {
             auto& g = g_profile_stats[name];
             g.total_ns += s.total_ns;
             g.count += s.count;
         }
 
-        int tcnt = threads.fetch_sub(1);
+        int_fast8_t tcnt = threads.fetch_sub(1);
         // printf("Ended T%d of %d\n", thr, tcnt);
         if (tcnt <= 1) {
             // Only main thread prints; avoid multiple full prints
             for (const auto& [name, stats] : g_profile_stats) {
                 double avg_ns = stats.count > 0
-                    ? double(stats.total_ns) / stats.count
+                    ? static_cast<double>(stats.total_ns) / stats.count
                     : 0.0;
 
                 printf("%-16s: %7zu ms / %7zu = %6zu us\n", name.c_str(),
                        stats.total_ns / 1000000, stats.count,
-                       int64_t(avg_ns) / 1000);
+                       static_cast<int64_t>(avg_ns) / 1000);
             }
         }
     }

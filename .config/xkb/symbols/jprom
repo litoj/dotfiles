@@ -3,36 +3,38 @@
 partial alphanumeric_keys
 xkb_symbols "kana" {
 
-	key <AC01>	{ type[1]="NL6_GATE", [ any, any, any, any, UE001, UE01B ]};
-	key <AD08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE002, UE01C ]};
-	key <AD07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE003, UE01D ]};
-	key <AD03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE004, UE01E ]};
-	key <AD09>	{ type[1]="NL6_GATE", [ any, any, any, any, UE005, UE01F ]};
-	key <AC08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE006, UE020 ]};
-	key <AC02>	{ type[1]="NL6_GATE", [ any, any, any, any, UE007, UE021 ]};
-	key <AE03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE008, UE022 ]};
-	key <AD06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE009, UE023 ]};
-	key <AE06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00A, UE024 ]};
-	key <AD05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00B, UE025 ]};
-	key <AC03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00C, UE026 ]};
-	key <AB06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00D, UE027 ]};
-	key <AD10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00E, UE028 ]};
-	key <AC06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00F, UE029 ]};
-	key <AC05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE010, UE02A ]};
-	key <AB07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE011, UE02B ]};
-	key <AC07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE012, UE02C ]};
-	key <AB01>	{ type[1]="NL6_GATE", [ any, any, any, any, UE013, UE02D ]};
-	key <AD04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE014, UE02E ]};
-	key <AD02>	{ type[1]="NL6_GATE", [ any, any, any, any, UE015, UE02F ]};
-	key <AB05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE016, UE030 ]};
-	key <AB03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE017, UE031 ]};
-	key <AE04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE018, UE032 ]};
-	key <AC04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE019, UE033 ]};
+	key <AC01>	{ type[1]="NL6_GATE", [ any, any, any, any, UE001, UE01C ]};
+	key <AD08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE002, UE01D ]};
+	key <AD07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE003, UE01E ]};
+	key <AD03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE004, UE01F ]};
+	key <AD09>	{ type[1]="NL6_GATE", [ any, any, any, any, UE005, UE020 ]};
+	key <AC08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE006, UE021 ]};
+	key <AC02>	{ type[1]="NL6_GATE", [ any, any, any, any, UE007, UE022 ]};
+	key <AE03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE008, UE023 ]};
+	key <AD06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE009, UE024 ]};
+	key <AE06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00A, UE025 ]};
+	key <AD05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00B, UE026 ]};
+	key <AC03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00C, UE027 ]};
+	key <AB06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00D, UE028 ]};
+	key <AD10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00E, UE029 ]};
+	key <AC06>	{ type[1]="NL6_GATE", [ any, any, any, any, UE00F, UE02A ]};
+	key <AC05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE010, UE02B ]};
+	key <AB07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE011, UE02C ]};
+	key <AC07>	{ type[1]="NL6_GATE", [ any, any, any, any, UE012, UE02D ]};
+	key <AB01>	{ type[1]="NL6_GATE", [ any, any, any, any, UE013, UE02E ]};
+	key <AD04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE014, UE02F ]};
+	key <AD02>	{ type[1]="NL6_GATE", [ any, any, any, any, UE015, UE030 ]};
+	key <AB05>	{ type[1]="NL6_GATE", [ any, any, any, any, UE016, UE031 ]};
+	key <AB03>	{ type[1]="NL6_GATE", [ any, any, any, any, UE017, UE032 ]};
+	key <AE04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE018, UE033 ]};
+	key <AC04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE019, UE034 ]};
+	key <AB04>	{ type[1]="NL6_GATE", [ any, any, any, any, UE01A, UE035 ]};
 
-	key <TLDE>	{ type[1]="NL6_GATE", [ any, any, any, any, UE01A, UE034 ]};
+	key <TLDE>	{ type[1]="NL6_GATE", [ any, any, any, any, UE01B, UE036 ]};
 
-	key <AB09>	{ type[1]="NL6_GATE", [ any, any, any, any, UE035, UE035 ]};
-	key <AE11>	{ type[1]="NL6_GATE", [ any, any, any, any, UE036, UE036 ]};
-	key <AB10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE037, UE037 ]};
-	key <AE12>	{ type[1]="NL6_GATE", [ any, any, any, any, UE038, UE038 ]};
+	key <AB09>	{ type[1]="NL6_GATE", [ any, any, any, any, UE037, UE037 ]};
+	key <AE11>	{ type[1]="NL6_GATE", [ any, any, any, any, UE038, UE038 ]};
+	key <AB10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE039, UE039 ]};
+	key <AE12>	{ type[1]="NL6_GATE", [ any, any, any, any, UE03A, UE03A ]};
+	key <AB08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE03B, UE03B ]};
 };

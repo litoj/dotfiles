@@ -6,7 +6,7 @@
 
 # Communication
 
-- Always write all your responses in the **ASD-STE100** format. (Including documentation)
+- Always write all your responses in the **ASD-STE100** format.
 - Present your reasoning: context, assumptions, and why you chose this approach.
 - **Only** use file **editing** on existing files - **never overwrite entire file**
 - I - the user - am the leading developer of the project

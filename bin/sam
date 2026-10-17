@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 . sss
+SCRIPT_OPTS['argPicker']=1
 
 SSS_OPTS[about]='SAM - System APK Manager
 This program uses ADB to manage system applications on your Android phone.'

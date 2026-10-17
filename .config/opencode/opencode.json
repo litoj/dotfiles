@@ -1,18 +1,17 @@
 {
 	"$schema": "https://opencode.ai/config.json",
 	// "lsp": true,
-	// Upstream rejects the request before the context is full, so let it report
-	// the overflow instead of summarising early. Run /compact by hand to continue.
-	"compaction": {
-		"auto": true,
-		"keep": {"tokens": 15000},
-		"buffer": 16000
-	},
 	"references": {
 		"central-ai-notes": {
 			"path": "./central-ai-notes",
 			"description": "Shared working memory for all projects; follow its AGENTS.md entrypoint"
 		}
+	},
+	"compaction": {
+		"auto": true,
+		"keep": {"tokens": 15000},
+		"reserved": 10000,
+		"buffer": 10000
 	},
 	// The notes sit outside every project Location; allow that boundary
 	// instead of relying on the built-in global-config exemption.
@@ -33,27 +32,22 @@
 			},
 			"models": {
 				"mini": {
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+					"limit": {"input": 200000, "context": 200000, "output": 100000}
 				},
 				"thinker": {
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
-				},
-				"coder": {
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+					"limit": {"input": 400000, "context": 400000, "output": 100000}
 				},
 				"glm-5.3": {
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
+				},
+				"agentic": {
+					"limit": {"input": 400000, "context": 400000, "output": 100000}
 				},
 				"kimi-k3": {
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+					"limit": {"input": 1000000, "context": 1000000, "output": 100000}
 				},
 				"deepseek-v4.1-flash-thinking": {
-					"name": "deepseek-flash",
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
-				},
-				"deepseek-thinking": {
-					"name": "ds-think",
-          "limit": { "input": 1000000, "context": 1000000, "output": 100000 }
+					"limit": {"input": 1000000, "context": 400000, "output": 100000}
 				}
 			}
 		}

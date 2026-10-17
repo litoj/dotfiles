@@ -46,6 +46,38 @@ function fish_prompt
 	printf '\033[?1h\033=' >/dev/tty
 end
 
+# kept out of history:
+# - `mom` by prefix, `ls`/`git pull|push|status` as command words
+# - any command line that exactly equals an abbreviation expansion
+# - any command run without arguments
+# a repeated command line is kept only once - as its newest entry
+set --global history_ignore '^(mom.*|ls|git (pull|push|status))( |$)'
+function __history_ignore --on-event fish_preexec
+	# built once per session; a `--function` abbr has no fixed expansion text to match
+	if not set -q history_abbr_expansions
+		set --global history_abbr_expansions
+		function __history_abbr_add
+			if contains -- -f $argv
+				or contains -- --function $argv
+				return
+			end
+			set --global history_abbr_expansions $history_abbr_expansions $argv[-1]
+		end
+		# routed through the helper so the fish parser unquotes the `abbr --show` lines
+		abbr --show | string replace -r -- '^abbr ' '__history_abbr_add ' | source
+		functions --erase __history_abbr_add
+	end
+	if string match -qr -- $history_ignore $argv
+		or contains -- $argv $history_abbr_expansions
+		or string match -qr -- '^\h*[[:alnum:]_./:+-]+\h*$' $argv
+		history delete --exact --case-sensitive -- $argv
+	else if test (count (history search --null --exact --case-sensitive -- $argv | string split0)) -ge 2
+		# the fresh entry is already in history - a repeat keeps only its newest copy
+		history delete --exact --case-sensitive -- $argv
+		history append $argv
+	end
+end
+
 # https://fishshell.com/docs/3.1/cmds/bind.html
 # fish_key_reader
 bind \cq exit
@@ -114,9 +146,11 @@ abbr grc    'git rebase --continue'
 abbr grf    'git checkout main^ --' # restore file
 abbr gff    'git log --all -1 --' # go find file
 abbr gP     'git push'
+abbr gPf    'git push -f'
 abbr gPb    'git push origin HEAD:'
 abbr gPd    'git push -d origin'
 abbr gPt    'git push origin --tags'
+abbr gs     'git switch (git branch | fzf | sed "s/.* //")'
 abbr gbd    'git branch -d (git branch | fzf | sed "s/.* //")'
 abbr gbD    'git branch -D (git branch | fzf | sed "s/.* //")'
 abbr gb     'git checkout -b'

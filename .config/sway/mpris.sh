@@ -26,7 +26,7 @@ mpv_notify() {
 		percent=0
 		((len > 0)) && percent=$((pos / (len / 100)))
 		notify-send -u low -a player -h string:synchronous:player \
-			-h "int:value:$percent" -t 1100 \
+			-h "int:value:$percent" -t 1500 \
 			"$(info '{{title}}')" \
 			"$(info '\t{{duration(position)}}/{{duration(mpris:length)}}' | sed 's/^ - //')"
 		sleep 1

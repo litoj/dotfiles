@@ -8,13 +8,16 @@
     "wrap": "word"
   },
   "session": {
-    "sidebar": "auto",
+    "sidebar": "hide",
     "scrollbar": false,
     "thinking": "hide",
     "new_location": "launch",
     "permissions": "prompt"
   },
   "animations": false,
+  "keybinds": {
+    "variant.cycle": "<leader>v"
+  },
   "tabs": {
     "enabled": true,
     "scope": "cwd"
@@ -23,6 +26,6 @@
     "notifications": true
   },
   "terminal": {
-    "copy": "select"
+    "copy": "manual"
   }
 }

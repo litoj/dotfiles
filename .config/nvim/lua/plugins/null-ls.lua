@@ -94,6 +94,7 @@ IndentWidth: %d, ContinuationIndentWidth: %d, TabWidth: %d, UseTab: %s, ColumnLi
 				end,
 			},
 			nls.builtins.formatting.black,
+			nls.builtins.formatting.xmllint,
 		},
 	}
 end

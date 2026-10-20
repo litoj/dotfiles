@@ -15,7 +15,7 @@ presets=(
 )
 for preset in "${presets[@]}"; do
 	[[ $preset =~ ^(.)=(..)/([^.]*)(\..*)$ ]]
-	arr=resize${BASH_REMATCH[1]^}
+	arr=resize${BASH_REMATCH[1]}
 	resizePresets["$preset"]=$arr
 	declare -ga "$arr"
 	declare -n arr=$arr

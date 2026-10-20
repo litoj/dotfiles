@@ -47,11 +47,11 @@ function fish_prompt
 end
 
 # kept out of history:
-# - `mom` by prefix, `ls`/`git pull|push|status` as command words
+# - `mom -d` by prefix, `ls`/`git pull|push|status` as command words
 # - any command line that exactly equals an abbreviation expansion
 # - any command run without arguments
-# a repeated command line is kept only once - as its newest entry
-set --global history_ignore '^(mom.*|ls|git (pull|push|status))( |$)'
+# repeated command lines need no handling - fish keeps one entry and refreshes its timestamp
+set --global history_ignore '^(mom -d.*|ls|git (pull|push|status))( |$)'
 function __history_ignore --on-event fish_preexec
 	# built once per session; a `--function` abbr has no fixed expansion text to match
 	if not set -q history_abbr_expansions
@@ -71,10 +71,6 @@ function __history_ignore --on-event fish_preexec
 		or contains -- $argv $history_abbr_expansions
 		or string match -qr -- '^\h*[[:alnum:]_./:+-]+\h*$' $argv
 		history delete --exact --case-sensitive -- $argv
-	else if test (count (history search --null --exact --case-sensitive -- $argv | string split0)) -ge 2
-		# the fresh entry is already in history - a repeat keeps only its newest copy
-		history delete --exact --case-sensitive -- $argv
-		history append $argv
 	end
 end
 

@@ -9,13 +9,13 @@ json layout, which HeliBoard can load from a file:
 The keyboard keeps the czech QWERTZ shape, and every key shows the kana it
 prints.  The kana sit where gen_kana.py puts the matching romaji gate: j carries
 the や row with the small ゃゅょ, x し with the š palatals, v the č gate, c the cu
-with the small っ, f the が row and l the ん; the じ left the ž gate for the
-czech bottom row, which reads じ し つ ち ば な ま on y x c v b n m.  The
-katakana ヴ letters sit on w.  A blank key only holds the position of a letter
-without kana; q and g are blank.  A long press opens the remaining forms;
-every popup starts with the key's own form, so the -a variant is always the
-first choice.  A contraction key already starts with its -a form, so it needs
-no repeat.
+with the small っ, f ふ with the ファ フィ フェ フォ katakana popups, g the が row
+and l the ん; the じ left the ž gate for the czech bottom row, which reads
+じ し つ ち ば な ま on y x c v b n m.  The katakana ヴ letters sit on w.  A
+blank key only holds the position of a letter without kana; q is blank.  A
+long press opens the remaining forms; every popup starts with the key's own
+form, so the -a variant is always the first choice.  A contraction key already
+starts with its -a form, so it needs no repeat.
 Foreign sounds (ヴ, チェ, ファ, ティ, ディ, シェ, ジェ, ウィ ウェ ウォ, イェ,
 ツァ ツィ ツェ ツォ) live in the katakana keyboard only: the shifted
 popups carry them and the hiragana popups stay clean.  The last row holds exactly two
@@ -53,10 +53,9 @@ ROWS = [
         ("あ", "ア", ["ぁ"], ["ァ"]),                                              # a
         ("さ", "サ", ["す", "せ", "そ"], ["ス", "セ", "ソ", "シェ"]),                       # s
         ("だ", "ダ", ["ぢ", "づ", "で", "ど"], ["ヂ", "ヅ", "デ", "ド", "ディ"]),              # d
-        ("が", "ガ", ["ぎ", "ぐ", "げ", "ご"], ["ギ", "グ", "ゲ", "ゴ"]),                   # f
-        None,                                                                     # g
-        ("は", "ハ", ["ひ", "ふ", "へ", "ほ"],
-                   ["ヒ", "フ", "ヘ", "ホ", "ファ", "フィ", "フェ", "フォ"]),              # h
+        ("ふ", "フ", [], ["ファ", "フィ", "フェ", "フォ"]),                                # f
+        ("が", "ガ", ["ぎ", "ぐ", "げ", "ご"], ["ギ", "グ", "ゲ", "ゴ"]),                   # g
+        ("は", "ハ", ["ひ", "へ", "ほ"], ["ヒ", "ヘ", "ホ"]),                               # h
         ("や", "ヤ", ["ゆ", "よ", "ゃ", "ゅ", "ょ"], ["ユ", "ヨ", "ャ", "ュ", "ョ"]),          # j
         ("か", "カ", ["き", "く", "け", "こ"], ["キ", "ク", "ケ", "コ"]),                   # k
         ("ん", "ン", [], []),                                                     # l
@@ -77,14 +76,19 @@ ROWS = [
 ]
 
 
+CONTRACTIONS = ("ゃ", "ゅ", "ょ", "ャ", "ュ", "ョ")
+
+
 def with_default(kana, popups):
     """Start every kana popup with the key's own form."""
     if not popups:
         return popups
     if not ("\u3040" <= kana <= "\u309f" or "\u30a0" <= kana <= "\u30ff"):
         return popups
-    if popups[0].startswith(kana):  # a contraction starts with its -a form
+    if popups[0] == kana:
         return popups
+    if popups[0].startswith(kana) and popups[0][len(kana):] in CONTRACTIONS:
+        return popups  # an -a contraction needs no repeat
     return [kana] + popups
 
 

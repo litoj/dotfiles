@@ -10,6 +10,7 @@
 # An apostrophe commits the bare consonant.
 # A lone n joins the next kana as ん unless an nV spelling exists.
 # Shift on the dash keys smallifies the next spelling.
+# The dash key directly after the starter gives っ.
 # Foreign sounds extend the same scheme.
 # Base vowels never compose: they commit their kana at once.
 include "%L"
@@ -1325,3 +1326,8 @@ include "%L"
 <UE028> <UE03B> <UE02E> <UE01C> : "ンャ"
 <UE028> <UE03B> <UE02E> <UE01E> : "ンュ"
 <UE028> <UE03B> <UE02E> <UE020> : "ンョ"
+
+# the short っ from the dash key after the starter
+# hiragana only: the shifted dash is the starter itself
+<UE03B> <UE038> : "っ"
+<UE03B> <UE039> : "っ"

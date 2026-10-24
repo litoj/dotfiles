@@ -33,8 +33,7 @@ xkb_symbols "kana" {
 	key <TLDE>	{ type[1]="NL6_GATE", [ any, any, any, any, UE01B, UE036 ]};
 
 	key <AB09>	{ type[1]="NL6_GATE", [ any, any, any, any, UE037, UE037 ]};
-	key <AE11>	{ type[1]="NL6_GATE", [ any, any, any, any, UE038, UE038 ]};
-	key <AB10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE039, UE039 ]};
-	key <AE12>	{ type[1]="NL6_GATE", [ any, any, any, any, UE03A, UE03A ]};
-	key <AB08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE03B, UE03B ]};
+	key <AE11>	{ type[1]="NL6_GATE", [ any, any, any, any, UE038, UE03B ]};
+	key <AB10>	{ type[1]="NL6_GATE", [ any, any, any, any, UE039, UE03B ]};
+	key <AB08>	{ type[1]="NL6_GATE", [ any, any, any, any, UE03A, UE03A ]};
 };

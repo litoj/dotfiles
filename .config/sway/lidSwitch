@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 NO_SLEEP=/tmp/my/nolidsleep
+NO_SLEEP_TOGGLE=/tmp/my/nosleeptgl
 
 action=$1
 
@@ -8,6 +9,7 @@ main() {
 	# first process if the system should go to sleep
 	if [[ $action == closed && ! -f $NO_SLEEP || $action == sleep ]]; then
 		swaymsg 'output eDP-1 power off'
+		touch "$NO_SLEEP_TOGGLE"
 		systemctl suspend
 
 		# determine what to do after wakeup
@@ -20,6 +22,7 @@ main() {
 			pkill -RTMIN+21 i3blocks
 			~/.config/i3blocks/signal load &
 		fi
+		rm "$NO_SLEEP_TOGGLE"
 		exit
 	fi
 
@@ -54,6 +57,9 @@ main() {
 		idle) swaymsg 'output * power off' ;;
 		resume) swaymsg 'output * power on' ;;
 		toggle)
+			if [[ -f $NO_SLEEP_TOGGLE ]]; then
+				exit 0
+			fi
 			if [[ -f $NO_SLEEP ]]; then
 				rm "$NO_SLEEP"
 				notify-send LidSleep -t 1000 -u low

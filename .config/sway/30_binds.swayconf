@@ -39,8 +39,8 @@ bindsym --to-code {
 		xterm nvim -i ~/Documents/work/session.shada
 	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ ~/.config/sway/reporter \
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
-	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
-	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
+	$Mod+4 workspace $wMsg, mode $Msg
+	$Mod+5 workspace $wCode, mode $IDE
 	$Mod+7 mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
 	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'

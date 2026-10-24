@@ -35,16 +35,10 @@
 					"limit": {"input": 200000, "context": 200000, "output": 100000}
 				},
 				"thinker": {
-					"limit": {"input": 400000, "context": 400000, "output": 100000}
+					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
 				},
 				"glm-5.3": {
 					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
-				},
-				"agentic": {
-					"limit": {"input": 400000, "context": 400000, "output": 100000}
-				},
-				"kimi-k3": {
-					"limit": {"input": 1000000, "context": 1000000, "output": 100000}
 				},
 				"deepseek-v4.1-flash-thinking": {
 					"limit": {"input": 1000000, "context": 400000, "output": 100000}

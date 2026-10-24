@@ -44,6 +44,8 @@ PUNCT = [
     ('AB08', '、', False, True),   # the comma key -> ideographic comma
 ]
 SMALL_START = PUNCT_BASE + len(PUNCT)
+# the dash-key markers for the short っ after the starter
+DASHES = [PUNCT_BASE + i for i, (_, _, small, _) in enumerate(PUNCT) if small]
 
 # (section title, [(spelling, hiragana), ...])
 ROWS = [
@@ -208,6 +210,7 @@ SPELLING_DOC = [
     "# An apostrophe commits the bare consonant.",
     "# A lone n joins the next kana as ん unless an nV spelling exists.",
     "# Shift on the dash keys smallifies the next spelling.",
+    "# The dash key directly after the starter gives っ.",
     "# Foreign sounds extend the same scheme.",
     "# Base vowels never compose: they commit their kana at once.",
 ]
@@ -265,6 +268,10 @@ def compose_text():
     out.append("\n# a lone n joins the small kana after the starter")
     out.append(emit(SMALL_SPELLS, False, starter=True, njoin=True))
     out.append(emit(SMALL_SPELLS, True, starter=True, njoin=True))
+    out.append("\n# the short っ from the dash key after the starter")
+    out.append("# hiragana only: the shifted dash is the starter itself")
+    for d in DASHES:
+        out.append("<UE%03X> <UE%03X> : \"っ\"" % (SMALL_START, d))
 
     return "\n".join(out) + "\n"
 
@@ -310,7 +317,7 @@ def main(argv):
           " small starter U+E%03X, %d kana rules (%d n-join), %d small rules"
           % (M[PAUSE], M[LETTERS[0]] + KATA, M[PAUSE] + KATA,
              PUNCT_BASE, PUNCT_BASE + len(PUNCT) - 1, SMALL_START,
-             2 * per_script, 2 * len(nlayer), 2 * len(SMALL_SPELLS)))
+             2 * per_script, 2 * len(nlayer), 2 * len(SMALL_SPELLS) + len(DASHES)))
     return 1 if drift else 0
 
 

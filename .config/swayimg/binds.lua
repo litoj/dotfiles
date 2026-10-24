@@ -40,9 +40,9 @@ do
 	amap('Alt+4', gen_rating(4))
 	amap('Alt+5', gen_rating(5))
 	amap('<C-f>', [[pem -D --config-picker -- -e -x -c dummy %s]])
-	-- amap('<Del>', [[which trash && trash %f* || mv %f* /tmp/my/trash/]])
-	amap('<Del>', [[mv %f* /tmp/my/trash/]])
-	g:map('<A-Del>', [[bash -c 'for f in %s; do rm "$f"*; done']])
+	-- amap('<Del>', [[which trash && trash %f %f*.xmp || mv %f %f*.xmp /tmp/my/trash/]])
+	amap('<Del>', [[mv %f %f*.xmp /tmp/my/trash/ 2>/dev/null]])
+	g:map('<A-Del>', [[bash -c 'for f in %s; do rm "$f" "$f"*.xmp 2>/dev/null; done']])
 	amap('<A-f>', [[dragon-drop -x %f]])
 	amap('<A-S-s>', [[adb push %s /storage/emulated/0/Download/]])
 	amap('b', [[~/.config/sway/custombg %f]])
@@ -134,10 +134,10 @@ do
 		end
 		g.go(path)
 	end
-	gmap:map('<C-a>', function() set_marked_for_all(true) end)
+	gmap:map({ '<C-a>', 'v' }, function() set_marked_for_all(true) end)
 	gmap:map('<C-S-a>', function() set_marked_for_all(false) end)
 	gmap:map('<S-Del>', function()
-		if sai.exec '$(which trash || echo rm) %m' then
+		if sai.exec [[bash -c 'for f in %m; do $(which trash || echo rm) "$f" "$f"*.xmp; done']] then
 			local marked = l.marked:get()
 			for _, f in ipairs(marked) do
 				l.remove(f)
@@ -211,8 +211,8 @@ do
 	vmap:map('f', function() v.scale = 'fill' end)
 	vmap:map('<S-f>', function() v.scale = 'fit' end)
 	vmap:map('<S-i>', function()
-		v.scale = 0.35
 		v.default_scale = 'keep_width'
+		v.scale = 600 / v.get_image().width
 	end)
 	vmap:map('1', function() v.scale = v.get_abs_scale() * 2 end)
 	vmap:map('2', function()

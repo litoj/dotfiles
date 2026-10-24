@@ -1,7 +1,7 @@
 #config for ../bin/xdg-open
 BROWSER=@${BROWSER#@}
 TERM_BLOCKING=1
-try 'mpv --no-audio-display' +audio .m3u .m4a .mp3 .opus
+try 'mpv --no-audio-display' +audio .m3u .m4a .mp3 .opus && exit
 try '@mpv --no-terminal' +video .VOB
 # try @geeqie .RAF
 LC_COLLATE=C try @swayimg +image

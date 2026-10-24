@@ -1,12 +1,21 @@
 # Central AI notes
 
-- `~/.config/opencode/central-ai-notes` is the shared working memory for all
-  projects. Read its `AGENTS.md` and follow it to the project matching the
-  request.
+- `~/.config/opencode/central-ai-notes` = shared memory for all projects
+- project notes: `docs/projects/<project>.md`, index in `docs/projects/README.md`
+- notes follow the Comments and documentation spec below, like every file
+- before project work: read the matching project note
+- update on decisions, results, corrections: project note + its current state
+- raw user wording verbatim, interpretation separate, own words
+- detail, history, evidence stay in the notebook, this file carries rules only
+- notebook terms: spec, goal, design, policy, gate, current, work cursor, work log, decision,
+  blocker, evidence
 
 # Communication
 
-- Always write all your responses in the **ASD-STE100** format.
+- The user has ADHD: no long texts, no long lists.
+- Structure everything shortly and clearly.
+- Every line of any text you write reads like a title: only the important information, no filler.
+- This covers code comments, documentation, notes and communication alike.
 - Present your reasoning: context, assumptions, and why you chose this approach.
 - **Only** use file **editing** on existing files - **never overwrite entire file**
 - I - the user - am the leading developer of the project
@@ -14,12 +23,14 @@
 
 ## Dividing work
 
+- Max 3 subagents running at once, count the active ones before dispatch
+- Background subagent launched = end the turn, no trailing talk
 - When using subagents, always ensure that their problem description is clearly distinct
   - Any shared parts of work should be done beforehand - avoid duplication
 - Goals and boundaries must be clearly defined - the agents clearly aim for the instructed goal and
   not waste any time with scanning unrelated files etc.
 
-## Before you write code
+## Code & design policy
 
 1. Learn the conventions of _this_ codebase first - they win over your defaults:
    - view the target file and its neighbors
@@ -30,6 +41,19 @@
    - split the work into small isolated sections you can work on and test one by one
    - set your TODOs. You need to know the necessary changes for the feature, or the plan will be
      wrong.
+
+### Plan format
+
+Applies to every plan you present, before implementing:
+
+- clear numbered steps, in execution order
+- one line per step: the action, then the files it touches
+- no sentences, no prose: information points only
+- name the step that verifies each change
+- bigger changes: mark steps that run in parallel
+- every decision gets its own point: what, where, why
+- the file set is explicit: changed files, reverted files, untouched files
+- the plan ends with the verification gates and the commit
 4. Check the design:
    - ensure _high cohesion, low coupling_
    - ensure _separation of concerns_ - no class should be managing multiple distinct objects/jobs
@@ -37,26 +61,38 @@
    - objects in one file work with objects created in that file
    - never modify internal state of foreign objects - always use the public api
    - keep the reliance on the state of other objects minimal
-   - review your own plan and avoid any unnecessary coupling.
-   - no hijacking of code not owned by that component. No hacks.
-     - if you think about doing it, then stop and explain the issue and propose solutions with NO
-       HIJACKING OR HACKS INTO THE EXISTING/INTERNAL CODE!
+   - no hijacking of code not owned by that component - needs a redesign if hacks are needed
+   - review your plan for all the points above before implementing
 
-## Comments and documentation
+## Comments and documentation spec
 
-- If the code can say it, do not write the comment.
-- Explain _why_ it is there and is useful or necessary - not _what_. Explain _what_ only when
-  neither the name nor the code makes it obvious.
-- A comment longer than two lines: structure it into points or simple sentences.
-- Compare your docs to the existing docs; discuss notable differences first if the better form is
-  not obvious.
+Applies to every code comment, documentation and note you write anywhere, central notes included.
 
-Example (language-neutral - the same rule applies everywhere):
+- one source per information: the code when readable at a glance, otherwise the comment, never both
+- explain why, not what, unless the code doesn't make it obvious
+- no redundant text, no narration, no bug history
+- max 2 simple sentences per comment - no parentheses, dashes, semicolons
+  - shouldn't be longer than 2 lines
+- each sentence gets its own line, no wrapping, only the important information
+- a genuine list becomes bullet points, one information per point
+  - in points, not sentences (**like this section**)
+- keep everything clear, readable, short
+- compare new docs against the existing docs, discuss notable differences first
+- **LOW COUPLING, HIGH COHESION** are even more important here than in code
+  - it is crucial that there is only one place for any piece of information so that changes don't
+    require editing multiple files of unrelated names and contents
+
+Example:
 
 - bad: `count = count + 1  // increment the count` - the code already says this
 - good: `count = count + 1  // the header takes one slot: keep this in sync with the layout`
 
 ## Development cycle (per module)
+
+- **ALWAYS USE RELATIVE PATHS FOR PROJECT-RELATED FILES**
+- DO NOT USE `cd` UNLESS YOU ACTUALLY NEED TO CHANGE CWD.
+- Read files with the read tool, never `cat`/`sed`
+- Run a command once, read the full output - large output goes to a file, never re-run to re-filter
 
 1. If you're solving a bug: make a test that catches it first.
 2. Implement: fix the bug or add the feature.
@@ -68,7 +104,12 @@ Example (language-neutral - the same rule applies everywhere):
    - **NEVER USE `git stash`** - TEST WHAT IS THERE. Ask if you think some test errors aren't your
      fault.
 4. Update the documentation by the rules above.
-5. You may make a git `checkpoint:` commit with a clear message and changelist.
+5. Make a commit with a clear message and changelist.
+   - **THE COMMIT SHOULD ONLY CONTAIN A CLEAR SHORT DESCRIPTION OF THE CHANGES**
+   - **DO NOT WRITE ANY OF YOUR TEST STATE NONSENSE IN THERE.**
+   - **A FIX AMENDS THE COMMIT OF THE CHANGE IT BELONGS TO, ONLY DISTINCT WORK ADDS A NEW COMMIT**
+   - **THE COMMIT MESSAGE MUST ADHERE TO THE Comments and documentation spec**
+   - always add a `Co-Authored-By: opencode <noreply@opencode.ai>` line
 
 ## Before you finish
 

@@ -27,7 +27,7 @@ run() {
 	[[ $cmd == @* || ${BLOCKING:-$TERM_BLOCKING} == 1 && -t 0 && -t 1 ]] ||
 		cmd="${TERMINAL:-xterm} $cmd"
 	if [[ $BLOCKING == 1 || $cmd != @* && $TERM_BLOCKING == 1 ]]; then
-		${cmd#@} "${arg[@]}"
+		${cmd#@} "${arg[@]}" || return 0 # returns 0 to allow caller to catch good match, but bad run
 	elif declare -F "${cmd#@}" &>/dev/null; then # run functions in-place
 		${cmd#@} "${arg[@]}" &
 	else
@@ -50,7 +50,7 @@ try() {
 		esac
 		shift
 	done
-	! ((match)) || run "$app"
+	((match)) && run "$app"
 }
 
 [[ -f $CFG ]] && . "$CFG" # config calls try() for given apps with listed allowed files

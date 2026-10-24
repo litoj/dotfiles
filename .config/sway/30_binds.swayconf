@@ -35,12 +35,12 @@ bindsym --to-code {
 	$Mod+1 exec $lof 'MOZ_LOG_FILE=/dev/null firefox &>/dev/null' '[app_id=firefox]'
 	$Mod+$Alt+1 exec $lof 'vivaldi --enable-zero-copy' '[app_id=vivaldi-stable]'
 	$Mod+2 exec xterm nvim &
-	$Mod+$Alt+2 exec REPORT_TO=~/Documents/work/ ~/.config/sway/reporter \
+	$Mod+$Alt+2 exec REPORT_TO=~/Documents/work/ reporter \
 		xterm nvim -i ~/Documents/work/session.shada
-	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ ~/.config/sway/reporter \
+	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ reporter \
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
-	$Mod+4 exec $lof 'swaymsg mode \$Msg' '[workspace="$wMsg"]'
-	$Mod+5 exec $lof 'swaymsg mode \$IDE' '[workspace="$wCode"]'
+	$Mod+4 workspace $wMsg, mode $Msg
+	$Mod+5 workspace $wCode, mode $IDE
 	$Mod+7 mode $Media
 	$Mod+$Alt+9 exec $lof prismlauncher '[app_id=null title="^(Minecraft|Prism Launcher).*"]'
 	$Mod+9 exec $lof 'prismlauncher --launch Vanilla' '[title="^(Minecraft|Prism Launcher).*"]'
@@ -299,8 +299,7 @@ mode $Exit {
 		s mode default, exec $lid sleep
 		h mode default, exec $([[ $(swapon --show=NAME) ]] || sudo swapon /swapfile) &&\
 			systemctl hibernate && sleep 60 && sudo swapoff /swapfile
-		# exit kills swaybg so exit after the current bg has been stored
-		p exec '$custombg autosave && { swaymsg exit & sleep 1 && systemctl poweroff; }'
+		p exec $lid sysoff
 		r exit, exec reboot
 		Shift+a mode default, exec ~/.config/sway/android_screen.sh
 		Shift+w mode default; exec xterm sudo bash -c 'efibootmgr -n 0001 && reboot'

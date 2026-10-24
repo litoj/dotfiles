@@ -12,7 +12,8 @@
     "scrollbar": false,
     "thinking": "hide",
     "new_location": "launch",
-    "permissions": "prompt"
+    "permissions": "prompt",
+    "verbosity": "medium"
   },
   "animations": false,
   "keybinds": {

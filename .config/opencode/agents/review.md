@@ -24,6 +24,16 @@ You review code changes. You do not fix them.
 - readability and understandability of the code
 - documentation present on what needs explaining to fully grasp the issue (not on matters obvious
   from context)
+- comments/docs format:
+  - all comments must be max 2 sentences per paragraph or in a list of bullet points
+  - bullet points must be max 1.5 lines long and represent a coherent unit - only one information
+    per point
+  - if there is any talk about params/return values/fields, then it should belong to where those
+    values are documented, not in just one big paragraph at the start
+    - in essence: never talk, always be specific and explain something particular and related to the
+      associated data
+  - ALL TEXT MUST BE IN SIMPLE SENTENCES - clear distinguishable points being made. No dashes, no
+    semicolons. Parentheses are considered as a separate sentence.
 
 ## Process steps
 

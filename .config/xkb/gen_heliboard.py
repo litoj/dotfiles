@@ -44,7 +44,7 @@ ROWS = [
         ("え", "エ", ["ぇ"], ["ェ"]),                                              # e
         ("ら", "ラ", ["り", "る", "れ", "ろ"], ["リ", "ル", "レ", "ロ"]),                   # r
         ("た", "タ", ["て", "と"], ["テ", "ト", "ティ"]),                                 # t
-        ("ざ", "ザ", ["ず", "ぜ", "ぞ"], ["ズ", "ゼ", "ゾ", "ジェ"]),                       # z
+        ("ざ", "ザ", ["ず", "ぜ", "ぞ"], ["ズ", "ゼ", "ゾ"]),                       # z
         ("う", "ウ", ["ぅ"], ["ゥ", "ウィ", "ウェ", "ウォ"]),                             # u
         ("い", "イ", ["ぃ"], ["ィ", "イェ"]),                                       # i
         ("お", "オ", ["ぉ"], ["ォ"]),                                              # o
@@ -52,7 +52,7 @@ ROWS = [
     ],
     [  # a s d f g h j k l
         ("あ", "ア", ["ぁ"], ["ァ"]),                                              # a
-        ("さ", "サ", ["す", "せ", "そ"], ["ス", "セ", "ソ", "シェ"]),                       # s
+        ("さ", "サ", ["す", "せ", "そ"], ["ス", "セ", "ソ"]),                       # s
         ("だ", "ダ", ["ぢ", "づ", "で", "ど"], ["ヂ", "ヅ", "デ", "ド", "ディ"]),              # d
         ("ふ", "フ", [], ["ファ", "フィ", "フェ", "フォ"]),                                # f
         ("が", "ガ", ["ぎ", "ぐ", "げ", "ご"], ["ギ", "グ", "ゲ", "ゴ"]),                   # g
@@ -62,8 +62,8 @@ ROWS = [
         ("ん", "ン", [], []),                                                     # l
     ],
     [  # y x c v b n m — the czech bottom row
-        ("じ", "ジ", ["じゃ", "じゅ", "じょ"], ["ジャ", "ジュ", "ジョ"]),                  # y
-        ("し", "シ", ["しゃ", "しゅ", "しょ"], ["シャ", "シュ", "ショ"]),                  # x
+        ("じ", "ジ", ["じゃ", "じゅ", "じょ"], ["ジャ", "ジュ", "ジョ", "ジェ"]),                  # y
+        ("し", "シ", ["しゃ", "しゅ", "しょ"], ["シャ", "シュ", "ショ", "シェ"]),                  # x
         ("つ", "ツ", ["っ"], ["ッ", "ツァ", "ツィ", "ツェ", "ツォ"]),                     # c
         ("ち", "チ", ["ちゃ", "ちゅ", "ちょ"], ["チャ", "チュ", "チョ", "チェ"]),          # v
         ("ば", "バ", ["び", "ぶ", "べ", "ぼ"], ["ビ", "ブ", "ベ", "ボ"]),                   # b
@@ -129,7 +129,7 @@ def text():
 
 
 def validate():
-    """Every form must live on exactly one key."""
+    """Every form lives on one key and a multi-kana form starts on its own key."""
     homes = {}
     for i, row in enumerate(ROWS):
         for j, entry in enumerate(row):
@@ -138,9 +138,13 @@ def validate():
             hira, kata, hp, kp = entry
             branches = [(kata, kp)] if hira is None else [(hira, hp), (kata, kp)]
             for label, popups in branches:
-                for form in [label] + with_default(label, popups):
+                forms = [label] + with_default(label, popups)
+                for form in forms:
                     assert homes.setdefault(form, (i, j)) == (i, j), \
                         "form %r lives on two keys" % form
+                    if len(form) > 1:
+                        assert form[0] in forms, \
+                            "form %r starts outside its key" % form
 
 
 def main(argv):

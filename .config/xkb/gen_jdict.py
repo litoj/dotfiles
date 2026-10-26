@@ -3,7 +3,8 @@
 
 Typing hiragana suggests the kanji word: every reading becomes a
 not_a_word entry of the combined wordlist, and its kanji forms become
-the shortcuts the keyboard suggests.
+the shortcuts the keyboard suggests.  Only a form that carries a JMdict
+priority marker itself becomes a shortcut, so rare kanji stay out.
 
     .config/xkb/main_ja.combined   (written whole)
 
@@ -36,17 +37,20 @@ def hira(s):
     return "".join(chr(ord(c) - 0x60) if "ァ" <= c <= "ヺ" else c for c in s)
 
 
-# nf01..nf48 rank the 48000 most frequent words of the Mainichi
-# newspaper; ichi, news, spec and gai mark common words, 2 less common
+# nf01..nf48 rank the most frequent words of the Mainichi newspaper;
+# only common forms become suggestions, so nf alone separates the ranks
 def freq(pris):
     nf = [int(p[2:]) for p in pris if p[:2] == "nf"]
     if nf:
         return max(159, 255 - 2 * min(nf))
-    if pris & {"ichi1", "news1", "spec1", "gai1"}:
-        return 150
-    if pris & {"ichi2", "news2", "spec2", "gai2"}:
-        return 120
-    return 60
+    return 150
+
+
+# a suggested form must be common itself, like takoboto's common label
+# a 1-level or nf marker on the kanji form, reading priorities do not count
+def common(pris):
+    return bool(pris & {"ichi1", "news1", "spec1", "gai1"}
+                or any(p[:2] == "nf" for p in pris))
 
 
 def add(words, word, shortcut, f):
@@ -67,7 +71,7 @@ def load():
                 continue
             kanji = [(k.findtext("keb"), {p.text for p in k.findall("ke_pri")})
                      for k in elem.findall("k_ele")]
-            kanji = [k for k in kanji if KANJI.search(k[0])]
+            kanji = [k for k in kanji if KANJI.search(k[0]) and common(k[1])]
             for r in elem.findall("r_ele"):
                 if r.find("re_nokanji") is not None or not kanji:
                     continue

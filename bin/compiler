@@ -11,10 +11,11 @@ cd "$dir" || exit
 case "$file" in
 	# *\.md) pandoc -s -f markdown "$file" -t pdf -o "$base".pdf ;;
 	*\.md)
-		pandoc "$file" -t html -o /tmp/"$basename".html
+		out="${file%.*}"
+		pandoc "$file" -t html -o "$out".html
 		sed -i -e '1i<head><link rel="stylesheet" href="/home/kepis/dotfiles/other/html.css"></head><body>' \
-			-e '$s/$/<\/body>/;' /tmp/"$basename".html
-		echo /tmp/"$basename".html
+			-e '$s/$/<\/body>/;' "$out".html
+		echo "$out".html
 		;;
 	*config\.h) make clean install ;;
 	*\.c | *\.cpp)

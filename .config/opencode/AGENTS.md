@@ -62,6 +62,9 @@ Applies to every code comment, documentation and note you write anywhere, centra
   - in points, not sentences (**like this section**)
 - keep everything clear, readable, short
 - compare new docs against the existing docs, discuss notable differences first
+- **LOW COUPLING, HIGH COHESION** are even more important here than in code
+  - it is crucial that there is only one place for any piece of information so that changes don't
+    require editing multiple files of unrelated names and contents
 
 Example:
 

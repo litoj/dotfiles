@@ -27,7 +27,6 @@
 			"npm": "@ai-sdk/openai-compatible",
 			"name": "E-Infra",
 			"options": {
-				"apiKey": "{env:E_INFRA_KEY}",
 				"baseURL": "https://llm.ai.e-infra.cz/v1"
 			},
 			"models": {
@@ -37,7 +36,7 @@
 				"thinker": {
 					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
 				},
-				"glm-5.3": {
+				"coder": {
 					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
 				},
 				"deepseek-v4.1-flash-thinking": {

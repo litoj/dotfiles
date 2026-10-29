@@ -2,6 +2,7 @@
 
 - `~/.config/opencode/central-ai-notes` = shared memory for all projects
 - project notes: `docs/projects/<project>.md`, index in `docs/projects/README.md`
+- notes follow the Comments and documentation spec below, like every file
 - before project work: read the matching project note
 - update on decisions, results, corrections: project note + its current state
 - raw user wording verbatim, interpretation separate, own words
@@ -88,7 +89,11 @@ Example:
    - **NEVER USE `git stash`** - TEST WHAT IS THERE. Ask if you think some test errors aren't your
      fault.
 4. Update the documentation by the rules above.
-5. You may make a git `checkpoint:` commit with a clear message and changelist.
+5. Make a commit with a clear message and changelist.
+   - **THE COMMIT SHOULD ONLY CONTAIN A CLEAR SHORT DESCRIPTION OF THE CHANGES**
+   - **DO NOT WRITE ANY OF YOUR TEST STATE NONSENSE IN THERE.**
+   - **THE COMMIT MESSAGE MUST ADHERE TO THE Comments and documentation spec**
+   - always add a `Co-Authored-By: opencode <noreply@opencode.ai>` line
 
 ## Before you finish
 

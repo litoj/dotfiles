@@ -35,9 +35,9 @@ bindsym --to-code {
 	$Mod+1 exec $lof 'MOZ_LOG_FILE=/dev/null firefox &>/dev/null' '[app_id=firefox]'
 	$Mod+$Alt+1 exec $lof 'vivaldi --enable-zero-copy' '[app_id=vivaldi-stable]'
 	$Mod+2 exec xterm nvim &
-	$Mod+$Alt+2 exec REPORT_TO=~/Documents/work/ ~/.config/sway/reporter \
+	$Mod+$Alt+2 exec REPORT_TO=~/Documents/work/ reporter \
 		xterm nvim -i ~/Documents/work/session.shada
-	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ ~/.config/sway/reporter \
+	$Mod+$Alt+Shift+2 exec REPORT_TO=~/Documents/school/PG/SP/ reporter \
 		xterm nvim -i ~/Documents/school/PG/SP/session.shada
 	$Mod+4 workspace $wMsg, mode $Msg
 	$Mod+5 workspace $wCode, mode $IDE

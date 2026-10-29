@@ -75,6 +75,7 @@ runAndTime() {
 		mv /tmp/wrep "$rep"
 	else
 
+		# TODO: move to activate on launch
 		isNewTerm "${new[@]}" && echo "- T${last}: $(sumTerm)" >>"$rep"
 		((last != new)) && echo "${new}." >>"$rep" # mark beginning of current month
 
@@ -83,8 +84,8 @@ runAndTime() {
 }
 
 case "$1" in
-	all | '') SEP_COND='0' sumLast ;;
+	all) SEP_COND='0' sumLast ;;
 	week) sumWeek ;;
-	term) sumTerm ;;
+	term | '') sumTerm ;;
 	*) runAndTime "$@" ;;
 esac

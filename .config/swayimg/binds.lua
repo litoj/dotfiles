@@ -14,6 +14,12 @@ do
 	amap('x', function() l.remove(l.get_current().path) end)
 	amap('q', function() sai.exit(0) end)
 
+	-- image moves: hjkl directions, j/k by a whole gallery line
+	amap('<A-h>', g.move_image.left, 'Move image left')
+	amap('<A-j>', g.move_image.down, 'Move image down')
+	amap('<A-k>', g.move_image.up, 'Move image up')
+	amap('<A-l>', g.move_image.right, 'Move image right')
+
 	-- ### Settings toggle
 	amap('u', function() sai.antialiasing = not sai.antialiasing end)
 	local osize = t.size

@@ -96,7 +96,7 @@ ROWS = [
         ("wa", "わ"), ("wo", "を"),
     ]),
     ("nn", [
-        ("nn", "ん"), ("n'", "ん"), ("nna", "んな"), ("nni", "んに"), ("nnu", "んぬ"), ("nne", "んね"), ("nno", "んの"),
+        ("nn", "ん"),
     ]),
     # the small-kana contractions, by the small vowel
     ("small -a", [
@@ -184,6 +184,10 @@ for spell in rules:
 nlayer = {}
 for spell, out in rules.items():
     if spell[0] in "aiueo":
+        continue
+    if spell[0] == "n":
+        # joining n before an n* spelling would extend the `nn` leaf and
+        # stop standalone `ん` (nn) from ever committing
         continue
     joined = "n" + spell
     if joined in rules:

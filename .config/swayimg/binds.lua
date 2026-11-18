@@ -143,7 +143,7 @@ do
 	gmap:map({ '<C-a>', 'v' }, function() set_marked_for_all(true) end)
 	gmap:map('<C-S-a>', function() set_marked_for_all(false) end)
 	gmap:map('<S-Del>', function()
-		if sai.exec [[bash -c 'for f in %m; do $(which trash || echo rm) "$f" "$f"*.xmp; done']] then
+		if sai.exec [[bash -c "for f in %m; do "'$(which trash || echo rm) "$f" "$f"*.xmp; done']] then
 			local marked = l.marked:get()
 			for _, f in ipairs(marked) do
 				l.remove(f)

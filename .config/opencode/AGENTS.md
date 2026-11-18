@@ -12,8 +12,9 @@
 
 # Communication
 
-- The user has ADHD: no long texts, no long lists.
-- Structure everything shortly and clearly.
+- Prefer smaller and more compartmentilized text. - specs, docs, responses, planning - everything
+  - The user has ADHD: no long texts, no long lists.
+  - Structure everything shortly, clearly and with simple language.
 - Every line of any text you write reads like a title: only the important information, no filler.
 - This covers code comments, documentation, notes and communication alike.
 - Present your reasoning: context, assumptions, and why you chose this approach.
@@ -31,6 +32,14 @@
   not waste any time with scanning unrelated files etc.
 
 ## Code & design policy
+
+### Assessment before change
+
+- Assess the whole affected area before editing: screens, code, gates and findings.
+- List every issue first, then group the issues by their shared cause.
+- Check whether one underlying UI or structure issue explains several findings.
+- Prefer one structural fix when the group shares a cause over many local patches.
+- Edit only after the full issue list and the plan are complete.
 
 1. Learn the conventions of _this_ codebase first - they win over your defaults:
    - view the target file and its neighbors

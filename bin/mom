@@ -144,7 +144,7 @@ $(print "<s> to pick --start")
 $(print "<e> to pick --end")
 $(print "<f> to pick --fadeout")
 $(print "<Shift+F> to pick --fadeoutEnd")
-$(print "<v> to pick --volume" )
+$(print "<v> to pick --volume")
 $(print "<Enter> to confirm and quit")" --script="$pickerFile"
 		)
 
@@ -692,7 +692,8 @@ cut() {
 		_cmd+=(-preset slow)
 		[[ $audioBitrate ]] || local recAudio=$(ffprobe "${src[0]}" |&
 			sed -n 's|.*Audio.*, \([0-9]\+\) kb/s.*|\1|p')
-		if ((audioBitrate || ${recAudio:-0} > 105)); then
+		if ((audioBitrate || ${recAudio:-0} > 105)) ||
+			$(which cut) "${MPV_PICKER_PICK_PATH}" -d$'\t' -f4 | grep '..' >/dev/null; then
 			declare -A codecMap=(
 				[mp3]=libmp3lame
 				[m4a]=aac
@@ -754,7 +755,7 @@ cut() {
 	if ((${#clips[@]} > 1)); then
 		out=/tmp/mom-$ACTION.$ext
 		local concatFile=/tmp/mom-$ACTION.txt
-		printf 'file %s\n' "${clips[@]}" >"$concatFile"
+		printf "file \'%s\'\n" "${clips[@]}" >"$concatFile"
 		cmd=($(ffmpegCmd) -f concat -safe 0 -i "$concatFile" -i "$src" -c copy
 		-map_metadata 1 -map 0 "$out")
 		exec "${cmd[@]}" || return 1
@@ -1189,7 +1190,7 @@ rename() {
 				)${exif/*'$DateTimeOriginal'/}"
 				[[ $name == "${src%.*}" ]] && dateFallback=1
 
-				if ((!dateFallback)); then
+				if ((! dateFallback)); then
 					local dateFallback
 					read -p "$(
 						print "rename '$src' to file mod date = '$name.$ext'? [y/N]: "

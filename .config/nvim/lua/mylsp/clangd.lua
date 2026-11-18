@@ -29,7 +29,7 @@ return { -- https://clangd.llvm.org/config
 		map({ 'n', 'i' }, '<A-S-R>', function()
 			local name = vim.api.nvim_buf_get_name(0)
 			local out = name:gsub('%.c[cp]?p?$', '.out')
-			if not exists(out) then vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end
+			if not exists(out) then out = vim.fn.glob(name:gsub('/[^/]*$', '/*.out')) end
 			if not exists(out) then return vim.notify 'No executable found' end
 			vim.cmd.term(out)
 		end, { buf = buf })

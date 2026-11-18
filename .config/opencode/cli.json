@@ -13,7 +13,7 @@
     "thinking": "hide",
     "new_location": "launch",
     "permissions": "prompt",
-    "verbosity": "medium"
+    "verbosity": "low"
   },
   "animations": false,
   "keybinds": {

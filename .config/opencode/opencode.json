@@ -42,6 +42,9 @@
 				"thinker": {
 					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
 				},
+				"kimi-k3.1-pro": {
+					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
+				},
 				"coder": {
 					"limit": {"input": 1000000, "context": 1000000, "output": 128000}
 				},
